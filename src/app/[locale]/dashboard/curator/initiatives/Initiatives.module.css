@@ -128,7 +128,6 @@
   font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive { background: rgba(5,150,105,0.12); color: #059669; }
-.statusCompleted { background: rgba(37,99,235,0.1); color: var(--primary-blue); }
 .statusArchived { background: rgba(100,116,139,0.12); color: #64748b; }
 
 .categoryPill {
@@ -164,14 +163,14 @@
 }
 .editBtn:hover { background: var(--primary-blue); color: white; }
 
-.completeBtn {
-  display: flex; align-items: center; gap: 5px;
-  padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.82rem; font-weight: 600;
-  border: 1px solid rgba(37,99,235,0.25); color: var(--primary-blue);
-  background: rgba(37,99,235,0.08); cursor: pointer;
-  transition: all 0.15s ease; margin-inline-start: auto;
+.seedBtn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.65rem 1.25rem; border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+  border: 1px solid var(--border-color); color: var(--text-muted);
+  background: var(--card-bg); cursor: pointer;
+  transition: all 0.2s ease;
 }
-.completeBtn:hover { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
+.seedBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
 
 .archiveBtn {
   display: flex; align-items: center; gap: 5px;

@@ -3,35 +3,129 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Initiatives.module.css';
 
 interface Initiative {
   id: string;
   title: string;
   description: string;
-  status: 'active' | 'completed' | 'archived';
+  status: 'active' | 'archived';
   category?: string;
   startDate?: string;
   endDate?: string;
   imageUrl?: string;
   images?: string[];
   stat?: string;
+  problem?: string;
+  objective?: string;
+  impact?: string;
+  impactAreas?: string[];
   createdAt: string;
   members?: any[];
 }
 
-const CATEGORIES = ['Environment', 'Education', 'Health', 'Technology', 'Arts & Culture', 'Economic Empowerment', 'Community', 'Other'];
-const emptyForm  = { title: '', description: '', category: '', startDate: '', endDate: '', imageUrl: '', images: '', stat: '', status: 'active' as const };
+const CATEGORIES = [
+  'Environment', 'Education', 'Health', 'Technology',
+  'Arts & Culture', 'Economic Empowerment', 'Community', 'Wellbeing', 'Economy', 'Other',
+];
+
+const emptyForm = {
+  title: '', description: '', category: '', startDate: '', endDate: '',
+  imageUrl: '', images: '', stat: '', problem: '', objective: '', impact: '',
+  impactAreas: '',
+};
+
+/* Default initiatives to seed when Firebase has none */
+const DEFAULT_INITIATIVES = [
+  { title: 'Rise Up', category: 'Economy', stat: '60+ businesses mentored', status: 'active',
+    description: 'Mentoring small businesses with limited resources to achieve sustainable growth through expert guidance.',
+    problem: 'Many small business owners in Jeddah lack access to mentorship, networks, and strategic guidance needed to scale sustainably.',
+    objective: 'Connect aspiring entrepreneurs with experienced mentors across business, finance, and operations.',
+    impact: 'Over three cohorts, Rise Up has mentored 60+ small businesses, with participants reporting an average 35% revenue increase within 12 months.',
+    impactAreas: ['Economy', 'Entrepreneurship', 'Youth'] },
+  { title: 'Anti-Bullying Campaign', category: 'Wellbeing', stat: '4,000+ students reached', status: 'active',
+    description: 'Creating spaces where youth feel heard, understood, and accepted. Encouraging empathy among young people.',
+    problem: 'Bullying remains a significant issue in Jeddah schools. Many students suffer in silence due to stigma and limited reporting channels.',
+    objective: 'Run awareness campaigns in schools, train student ambassadors, and build peer-support structures.',
+    impact: 'Reached 4,000+ students across 12 schools. Trained 200+ student ambassadors.',
+    impactAreas: ['Wellbeing', 'Education', 'Youth', 'Community'] },
+  { title: 'Mindfulness for Peace', category: 'Wellbeing', stat: '85% stress reduction reported', status: 'active',
+    description: 'Empowering youth with mindfulness tools to build resilience, reduce stress, and foster inner peace.',
+    problem: 'Academic pressure and social media are driving unprecedented stress levels among young people in Jeddah.',
+    objective: 'Introduce evidence-based mindfulness practices through workshops and a free digital resource toolkit.',
+    impact: 'Delivered 30+ workshops reaching 1,500+ participants. 85% reported reduced stress after a four-week program.',
+    impactAreas: ['Wellbeing', 'Mental Health', 'Youth'] },
+  { title: 'Green Jeddah', category: 'Environment', stat: '2,000+ trees planted', status: 'active',
+    description: 'Environmental awareness campaigns and tree-planting drives across local schools and neighborhoods.',
+    problem: "Rapid urban development is taking a toll on Jeddah's green spaces. Young people feel disconnected from environmental issues.",
+    objective: 'Mobilize youth as environmental stewards through tree-planting events, beach clean-ups, and school sustainability modules.',
+    impact: 'Planted 2,000+ trees across six neighborhoods. Organized 15 beach clean-ups removing 4+ tonnes of waste.',
+    impactAreas: ['Environment', 'Community', 'Education'] },
+  { title: 'Tech Literacy', category: 'Education', stat: '800+ participants trained', status: 'active',
+    description: 'Digital skills workshops for underserved youth and women re-entering the workforce.',
+    problem: 'The digital divide disproportionately affects low-income youth and women returning to work.',
+    objective: 'Provide free workshops in coding, AI basics, and cybersecurity. Partner with local organizations to reach underserved communities.',
+    impact: 'Trained 800+ participants across 20 free workshops. 60% reported gaining new employment within six months.',
+    impactAreas: ['Education', 'Technology', 'Economy', 'Youth'] },
+  { title: 'Community Connect', category: 'Community', stat: '1,200+ active members', status: 'active',
+    description: 'Monthly networking gatherings connecting young professionals and entrepreneurs in Jeddah.',
+    problem: 'Young professionals in Jeddah often operate in silos. The absence of cross-sector infrastructure limits collaboration.',
+    objective: 'Host monthly curated events bringing together 50-150 young professionals across industries.',
+    impact: '24+ events hosted since 2022. Built a community of 1,200+ active members.',
+    impactAreas: ['Community', 'Entrepreneurship', 'Youth', 'Economy'] },
+  { title: 'Youth Voices', category: 'Community', stat: '500+ youth in civic dialogue', status: 'active',
+    description: 'A platform for young people to engage with local policymakers and civic leaders on issues that matter.',
+    problem: 'Youth perspectives are frequently absent from public discourse and policy decisions in Jeddah.',
+    objective: 'Host quarterly town halls, policy simulation workshops, and a youth advisory panel.',
+    impact: 'Engaged 500+ youth in civic dialogue. Two recommendations formally adopted by a municipal working group.',
+    impactAreas: ['Community', 'Education', 'Youth'] },
+  { title: 'Jeddah Reads', category: 'Education', stat: '8,500 books distributed', status: 'active',
+    description: 'A city-wide reading initiative distributing books and building micro-libraries in underserved neighborhoods.',
+    problem: 'Access to Arabic-language books for children remains unequal across Jeddah.',
+    objective: 'Collect and distribute 10,000 books annually; install 20 micro-libraries in community centers.',
+    impact: 'Distributed 8,500 books to date. 18 micro-libraries installed. Monthly reading clubs in 6 schools.',
+    impactAreas: ['Education', 'Community', 'Youth'] },
+  { title: 'Smart Jeddah Hackathon', category: 'Technology', stat: '220 participants, 42 teams', status: 'archived',
+    description: 'A 48-hour hackathon where student teams built tech solutions for city challenges.',
+    problem: 'Jeddah faces urban challenges that require creative technology solutions, yet local youth rarely get the opportunity.',
+    objective: 'Bring together 200+ students, engineers, and designers to prototype solutions over a 48-hour sprint.',
+    impact: "Three winning solutions were piloted by city partners. Winning team's app was adopted by a private mall operator.",
+    impactAreas: ['Education', 'Technology', 'Economy'] },
+  { title: 'Clean Coast Jeddah', category: 'Environment', stat: '12+ tonnes of waste removed', status: 'archived',
+    description: "A two-year coastal preservation initiative mobilizing volunteers to protect Jeddah's Red Sea shoreline.",
+    problem: "Jeddah's Red Sea coastline faces growing threats from plastic waste and insufficient environmental protections.",
+    objective: 'Coordinate regular volunteer clean-ups and advocate for stronger coastal protection policies.',
+    impact: 'Over 24 months, 1,200 volunteers collected 12+ tonnes of waste. Handed off to a local NGO partner.',
+    impactAreas: ['Environment', 'Community'] },
+  { title: 'WEF Youth Summit 2023', category: 'Community', stat: '180 delegates from 12 cities', status: 'archived',
+    description: 'Jeddah Hub co-organized a regional youth summit bringing together Global Shapers from across the Arab world.',
+    problem: 'Young change-makers in the Arab region lack a shared platform to exchange experiences and co-design solutions.',
+    objective: 'Host a two-day regional summit in Jeddah featuring keynotes, workshops, and a community challenge.',
+    impact: 'Welcomed 180 delegates from 12 cities. Seeded three ongoing cross-hub collaborations.',
+    impactAreas: ['Community', 'Economy', 'Education'] },
+  { title: 'Ramadan Relief Drive', category: 'Community', stat: '2,600+ individuals served', status: 'archived',
+    description: 'Annual food and essential goods distribution to low-income families during Ramadan.',
+    problem: 'Many families struggle to meet basic needs during Ramadan, falling through gaps in formal support systems.',
+    objective: 'Raise funds and distribute 500 food baskets; coordinate iftar meals for workers in public spaces.',
+    impact: 'Distributed 520 food baskets and hosted 10 community iftars. Reached 2,600+ individuals.',
+    impactAreas: ['Community', 'Wellbeing'] },
+];
 
 export default function ManageInitiatives() {
+  const { user } = useAuth();
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
-  const [filter, setFilter]           = useState<'all' | 'active' | 'completed' | 'archived'>('all');
+  const [seeding, setSeeding]         = useState(false);
+  const [filter, setFilter]           = useState<'all' | 'active' | 'archived'>('all');
   const [showCreate, setShowCreate]   = useState(false);
   const [editingId, setEditingId]     = useState<string | null>(null);
   const [form, setForm]               = useState(emptyForm);
   const [editForm, setEditForm]       = useState(emptyForm);
+
+  const role = user?.role?.toLowerCase();
+  const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   const setF  = (k: keyof typeof emptyForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -51,15 +145,37 @@ export default function ManageInitiatives() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  const handleSeedDefaults = async () => {
+    if (!confirm('This will add all 12 default initiatives to Firebase. Continue?')) return;
+    setSeeding(true);
+    const now = new Date();
+    for (const init of DEFAULT_INITIATIVES) {
+      const d = new Date(now);
+      d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
+      await addDoc(collection(db, 'initiatives'), {
+        ...init,
+        members: [],
+        images: [],
+        createdAt: d.toISOString(),
+      });
+    }
+    setSeeding(false);
+    fetchAll();
+  };
+
+  const formToDoc = (f: typeof emptyForm) => ({
+    title: f.title, description: f.description, category: f.category,
+    startDate: f.startDate, endDate: f.endDate, imageUrl: f.imageUrl,
+    images: f.images ? f.images.split('\n').map(s => s.trim()).filter(Boolean) : [],
+    stat: f.stat, problem: f.problem, objective: f.objective, impact: f.impact,
+    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
+  });
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const images = form.images ? form.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
     await addDoc(collection(db, 'initiatives'), {
-      title: form.title, description: form.description, category: form.category,
-      startDate: form.startDate, endDate: form.endDate, imageUrl: form.imageUrl,
-      images, stat: form.stat, status: form.status,
-      members: [], createdAt: new Date().toISOString(),
+      ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
     });
     setForm(emptyForm);
     setShowCreate(false);
@@ -75,102 +191,96 @@ export default function ManageInitiatives() {
       category: init.category || '', startDate: init.startDate || '',
       endDate: init.endDate || '', imageUrl: init.imageUrl || '',
       images: (init.images || []).join('\n'), stat: init.stat || '',
-      status: (init.status || 'active') as typeof emptyForm['status'],
+      problem: init.problem || '', objective: init.objective || '',
+      impact: init.impact || '',
+      impactAreas: (init.impactAreas || []).join(', '),
     });
   };
 
   const handleSaveEdit = async () => {
     if (!editingId || !editForm.title) return;
     setSaving(true);
-    const images = editForm.images ? editForm.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
-    await updateDoc(doc(db, 'initiatives', editingId), {
-      title: editForm.title, description: editForm.description, category: editForm.category,
-      startDate: editForm.startDate, endDate: editForm.endDate, imageUrl: editForm.imageUrl,
-      images, stat: editForm.stat, status: editForm.status,
-    });
+    await updateDoc(doc(db, 'initiatives', editingId), formToDoc(editForm));
     setSaving(false);
     setEditingId(null);
     fetchAll();
   };
 
   const handleArchive = async (id: string) => {
-    if (!confirm('Archive this initiative? It will be hidden from public view but its data is retained.')) return;
+    if (!confirm('Archive this initiative? It will be hidden from public view.')) return;
     await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
     fetchAll();
   };
 
-  const handleMarkComplete = async (id: string) => {
-    await updateDoc(doc(db, 'initiatives', id), { status: 'completed', completedAt: new Date().toISOString() });
-    fetchAll();
-  };
-
   const handleRestore = async (id: string) => {
-    await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null, completedAt: null });
+    await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
     fetchAll();
   };
 
   const filtered      = initiatives.filter(i => filter === 'all' || i.status === filter);
   const activeCount   = initiatives.filter(i => i.status === 'active').length;
-  const completedCount = initiatives.filter(i => i.status === 'completed').length;
   const archivedCount = initiatives.filter(i => i.status === 'archived').length;
 
-  const FILTERS: { key: typeof filter; label: string; count: number }[] = [
-    { key: 'all',       label: 'All',       count: initiatives.length },
-    { key: 'active',    label: 'Current',   count: activeCount },
-    { key: 'completed', label: 'Past',      count: completedCount },
-    { key: 'archived',  label: 'Archived',  count: archivedCount },
-  ];
+  if (!canManage) return (
+    <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Access restricted.</div>
+  );
 
-  const EditFormFields = ({ f, setF2 }: { f: typeof emptyForm, setF2: typeof setEF }) => (
+  const FormFields = ({ f, sf }: { f: typeof emptyForm; sf: typeof setEF }) => (
     <>
       <div className={styles.formField}>
         <label className={styles.label}>Title *</label>
-        <input className={styles.input} value={f.title} onChange={setF2('title')} required />
+        <input className={styles.input} value={f.title} onChange={sf('title')} placeholder="Initiative name" required />
       </div>
       <div className={styles.editRow}>
         <div className={styles.formField}>
           <label className={styles.label}>Category</label>
-          <select className={styles.input} value={f.category} onChange={setF2('category')}>
-            <option value="">None</option>
+          <select className={styles.input} value={f.category} onChange={sf('category')}>
+            <option value="">Select…</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div className={styles.formField}>
-          <label className={styles.label}>Status</label>
-          <select className={styles.input} value={f.status} onChange={setF2('status')}>
-            <option value="active">Current (Active)</option>
-            <option value="completed">Past (Completed)</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
-      </div>
-      <div className={styles.editRow}>
-        <div className={styles.formField}>
           <label className={styles.label}>Start Date</label>
-          <input className={styles.input} type="date" value={f.startDate} onChange={setF2('startDate')} />
+          <input className={styles.input} type="date" value={f.startDate} onChange={sf('startDate')} />
         </div>
         <div className={styles.formField}>
           <label className={styles.label}>End Date</label>
-          <input className={styles.input} type="date" value={f.endDate} onChange={setF2('endDate')} />
+          <input className={styles.input} type="date" value={f.endDate} onChange={sf('endDate')} />
         </div>
       </div>
       <div className={styles.formField}>
         <label className={styles.label}>Key Result / Stat</label>
-        <input className={styles.input} value={f.stat} onChange={setF2('stat')} placeholder="e.g. 2,000+ trees planted" />
+        <input className={styles.input} value={f.stat} onChange={sf('stat')} placeholder="e.g. 2,000+ trees planted" />
       </div>
       <div className={styles.formField}>
-        <label className={styles.label}>Cover Image URL</label>
-        <input className={styles.input} value={f.imageUrl} onChange={setF2('imageUrl')} placeholder="https://…" />
+        <label className={styles.label}>Short Description *</label>
+        <textarea className={styles.textarea} value={f.description} onChange={sf('description')} placeholder="What is this initiative about?" required rows={2} />
+      </div>
+      <div className={styles.formField}>
+        <label className={styles.label}>Problem Statement</label>
+        <textarea className={styles.textarea} value={f.problem} onChange={sf('problem')} placeholder="What challenge does this address?" rows={2} />
+      </div>
+      <div className={styles.formField}>
+        <label className={styles.label}>Objective</label>
+        <textarea className={styles.textarea} value={f.objective} onChange={sf('objective')} placeholder="What are we trying to achieve?" rows={2} />
+      </div>
+      <div className={styles.formField}>
+        <label className={styles.label}>Impact</label>
+        <textarea className={styles.textarea} value={f.impact} onChange={sf('impact')} placeholder="What results have we achieved?" rows={2} />
+      </div>
+      <div className={styles.editRow}>
+        <div className={styles.formField}>
+          <label className={styles.label}>Impact Areas <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(comma-separated)</span></label>
+          <input className={styles.input} value={f.impactAreas} onChange={sf('impactAreas')} placeholder="Education, Youth, Economy" />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>Cover Image URL</label>
+          <input className={styles.input} value={f.imageUrl} onChange={sf('imageUrl')} placeholder="https://…" />
+        </div>
       </div>
       <div className={styles.formField}>
         <label className={styles.label}>Achievement Photos <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(one URL per line)</span></label>
-        <textarea className={styles.textarea} value={f.images} onChange={setF2('images')}
-          placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg" rows={3} />
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Description *</label>
-        <textarea className={styles.textarea} value={f.description} onChange={setF2('description')}
-          placeholder="What is this initiative about?" required rows={3} />
+        <textarea className={styles.textarea} value={f.images} onChange={sf('images')} placeholder={"https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg"} rows={3} />
       </div>
     </>
   );
@@ -182,21 +292,28 @@ export default function ManageInitiatives() {
       <div className={styles.pageHeader}>
         <div>
           <h2 className={styles.pageTitle}>Manage Initiatives</h2>
-          <p className={styles.pageSubtitle}>{activeCount} current · {completedCount} past · {archivedCount} archived</p>
+          <p className={styles.pageSubtitle}>{activeCount} active · {archivedCount} archived</p>
         </div>
-        <button className={styles.createBtn} onClick={() => { setShowCreate(v => !v); setEditingId(null); }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          New Initiative
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {initiatives.length === 0 && !loading && (
+            <button className={styles.seedBtn} onClick={handleSeedDefaults} disabled={seeding}>
+              {seeding ? 'Seeding…' : 'Load Default Initiatives'}
+            </button>
+          )}
+          <button className={styles.createBtn} onClick={() => { setShowCreate(v => !v); setEditingId(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Initiative
+          </button>
+        </div>
       </div>
 
       {/* Create form */}
       {showCreate && (
         <form onSubmit={handleCreate} className={styles.createForm}>
           <h3 className={styles.formTitle}>Create New Initiative</h3>
-          <EditFormFields f={form} setF2={setF} />
+          <FormFields f={form} sf={setF} />
           <div className={styles.formActions}>
             <button type="button" className={styles.cancelBtn} onClick={() => setShowCreate(false)}>Cancel</button>
             <button type="submit" className={styles.submitBtn} disabled={saving}>{saving ? 'Creating…' : 'Create Initiative'}</button>
@@ -206,8 +323,16 @@ export default function ManageInitiatives() {
 
       {/* Filter tabs */}
       <div className={styles.filterBar}>
-        {FILTERS.map(f => (
-          <button key={f.key} className={styles.filterBtn + (filter === f.key ? ' ' + styles.filterBtnActive : '')} onClick={() => setFilter(f.key)}>
+        {([
+          { key: 'all',      label: 'All',      count: initiatives.length },
+          { key: 'active',   label: 'Active',   count: activeCount },
+          { key: 'archived', label: 'Archived', count: archivedCount },
+        ] as const).map(f => (
+          <button
+            key={f.key}
+            className={styles.filterBtn + (filter === f.key ? ' ' + styles.filterBtnActive : '')}
+            onClick={() => setFilter(f.key)}
+          >
             {f.label}
             <span className={styles.filterCount}>{f.count}</span>
           </button>
@@ -222,18 +347,17 @@ export default function ManageInitiatives() {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
-          <p>No {filter === 'completed' ? 'past' : filter === 'all' ? '' : filter} initiatives yet.</p>
+          <p>No {filter !== 'all' ? filter : ''} initiatives yet.{filter === 'active' ? ' Click "New Initiative" to create one.' : ''}</p>
         </div>
       ) : (
         <div className={styles.grid}>
           {filtered.map(init => (
             <div key={init.id} className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}>
 
-              {/* Edit mode */}
               {editingId === init.id ? (
                 <div className={styles.editForm}>
                   <p className={styles.formTitle}>Editing: {init.title}</p>
-                  <EditFormFields f={editForm} setF2={setEF} />
+                  <FormFields f={editForm} sf={setEF} />
                   <div className={styles.editActions}>
                     <button className={styles.cancelBtn} onClick={() => setEditingId(null)}>Cancel</button>
                     <button className={styles.submitBtn} onClick={handleSaveEdit} disabled={saving || !editForm.title}>
@@ -241,9 +365,7 @@ export default function ManageInitiatives() {
                     </button>
                   </div>
                 </div>
-
               ) : (
-                /* View mode */
                 <>
                   {init.imageUrl && (
                     <div className={styles.cardImage}>
@@ -253,22 +375,14 @@ export default function ManageInitiatives() {
                   )}
                   <div className={styles.cardBody}>
                     <div className={styles.cardTopRow}>
-                      <span className={
-                        styles.statusPill + ' ' + (
-                          init.status === 'active' ? styles.statusActive :
-                          init.status === 'completed' ? styles.statusCompleted :
-                          styles.statusArchived
-                        )
-                      }>
-                        {init.status === 'active' ? 'Current' : init.status === 'completed' ? 'Past' : 'Archived'}
+                      <span className={styles.statusPill + ' ' + (init.status === 'active' ? styles.statusActive : styles.statusArchived)}>
+                        {init.status}
                       </span>
                       {init.category && <span className={styles.categoryPill}>{init.category}</span>}
                     </div>
                     <h3 className={styles.cardTitle}>{init.title}</h3>
                     <p className={styles.cardDesc}>{init.description}</p>
-                    {init.stat && (
-                      <p className={styles.cardStat}>{init.stat}</p>
-                    )}
+                    {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
                     <div className={styles.cardMeta}>
                       {init.startDate && (
                         <span className={styles.metaItem}>
@@ -286,7 +400,7 @@ export default function ManageInitiatives() {
                           <circle cx="9" cy="7" r="4"/>
                           <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
-                        {(init.members || []).length} member{(init.members || []).length !== 1 ? 's' : ''}
+                        {(init.members || []).length} members
                       </span>
                       {(init.images || []).length > 0 && (
                         <span className={styles.metaItem}>
@@ -294,7 +408,7 @@ export default function ManageInitiatives() {
                             <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
                             <polyline points="21 15 16 10 5 21"/>
                           </svg>
-                          {(init.images || []).length} photo{(init.images || []).length !== 1 ? 's' : ''}
+                          {(init.images || []).length} photos
                         </span>
                       )}
                     </div>
@@ -307,24 +421,7 @@ export default function ManageInitiatives() {
                       </svg>
                       Edit
                     </button>
-                    {init.status === 'active' && (
-                      <button className={styles.completeBtn} onClick={() => handleMarkComplete(init.id)}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Mark Past
-                      </button>
-                    )}
-                    {init.status === 'completed' && (
-                      <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="1 4 1 10 7 10"/>
-                          <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
-                        </svg>
-                        Restore
-                      </button>
-                    )}
-                    {init.status === 'active' && (
+                    {init.status === 'active' ? (
                       <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="21 8 21 21 3 21 3 8"/>
@@ -333,8 +430,7 @@ export default function ManageInitiatives() {
                         </svg>
                         Archive
                       </button>
-                    )}
-                    {init.status === 'archived' && (
+                    ) : (
                       <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="1 4 1 10 7 10"/>

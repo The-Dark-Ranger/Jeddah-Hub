@@ -35,7 +35,6 @@
   border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive   { background: rgba(16,185,129,0.1); color: var(--success); }
-.statusCompleted { background: rgba(37,99,235,0.1); color: var(--primary-blue); }
 .statusArchived { background: var(--background-alt); color: var(--text-muted); }
 
 .heroTitle {

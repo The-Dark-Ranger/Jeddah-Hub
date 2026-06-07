@@ -1,8 +1,7 @@
 /* ── Navbar ── */
 .navbar {
   display: flex; justify-content: space-between; align-items: center;
-  padding: .7rem 1.5rem;
-  /* Glass effect — translucent with blur */
+  padding: .7rem 1.5rem; height: 68px; box-sizing: border-box;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.45);
@@ -14,13 +13,19 @@
               box-shadow 0.3s ease;
 }
 [data-theme="dark"] .navbar {
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(15, 23, 42, 0.85);
   border-bottom-color: rgba(255, 255, 255, 0.07);
   box-shadow: 0 1px 24px rgba(0, 0, 0, 0.3);
 }
 
 .left { display: flex; align-items: center; }
-.logo { height: 52px; width: auto; display: block; transition: transform .2s ease; }
+
+/* Logo — fits the navbar height with generous vertical room */
+.logo {
+  height: clamp(36px, 4vw, 48px);
+  width: auto; display: block;
+  transition: transform .2s ease;
+}
 .logo:hover { transform: scale(1.04); }
 
 /* ── Desktop nav links ── */
@@ -46,29 +51,18 @@
 .iconBtn {
   display: flex; align-items: center; justify-content: center;
   min-width: 36px; min-height: 36px; border-radius: 9px;
-  background: rgba(255,255,255,0.6); color: var(--text-main);
-  border: 1px solid rgba(0,0,0,0.08);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  background: transparent; color: var(--text-main);
+  border: 1px solid var(--border-color);
   transition: all .2s ease;
-}
-[data-theme="dark"] .iconBtn {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.12);
 }
 .iconBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
 
 .langSwitcher {
   display: flex; align-items: center; justify-content: center;
   min-height: 36px; padding: 0 .85rem; border-radius: 9px;
-  border: 1px solid rgba(0,0,0,0.08); color: var(--text-main);
-  font-weight: 700; font-size: .8rem;
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color); color: var(--text-main);
+  font-weight: 700; font-size: .8rem; background: transparent;
   transition: all .2s ease; white-space: nowrap; letter-spacing: .04em;
-}
-[data-theme="dark"] .langSwitcher {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.12);
 }
 .langSwitcher:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
 
@@ -113,41 +107,54 @@
 /* ── Backdrop ── */
 .backdrop {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.45); z-index: 998;
+  background: rgba(0,0,0,.4); z-index: 998;
   opacity: 0; transition: opacity .3s ease;
 }
 .backdropOpen { display: block; opacity: 1; }
 
-/* ── Mobile drawer ── */
+/* ── Mobile drawer ──
+   Drops down cleanly from exactly below the navbar (68px).
+   Uses opacity+translate so it NEVER slides through the navbar area. */
 .mobileDrawer {
-  position: fixed; top: 57px; inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
-  background: var(--card-bg-solid, var(--card-bg));
-  border-top: 1px solid var(--border-color);
+  position: fixed;
+  top: 68px; /* exact navbar height */
+  inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
+  background: var(--sidebar-bg);
+  border-top: 2px solid var(--primary-blue);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
   z-index: 999;
-  transform: translateY(-110%); opacity: 0;
-  transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .28s ease;
+  /* hidden state */
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity .22s ease, transform .22s ease, visibility 0s .22s;
   display: flex; flex-direction: column;
   overflow-y: auto;
 }
 [data-theme="dark"] .mobileDrawer {
-  background: var(--card-bg-solid, #0f172a);
+  background: var(--sidebar-bg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
-.mobileDrawerOpen { transform: translateY(0); opacity: 1; }
+.mobileDrawerOpen {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity .22s ease, transform .22s ease, visibility 0s;
+}
 
 /* Nav links */
 .mobileLinks { display: flex; flex-direction: column; }
 .mobileLink {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.4rem; font-size: 1rem; font-weight: 600;
-  color: var(--text-main); border-bottom: 1px solid rgba(0,0,0,0.07);
-  transition: color .18s ease, background .18s ease; min-height: 56px;
+  padding: 1rem 1.5rem; font-size: 1rem; font-weight: 600;
+  color: var(--text-main); border-bottom: 1px solid var(--border-color);
+  transition: color .15s ease, background .15s ease; min-height: 56px;
 }
-[data-theme="dark"] .mobileLink { border-bottom-color: rgba(255,255,255,0.07); }
 .mobileLink:last-child { border-bottom: none; }
-.mobileLink:hover { color: var(--primary-blue); background: rgba(15,90,159,0.09); }
-[data-theme="dark"] .mobileLink:hover { background: rgba(59,158,255,0.1); }
-.mobileLinkActive { color: var(--primary-blue) !important; background: rgba(15,90,159,0.09); }
-[data-theme="dark"] .mobileLinkActive { background: rgba(59,158,255,0.1); }
+.mobileLink:hover { color: var(--primary-blue); background: var(--primary-blue-glow); }
+.mobileLinkActive { color: var(--primary-blue) !important; background: var(--primary-blue-glow); }
 
 .activeDot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -157,7 +164,7 @@
 .mobileDivider { height: 1px; background: var(--border-color); }
 
 /* Auth section */
-.mobileFooter { display: flex; flex-direction: column; gap: .65rem; padding: 1.1rem 1.25rem; }
+.mobileFooter { display: flex; flex-direction: column; gap: .65rem; padding: 1.25rem 1.5rem; }
 .mobilePrimaryBtn {
   display: flex; align-items: center; justify-content: center;
   min-height: 48px; border-radius: 12px; padding: 0 1.5rem;
@@ -178,40 +185,30 @@
 
 /* ── Responsive: mobile 768px ── */
 @media (max-width: 768px) {
-  /* Navbar becomes fixed so scroll-hide works */
   .navbar {
     position: fixed;
-    inset-inline-start: 0;
-    inset-inline-end: 0;
-    top: 0;
-    padding: .5rem .9rem;
+    inset-inline-start: 0; inset-inline-end: 0; top: 0;
+    height: 68px; padding: 0 1rem;
+    /* Solid on mobile — no blur needed */
+    background: var(--sidebar-bg);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   }
+  [data-theme="dark"] .navbar { background: var(--sidebar-bg); }
   .navbarHidden { transform: translateY(-100%); }
 
+  /* Logo stays proportional inside 68px navbar */
+  .logo { height: 44px; }
+
   /* Hide desktop-only elements */
-  .navLinks  { display: none; }
-  .userMenu  { display: none; }
+  .navLinks { display: none; }
+  .userMenu { display: none; }
 
-  /* Show theme + lang compactly, hide full-size login */
-  .loginBtn {
-    padding: 0 .7rem;
-    font-size: .78rem;
-    min-height: 32px;
-    border-radius: 7px;
-  }
-  .iconBtn {
-    min-width: 32px; min-height: 32px; border-radius: 7px;
-  }
-  .langSwitcher {
-    min-height: 32px; padding: 0 .6rem;
-    font-size: .77rem; border-radius: 7px;
-  }
+  .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 34px; border-radius: 8px; }
+  .iconBtn   { min-width: 34px; min-height: 34px; border-radius: 8px; }
+  .langSwitcher { min-height: 34px; padding: 0 .65rem; font-size: .8rem; border-radius: 8px; }
   .hamburger { display: flex; }
-}
-
-/* ── Very small screens ── */
-@media (max-width: 390px) {
-  .mobileDrawer { border-radius: 0 0 16px 16px; }
 }
 
 /* ── RTL ── */

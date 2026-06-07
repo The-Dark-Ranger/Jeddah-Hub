@@ -122,6 +122,12 @@
   color: var(--primary-blue);
 }
 
+.navLinkActive {
+  background: var(--primary-blue-glow) !important;
+  color: var(--primary-blue) !important;
+  font-weight: 600;
+}
+
 /* Logout */
 .logoutSidebarBtn {
   display: flex;

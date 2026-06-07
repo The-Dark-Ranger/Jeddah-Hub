@@ -47,6 +47,13 @@ export default function Footer() {
             <img src="/logo.png" onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.svg'; }} alt="Jeddah Hub" className={styles.logo} />
           </Link>
           <p className={styles.tagline}>{t('tagline')}</p>
+          <p className={styles.location}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Jeddah, Saudi Arabia
+          </p>
           <p className={styles.description}>{t('description')}</p>
           <div className={styles.socials}>
             <a href="https://www.linkedin.com/company/global-shapers-jeddah" target="_blank" rel="noopener noreferrer" className={styles.socialIcon} aria-label="LinkedIn">

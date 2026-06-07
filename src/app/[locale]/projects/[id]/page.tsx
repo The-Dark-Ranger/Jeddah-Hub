@@ -114,7 +114,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     impactAreas: ['Education', 'Community', 'Youth'],
   },
   {
-    id: 'p9', title: 'Smart Jeddah Hackathon', category: 'Education', status: 'completed',
+    id: 'p9', title: 'Smart Jeddah Hackathon', category: 'Education', status: 'archived',
     stat: '220 participants, 42 teams',
     description: 'A 48-hour hackathon where student teams built tech solutions for city challenges.',
     problem: 'Jeddah faces urban challenges — from traffic to waste management — that require creative technology solutions, yet local youth rarely get the opportunity to tackle real civic problems.',
@@ -123,7 +123,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     impactAreas: ['Education', 'Technology', 'Economy'],
   },
   {
-    id: 'p10', title: 'Clean Coast Jeddah', category: 'Sustainability', status: 'completed',
+    id: 'p10', title: 'Clean Coast Jeddah', category: 'Sustainability', status: 'archived',
     stat: '12+ tonnes of waste removed',
     description: "A two-year coastal preservation initiative mobilizing volunteers to protect Jeddah's Red Sea shoreline.",
     problem: "Jeddah's Red Sea coastline faces growing threats from plastic waste, illegal dumping, and insufficient enforcement of environmental protections.",
@@ -132,7 +132,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     impactAreas: ['Sustainability', 'Environment', 'Community'],
   },
   {
-    id: 'p11', title: 'WEF Youth Summit 2023', category: 'Community', status: 'completed',
+    id: 'p11', title: 'WEF Youth Summit 2023', category: 'Community', status: 'archived',
     stat: '180 delegates from 12 cities',
     description: 'Jeddah Hub co-organized a regional youth summit bringing together Global Shapers from across the Arab world.',
     problem: 'Young change-makers in the Arab region lack a shared platform to exchange experiences, co-design solutions, and build the relationships that enable cross-border collaboration.',
@@ -141,7 +141,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     impactAreas: ['Community', 'Economy', 'Education'],
   },
   {
-    id: 'p12', title: 'Ramadan Relief Drive', category: 'Community', status: 'completed',
+    id: 'p12', title: 'Ramadan Relief Drive', category: 'Community', status: 'archived',
     stat: '2,600+ individuals served',
     description: 'Annual food and essential goods distribution to low-income families during the holy month of Ramadan.',
     problem: "Many families in Jeddah struggle to meet basic needs during Ramadan despite the season's spirit of giving, often falling through gaps in formal support systems.",
@@ -186,7 +186,6 @@ export default function InitiativePage() {
   );
 
   const isActive = !initiative.status || initiative.status === 'active';
-  const isCompleted = initiative.status === 'completed';
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
   const photos = (initiative.images || []).filter(Boolean);
 
@@ -206,8 +205,8 @@ export default function InitiativePage() {
               </span>
             )}
             {initiative.status && (
-              <span className={styles.statusBadge + ' ' + (isActive ? styles.statusActive : isCompleted ? styles.statusCompleted : styles.statusArchived)}>
-                {isActive ? t('activeStatus') : isCompleted ? 'Past Initiative' : t('archiveStatus')}
+              <span className={styles.statusBadge + ' ' + (isActive ? styles.statusActive : styles.statusArchived)}>
+                {isActive ? t('activeStatus') : t('archiveStatus')}
               </span>
             )}
           </div>

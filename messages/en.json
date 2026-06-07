@@ -426,6 +426,19 @@
     "roleLabelViceCurator": "Vice Curator",
     "roleLabelImpactOfficer": "Impact Officer",
     "roleLabelShaper": "Shaper",
-    "roleLabelAlumni": "Alumni"
+    "roleLabelAlumni": "Alumni",
+    "messages": "Messages",
+    "contactMessages": "Contact Messages",
+    "contactMessagesSubtitle": "All messages from the contact form",
+    "noMessages": "No messages yet.",
+    "replyByEmail": "Reply",
+    "composeEmail": "Compose",
+    "deleteMessage": "Delete",
+    "confirmDeleteMessage": "Permanently delete this message?",
+    "removeMember": "Remove",
+    "confirmRemoveMember": "Remove this member from the initiative?",
+    "currentMembers": "Members",
+    "noMembers": "No members assigned yet.",
+    "initiativeMembers": "Initiative Roster"
   }
 }

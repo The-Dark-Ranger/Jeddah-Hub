@@ -426,6 +426,19 @@
     "roleLabelViceCurator": "نائب المنسق",
     "roleLabelImpactOfficer": "مسؤول التأثير",
     "roleLabelShaper": "صانع",
-    "roleLabelAlumni": "خريج"
+    "roleLabelAlumni": "خريج",
+    "messages": "الرسائل",
+    "contactMessages": "رسائل التواصل",
+    "contactMessagesSubtitle": "جميع الرسائل الواردة من نموذج التواصل",
+    "noMessages": "لا توجد رسائل بعد.",
+    "replyByEmail": "رد",
+    "composeEmail": "إنشاء رسالة",
+    "deleteMessage": "حذف",
+    "confirmDeleteMessage": "حذف هذه الرسالة نهائياً؟",
+    "removeMember": "إزالة",
+    "confirmRemoveMember": "إزالة هذا العضو من المبادرة؟",
+    "currentMembers": "الأعضاء",
+    "noMembers": "لا يوجد أعضاء في هذه المبادرة بعد.",
+    "initiativeMembers": "قائمة المبادرة"
   }
 }

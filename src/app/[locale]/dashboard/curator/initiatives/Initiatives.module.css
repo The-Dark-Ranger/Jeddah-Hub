@@ -128,6 +128,7 @@
   font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive { background: rgba(5,150,105,0.12); color: #059669; }
+.statusCompleted { background: rgba(37,99,235,0.1); color: var(--primary-blue); }
 .statusArchived { background: rgba(100,116,139,0.12); color: #64748b; }
 
 .categoryPill {
@@ -138,6 +139,7 @@
 
 .cardTitle { font-size: 1rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
 .cardDesc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex: 1; }
+.cardStat { font-size: 0.82rem; font-weight: 700; color: var(--primary-blue); background: var(--primary-blue-glow); padding: 0.25rem 0.65rem; border-radius: 6px; width: fit-content; }
 
 .cardMeta { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.25rem; }
 .metaItem {
@@ -161,6 +163,15 @@
   transition: all 0.15s ease;
 }
 .editBtn:hover { background: var(--primary-blue); color: white; }
+
+.completeBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.82rem; font-weight: 600;
+  border: 1px solid rgba(37,99,235,0.25); color: var(--primary-blue);
+  background: rgba(37,99,235,0.08); cursor: pointer;
+  transition: all 0.15s ease; margin-inline-start: auto;
+}
+.completeBtn:hover { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
 
 .archiveBtn {
   display: flex; align-items: center; gap: 5px;

@@ -22,6 +22,14 @@
 
 .back:hover { color: var(--primary-blue); }
 
+.articleCategory {
+  display: inline-block; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--primary-blue); margin-bottom: 0.75rem;
+}
+
+.commentFormRow { display: flex; gap: 0.75rem; align-items: flex-start; }
+
 /* Article */
 .article {
   background: var(--card-bg);
@@ -170,6 +178,18 @@
 .signInHint a {
   color: var(--primary-blue);
   font-weight: 600;
+}
+
+.signInToLike {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.25rem; border-radius: 30px;
+  border: 2px solid var(--border-color); color: var(--text-muted);
+  font-weight: 600; font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+.signInToLike:hover {
+  border-color: var(--primary-blue); color: var(--primary-blue);
+  background: var(--primary-blue-glow);
 }
 
 /* Comments */

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -17,6 +17,12 @@ interface RoleAssignment {
   note?: string;
 }
 
+interface KnownUser {
+  email: string;
+  displayName?: string;
+  uid?: string;
+}
+
 const ROLE_COLORS: Record<string, string> = {
   curator:        'var(--primary-blue)',
   vice_curator:   '#7c3aed',
@@ -30,12 +36,15 @@ export default function MembersPage() {
   const t = useTranslations('Dashboard');
   const locale = useLocale();
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
+  const [knownUsers, setKnownUsers]   = useState<KnownUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('shaper');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const isCurator = user?.role === 'curator' || user?.role === 'vice_curator';
 
@@ -54,7 +63,30 @@ export default function MembersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchAssignments(); }, []);
+  const fetchKnownUsers = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      setKnownUsers(snap.docs.map(d => {
+        const data = d.data();
+        return { email: data.email || '', displayName: data.displayName || data.email || '', uid: d.id };
+      }).filter(u => u.email));
+    } catch { /* users collection may not exist */ }
+  };
+
+  useEffect(() => { fetchAssignments(); fetchKnownUsers(); }, []);
+
+  const getDisplayName = (email: string) => {
+    const known = knownUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    return known?.displayName && known.displayName !== email ? known.displayName : null;
+  };
+
+  const filteredUsers = search.length > 1
+    ? knownUsers.filter(u =>
+        (u.displayName?.toLowerCase().includes(search.toLowerCase()) ||
+         u.email.toLowerCase().includes(search.toLowerCase())) &&
+        !assignments.some(a => a.email === u.email)
+      )
+    : [];
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +104,7 @@ export default function MembersPage() {
       createdAt: new Date().toISOString(),
       addedBy: user?.email,
     });
-    setEmail(''); setNote(''); setRole('shaper');
+    setEmail(''); setNote(''); setRole('shaper'); setSearch('');
     setSaving(false);
     fetchAssignments();
   };
@@ -101,16 +133,47 @@ export default function MembersPage() {
         <h3 className={styles.formTitle}>{t('addRoleAssignment')}</h3>
         {error && <div className={styles.errorMsg}>{error}</div>}
         <div className={styles.formRow}>
-          <div className={styles.formGroup}>
+          <div className={styles.formGroup} style={{ position: 'relative' }}>
             <label className={styles.label}>{t('emailAddress')} *</label>
             <input
               className={styles.input}
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(''); }}
-              placeholder="shaper@example.com"
+              type="text"
+              value={search || email}
+              onChange={e => {
+                const val = e.target.value;
+                setSearch(val);
+                setEmail(val);
+                setError('');
+                setShowDropdown(true);
+              }}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              onFocus={() => setShowDropdown(true)}
+              placeholder={locale === 'ar' ? 'البريد أو الاسم…' : 'Email or name…'}
               required
+              autoComplete="off"
             />
+            {showDropdown && filteredUsers.length > 0 && (
+              <div className={styles.dropdown}>
+                {filteredUsers.slice(0, 6).map(u => (
+                  <button
+                    key={u.email}
+                    type="button"
+                    className={styles.dropdownItem}
+                    onMouseDown={() => {
+                      setEmail(u.email);
+                      setSearch(u.displayName || u.email);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <span className={styles.dropdownAvatar}>{(u.displayName || u.email)[0].toUpperCase()}</span>
+                    <span className={styles.dropdownInfo}>
+                      <span className={styles.dropdownName}>{u.displayName}</span>
+                      <span className={styles.dropdownEmail}>{u.email}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className={styles.formGroup}>
             <label className={styles.label}>{t('colRole')} *</label>
@@ -155,31 +218,37 @@ export default function MembersPage() {
               </tr>
             </thead>
             <tbody>
-              {assignments.map(a => (
-                <tr key={a.id}>
-                  <td className={styles.emailCell}>{a.email}</td>
-                  <td>
-                    <span
-                      className={styles.roleBadge}
-                      style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}
-                    >
-                      {ROLES.find(r => r.value === a.role)?.label ?? a.role}
-                    </span>
-                  </td>
-                  <td className={styles.noteCell}>{a.note || '—'}</td>
-                  <td className={styles.dateCell}>
-                    {new Date(a.createdAt).toLocaleDateString(
-                      locale === 'ar' ? 'ar-SA' : 'en-US',
-                      { month: 'short', day: 'numeric', year: 'numeric' }
-                    )}
-                  </td>
-                  <td>
-                    <button className={styles.removeBtn} onClick={() => handleDelete(a.id)}>
-                      {t('remove')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {assignments.map(a => {
+                const name = getDisplayName(a.email);
+                return (
+                  <tr key={a.id}>
+                    <td className={styles.emailCell}>
+                      {name && <div className={styles.memberName}>{name}</div>}
+                      <div className={styles.memberEmail}>{a.email}</div>
+                    </td>
+                    <td>
+                      <span
+                        className={styles.roleBadge}
+                        style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}
+                      >
+                        {ROLES.find(r => r.value === a.role)?.label ?? a.role}
+                      </span>
+                    </td>
+                    <td className={styles.noteCell}>{a.note || '—'}</td>
+                    <td className={styles.dateCell}>
+                      {new Date(a.createdAt).toLocaleDateString(
+                        locale === 'ar' ? 'ar-SA' : 'en-US',
+                        { month: 'short', day: 'numeric', year: 'numeric' }
+                      )}
+                    </td>
+                    <td>
+                      <button className={styles.removeBtn} onClick={() => handleDelete(a.id)}>
+                        {t('remove')}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

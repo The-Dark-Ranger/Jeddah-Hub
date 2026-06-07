@@ -35,6 +35,7 @@
   border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive   { background: rgba(16,185,129,0.1); color: var(--success); }
+.statusCompleted { background: rgba(37,99,235,0.1); color: var(--primary-blue); }
 .statusArchived { background: var(--background-alt); color: var(--text-muted); }
 
 .heroTitle {
@@ -48,10 +49,22 @@
   line-height: 1.8; margin-bottom: 1.5rem; max-width: 640px;
 }
 
+.heroMeta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;
+}
+
+.datePill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.85rem; color: var(--text-muted); font-weight: 500;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  padding: 0.4rem 0.85rem; border-radius: 30px;
+}
+
 .memberCount {
   display: inline-flex; align-items: center; gap: 0.4rem;
   font-size: 0.85rem; color: var(--text-muted); font-weight: 500;
-  margin-top: 0.5rem;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  padding: 0.4rem 0.85rem; border-radius: 30px;
 }
 
 /* Stat callout */
@@ -67,6 +80,30 @@
 .statLabel {
   font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--text-muted);
+}
+
+/* Photo marquee */
+.marqueeSection {
+  overflow: hidden; background: var(--background-alt);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.25rem 0;
+}
+.marqueeTrack {
+  display: flex; gap: 1rem;
+  animation: marquee 28s linear infinite;
+  width: max-content;
+}
+.marqueeTrack:hover { animation-play-state: paused; }
+.marqueeItem {
+  width: 260px; height: 170px; border-radius: 12px;
+  overflow: hidden; flex-shrink: 0;
+  background: var(--background);
+}
+.marqueeItem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 /* Back link */

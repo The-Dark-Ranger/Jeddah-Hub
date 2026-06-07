@@ -154,22 +154,25 @@ export default function NewsPostPage() {
             )}
           </div>
           <div className={styles.articleActions}>
-            <button
-              className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
-              onClick={handleLike}
-              disabled={!user || liking}
-              title={user ? (liked ? t('unlike') : t('like')) : t('likeSignInTitle')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24"
-                fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
-            </button>
-            {!user && (
-              <p className={styles.signInHint}>
-                <Link href="/login">{t('signIn')}</Link> {t('signInPrompt')}
-              </p>
+            {user ? (
+              <button
+                className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
+                onClick={handleLike}
+                disabled={liking}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                  fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
+              </button>
+            ) : (
+              <Link href="/login" className={styles.signInToLike}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                {t('signIn')} {t('signInPrompt')}
+              </Link>
             )}
           </div>
         </article>

@@ -19,8 +19,11 @@ interface Initiative {
   objective?: string;
   impact?: string;
   impactAreas?: string[];
+  images?: string[];
   members?: unknown[];
   createdAt?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -29,6 +32,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   Wellbeing:      '#7c3aed',
   Economy:        '#f59e0b',
   Community:      '#ef4444',
+  Environment:    '#059669',
+  Health:         '#7c3aed',
+  Technology:     '#0891b2',
   Default:        '#0891b2',
 };
 
@@ -158,12 +164,10 @@ export default function InitiativePage() {
         if (snap.exists()) {
           setInitiative({ id: snap.id, ...snap.data() } as Initiative);
         } else {
-          // Fall back to placeholder data for demo projects
           const placeholder = PLACEHOLDER_PROJECTS.find(p => p.id === id) ?? null;
           setInitiative(placeholder);
         }
       } catch {
-        // Offline or Firebase error — try placeholder
         const placeholder = PLACEHOLDER_PROJECTS.find(p => p.id === id) ?? null;
         setInitiative(placeholder);
       }
@@ -182,7 +186,9 @@ export default function InitiativePage() {
   );
 
   const isActive = !initiative.status || initiative.status === 'active';
+  const isCompleted = initiative.status === 'completed';
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
+  const photos = (initiative.images || []).filter(Boolean);
 
   return (
     <main className={styles.page}>
@@ -200,31 +206,58 @@ export default function InitiativePage() {
               </span>
             )}
             {initiative.status && (
-              <span className={styles.statusBadge + ' ' + (isActive ? styles.statusActive : styles.statusArchived)}>
-                {isActive ? t('activeStatus') : t('archiveStatus')}
+              <span className={styles.statusBadge + ' ' + (isActive ? styles.statusActive : isCompleted ? styles.statusCompleted : styles.statusArchived)}>
+                {isActive ? t('activeStatus') : isCompleted ? 'Past Initiative' : t('archiveStatus')}
               </span>
             )}
           </div>
           <h1 className={styles.heroTitle}>{initiative.title}</h1>
           <p className={styles.heroDescription}>{initiative.description}</p>
-          {initiative.stat && (
-            <div className={styles.statCallout} style={{ borderColor: categoryColor + '55' }}>
-              <span className={styles.statValue} style={{ color: categoryColor }}>{initiative.stat}</span>
-              <span className={styles.statLabel}>{t('keyResult')}</span>
-            </div>
-          )}
-          {Array.isArray(initiative.members) && initiative.members.length > 0 && (
-            <div className={styles.memberCount}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              {initiative.members.length} {t('shapers')}
-            </div>
-          )}
+
+          <div className={styles.heroMeta}>
+            {initiative.stat && (
+              <div className={styles.statCallout} style={{ borderColor: categoryColor + '55' }}>
+                <span className={styles.statValue} style={{ color: categoryColor }}>{initiative.stat}</span>
+                <span className={styles.statLabel}>{t('keyResult')}</span>
+              </div>
+            )}
+            {(initiative.startDate || initiative.endDate) && (
+              <div className={styles.datePill}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                {initiative.startDate && new Date(initiative.startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                {initiative.startDate && initiative.endDate && ' — '}
+                {initiative.endDate && new Date(initiative.endDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </div>
+            )}
+            {Array.isArray(initiative.members) && initiative.members.length > 0 && (
+              <div className={styles.memberCount}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                {initiative.members.length} {t('shapers')}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Photo marquee */}
+      {photos.length > 0 && (
+        <div className={styles.marqueeSection}>
+          <div className={styles.marqueeTrack}>
+            {[...photos, ...photos].map((src, i) => (
+              <div key={i} className={styles.marqueeItem}>
+                <img src={src} alt="" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.container}>
         {/* Back navigation */}

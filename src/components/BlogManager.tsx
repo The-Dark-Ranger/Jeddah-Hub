@@ -3,6 +3,24 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+async function notifySubscribers(post: BlogPost, allPosts: BlogPost[]) {
+  try {
+    const subSnap = await getDocs(collection(db, 'newsletter_subscribers'));
+    const subscribers = subSnap.docs.map(d => (d.data().email as string)).filter(Boolean);
+    if (!subscribers.length) return;
+
+    const related = allPosts
+      .filter(p => p.status === 'published' && p.id !== post.id)
+      .slice(0, 2);
+
+    await fetch('/api/newsletter/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscribers, post, relatedPosts: related }),
+    });
+  } catch { /* email notification is best-effort */ }
+}
 import { UserProfile } from '@/lib/auth';
 import styles from './BlogManager.module.css';
 
@@ -56,8 +74,10 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       ? query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
       : query(collection(db, 'blogs'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
-    setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost)));
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
+    setPosts(data);
     setLoading(false);
+    return data;
   };
 
   useEffect(() => { fetchPosts(); }, []);
@@ -89,12 +109,19 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       authorRole: user.role || 'shaper',
       updatedAt: new Date().toISOString(),
     };
+    let newPostId: string | null = null;
     if (view === 'edit' && editId) {
       await updateDoc(doc(db, 'blogs', editId), payload);
     } else {
-      await addDoc(collection(db, 'blogs'), { ...payload, createdAt: new Date().toISOString(), likedBy: [] });
+      const ref = await addDoc(collection(db, 'blogs'), { ...payload, createdAt: new Date().toISOString(), likedBy: [] });
+      newPostId = ref.id;
     }
-    setSaving(false); resetForm(); setView('list'); fetchPosts();
+    setSaving(false); resetForm(); setView('list');
+    const updated = await fetchPosts();
+    if (status === 'published' && newPostId) {
+      const newPost = updated?.find((p: BlogPost) => p.id === newPostId);
+      if (newPost) notifySubscribers(newPost, updated || []);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -105,7 +132,14 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   const handleStatusChange = async (id: string, newStatus: BlogPost['status']) => {
     await updateDoc(doc(db, 'blogs', id), { status: newStatus });
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    setPosts(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, status: newStatus } : p);
+      if (newStatus === 'published') {
+        const publishedPost = updated.find(p => p.id === id);
+        if (publishedPost) notifySubscribers(publishedPost, updated);
+      }
+      return updated;
+    });
   };
 
   const filtered = posts.filter(p => filter === 'all' || p.status === filter);

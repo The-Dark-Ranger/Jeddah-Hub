@@ -80,7 +80,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className={styles.left}>
           <Link href="/" onClick={closeMobile}>
-            <img src="/logo.svg" alt="Jeddah Hub" className={styles.logo} />
+            <img src="/logo.png" onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.svg'; }} alt="Jeddah Hub" className={styles.logo} />
           </Link>
         </div>
 

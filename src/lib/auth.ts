@@ -1,6 +1,6 @@
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
 
@@ -9,6 +9,22 @@ export interface UserProfile {
   email: string | null;
   role: UserRole;
   displayName: string | null;
+}
+
+async function bootstrapFirstAdmin(email: string): Promise<UserRole> {
+  try {
+    const snap = await getDocs(collection(db, 'role_assignments'));
+    if (snap.empty) {
+      await addDoc(collection(db, 'role_assignments'), {
+        email: email.toLowerCase().trim(),
+        role: 'curator',
+        createdAt: new Date().toISOString(),
+        addedBy: 'system-bootstrap',
+      });
+      return 'curator';
+    }
+  } catch { /* ignore */ }
+  return null;
 }
 
 async function lookupRoleAssignment(email: string): Promise<UserRole> {
@@ -36,7 +52,8 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;
-        const assigned = await lookupRoleAssignment(target);
+        let assigned = await lookupRoleAssignment(target);
+        if (!assigned) assigned = await bootstrapFirstAdmin(target);
         if (assigned) {
           role = assigned;
           await setDoc(docRef, { role }, { merge: true });
@@ -45,7 +62,8 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
       return { uid, email: data.email || email || null, role, displayName: data.displayName || null };
     } else if (email) {
-      const assignedRole = await lookupRoleAssignment(email);
+      let assignedRole = await lookupRoleAssignment(email);
+      if (!assignedRole) assignedRole = await bootstrapFirstAdmin(email);
       const profile: UserProfile = { uid, email, role: assignedRole, displayName: null };
       await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
       return profile;

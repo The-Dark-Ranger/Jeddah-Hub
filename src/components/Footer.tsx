@@ -44,7 +44,7 @@ export default function Footer() {
         {/* Brand column */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logoWrap}>
-            <img src="/logo.svg" alt="Jeddah Hub" className={styles.logo} />
+            <img src="/logo.png" onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.svg'; }} alt="Jeddah Hub" className={styles.logo} />
           </Link>
           <p className={styles.tagline}>{t('tagline')}</p>
           <p className={styles.description}>{t('description')}</p>

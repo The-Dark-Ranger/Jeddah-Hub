@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import styles from './Footer.module.css';
+import Logo from './Logo';
 
 function FooterLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
   if (external || href.startsWith('http')) {
@@ -44,7 +45,7 @@ export default function Footer() {
         {/* Brand column */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logoWrap}>
-            <img src="/logo.png" alt="Jeddah Hub" className={styles.logo} />
+            <Logo className={styles.logo} />
           </Link>
           <p className={styles.tagline}>{t('tagline')}</p>
           <p className={styles.description}>{t('description')}</p>

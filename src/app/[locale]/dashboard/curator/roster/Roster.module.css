@@ -1,0 +1,83 @@
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+.title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+
+.card {
+  background: var(--card-bg); border-radius: 16px; padding: 1.75rem;
+  border: 1px solid var(--border-color);
+}
+.cardTitle { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; }
+
+.formRow {
+  display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 1rem; margin-bottom: 1.25rem;
+}
+@media (max-width: 700px) { .formRow { grid-template-columns: 1fr; } }
+
+.select, .input {
+  padding: 0.7rem 1rem; border-radius: 9px; border: 1px solid var(--border-color);
+  background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; outline: none;
+  transition: border-color 0.2s ease; width: 100%;
+}
+.select:focus, .input:focus { border-color: var(--primary-blue); }
+.select { cursor: pointer; }
+
+.assignBtn {
+  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-blue);
+  color: white; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.assignBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
+.assignBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.loading { display: flex; justify-content: center; padding: 3rem; }
+.spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--border-color); border-top-color: var(--primary-blue);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+.initiativeList { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.initiativeBlock {
+  border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;
+}
+
+.initiativeHeader {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.85rem 1.25rem; background: var(--background);
+  border-bottom: 1px solid var(--border-color);
+}
+.initiativeName { font-weight: 700; color: var(--text-main); font-size: 0.95rem; flex: 1; }
+.memberCount { font-size: 0.8rem; color: var(--text-muted); }
+.statusPill { font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+
+.noMembersRow { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
+
+.memberTable { width: 100%; border-collapse: collapse; }
+.memberTable th {
+  padding: 0.6rem 1.25rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted); text-align: start;
+  background: var(--background); border-bottom: 1px solid var(--border-color);
+}
+.memberTable td { padding: 0.8rem 1.25rem; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+.memberTable tr:last-child td { border-bottom: none; }
+.memberTable tr:hover td { background: var(--background); }
+
+.memberEmail { color: var(--text-main); font-weight: 500; }
+
+.rolePill {
+  display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px;
+  background: rgba(37,99,235,0.1); color: var(--primary-blue);
+  font-size: 0.78rem; font-weight: 600;
+}
+
+.removeBtn {
+  padding: 0.35rem 0.85rem; border-radius: 7px; font-size: 0.82rem; font-weight: 600;
+  border: 1px solid rgba(239,68,68,0.3); color: var(--danger);
+  background: rgba(239,68,68,0.06); cursor: pointer; transition: all 0.2s ease;
+}
+.removeBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }

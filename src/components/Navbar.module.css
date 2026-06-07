@@ -20,7 +20,7 @@
 }
 
 .left { display: flex; align-items: center; }
-.logo { height: 40px; display: inline-flex; align-items: center; gap: 8px; transition: transform .2s ease; }
+.logo { height: 40px; width: auto; display: block; transition: transform .2s ease; }
 .logo:hover { transform: scale(1.04); }
 
 /* ── Desktop nav links ── */

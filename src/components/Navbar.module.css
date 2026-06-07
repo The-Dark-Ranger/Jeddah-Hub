@@ -20,7 +20,7 @@
 }
 
 .left { display: flex; align-items: center; }
-.logo { height: 40px; width: auto; display: block; transition: transform .2s ease; }
+.logo { height: 52px; width: auto; display: block; transition: transform .2s ease; }
 .logo:hover { transform: scale(1.04); }
 
 /* ── Desktop nav links ── */
@@ -121,8 +121,9 @@
 /* ── Mobile drawer ── */
 .mobileDrawer {
   position: fixed; top: 57px; inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(36px) saturate(180%); -webkit-backdrop-filter: blur(36px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
   z-index: 999;
   transform: translateY(-110%); opacity: 0;
   transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .28s ease,
@@ -131,7 +132,8 @@
   overflow-y: auto;
 }
 [data-theme="dark"] .mobileDrawer {
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(10, 15, 30, 0.65);
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 .mobileDrawerOpen { transform: translateY(0); opacity: 1; }
 

@@ -34,7 +34,7 @@ async function lookupRoleAssignment(email: string): Promise<UserRole> {
       where('email', '==', email.toLowerCase().trim())
     );
     const snap = await getDocs(q);
-    if (!snap.empty) return (snap.docs[0].data().role as UserRole) || null;
+    if (!snap.empty) return ((snap.docs[0].data().role as string)?.toLowerCase() as UserRole) || null;
   } catch (error) {
     console.error('Error checking role_assignments:', error);
   }
@@ -48,7 +48,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      let role = (data.role as UserRole) || null;
+      let role = ((data.role as string)?.toLowerCase() as UserRole) || null;
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;

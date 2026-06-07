@@ -52,9 +52,10 @@ export default function DashboardHome() {
     );
   }
 
-  const isCurator = user.role === 'curator' || user.role === 'vice_curator';
-  const isImpact  = user.role === 'impact_officer';
-  const isShaper  = user.role === 'shaper' || user.role === 'alumni';
+  const role      = user.role?.toLowerCase();
+  const isCurator = role === 'curator' || role === 'vice_curator';
+  const isImpact  = role === 'impact_officer';
+  const isShaper  = role === 'shaper' || role === 'alumni';
 
   const greeting = () => {
     const hour = new Date().getHours();

@@ -1,0 +1,135 @@
+.main { min-height: 100vh; display: flex; flex-direction: column; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+/* ── Hero ── */
+.hero {
+  position: relative; min-height: 88vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 5rem 1.5rem 4rem;
+  background: linear-gradient(160deg,rgba(15,90,159,.05) 0%,rgba(136,146,158,.07) 100%);
+  overflow: hidden;
+}
+.heroOrb1 { position:absolute;top:-120px;right:-120px;width:500px;height:500px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(15,90,159,.1) 0%,transparent 70%); }
+.heroOrb2 { position:absolute;bottom:-100px;left:-100px;width:400px;height:400px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 70%); }
+.heroContent { position:relative;z-index:1;max-width:820px;width:100%; }
+.heroEyebrow { font-size:.82rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:1.25rem; }
+.title { font-size:clamp(2.6rem,5.5vw,5rem);font-weight:800;line-height:1.08;margin-bottom:1.25rem;color:var(--primary-blue);letter-spacing:-.02em; }
+.subtitle { font-size:clamp(1rem,2vw,1.25rem);line-height:1.75;color:var(--text-muted);margin-bottom:2.5rem;max-width:640px;margin-inline:auto; }
+.heroButtons { display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:3rem; }
+.heroStats { display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap; }
+.heroStat { font-size:.92rem;color:var(--text-muted);font-weight:500; }
+.heroStat span { font-weight:800;font-size:1.05rem;color:var(--primary-blue);margin-inline-end:.25rem; }
+.heroStatDivider { width:1px;height:18px;background:var(--border-color); }
+
+/* ── Buttons ── */
+.ctaButton { display:inline-flex;align-items:center;gap:.4rem;background:var(--primary-blue);color:#fff;padding:.95rem 2.25rem;border-radius:8px;font-weight:600;font-size:1rem;transition:transform .2s ease,box-shadow .2s ease;box-shadow:0 4px 14px rgba(15,90,159,.28);-webkit-tap-highlight-color:transparent; }
+.ctaButton:hover  { transform:translateY(-2px);box-shadow:0 6px 22px rgba(15,90,159,.38); }
+.ctaButton:active { transform:none; }
+.secondaryButton { display:inline-flex;align-items:center;gap:.4rem;background:transparent;color:var(--primary-blue);border:1.5px solid var(--primary-blue);padding:.9rem 2rem;border-radius:8px;font-weight:600;font-size:1rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
+.secondaryButton:hover  { background:var(--primary-blue);color:#fff;transform:translateY(-2px); }
+.secondaryButton:active { transform:none; }
+
+/* ── Sections ── */
+.section       { padding:6rem 1.5rem; }
+.sectionHeader { text-align:center;margin-bottom:3.5rem; }
+.sectionTitle  { font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:700;color:var(--text-main);margin-bottom:.4rem; }
+.sectionSubtitle { font-size:1rem;color:var(--text-muted);margin-top:.4rem; }
+.sectionDivider  { width:40px;height:2px;background:var(--primary-blue);border-radius:2px;margin:1rem auto 0; }
+.sectionCta      { text-align:center;margin-top:2.5rem; }
+
+/* ── About pillars ── */
+.aboutText { text-align:center;max-width:780px;margin:0 auto 3rem;font-size:1.05rem;line-height:1.8;color:var(--text-muted); }
+.aboutPillars { display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;max-width:960px;margin-inline:auto; }
+.pillar { background:var(--card-bg);border-radius:12px;padding:2rem;text-align:center;box-shadow:var(--glass-shadow);border:1px solid var(--border-color);transition:transform .25s ease,border-color .25s ease; }
+.pillar:hover { transform:translateY(-4px);border-color:var(--primary-blue); }
+.pillarIcon { width:48px;height:48px;border-radius:12px;background:var(--primary-blue-glow);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;color:var(--primary-blue); }
+.pillar h3 { font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:.5rem; }
+.pillar p  { font-size:.88rem;color:var(--text-muted);line-height:1.6; }
+
+/* ── Impact ── */
+.impactGrid { display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1.5rem;text-align:center; }
+.impactCard { background:var(--background);padding:2.5rem 1.5rem;border-radius:12px;box-shadow:var(--glass-shadow);border:1px solid var(--border-color);transition:transform .3s ease; }
+.impactCard:hover { transform:translateY(-4px); }
+.impactNumber { font-size:3rem;font-weight:800;color:var(--primary-blue);margin-bottom:.4rem;line-height:1; }
+.impactLabel  { font-size:.95rem;font-weight:500;color:var(--text-muted); }
+
+/* ── Retreat ── */
+.retreatSection { padding:6rem 1.5rem;background:linear-gradient(135deg,#0f172a,#0f3460);color:#fff; }
+.retreatInner   { max-width:1200px;margin-inline:auto;display:grid;grid-template-columns:1fr 1fr;gap:4.5rem;align-items:center; }
+.retreatEyebrow { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:.75rem; }
+.retreatTitle   { font-size:clamp(1.9rem,3.5vw,3rem);font-weight:800;line-height:1.1;color:#fff;margin-bottom:.3rem; }
+.retreatSubtitle{ font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;margin-bottom:1.4rem; }
+.retreatDesc    { font-size:.97rem;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:1.75rem; }
+.retreatMeta    { display:flex;align-items:center;flex-wrap:wrap;gap:.65rem;margin-bottom:1.75rem; }
+.retreatMetaItem{ font-size:.85rem;color:rgba(255,255,255,.7);font-weight:500; }
+.retreatMetaDot { width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35); }
+.retreatBtn { display:inline-flex;align-items:center;gap:.5rem;background:#fff;color:#0f172a;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.92rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
+.retreatBtn:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25); }
+.retreatVenues { background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.75rem; }
+.retreatVenuesTitle { font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);font-weight:600;margin-bottom:1rem; }
+.retreatVenuesGrid  { display:grid;grid-template-columns:1fr 1fr;gap:.6rem; }
+.retreatVenueCard   { padding:.75rem 1rem;background:rgba(255,255,255,.06);border-radius:8px;border:1px solid rgba(255,255,255,.08);transition:background .2s ease; }
+.retreatVenueCard:hover { background:rgba(255,255,255,.1); }
+.retreatVenueName   { font-size:.83rem;font-weight:600;color:#fff; }
+.retreatVenueTag    { font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.15rem; }
+
+/* ── Projects ── */
+.projectsGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.75rem; }
+.projectCard  { background:var(--card-bg-solid);border-radius:14px;overflow:hidden;border:1px solid var(--border-color);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;display:flex;flex-direction:column; }
+.projectCard:hover { transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,.1);border-color:var(--primary-blue); }
+.projectBanner { height:120px; }
+.projectInfo   { padding:1.5rem;flex:1;display:flex;flex-direction:column;gap:.65rem; }
+.projectCategory { font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--primary-blue);text-transform:uppercase; }
+.projectTitle  { font-size:1.1rem;font-weight:700;color:var(--text-main);line-height:1.3; }
+.projectDesc   { color:var(--text-muted);line-height:1.65;font-size:.9rem;flex:1; }
+.projectBadge  { display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;background:rgba(16,185,129,.1);color:var(--success);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:auto; }
+
+/* ── Members ── */
+.membersGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem; }
+.memberCard  { background:var(--card-bg-solid);border-radius:10px;padding:1.25rem 1rem;text-align:center;border:1px solid var(--border-color);transition:all .22s ease;cursor:default; }
+.memberCard:hover { border-color:var(--primary-blue);transform:translateY(-3px);box-shadow:0 4px 16px var(--primary-blue-glow); }
+.memberAvatar { width:44px;height:44px;border-radius:50%;color:#fff;font-weight:700;font-size:.95rem;display:flex;align-items:center;justify-content:center;margin:0 auto .7rem; }
+.memberName   { font-size:.8rem;font-weight:600;color:var(--text-main);line-height:1.3;margin-bottom:.15rem; }
+.memberRole   { font-size:.68rem;color:var(--text-muted); }
+
+/* ── Partners ── */
+.partnersGrid { display:flex;flex-wrap:wrap;gap:1rem;justify-content:center; }
+.partnerCard  {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .75rem 1.4rem;
+  background: var(--card-bg-solid);
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: .88rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-inline-start: 3px solid var(--primary-blue);
+  transition: all .2s ease;
+}
+.partnerCard:hover { border-color:var(--primary-blue);color:var(--primary-blue);background:var(--primary-blue-glow); }
+
+/* ── Animations ── */
+.fadeInUp { animation:fadeInUp .9s ease-out forwards;opacity:0;transform:translateY(20px); }
+.delay1 { animation-delay:.15s; }
+.delay2 { animation-delay:.3s; }
+.delay3 { animation-delay:.45s; }
+@keyframes fadeInUp { to { opacity:1;transform:translateY(0); } }
+
+/* ── Responsive ── */
+@media (max-width:900px) {
+  .retreatInner { grid-template-columns:1fr;gap:2.5rem; }
+  .retreatVenuesGrid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:640px) {
+  .hero { min-height:75vh;padding:4rem 1rem 3rem; }
+  .section { padding:4rem 1rem; }
+  .retreatSection { padding:4rem 1rem; }
+  .heroStatDivider { display:none; }
+  .heroStats { gap:.75rem; }
+  .retreatVenuesGrid { grid-template-columns:1fr; }
+  .membersGrid { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
+  .projectsGrid { grid-template-columns:1fr; }
+  .aboutPillars { grid-template-columns:1fr; }
+}

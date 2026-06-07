@@ -1,0 +1,110 @@
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+
+.title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+.subtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.5; max-width: 540px; }
+
+/* Form */
+.form {
+  background: var(--card-bg); border-radius: 16px; padding: 1.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.formTitle { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; }
+
+.errorMsg {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+  color: var(--danger); border-radius: 8px; padding: 0.65rem 1rem;
+  font-size: 0.88rem; margin-bottom: 1rem;
+}
+
+.formRow {
+  display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem; margin-bottom: 1.25rem;
+}
+
+.formGroup { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+.optional { font-weight: 400; color: var(--text-muted); }
+
+.input {
+  padding: 0.7rem 1rem; border-radius: 9px; border: 1px solid var(--border-color);
+  background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; outline: none;
+  transition: border-color 0.2s ease;
+}
+.input:focus { border-color: var(--primary-blue); }
+
+.select {
+  padding: 0.7rem 1rem; border-radius: 9px; border: 1px solid var(--border-color);
+  background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; outline: none; cursor: pointer;
+}
+
+.addBtn {
+  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-blue);
+  color: white; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.addBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
+.addBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Table */
+.tableWrap {
+  background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden;
+}
+
+.tableHeader {
+  display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.count {
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+  border-radius: 10px; padding: 0.05rem 0.5rem; font-size: 0.8rem; font-weight: 700;
+}
+
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  padding: 0.75rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+  background: var(--background-alt); border-bottom: 1px solid var(--border-color);
+}
+.table td {
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);
+  font-size: 0.88rem; color: var(--text-main);
+}
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: var(--background-alt); }
+
+.emailCell { font-weight: 600; }
+.noteCell { color: var(--text-muted); }
+.dateCell { color: var(--text-muted); white-space: nowrap; }
+
+.roleBadge {
+  display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  background: transparent;
+}
+
+.removeBtn {
+  padding: 0.3rem 0.75rem; border-radius: 6px; background: rgba(239,68,68,0.08);
+  color: var(--danger); border: 1px solid rgba(239,68,68,0.2);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+}
+.removeBtn:hover { background: var(--danger); color: white; }
+
+.loading { display: flex; justify-content: center; padding: 3rem; }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  .formRow { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .formRow { grid-template-columns: 1fr; }
+  .table th:nth-child(3), .table td:nth-child(3),
+  .table th:nth-child(4), .table td:nth-child(4) { display: none; }
+}

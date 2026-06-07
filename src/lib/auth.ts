@@ -57,6 +57,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 }
 
 export function subscribeToAuthChanges(callback: (user: UserProfile | null) => void) {
+  if (!auth) { callback(null); return () => {}; }
   return onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
     if (firebaseUser) {
       const profile = await getUserProfile(firebaseUser.uid, firebaseUser.email);
@@ -72,4 +73,4 @@ export function subscribeToAuthChanges(callback: (user: UserProfile | null) => v
   });
 }
 
-export const logout = () => signOut(auth);
+export const logout = () => (auth ? signOut(auth) : Promise.resolve());

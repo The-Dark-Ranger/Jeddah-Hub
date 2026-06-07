@@ -7,7 +7,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import styles from './Navbar.module.css';
-import Logo from './Logo';
 
 const MoonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -81,7 +80,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className={styles.left}>
           <Link href="/" onClick={closeMobile}>
-            <Logo className={styles.logo} />
+            <img src="/logo.svg" alt="Jeddah Hub" className={styles.logo} />
           </Link>
         </div>
 

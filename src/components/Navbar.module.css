@@ -121,19 +121,16 @@
 /* ── Mobile drawer ── */
 .mobileDrawer {
   position: fixed; top: 57px; inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(36px) saturate(180%); -webkit-backdrop-filter: blur(36px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.45);
+  background: var(--card-bg-solid, var(--card-bg));
+  border-top: 1px solid var(--border-color);
   z-index: 999;
   transform: translateY(-110%); opacity: 0;
-  transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .28s ease,
-              background-color 0.3s ease;
+  transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .28s ease;
   display: flex; flex-direction: column;
   overflow-y: auto;
 }
 [data-theme="dark"] .mobileDrawer {
-  background: rgba(10, 15, 30, 0.65);
-  border-top-color: rgba(255, 255, 255, 0.08);
+  background: var(--card-bg-solid, #0f172a);
 }
 .mobileDrawerOpen { transform: translateY(0); opacity: 1; }
 

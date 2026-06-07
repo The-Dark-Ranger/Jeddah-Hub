@@ -1,0 +1,200 @@
+/* ============================================================
+   About.module.css
+   Styles for the "Who We Are" page.
+   Section order: Hero → Stats bar → Mission → Curatorship
+                  → Shapers grid → WEF context → CTA
+   Design tokens (colours, spacing) live in globals.css.
+   ============================================================ */
+
+.page { min-height: 100vh; }
+
+/* ── Hero ── */
+.hero {
+  position: relative; text-align: center; padding: 6rem 1.25rem 4rem;
+  background: linear-gradient(160deg,rgba(15,90,159,.06) 0%,rgba(136,146,158,.08) 100%);
+  overflow: hidden;
+}
+.heroOrb {
+  position: absolute; top: -80px; left: -80px; width: 350px; height: 350px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle,rgba(15,90,159,.1) 0%,transparent 70%);
+}
+.heroContent { position: relative; z-index: 1; max-width: 700px; margin-inline: auto; }
+.heroEyebrow {
+  font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--primary-blue); margin-bottom: 1.25rem;
+}
+.title { font-size: clamp(2rem,4vw,3.5rem); font-weight: 800; color: var(--primary-blue); margin-bottom: 1.1rem; letter-spacing: -.02em; }
+.description { font-size: 1.1rem; line-height: 1.8; color: var(--text-muted); max-width: 640px; margin-inline: auto; }
+
+/* ── Stats bar ── */
+.statsBar {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  background: var(--card-bg-solid); border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color); padding: 1.5rem 2rem; gap: 0;
+}
+.statItem    { text-align: center; padding: .5rem 2.25rem; }
+.statNum     { display: block; font-size: 2rem; font-weight: 800; color: var(--primary-blue); }
+.statLabel   { font-size: .82rem; color: var(--text-muted); font-weight: 500; }
+.statDivider { width: 1px; height: 40px; background: var(--border-color); }
+
+/* ── Sections ── */
+.section    { padding: 5rem 1.25rem; }
+.sectionAlt { padding: 5rem 1.25rem; background: var(--background-alt); }
+.container  { max-width: 1100px; margin-inline: auto; }
+.sectionTitle    { font-size: clamp(1.6rem,3vw,2.2rem); font-weight: 700; color: var(--text-main); margin-bottom: .5rem; }
+.sectionSubtitle { font-size: 1rem; color: var(--text-muted); margin-top: .4rem; margin-bottom: .5rem; }
+.divider { width: 48px; height: 3px; background: var(--primary-blue); border-radius: 2px; margin: 1rem 0 2.25rem; }
+
+/* ── Mission ── */
+.missionGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 1.4rem; }
+.missionCard {
+  background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  border-radius: 16px; padding: 1.75rem;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  border-top: 3px solid transparent;
+}
+.missionCard:hover { transform: translateY(-4px); box-shadow: var(--glass-shadow); border-top-color: var(--primary-blue); }
+.missionCard h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .55rem; color: var(--text-main); }
+.missionCard p  { color: var(--text-muted); line-height: 1.65; font-size: .9rem; }
+
+/* ── Curatorship ── */
+.curatorshipGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.curatorCard {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 2.25rem 1.75rem;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: .75rem;
+  transition: all .25s ease;
+  position: relative; overflow: hidden;
+}
+.curatorCard::before {
+  content: ''; position: absolute;
+  top: 0; inset-inline-start: 0; inset-inline-end: 0;
+  height: 3px; background: var(--primary-blue);
+  opacity: 0; transition: opacity .25s ease;
+}
+.curatorCard:hover { border-color: var(--primary-blue); transform: translateY(-5px); box-shadow: 0 16px 40px var(--primary-blue-glow); }
+.curatorCard:hover::before { opacity: 1; }
+
+.curatorAvatarWrap { position: relative; }
+.curatorAvatar {
+  width: 90px; height: 90px; border-radius: 50%;
+  color: #fff; font-weight: 800; font-size: 1.6rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+}
+.curatorBody { display: flex; flex-direction: column; align-items: center; gap: .3rem; width: 100%; }
+.curatorName { font-size: 1.08rem; font-weight: 700; color: var(--text-main); }
+.curatorRole { font-size: .72rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: .09em; }
+.curatorBio  { font-size: .85rem; color: var(--text-muted); line-height: 1.65; margin-top: .25rem; }
+.curatorLinkedIn {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600; color: var(--primary-blue);
+  margin-top: .5rem; padding: .3rem .75rem; border-radius: 20px;
+  background: var(--primary-blue-glow);
+  transition: all .2s ease;
+}
+.curatorLinkedIn:hover { background: var(--primary-blue); color: #fff; }
+
+/* ── Shapers grid ── */
+.shapersList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.shaperCard {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.25rem;
+  transition: all .22s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+.shaperCard:hover {
+  border-color: var(--primary-blue);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px var(--primary-blue-glow);
+}
+
+.shaperTop {
+  display: flex; align-items: center; gap: .85rem;
+}
+
+.shaperAvatarWrap { flex-shrink: 0; }
+.shaperAvatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  color: #fff; font-weight: 700; font-size: .95rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.shaperMeta { flex: 1; min-width: 0; }
+.shaperName { font-size: .95rem; font-weight: 700; color: var(--text-main); margin-bottom: .35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.shaperActions { display: flex; gap: .35rem; }
+.shaperIconLink {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+  border: 1px solid transparent;
+  transition: all .18s ease;
+}
+.shaperIconLink:hover { border-color: var(--primary-blue); background: var(--primary-blue); color: #fff; }
+
+.shaperBio {
+  font-size: .82rem; color: var(--text-muted); line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ── WEF section ── */
+.wefSection { display: grid; grid-template-columns: 1fr auto; gap: 4rem; align-items: center; }
+.wefText    { display: flex; flex-direction: column; }
+.wefBody    { color: var(--text-muted); line-height: 1.75; font-size: 1.05rem; }
+.wefStats   { display: flex; flex-direction: column; gap: 1.4rem; flex-shrink: 0; }
+.wefStat    { text-align: center; }
+.wefStat span { display: block; font-size: 2rem; font-weight: 800; color: var(--primary-blue); }
+.wefStat p    { font-size: .82rem; color: var(--text-muted); margin-top: .1rem; }
+
+/* ── CTA ── */
+.ctaSection { padding: 5rem 1.25rem; background: var(--card-bg); }
+.cta        { text-align: center; max-width: 640px; margin-inline: auto; }
+.cta h2     { font-size: 2rem; font-weight: 700; color: var(--text-main); margin-bottom: .65rem; }
+.cta p      { color: var(--text-muted); font-size: 1.05rem; margin-bottom: 1.75rem; }
+.ctaButtons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.ctaBtn     { display: inline-block; background: var(--primary-blue); color: #fff; padding: .9rem 1.9rem; border-radius: 30px; font-weight: 600; font-size: 1rem; transition: transform .2s ease, box-shadow .2s ease; box-shadow: 0 4px 14px var(--primary-blue-glow); }
+.ctaBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-blue-glow); }
+.ctaSecondary { display: inline-block; color: var(--primary-blue); border: 2px solid var(--primary-blue); padding: .85rem 1.75rem; border-radius: 30px; font-weight: 600; font-size: 1rem; transition: all .2s ease; }
+.ctaSecondary:hover { background: var(--primary-blue); color: #fff; transform: translateY(-2px); }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .shapersList { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .curatorshipGrid { grid-template-columns: 1fr 1fr; }
+  .wefSection { grid-template-columns: 1fr; gap: 2rem; }
+  .wefStats   { flex-direction: row; justify-content: center; }
+}
+@media (max-width: 640px) {
+  .hero       { padding: 3.5rem 1rem 2.5rem; }
+  .section, .sectionAlt { padding: 3.5rem 1rem; }
+  .ctaSection { padding: 3.5rem 1rem; }
+  .statsBar   { padding: 1rem; }
+  .statItem   { padding: .4rem 1.1rem; }
+  .statDivider{ display: none; }
+  .missionGrid{ grid-template-columns: 1fr; }
+  .curatorshipGrid { grid-template-columns: 1fr; }
+  .shapersList { grid-template-columns: 1fr; }
+
+}

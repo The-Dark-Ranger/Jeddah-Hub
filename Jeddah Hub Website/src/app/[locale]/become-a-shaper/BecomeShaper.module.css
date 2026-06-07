@@ -1,0 +1,213 @@
+/* ============================================================
+   BecomeShaper.module.css
+   Styles for the "Become a Shaper" application page.
+   Section order: Hero (with stat chips) → What We're Looking
+                  For (criteria) → How It Works (steps)
+                  → Life as a Shaper (values grid)
+                  → Voices (testimonials) → CTA
+   Design tokens live in globals.css.
+   Dark mode override for the hero is at the bottom of this file.
+   ============================================================ */
+
+.page { min-height:100vh; }
+.container { max-width:1100px;margin-inline:auto;padding:0 1.5rem; }
+
+/* Hero */
+.hero {
+  background: var(--primary-blue);
+  color: #fff;
+  padding: 7rem 1.5rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.heroContent { max-width: 700px; margin-inline: auto; padding-bottom: 3rem; }
+.heroEyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 1.1rem; }
+.heroTitle   { font-size: clamp(2.2rem,5vw,3.75rem); font-weight: 800; letter-spacing: -.02em; margin-bottom: 1.1rem; line-height: 1.1; }
+.heroSubtitle{ font-size: clamp(1rem,2vw,1.2rem); line-height: 1.7; color: rgba(255,255,255,.8); margin-bottom: 2.5rem; }
+.heroBtn { display: inline-flex; align-items: center; gap: .5rem; background: #fff; color: var(--primary-blue); padding: .95rem 2.25rem; border-radius: 8px; font-weight: 700; font-size: 1rem; transition: all .2s ease; -webkit-tap-highlight-color: transparent; }
+.heroBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+
+.heroChips {
+  display: flex;
+  justify-content: center;
+  gap: 1px;
+  background: rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.heroChip {
+  flex: 1;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.25rem 1rem;
+}
+
+.heroChip strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.heroChip span {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.65);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Sections */
+.section    { padding:6rem 1.5rem; }
+.sectionAlt { padding:6rem 1.5rem;background:var(--background-alt); }
+.eyebrow    { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:.85rem; }
+.sectionTitle { font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;color:var(--text-main);line-height:1.3;margin-bottom:1.25rem; }
+.sectionBody  { font-size:1rem;color:var(--text-muted);line-height:1.8;margin-bottom:1rem; }
+
+/* Split row */
+.splitRow { display:grid;grid-template-columns:1fr 280px;gap:5rem;align-items:start; }
+.splitText {}
+.splitStats { display:flex;flex-direction:column;gap:1.5rem;padding-top:1rem; }
+.statBox    { background:var(--card-bg-solid);border:1px solid var(--border-color);border-radius:12px;padding:1.75rem;text-align:center; }
+.statNum    { display:block;font-size:2.2rem;font-weight:800;color:var(--primary-blue);line-height:1; }
+.statLabel  { font-size:.82rem;color:var(--text-muted);margin-top:.4rem; }
+
+/* Criteria */
+.criteriaGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 1.5rem; }
+.criteriaCard { background: var(--card-bg-solid); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; position: relative; }
+/* Decorative large number badge (01/02/03) — full blue, no opacity wash */
+.criteriaNum  { font-size: 2.5rem; font-weight: 800; color: var(--primary-blue); line-height: 1; margin-bottom: 0.75rem; }
+.criteriaTitle{ font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; }
+.criteriaList { display: flex; flex-direction: column; gap: .75rem; }
+.criteriaItem { display: flex; align-items: flex-start; gap: .6rem; font-size: .92rem; color: var(--text-muted); line-height: 1.5; }
+.checkIcon    { flex-shrink: 0; margin-top: .15rem; color: var(--primary-blue); }
+
+/* Steps */
+.stepsGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2rem; }
+.stepCard  {
+  padding:1.75rem;
+  background:var(--card-bg-solid);
+  border:1px solid var(--border-color);
+  border-radius:14px;
+  border-top:3px solid var(--primary-blue);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.stepCard:hover { transform:translateY(-3px); box-shadow:0 8px 24px var(--primary-blue-glow); }
+/* Step number (01/02/03/04) — full blue */
+.stepNum   {
+  font-size:2rem;font-weight:800;
+  color:var(--primary-blue);
+  line-height:1;margin-bottom:1rem;
+}
+.stepTitle { font-size:1.05rem;font-weight:700;color:var(--text-main);margin-bottom:.55rem; }
+.stepBody  { font-size:.88rem;color:var(--text-muted);line-height:1.7; }
+
+/* CTA */
+.ctaSection { padding:6rem 1.5rem;background:var(--background-alt); }
+.cta { text-align:center;max-width:580px;margin-inline:auto; }
+.cta h2 { font-size:2rem;font-weight:700;color:var(--text-main);margin-bottom:.65rem; }
+.cta p  { color:var(--text-muted);font-size:1rem;margin-bottom:1.75rem; }
+.ctaBtn { display:inline-flex;align-items:center;gap:.5rem;background:var(--primary-blue);color:#fff;padding:.95rem 2.25rem;border-radius:8px;font-weight:700;font-size:1rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
+.ctaBtn:hover { transform:translateY(-2px);box-shadow:0 6px 18px var(--primary-blue-glow); }
+.ctaNote { font-size:.8rem;color:var(--text-muted);margin-top:1rem; }
+
+/* Values grid */
+.valuesHeader { margin-bottom: 3rem; }
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+.valueCard {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.valueCard:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+.valueIcon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--primary-blue-glow);
+  color: var(--primary-blue);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.1rem;
+}
+.valueTitle { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.55rem; }
+.valueBody  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.7; }
+
+/* Quotes */
+.voicesHeader { margin-bottom: 3rem; }
+.quotesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+.quoteCard {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-inline-start: 3px solid var(--primary-blue);
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.quoteMark {
+  font-size: 3.5rem;
+  font-family: Georgia, serif;
+  color: var(--primary-blue);
+  opacity: 0.35;
+  line-height: 1;
+  margin-bottom: -0.75rem;
+}
+.quoteText { font-size: 0.95rem; color: var(--text-muted); line-height: 1.8; flex: 1; }
+.quoteAuthor { display: flex; align-items: center; gap: 0.75rem; }
+.quoteAvatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.quoteName { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+.quoteRole { font-size: 0.78rem; color: var(--primary-blue); font-weight: 500; }
+
+/* ── Dark mode overrides ──────────────────────────────────────────────────
+   In dark mode --primary-blue becomes #3b9eff (bright electric blue).
+   The hero uses that as a solid fill, which is very harsh on dark screens.
+   Override it to a deep navy so the hero stays clearly blue but not glaring.
+   ─────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .hero {
+  background: #0d3461;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero {
+    background: #0d3461;
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .splitRow { grid-template-columns: 1fr; }
+  .splitStats { flex-direction: row; }
+  .heroChips { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .hero { padding: 5rem 1rem 0; }
+  .heroContent { padding-bottom: 2.5rem; }
+  .heroChip strong { font-size: 1.25rem; }
+  .section, .sectionAlt, .ctaSection { padding: 4rem 1rem; }
+  .splitStats { flex-direction: column; }
+  .stepsGrid { grid-template-columns: 1fr; }
+  .quotesGrid { grid-template-columns: 1fr; }
+  .valuesGrid { grid-template-columns: 1fr; }
+}

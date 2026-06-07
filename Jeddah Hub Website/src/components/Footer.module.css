@@ -1,0 +1,111 @@
+/* ── Footer wrapper ── */
+.footer {
+  background: var(--card-bg-solid);
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
+
+/* ── Main grid ── */
+.inner {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 4rem 2rem 3rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 3rem;
+}
+
+/* ── Brand column ── */
+.brand { display: flex; flex-direction: column; gap: .85rem; }
+
+.logoWrap { display: inline-block; width: fit-content; }
+.logo     { height: 40px; width: auto; display: block; }
+
+.tagline {
+  font-size: 1rem; font-weight: 700;
+  color: var(--text-main); letter-spacing: -.01em;
+}
+
+.description {
+  font-size: .85rem; color: var(--text-muted); line-height: 1.7;
+  max-width: 300px;
+}
+
+/* ── Social icons ── */
+.socials { display: flex; gap: .6rem; margin-top: .25rem; }
+.socialIcon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--background); border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+.socialIcon:hover { color: var(--primary-blue); border-color: var(--primary-blue); background: var(--primary-blue-glow); }
+
+/* ── Link columns ── */
+.col { display: flex; flex-direction: column; gap: .6rem; }
+
+.colTitle {
+  font-size: .78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-main);
+  padding-bottom: .4rem; margin-bottom: .2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.linkList { display: flex; flex-direction: column; gap: .45rem; }
+
+.link {
+  font-size: .875rem; color: var(--text-muted);
+  transition: color .18s ease; width: fit-content;
+}
+.link:hover { color: var(--primary-blue); }
+
+/* ── Bottom bar ── */
+.bottomBar {
+  border-top: 1px solid var(--border-color);
+  background: var(--background);
+}
+
+.bottomInner {
+  max-width: 1200px; margin-inline: auto;
+  padding: 1.1rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: .5rem;
+}
+
+.copyright { font-size: .8rem; color: var(--text-muted); }
+.email     { font-size: .8rem; color: var(--text-muted); transition: color .18s ease; }
+.email:hover { color: var(--primary-blue); }
+
+/* ── Responsive ── */
+
+/* Tablet: 2-column (brand full-width, then 3 cols below) */
+@media (max-width: 960px) {
+  .inner {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+  }
+  .brand { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; }
+  .description { max-width: 100%; }
+}
+
+/* Mobile: 2-column for link cols, brand on top */
+@media (max-width: 640px) {
+  .inner {
+    grid-template-columns: 1fr 1fr;
+    padding: 2.5rem 1.25rem 2rem;
+    gap: 1.75rem;
+  }
+  .brand {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    gap: .75rem;
+  }
+  .description { max-width: 100%; }
+  .bottomInner { flex-direction: column; text-align: center; gap: .35rem; }
+}
+
+/* Very small: single column */
+@media (max-width: 380px) {
+  .inner { grid-template-columns: 1fr; }
+}

@@ -20,9 +20,9 @@
 
 .left { display: flex; align-items: center; }
 
-/* Logo — fits the navbar height with generous vertical room */
+/* Logo */
 .logo {
-  height: clamp(36px, 4vw, 48px);
+  height: clamp(48px, 5.5vw, 64px);
   width: auto; display: block;
   transition: transform .2s ease;
 }
@@ -199,7 +199,7 @@
   .navbarHidden { transform: translateY(-100%); }
 
   /* Logo stays proportional inside 68px navbar */
-  .logo { height: 44px; }
+  .logo { height: 52px; }
 
   /* Hide desktop-only elements */
   .navLinks { display: none; }

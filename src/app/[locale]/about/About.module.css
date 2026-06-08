@@ -177,6 +177,20 @@
 .ctaSecondary { display: inline-block; color: var(--primary-blue); border: 2px solid var(--primary-blue); padding: .85rem 1.75rem; border-radius: 30px; font-weight: 600; font-size: 1rem; transition: all .2s ease; }
 .ctaSecondary:hover { background: var(--primary-blue); color: #fff; transform: translateY(-2px); }
 
+/* ── Shapers loading / empty ── */
+.shapersLoading {
+  display: flex; justify-content: center; padding: 4rem 0;
+}
+.shapersSpinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid var(--border-color); border-top-color: var(--primary-blue);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.noShapers {
+  text-align: center; padding: 3rem 0; color: var(--text-muted); font-size: 0.95rem;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .shapersList { grid-template-columns: repeat(2, 1fr); }

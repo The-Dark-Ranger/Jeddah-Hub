@@ -98,6 +98,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('exportEmails')}
                 </Link></li>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  {t('myProfile')}
+                </Link></li>
               </ul>
             </div>
           )}
@@ -120,6 +126,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <line x1="6" y1="20" x2="6" y2="14"/>
                   </svg>
                   {t('impactReports')}
+                </Link></li>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  {t('myProfile')}
                 </Link></li>
               </ul>
             </div>

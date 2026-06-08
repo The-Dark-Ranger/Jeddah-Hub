@@ -1,23 +1,25 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 
 /* ── Types ── */
-interface Shaper {
-  name: string;
+interface LiveShaper {
+  uid: string;
+  displayName: string;
   role: string;
-  bio: string;
+  bio?: string;
   linkedin?: string;
-  email?: string;
-  gradient: string;
+  twitter?: string;
+  instagram?: string;
 }
 
-/* ── Curatorship ──────────────────────────────────────────────────────────
-   The three leadership roles displayed prominently at the top of the team
-   section. Update name/bio/linkedin here; gradient sets the avatar colour.
-   Roles are translated via the 'Role' namespace in messages/[locale].json.
-   ──────────────────────────────────────────────────────────────────────── */
-const CURATORSHIP: Shaper[] = [
+/* ── Hardcoded curatorship (leadership roles – always displayed) ── */
+const CURATORSHIP = [
   {
     name: 'Mohammed Alshawi',
     role: 'curator',
@@ -41,36 +43,6 @@ const CURATORSHIP: Shaper[] = [
   },
 ];
 
-/* ── Shapers ──────────────────────────────────────────────────────────────
-   Full list of active shapers shown in a 3-column grid.
-   To add a shaper: push a new object with name, role:'shaper', bio, linkedin,
-   and one of the AVATAR_GRADIENTS (or a custom gradient string).
-   To remove: delete the object. No other code needs to change.
-   ──────────────────────────────────────────────────────────────────────── */
-const SHAPERS: Shaper[] = [
-  { name: 'Abdulaziz Alahmadi', role: 'shaper', bio: 'Entrepreneur and community advocate focused on economic empowerment and youth development across Jeddah.', linkedin: '#', gradient: 'linear-gradient(135deg,#0f5a9f,#1a7fd4)' },
-  { name: 'Hanin Aljifri',      role: 'shaper', bio: 'Creative professional dedicated to storytelling and using media to amplify social impact initiatives in the region.', linkedin: '#', gradient: 'linear-gradient(135deg,#10b981,#34d399)' },
-  { name: 'Ammar Koshak',       role: 'shaper', bio: 'Technology innovator working at the intersection of civic tech and grassroots community engagement in Saudi Arabia.', linkedin: '#', gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)' },
-  { name: 'Aseel Basnawi',      role: 'shaper', bio: 'Passionate about education reform and creating accessible learning pathways for underserved youth in Jeddah.', linkedin: '#', gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
-  { name: 'Hashem Hashem',      role: 'shaper', bio: 'Social entrepreneur driving sustainable business models that create measurable impact in local communities.', linkedin: '#', gradient: 'linear-gradient(135deg,#0891b2,#22d3ee)' },
-  { name: 'Haya Haddad',        role: 'shaper', bio: 'Mental health advocate and mindfulness practitioner committed to normalizing wellbeing conversations among youth.', linkedin: '#', gradient: 'linear-gradient(135deg,#e11d48,#fb7185)' },
-  { name: 'Masarah Hussain',    role: 'shaper', bio: 'Sustainability champion working on environmental literacy programs and green initiatives across Jeddah schools.', linkedin: '#', gradient: 'linear-gradient(135deg,#0f5a9f,#1a7fd4)' },
-  { name: 'Riyadh Alshehri',    role: 'shaper', bio: 'Policy researcher and civic leader connecting youth voices to local governance and urban planning conversations.', linkedin: '#', gradient: 'linear-gradient(135deg,#10b981,#34d399)' },
-  { name: 'Suhaib Darweesh',    role: 'shaper', bio: 'Design thinker applying human-centered approaches to solve complex social challenges in the Jeddah ecosystem.', linkedin: '#', gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)' },
-  { name: 'Dana Sayyadah',      role: 'shaper', bio: 'Creative strategist committed to youth empowerment and social innovation across Jeddah and the wider region.', linkedin: '#', gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
-  { name: 'Jana Jambi',         role: 'shaper', bio: "Impact-driven professional dedicated to measuring and amplifying the hub's community contributions city-wide.", linkedin: '#', gradient: 'linear-gradient(135deg,#0891b2,#22d3ee)' },
-  { name: 'Toleen Attar',       role: 'shaper', bio: 'Arts and culture advocate using creative expression to drive social dialogue and community cohesion in Jeddah.', linkedin: '#', gradient: 'linear-gradient(135deg,#e11d48,#fb7185)' },
-  { name: 'Nagy ElSokkary',     role: 'shaper', bio: 'Engineer and social innovator exploring how technology can accelerate sustainable development in Saudi cities.', linkedin: '#', gradient: 'linear-gradient(135deg,#0f5a9f,#1a7fd4)' },
-  { name: 'Toulin Tabbash',     role: 'shaper', bio: 'Educator and curriculum designer committed to building critical thinking and civic engagement among young learners.', linkedin: '#', gradient: 'linear-gradient(135deg,#10b981,#34d399)' },
-  { name: 'Faisal Aldaheri',    role: 'shaper', bio: 'Business development professional fostering partnerships between the private sector and community-led initiatives.', linkedin: '#', gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)' },
-  { name: 'Jodie Alsasi',       role: 'shaper', bio: 'Communications specialist amplifying the voices of Jeddah youth on local, regional, and global platforms.', linkedin: '#', gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
-  { name: 'Musaad Aljafari',    role: 'shaper', bio: 'Researcher and writer exploring urban identity, belonging, and the role of youth in shaping Saudi cities.', linkedin: '#', gradient: 'linear-gradient(135deg,#0891b2,#22d3ee)' },
-  { name: 'Shahad Alattas',     role: 'shaper', bio: 'Wellbeing advocate and sports professional promoting active lifestyles and mental resilience among youth.', linkedin: '#', gradient: 'linear-gradient(135deg,#e11d48,#fb7185)' },
-  { name: 'Mohammed Al Nahari', role: 'shaper', bio: "Social entrepreneur and community organizer connecting talent and opportunity across Jeddah's diverse neighborhoods.", linkedin: '#', gradient: 'linear-gradient(135deg,#0f5a9f,#1a7fd4)' },
-  { name: 'Samar Alzanbaqi',    role: 'shaper', bio: 'Healthcare professional and public health advocate working to improve community wellbeing outcomes in Jeddah.', linkedin: '#', gradient: 'linear-gradient(135deg,#10b981,#34d399)' },
-  { name: 'Mohammed Alshawi',   role: 'shaper', bio: 'Curator and technology leader passionate about building collaborative ecosystems that drive positive change in Jeddah.', linkedin: '#', gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)' },
-];
-
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
   'linear-gradient(135deg,#10b981,#34d399)',
@@ -80,13 +52,33 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#e11d48,#fb7185)',
 ];
 
+function avatarGradient(uid: string, index: number) {
+  let hash = 0;
+  for (const c of uid) hash = ((hash << 5) - hash) + c.charCodeAt(0);
+  return AVATAR_GRADIENTS[Math.abs(hash || index) % AVATAR_GRADIENTS.length];
+}
+
 function initials(name: string) {
-  return name.split(' ').slice(0, 2).map(w => w[0]).join('');
+  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
 const LinkedInIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
+const TwitterIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
   </svg>
 );
 
@@ -97,37 +89,41 @@ const EmailIcon = () => (
   </svg>
 );
 
-function ShaperCard({ shaper, index, tc }: { shaper: Shaper; index: number; tc: ReturnType<typeof useTranslations> }) {
-  const gradient = shaper.gradient ?? AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length];
-  const hasLink = shaper.linkedin && shaper.linkedin !== '#';
-  const hasEmail = !!shaper.email;
+function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
+  const gradient = avatarGradient(shaper.uid, index);
   return (
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
         <div className={styles.shaperAvatarWrap}>
           <div className={styles.shaperAvatar} style={{ background: gradient }}>
-            {initials(shaper.name)}
+            {initials(shaper.displayName)}
           </div>
         </div>
         <div className={styles.shaperMeta}>
-          <h3 className={styles.shaperName}>{shaper.name}</h3>
+          <h3 className={styles.shaperName}>{shaper.displayName}</h3>
           <div className={styles.shaperActions}>
-            {hasLink && (
+            {shaper.linkedin && (
               <a href={shaper.linkedin} target="_blank" rel="noopener noreferrer"
                 className={styles.shaperIconLink} aria-label="LinkedIn">
                 <LinkedInIcon />
               </a>
             )}
-            {hasEmail && (
-              <a href={'mailto:' + shaper.email}
-                className={styles.shaperIconLink} aria-label={tc('email')}>
-                <EmailIcon />
+            {shaper.twitter && (
+              <a href={shaper.twitter} target="_blank" rel="noopener noreferrer"
+                className={styles.shaperIconLink} aria-label="X / Twitter">
+                <TwitterIcon />
+              </a>
+            )}
+            {shaper.instagram && (
+              <a href={shaper.instagram} target="_blank" rel="noopener noreferrer"
+                className={styles.shaperIconLink} aria-label="Instagram">
+                <InstagramIcon />
               </a>
             )}
           </div>
         </div>
       </div>
-      <p className={styles.shaperBio}>{shaper.bio}</p>
+      {shaper.bio && <p className={styles.shaperBio}>{shaper.bio}</p>}
     </div>
   );
 }
@@ -136,6 +132,29 @@ export default function AboutPage() {
   const t  = useTranslations('AboutPage');
   const tr = useTranslations('Role');
   const tc = useTranslations('Common');
+
+  const [shapers, setShapers]             = useState<LiveShaper[]>([]);
+  const [loadingShapers, setLoadingShapers] = useState(true);
+
+  useEffect(() => {
+    getDocs(collection(db, 'users')).then(snap => {
+      const shaperRoles = ['shaper', 'alumni'];
+      const live = snap.docs
+        .map(d => ({ uid: d.id, ...d.data() } as any))
+        .filter((u: any) => shaperRoles.includes(u.role) && u.displayName)
+        .map((u: any): LiveShaper => ({
+          uid:         u.uid,
+          displayName: u.displayName,
+          role:        u.role,
+          bio:         u.bio         || '',
+          linkedin:    u.linkedin    || '',
+          twitter:     u.twitter     || '',
+          instagram:   u.instagram   || '',
+        }));
+      setShapers(live);
+      setLoadingShapers(false);
+    }).catch(() => setLoadingShapers(false));
+  }, []);
 
   return (
     <main className={styles.page}>
@@ -212,17 +231,25 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Shapers list */}
+      {/* Shapers — live from Firestore */}
       <section className={styles.sectionAlt}>
         <div className={styles.container}>
           <h2 className={styles.sectionTitle}>{t('shapers')}</h2>
           <p className={styles.sectionSubtitle}>{t('shapersSubtitle')}</p>
           <div className={styles.divider} />
-          <div className={styles.shapersList}>
-            {SHAPERS.map((s, i) => (
-              <ShaperCard key={s.name + i} shaper={s} index={i} tc={tc} />
-            ))}
-          </div>
+          {loadingShapers ? (
+            <div className={styles.shapersLoading}>
+              <div className={styles.shapersSpinner} />
+            </div>
+          ) : shapers.length === 0 ? (
+            <p className={styles.noShapers}>{t('noShapers')}</p>
+          ) : (
+            <div className={styles.shapersList}>
+              {shapers.map((s, i) => (
+                <LiveShaperCard key={s.uid} shaper={s} index={i} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

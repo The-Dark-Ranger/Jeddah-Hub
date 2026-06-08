@@ -9,6 +9,10 @@ export interface UserProfile {
   email: string | null;
   role: UserRole;
   displayName: string | null;
+  bio?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
 }
 
 async function bootstrapFirstAdmin(email: string): Promise<UserRole> {
@@ -60,7 +64,14 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
         }
       }
 
-      return { uid, email: data.email || email || null, role, displayName: data.displayName || null };
+      return {
+        uid, email: data.email || email || null, role,
+        displayName: data.displayName || null,
+        bio:       data.bio       || undefined,
+        linkedin:  data.linkedin  || undefined,
+        twitter:   data.twitter   || undefined,
+        instagram: data.instagram || undefined,
+      };
     } else if (email) {
       let assignedRole = await lookupRoleAssignment(email);
       if (!assignedRole) assignedRole = await bootstrapFirstAdmin(email);

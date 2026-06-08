@@ -340,7 +340,19 @@
 .commentTime {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin-left: auto;
+  margin-inline-start: auto;
+}
+
+.commentDeleteBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 6px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.15s ease; flex-shrink: 0;
+}
+.commentDeleteBtn:hover {
+  border-color: var(--danger); color: var(--danger);
+  background: rgba(239,68,68,0.08);
 }
 
 .commentContent {

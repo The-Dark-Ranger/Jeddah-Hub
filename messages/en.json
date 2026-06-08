@@ -509,6 +509,21 @@
     "savingProfile": "Saving...",
     "saveProfile": "Save Profile",
     "profileSaved": "Profile updated!",
-    "socialsHint": "Your social links appear as icons on the Our Shapers page."
+    "socialsHint": "Your social links appear as icons on the Our Shapers page.",
+    "photoUrl": "Profile Photo URL",
+    "phPhotoUrl": "https://example.com/photo.jpg",
+    "photoUrlHint": "Paste a direct image URL. It will appear as your avatar in the dashboard and on the Our Shapers page.",
+    "photoPreview": "Preview",
+    "joinRequestPending": "Pending Approval",
+    "joinRequestAccepted": "Request Accepted",
+    "joinRequestRejected": "Request Declined",
+    "cancelRequest": "Cancel",
+    "alreadyMember": "Member",
+    "incomingRequests": "Pending Join Requests",
+    "wantsToJoin": "wants to join",
+    "acceptRequest": "Accept",
+    "rejectRequest": "Decline",
+    "pendingJoinRequests": "Pending Join Requests",
+    "noJoinRequests": "No pending join requests."
   }
 }

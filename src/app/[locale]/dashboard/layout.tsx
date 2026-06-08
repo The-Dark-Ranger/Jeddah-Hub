@@ -42,7 +42,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={styles.sidebar}>
         {/* User card */}
         <div className={styles.userCard}>
-          <div className={styles.avatar}>{(user.displayName || user.email || '?')[0].toUpperCase()}</div>
+          {user.photoURL
+            ? <img src={user.photoURL} alt="" className={styles.avatarImg} />
+            : <div className={styles.avatar}>{(user.displayName || user.email || '?')[0].toUpperCase()}</div>
+          }
           <div className={styles.userInfo}>
             <p className={styles.userName}>{user.displayName || t('member')}</p>
             <span className="badge badge-blue">{user.role?.replace(/_/g, ' ') || t('pending')}</span>
@@ -118,6 +121,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('initiatives')}
+                </Link></li>
+                <li><Link href="/dashboard/curator/roster" className={styles.navLink + (active('/dashboard/curator/roster') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  {t('roster')}
                 </Link></li>
                 <li><Link href="/dashboard/impact/reports" className={styles.navLink + (active('/dashboard/impact/reports') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import {
+  collection, getDocs, updateDoc, doc, arrayUnion, deleteDoc, query, where
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import styles from './Roster.module.css';
@@ -10,6 +12,7 @@ export default function ManageRoster() {
   const t = useTranslations('Dashboard');
   const [initiatives, setInitiatives] = useState<any[]>([]);
   const [users, setUsers]             = useState<any[]>([]);
+  const [joinRequests, setJoinRequests] = useState<any[]>([]);
   const [selectedInit, setSelectedInit] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
   const [tempRole, setTempRole]         = useState('');
@@ -18,12 +21,21 @@ export default function ManageRoster() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [initSnap, usersSnap] = await Promise.all([
+    const [initSnap, usersSnap, reqSnap] = await Promise.all([
       getDocs(collection(db, 'initiatives')),
       getDocs(collection(db, 'users')),
+      getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
     ]);
-    setInitiatives(initSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const inits: any[] = initSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const reqs         = reqSnap.docs.map(d => {
+      const data = d.data();
+      const init = inits.find((i: any) => i.id === data.initiativeId);
+      return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId };
+    });
+    setInitiatives(inits);
+    setUsers(usrs);
+    setJoinRequests(reqs);
     setLoading(false);
   };
 
@@ -38,6 +50,24 @@ export default function ManageRoster() {
     setTempRole('');
     setSaving(false);
     fetchData();
+  };
+
+  const handleAcceptJoinRequest = async (req: any) => {
+    await updateDoc(doc(db, 'initiatives', req.initiativeId), {
+      members: arrayUnion({ userId: req.userId, role: 'Member' }),
+    });
+    await deleteDoc(doc(db, 'join_requests', req.id));
+    setJoinRequests(prev => prev.filter(r => r.id !== req.id));
+    setInitiatives(prev => prev.map(i =>
+      i.id === req.initiativeId
+        ? { ...i, members: [...(i.members || []), { userId: req.userId, role: 'Member' }] }
+        : i
+    ));
+  };
+
+  const handleRejectJoinRequest = async (reqId: string) => {
+    await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
+    setJoinRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
   const handleRemoveMember = async (initiativeId: string, userId: string) => {
@@ -61,6 +91,48 @@ export default function ManageRoster() {
       <div className={styles.header}>
         <h2 className={styles.title}>{t('manageRoster')}</h2>
       </div>
+
+      {/* Pending join requests */}
+      {joinRequests.length > 0 && (
+        <div className={styles.card} style={{ borderLeft: '3px solid var(--primary-blue)' }}>
+          <h3 className={styles.cardTitle}>
+            {t('pendingJoinRequests')}
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              minWidth: 22, height: 20, padding: '0 6px', borderRadius: 10,
+              background: 'var(--primary-blue)', color: 'white',
+              fontSize: '0.72rem', fontWeight: 700, marginInlineStart: '0.5rem',
+            }}>{joinRequests.length}</span>
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {joinRequests.map(req => (
+              <div key={req.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: '1rem', padding: '0.9rem 1rem',
+                background: 'var(--background-alt)', borderRadius: 10,
+                border: '1px solid var(--border-color)', flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {req.userName || req.userEmail}
+                  </span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    {t('wantsToJoin')} <strong>{req.initiativeTitle}</strong>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                  <button className={styles.acceptBtn} onClick={() => handleAcceptJoinRequest(req)}>
+                    {t('acceptRequest')}
+                  </button>
+                  <button className={styles.rejectBtn} onClick={() => handleRejectJoinRequest(req.id)}>
+                    {t('rejectRequest')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Assign form */}
       <div className={styles.card}>

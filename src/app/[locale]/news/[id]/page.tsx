@@ -120,22 +120,35 @@ export default function NewsPostPage() {
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !commentText.trim() || posting) return;
-    setPosting(true);
-    await addDoc(collection(db, 'comments'), {
+    const text = commentText.trim();
+    setCommentText('');
+    const optimistic: Comment = {
+      id: 'tmp_' + Date.now(),
       blogId: id,
       authorId:   user.uid,
       authorName: user.displayName || user.email || t('globalShaper'),
       authorRole: (user as any).role,
-      content:    commentText.trim(),
+      content:    text,
+      createdAt:  new Date().toISOString(),
+    };
+    setComments(prev => [...prev, optimistic]);
+    setPosting(true);
+    const ref = await addDoc(collection(db, 'comments'), {
+      blogId: id,
+      authorId:   user.uid,
+      authorName: user.displayName || user.email || t('globalShaper'),
+      authorRole: (user as any).role,
+      content:    text,
       createdAt:  new Date().toISOString(),
     });
-    setCommentText('');
+    setComments(prev => prev.map(c => c.id === optimistic.id ? { ...c, id: ref.id } : c));
     setPosting(false);
   };
 
   /* ── Delete comment ── */
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm(t('confirmDeleteComment'))) return;
+    setComments(prev => prev.filter(c => c.id !== commentId));
     await deleteDoc(doc(db, 'comments', commentId));
   };
 

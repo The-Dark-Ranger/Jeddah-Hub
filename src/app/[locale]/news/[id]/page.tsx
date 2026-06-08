@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
   doc, getDoc, updateDoc, arrayUnion, arrayRemove,
-  collection, addDoc, query, where, orderBy, getDocs, onSnapshot
+  collection, addDoc, query, where, orderBy, getDocs, onSnapshot, deleteDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -23,21 +23,38 @@ function formatDate(iso: string, locale: string) {
   });
 }
 
+function genGuestId() {
+  return 'g_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
 export default function NewsPostPage() {
   const { id }   = useParams() as { id: string };
   const { user } = useAuth();
   const t        = useTranslations('NewsPostPage');
   const locale   = useLocale();
 
-  const [post, setPost]             = useState<any>(null);
-  const [loading, setLoading]       = useState(true);
-  const [liking, setLiking]         = useState(false);
-  const [comments, setComments]     = useState<Comment[]>([]);
+  const [post, setPost]               = useState<any>(null);
+  const [loading, setLoading]         = useState(true);
+  const [liking, setLiking]           = useState(false);
+  const [comments, setComments]       = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
-  const [posting, setPosting]       = useState(false);
+  const [posting, setPosting]         = useState(false);
+  const [visitorId, setVisitorId]     = useState<string | null>(null);
 
-  const liked     = user ? (post?.likedBy ?? []).includes(user.uid) : false;
-  const likeCount = post?.likedBy?.length ?? 0;
+  /* Generate / load persistent guest ID for visitor likes */
+  useEffect(() => {
+    let gid = localStorage.getItem('jh_guest_id');
+    if (!gid) { gid = genGuestId(); localStorage.setItem('jh_guest_id', gid); }
+    setVisitorId(gid);
+  }, []);
+
+  /* Who has liked this post */
+  const liked = user
+    ? (post?.likedBy ?? []).includes(user.uid)
+    : visitorId ? (post?.visitorLikes ?? []).includes(visitorId) : false;
+
+  /* Total likes = signed-in + visitor */
+  const likeCount = (post?.likedBy?.length ?? 0) + (post?.visitorLikes?.length ?? 0);
 
   /* Localised relative time */
   function timeAgo(iso: string) {
@@ -73,20 +90,33 @@ export default function NewsPostPage() {
     return () => unsub();
   }, [id]);
 
+  /* ── Like (works for both signed-in users and visitors) ── */
   const handleLike = async () => {
-    if (!user || liking) return;
+    if (liking) return;
     setLiking(true);
     const ref = doc(db, 'blogs', id);
-    if (liked) {
-      await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
-      setPost((p: any) => ({ ...p, likedBy: (p.likedBy ?? []).filter((u: string) => u !== user.uid) }));
-    } else {
-      await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
-      setPost((p: any) => ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
+
+    if (user) {
+      if (liked) {
+        await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
+        setPost((p: any) => ({ ...p, likedBy: (p.likedBy ?? []).filter((u: string) => u !== user.uid) }));
+      } else {
+        await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
+        setPost((p: any) => ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
+      }
+    } else if (visitorId) {
+      if (liked) {
+        await updateDoc(ref, { visitorLikes: arrayRemove(visitorId) });
+        setPost((p: any) => ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter((v: string) => v !== visitorId) }));
+      } else {
+        await updateDoc(ref, { visitorLikes: arrayUnion(visitorId) });
+        setPost((p: any) => ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId] }));
+      }
     }
     setLiking(false);
   };
 
+  /* ── Post comment ── */
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !commentText.trim() || posting) return;
@@ -101,6 +131,12 @@ export default function NewsPostPage() {
     });
     setCommentText('');
     setPosting(false);
+  };
+
+  /* ── Delete comment ── */
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm(t('confirmDeleteComment'))) return;
+    await deleteDoc(doc(db, 'comments', commentId));
   };
 
   /* Translated comments header */
@@ -154,26 +190,17 @@ export default function NewsPostPage() {
             )}
           </div>
           <div className={styles.articleActions}>
-            {user ? (
-              <button
-                className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
-                onClick={handleLike}
-                disabled={liking}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24"
-                  fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
-              </button>
-            ) : (
-              <Link href="/login" className={styles.signInToLike}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                {t('signIn')} {t('signInPrompt')}
-              </Link>
-            )}
+            <button
+              className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
+              onClick={handleLike}
+              disabled={liking}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24"
+                fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
+            </button>
           </div>
         </article>
 
@@ -223,6 +250,21 @@ export default function NewsPostPage() {
                         <span className={styles.commentRole}>{c.authorRole.replace('_', ' ')}</span>
                       )}
                       <span className={styles.commentTime}>{timeAgo(c.createdAt)}</span>
+                      {user && user.uid === c.authorId && (
+                        <button
+                          className={styles.commentDeleteBtn}
+                          onClick={() => handleDeleteComment(c.id)}
+                          title={t('deleteComment')}
+                          type="button"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6M14 11v6"/>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
+                        </button>
+                      )}
                     </div>
                     <p className={styles.commentContent}>{c.content}</p>
                   </div>

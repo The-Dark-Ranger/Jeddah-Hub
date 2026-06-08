@@ -9,13 +9,14 @@ import styles from './Profile.module.css';
 
 interface ProfileForm {
   displayName: string;
+  photoURL: string;
   bio: string;
   linkedin: string;
   twitter: string;
   instagram: string;
 }
 
-const empty: ProfileForm = { displayName: '', bio: '', linkedin: '', twitter: '', instagram: '' };
+const empty: ProfileForm = { displayName: '', photoURL: '', bio: '', linkedin: '', twitter: '', instagram: '' };
 
 export default function MyProfile() {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ export default function MyProfile() {
         const d = snap.data();
         setForm({
           displayName: d.displayName || '',
+          photoURL:    d.photoURL    || '',
           bio:         d.bio         || '',
           linkedin:    d.linkedin    || '',
           twitter:     d.twitter     || '',
@@ -65,6 +67,7 @@ export default function MyProfile() {
     setSaved(false);
     await updateDoc(doc(db, 'users', user.uid), {
       displayName: form.displayName.trim(),
+      photoURL:    form.photoURL.trim(),
       bio:         form.bio.trim(),
       linkedin:    form.linkedin.trim(),
       twitter:     form.twitter.trim(),
@@ -105,11 +108,24 @@ export default function MyProfile() {
       <div className={styles.card}>
         <p className={styles.cardTitle}>{t('profileSection')}</p>
         <div className={styles.formFields}>
-          <div className={styles.formField}>
-            <label className={styles.label}>{t('displayName')}</label>
-            <input className={styles.input} value={form.displayName} onChange={set('displayName')} placeholder={t('phDisplayName')} />
-            <span className={styles.hint}>{t('displayNameHint')}</span>
+          <div className={styles.socialsGrid}>
+            <div className={styles.formField}>
+              <label className={styles.label}>{t('displayName')}</label>
+              <input className={styles.input} value={form.displayName} onChange={set('displayName')} placeholder={t('phDisplayName')} />
+              <span className={styles.hint}>{t('displayNameHint')}</span>
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.label}>{t('photoUrl')}</label>
+              <input className={styles.input} value={form.photoURL} onChange={set('photoURL')} placeholder={t('phPhotoUrl')} type="url" />
+              <span className={styles.hint}>{t('photoUrlHint')}</span>
+            </div>
           </div>
+          {form.photoURL && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img src={form.photoURL} alt="preview" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{t('photoPreview')}</span>
+            </div>
+          )}
           <div className={styles.formField}>
             <label className={styles.label}>{t('bioLabel')}</label>
             <textarea className={styles.textarea} value={form.bio} onChange={set('bio')} placeholder={t('phBio')} rows={3} />

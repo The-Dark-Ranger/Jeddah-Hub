@@ -1,6 +1,9 @@
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import {
+  doc, getDoc, setDoc, deleteDoc,
+  collection, query, where, getDocs, addDoc
+} from 'firebase/firestore';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
 
@@ -9,40 +12,55 @@ export interface UserProfile {
   email: string | null;
   role: UserRole;
   displayName: string | null;
+  photoURL?: string;
   bio?: string;
   linkedin?: string;
   twitter?: string;
   instagram?: string;
 }
 
-async function bootstrapFirstAdmin(email: string): Promise<UserRole> {
+interface RoleResult { role: UserRole; docId: string | null; }
+
+async function bootstrapFirstAdmin(email: string): Promise<RoleResult> {
   try {
     const snap = await getDocs(collection(db, 'role_assignments'));
     if (snap.empty) {
-      await addDoc(collection(db, 'role_assignments'), {
+      const ref = await addDoc(collection(db, 'role_assignments'), {
         email: email.toLowerCase().trim(),
         role: 'curator',
         createdAt: new Date().toISOString(),
         addedBy: 'system-bootstrap',
       });
-      return 'curator';
+      return { role: 'curator', docId: ref.id };
     }
   } catch { /* ignore */ }
-  return null;
+  return { role: null, docId: null };
 }
 
-async function lookupRoleAssignment(email: string): Promise<UserRole> {
+async function lookupRoleAssignment(email: string): Promise<RoleResult> {
   try {
     const q = query(
       collection(db, 'role_assignments'),
       where('email', '==', email.toLowerCase().trim())
     );
     const snap = await getDocs(q);
-    if (!snap.empty) return ((snap.docs[0].data().role as string)?.toLowerCase() as UserRole) || null;
+    if (!snap.empty) {
+      return {
+        role: ((snap.docs[0].data().role as string)?.toLowerCase() as UserRole) || null,
+        docId: snap.docs[0].id,
+      };
+    }
   } catch (error) {
     console.error('Error checking role_assignments:', error);
   }
-  return null;
+  return { role: null, docId: null };
+}
+
+async function applyAndClearAssignment(docRef: ReturnType<typeof doc>, role: UserRole, docId: string | null) {
+  await setDoc(docRef, { role }, { merge: true });
+  if (docId) {
+    try { await deleteDoc(doc(db, 'role_assignments', docId)); } catch { /* ignore */ }
+  }
 }
 
 export async function getUserProfile(uid: string, email?: string | null): Promise<UserProfile | null> {
@@ -56,27 +74,31 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;
-        let assigned = await lookupRoleAssignment(target);
-        if (!assigned) assigned = await bootstrapFirstAdmin(target);
-        if (assigned) {
-          role = assigned;
-          await setDoc(docRef, { role }, { merge: true });
+        let result = await lookupRoleAssignment(target);
+        if (!result.role) result = await bootstrapFirstAdmin(target);
+        if (result.role) {
+          role = result.role;
+          await applyAndClearAssignment(docRef, role, result.docId);
         }
       }
 
       return {
         uid, email: data.email || email || null, role,
         displayName: data.displayName || null,
+        photoURL:  data.photoURL  || undefined,
         bio:       data.bio       || undefined,
         linkedin:  data.linkedin  || undefined,
         twitter:   data.twitter   || undefined,
         instagram: data.instagram || undefined,
       };
     } else if (email) {
-      let assignedRole = await lookupRoleAssignment(email);
-      if (!assignedRole) assignedRole = await bootstrapFirstAdmin(email);
-      const profile: UserProfile = { uid, email, role: assignedRole, displayName: null };
+      let result = await lookupRoleAssignment(email);
+      if (!result.role) result = await bootstrapFirstAdmin(email);
+      const profile: UserProfile = { uid, email, role: result.role, displayName: null };
       await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
+      if (result.role && result.docId) {
+        try { await deleteDoc(doc(db, 'role_assignments', result.docId)); } catch { /* ignore */ }
+      }
       return profile;
     }
   } catch (error) {

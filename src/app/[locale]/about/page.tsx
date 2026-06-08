@@ -16,32 +16,19 @@ interface LiveShaper {
   linkedin?: string;
   twitter?: string;
   instagram?: string;
+  photoURL?: string;
 }
 
-/* ── Hardcoded curatorship (leadership roles – always displayed) ── */
-const CURATORSHIP = [
-  {
-    name: 'Mohammed Alshawi',
-    role: 'curator',
-    bio: 'Passionate about leveraging technology and community-driven initiatives to shape a more inclusive Jeddah. Leads the hub with a focus on collaboration and sustainable impact.',
-    linkedin: 'https://linkedin.com/in/mohammed-alshawi',
-    gradient: 'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
-  },
-  {
-    name: 'Dana Sayyadah',
-    role: 'vice_curator',
-    bio: "Creative strategist committed to youth empowerment and social innovation. Drives the hub's community partnerships and engagement programs across Jeddah.",
-    linkedin: 'https://linkedin.com/in/dana-sayyadah',
-    gradient: 'linear-gradient(135deg,#10b981,#34d399)',
-  },
-  {
-    name: 'Jana Jambi',
-    role: 'impact_officer',
-    bio: "Dedicated to measuring and amplifying the hub's social impact. Coordinates initiatives that bridge local needs with global frameworks for meaningful, lasting change.",
-    linkedin: 'https://linkedin.com/in/jana-jambi',
-    gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)',
-  },
-];
+interface LiveCurator {
+  uid: string;
+  displayName: string;
+  role: string;
+  bio?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
+  photoURL?: string;
+}
 
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -95,9 +82,13 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
         <div className={styles.shaperAvatarWrap}>
-          <div className={styles.shaperAvatar} style={{ background: gradient }}>
-            {initials(shaper.displayName)}
-          </div>
+          {shaper.photoURL
+            ? <img src={shaper.photoURL} alt={shaper.displayName} className={styles.shaperAvatarImg}
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            : <div className={styles.shaperAvatar} style={{ background: gradient }}>
+                {initials(shaper.displayName)}
+              </div>
+          }
         </div>
         <div className={styles.shaperMeta}>
           <h3 className={styles.shaperName}>{shaper.displayName}</h3>
@@ -128,19 +119,52 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
   );
 }
 
+function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; index: number; roleLabel: string }) {
+  const gradient = avatarGradient(curator.uid, index);
+  const tc = useTranslations('Common');
+  return (
+    <div className={styles.curatorCard}>
+      <div className={styles.curatorAvatarWrap}>
+        {curator.photoURL
+          ? <img src={curator.photoURL} alt={curator.displayName} className={styles.curatorAvatarImg}
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          : <div className={styles.curatorAvatar} style={{ background: gradient }}>
+              {initials(curator.displayName)}
+            </div>
+        }
+      </div>
+      <div className={styles.curatorBody}>
+        <div className={styles.curatorName}>{curator.displayName}</div>
+        <div className={styles.curatorRole}>{roleLabel}</div>
+        {curator.bio && <p className={styles.curatorBio}>{curator.bio}</p>}
+        {curator.linkedin && (
+          <a href={curator.linkedin} target="_blank" rel="noopener noreferrer" className={styles.curatorLinkedIn}>
+            <LinkedInIcon />
+            {tc('linkedIn')}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const ROLE_ORDER: Record<string, number> = { curator: 0, vice_curator: 1, impact_officer: 2 };
+
 export default function AboutPage() {
   const t  = useTranslations('AboutPage');
   const tr = useTranslations('Role');
-  const tc = useTranslations('Common');
 
-  const [shapers, setShapers]             = useState<LiveShaper[]>([]);
+  const [shapers, setShapers]               = useState<LiveShaper[]>([]);
+  const [curators, setCurators]             = useState<LiveCurator[]>([]);
   const [loadingShapers, setLoadingShapers] = useState(true);
 
   useEffect(() => {
     getDocs(collection(db, 'users')).then(snap => {
-      const shaperRoles = ['shaper', 'alumni'];
-      const live = snap.docs
-        .map(d => ({ uid: d.id, ...d.data() } as any))
+      const shaperRoles   = ['shaper', 'alumni'];
+      const curatorRoles  = ['curator', 'vice_curator', 'impact_officer'];
+      const all = snap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
+
+      const live = all
         .filter((u: any) => shaperRoles.includes(u.role) && u.displayName)
         .map((u: any): LiveShaper => ({
           uid:         u.uid,
@@ -150,8 +174,27 @@ export default function AboutPage() {
           linkedin:    u.linkedin    || '',
           twitter:     u.twitter     || '',
           instagram:   u.instagram   || '',
+          photoURL:    u.photoURL    || '',
         }));
+
+      const curs = all
+        .filter((u: any) => curatorRoles.includes(u.role) && u.displayName)
+        .map((u: any): LiveCurator => ({
+          uid:         u.uid,
+          displayName: u.displayName,
+          role:        u.role,
+          bio:         u.bio         || '',
+          linkedin:    u.linkedin    || '',
+          twitter:     u.twitter     || '',
+          instagram:   u.instagram   || '',
+          photoURL:    u.photoURL    || '',
+        }))
+        .sort((a: LiveCurator, b: LiveCurator) =>
+          (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99)
+        );
+
       setShapers(live);
+      setCurators(curs);
       setLoadingShapers(false);
     }).catch(() => setLoadingShapers(false));
   }, []);
@@ -201,35 +244,25 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Current Curatorship */}
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>{t('curatorship')}</h2>
-          <div className={styles.divider} />
-          <div className={styles.curatorshipGrid}>
-            {CURATORSHIP.map((c) => (
-              <div key={c.name} className={styles.curatorCard}>
-                <div className={styles.curatorAvatarWrap}>
-                  <div className={styles.curatorAvatar} style={{ background: c.gradient }}>
-                    {initials(c.name)}
-                  </div>
-                </div>
-                <div className={styles.curatorBody}>
-                  <div className={styles.curatorName}>{c.name}</div>
-                  <div className={styles.curatorRole}>{tr(c.role as Parameters<typeof tr>[0])}</div>
-                  <p className={styles.curatorBio}>{c.bio}</p>
-                  {c.linkedin && (
-                    <a href={c.linkedin} target="_blank" rel="noopener noreferrer" className={styles.curatorLinkedIn}>
-                      <LinkedInIcon />
-                      {tc('linkedIn')}
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* Current Curatorship — dynamic from Firestore */}
+      {curators.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.container}>
+            <h2 className={styles.sectionTitle}>{t('curatorship')}</h2>
+            <div className={styles.divider} />
+            <div className={styles.curatorshipGrid}>
+              {curators.map((c, i) => (
+                <LiveCuratorCard
+                  key={c.uid}
+                  curator={c}
+                  index={i}
+                  roleLabel={tr(c.role as Parameters<typeof tr>[0])}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Shapers — live from Firestore */}
       <section className={styles.sectionAlt}>

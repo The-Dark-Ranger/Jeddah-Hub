@@ -509,6 +509,21 @@
     "savingProfile": "جارٍ الحفظ...",
     "saveProfile": "حفظ الملف الشخصي",
     "profileSaved": "تم تحديث الملف الشخصي!",
-    "socialsHint": "تظهر روابط تواصلك كأيقونات في صفحة صنّاعنا."
+    "socialsHint": "تظهر روابط تواصلك كأيقونات في صفحة صنّاعنا.",
+    "photoUrl": "رابط صورة الملف الشخصي",
+    "phPhotoUrl": "https://example.com/photo.jpg",
+    "photoUrlHint": "الصق رابطاً مباشراً للصورة. ستظهر كصورتك الشخصية في لوحة التحكم وصفحة صنّاعنا.",
+    "photoPreview": "معاينة",
+    "joinRequestPending": "في انتظار الموافقة",
+    "joinRequestAccepted": "تمت الموافقة على الطلب",
+    "joinRequestRejected": "تم رفض الطلب",
+    "cancelRequest": "إلغاء",
+    "alreadyMember": "عضو",
+    "incomingRequests": "طلبات الانضمام المعلقة",
+    "wantsToJoin": "يريد الانضمام إلى",
+    "acceptRequest": "قبول",
+    "rejectRequest": "رفض",
+    "pendingJoinRequests": "طلبات الانضمام المعلقة",
+    "noJoinRequests": "لا توجد طلبات انضمام معلقة."
   }
 }

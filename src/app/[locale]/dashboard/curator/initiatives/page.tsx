@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiatives.module.css';
 
 interface Initiative {
@@ -22,7 +23,7 @@ interface Initiative {
   impact?: string;
   impactAreas?: string[];
   createdAt: string;
-  members?: any[];
+  members?: unknown[];
 }
 
 const CATEGORIES = [
@@ -36,7 +37,96 @@ const emptyForm = {
   impactAreas: '',
 };
 
-/* Default initiatives to seed when Firebase has none */
+type FormShape = typeof emptyForm;
+
+/* ── Form fields component (defined outside to avoid re-mount on parent render) ── */
+interface FormFieldsProps {
+  form: FormShape;
+  onChange: (key: keyof FormShape, value: string) => void;
+}
+
+function FormFields({ form, onChange }: FormFieldsProps) {
+  const t = useTranslations('Dashboard');
+  const mk = (k: keyof FormShape) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      onChange(k, e.target.value);
+
+  return (
+    <>
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldTitle')} *</label>
+        <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+      </div>
+
+      <div className={styles.editRow3}>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldCategory')}</label>
+          <select className={styles.input} value={form.category} onChange={mk('category')}>
+            <option value="">{t('categorySelectPrompt')}</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldStartDate')}</label>
+          <input className={styles.input} type="date" value={form.startDate} onChange={mk('startDate')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldEndDate')}</label>
+          <input className={styles.input} type="date" value={form.endDate} onChange={mk('endDate')} />
+        </div>
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldKeyStat')}</label>
+        <input className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldDescription')} *</label>
+        <textarea className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldProblem')}</label>
+        <textarea className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldObjective')}</label>
+        <textarea className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldImpact')}</label>
+        <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
+      </div>
+
+      <div className={styles.editRow}>
+        <div className={styles.formField}>
+          <label className={styles.label}>
+            {t('fieldImpactAreas')}
+            <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
+          </label>
+          <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldCoverImage')}</label>
+          <input className={styles.input} value={form.imageUrl} onChange={mk('imageUrl')} placeholder={t('phCoverImageUrl')} />
+        </div>
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>
+          {t('fieldPhotos')}
+          <span className={styles.fieldHint}>{t('fieldPhotosHint')}</span>
+        </label>
+        <textarea className={styles.textarea} value={form.images} onChange={mk('images')} placeholder={t('phPhotoUrls')} rows={3} />
+      </div>
+    </>
+  );
+}
+
+/* ── Default seed data ── */
 const DEFAULT_INITIATIVES = [
   { title: 'Rise Up', category: 'Economy', stat: '60+ businesses mentored', status: 'active',
     description: 'Mentoring small businesses with limited resources to achieve sustainable growth through expert guidance.',
@@ -114,100 +204,139 @@ const DEFAULT_INITIATIVES = [
 
 export default function ManageInitiatives() {
   const { user } = useAuth();
-  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [saving, setSaving]           = useState(false);
-  const [seeding, setSeeding]         = useState(false);
-  const [filter, setFilter]           = useState<'all' | 'active' | 'archived'>('all');
-  const [showCreate, setShowCreate]   = useState(false);
-  const [editingId, setEditingId]     = useState<string | null>(null);
-  const [form, setForm]               = useState(emptyForm);
-  const [editForm, setEditForm]       = useState(emptyForm);
+  const t        = useTranslations('Dashboard');
+  const locale   = useLocale();
 
-  const role = user?.role?.toLowerCase();
+  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [seeding, setSeeding]   = useState(false);
+  const [filter, setFilter]     = useState<'all' | 'active' | 'archived'>('all');
+
+  /* Modal state */
+  const [modalMode, setModalMode]       = useState<'create' | 'edit' | null>(null);
+  const [editingId, setEditingId]       = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [form, setForm]                 = useState<FormShape>(emptyForm);
+
+  const role      = user?.role?.toLowerCase();
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
-  const setF  = (k: keyof typeof emptyForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setForm(f => ({ ...f, [k]: e.target.value }));
-  const setEF = (k: keyof typeof emptyForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setEditForm(f => ({ ...f, [k]: e.target.value }));
+  /* Stable onChange for FormFields */
+  const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
+    setForm(f => ({ ...f, [key]: value }));
+  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
       const snap = await getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc')));
       setInitiatives(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
-    } catch { /* Firestore not configured yet */ }
+    } catch { /* Firestore not configured */ }
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
 
+  /* ── Modal helpers ── */
+  const openCreate = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setEditingTitle('');
+    setModalMode('create');
+  };
+
+  const openEdit = (init: Initiative) => {
+    setEditingId(init.id);
+    setEditingTitle(init.title);
+    setForm({
+      title:       init.title,
+      description: init.description,
+      category:    init.category    || '',
+      startDate:   init.startDate   || '',
+      endDate:     init.endDate     || '',
+      imageUrl:    init.imageUrl    || '',
+      images:      (init.images     || []).join('\n'),
+      stat:        init.stat        || '',
+      problem:     init.problem     || '',
+      objective:   init.objective   || '',
+      impact:      init.impact      || '',
+      impactAreas: (init.impactAreas || []).join(', '),
+    });
+    setModalMode('edit');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  /* Close on Escape key */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal(); };
+    if (modalMode) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [modalMode]);
+
+  /* Prevent body scroll when modal is open */
+  useEffect(() => {
+    document.body.style.overflow = modalMode ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [modalMode]);
+
+  /* ── Form helpers ── */
+  const formToDoc = (f: FormShape) => ({
+    title: f.title, description: f.description, category: f.category,
+    startDate: f.startDate, endDate: f.endDate, imageUrl: f.imageUrl,
+    images:      f.images      ? f.images.split('\n').map(s => s.trim()).filter(Boolean) : [],
+    stat:        f.stat,
+    problem:     f.problem,
+    objective:   f.objective,
+    impact:      f.impact,
+    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
+  });
+
+  /* ── CRUD handlers ── */
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title) return;
+    setSaving(true);
+    await addDoc(collection(db, 'initiatives'), {
+      ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
+    });
+    closeModal();
+    setSaving(false);
+    fetchAll();
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !form.title) return;
+    setSaving(true);
+    await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
+    closeModal();
+    setSaving(false);
+    fetchAll();
+  };
+
   const handleSeedDefaults = async () => {
-    if (!confirm('This will add all 12 default initiatives to Firebase. Continue?')) return;
+    if (!confirm(t('seedDefaultsConfirm'))) return;
     setSeeding(true);
     const now = new Date();
     for (const init of DEFAULT_INITIATIVES) {
       const d = new Date(now);
       d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
       await addDoc(collection(db, 'initiatives'), {
-        ...init,
-        members: [],
-        images: [],
-        createdAt: d.toISOString(),
+        ...init, members: [], images: [], createdAt: d.toISOString(),
       });
     }
     setSeeding(false);
     fetchAll();
   };
 
-  const formToDoc = (f: typeof emptyForm) => ({
-    title: f.title, description: f.description, category: f.category,
-    startDate: f.startDate, endDate: f.endDate, imageUrl: f.imageUrl,
-    images: f.images ? f.images.split('\n').map(s => s.trim()).filter(Boolean) : [],
-    stat: f.stat, problem: f.problem, objective: f.objective, impact: f.impact,
-    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
-  });
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    await addDoc(collection(db, 'initiatives'), {
-      ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
-    });
-    setForm(emptyForm);
-    setShowCreate(false);
-    setSaving(false);
-    fetchAll();
-  };
-
-  const startEdit = (init: Initiative) => {
-    setEditingId(init.id);
-    setShowCreate(false);
-    setEditForm({
-      title: init.title, description: init.description,
-      category: init.category || '', startDate: init.startDate || '',
-      endDate: init.endDate || '', imageUrl: init.imageUrl || '',
-      images: (init.images || []).join('\n'), stat: init.stat || '',
-      problem: init.problem || '', objective: init.objective || '',
-      impact: init.impact || '',
-      impactAreas: (init.impactAreas || []).join(', '),
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingId || !editForm.title) return;
-    setSaving(true);
-    await updateDoc(doc(db, 'initiatives', editingId), formToDoc(editForm));
-    setSaving(false);
-    setEditingId(null);
-    fetchAll();
-  };
-
   const handleArchive = async (id: string) => {
-    if (!confirm('Archive this initiative? It will be hidden from public view.')) return;
+    if (!confirm(t('archiveInitiativeConfirm'))) return;
     await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
     fetchAll();
   };
@@ -222,111 +351,85 @@ export default function ManageInitiatives() {
   const archivedCount = initiatives.filter(i => i.status === 'archived').length;
 
   if (!canManage) return (
-    <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Access restricted.</div>
+    <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>
   );
 
-  const FormFields = ({ f, sf }: { f: typeof emptyForm; sf: typeof setEF }) => (
-    <>
-      <div className={styles.formField}>
-        <label className={styles.label}>Title *</label>
-        <input className={styles.input} value={f.title} onChange={sf('title')} placeholder="Initiative name" required />
-      </div>
-      <div className={styles.editRow}>
-        <div className={styles.formField}>
-          <label className={styles.label}>Category</label>
-          <select className={styles.input} value={f.category} onChange={sf('category')}>
-            <option value="">Select…</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>Start Date</label>
-          <input className={styles.input} type="date" value={f.startDate} onChange={sf('startDate')} />
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>End Date</label>
-          <input className={styles.input} type="date" value={f.endDate} onChange={sf('endDate')} />
-        </div>
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Key Result / Stat</label>
-        <input className={styles.input} value={f.stat} onChange={sf('stat')} placeholder="e.g. 2,000+ trees planted" />
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Short Description *</label>
-        <textarea className={styles.textarea} value={f.description} onChange={sf('description')} placeholder="What is this initiative about?" required rows={2} />
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Problem Statement</label>
-        <textarea className={styles.textarea} value={f.problem} onChange={sf('problem')} placeholder="What challenge does this address?" rows={2} />
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Objective</label>
-        <textarea className={styles.textarea} value={f.objective} onChange={sf('objective')} placeholder="What are we trying to achieve?" rows={2} />
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Impact</label>
-        <textarea className={styles.textarea} value={f.impact} onChange={sf('impact')} placeholder="What results have we achieved?" rows={2} />
-      </div>
-      <div className={styles.editRow}>
-        <div className={styles.formField}>
-          <label className={styles.label}>Impact Areas <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(comma-separated)</span></label>
-          <input className={styles.input} value={f.impactAreas} onChange={sf('impactAreas')} placeholder="Education, Youth, Economy" />
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>Cover Image URL</label>
-          <input className={styles.input} value={f.imageUrl} onChange={sf('imageUrl')} placeholder="https://…" />
-        </div>
-      </div>
-      <div className={styles.formField}>
-        <label className={styles.label}>Achievement Photos <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(one URL per line)</span></label>
-        <textarea className={styles.textarea} value={f.images} onChange={sf('images')} placeholder={"https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg"} rows={3} />
-      </div>
-    </>
-  );
+  const isCreate = modalMode === 'create';
 
   return (
     <div className={styles.page}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <h2 className={styles.pageTitle}>Manage Initiatives</h2>
-          <p className={styles.pageSubtitle}>{activeCount} active · {archivedCount} archived</p>
+          <h2 className={styles.pageTitle}>{t('manageInitiatives')}</h2>
+          <p className={styles.pageSubtitle}>{activeCount} {t('filterActive').toLowerCase()} · {archivedCount} {t('filterArchived').toLowerCase()}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           {initiatives.length === 0 && !loading && (
             <button className={styles.seedBtn} onClick={handleSeedDefaults} disabled={seeding}>
-              {seeding ? 'Seeding…' : 'Load Default Initiatives'}
+              {seeding ? t('seeding') : t('loadDefaultInitiatives')}
             </button>
           )}
-          <button className={styles.createBtn} onClick={() => { setShowCreate(v => !v); setEditingId(null); }}>
+          <button className={styles.createBtn} onClick={openCreate}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            New Initiative
+            {t('newInitiativeBtn')}
           </button>
         </div>
       </div>
 
-      {/* Create form */}
-      {showCreate && (
-        <form onSubmit={handleCreate} className={styles.createForm}>
-          <h3 className={styles.formTitle}>Create New Initiative</h3>
-          <FormFields f={form} sf={setF} />
-          <div className={styles.formActions}>
-            <button type="button" className={styles.cancelBtn} onClick={() => setShowCreate(false)}>Cancel</button>
-            <button type="submit" className={styles.submitBtn} disabled={saving}>{saving ? 'Creating…' : 'Create Initiative'}</button>
-          </div>
-        </form>
+      {/* ── Modal (create & edit) ── */}
+      {modalMode !== null && (
+        <div
+          className={styles.modalOverlay}
+          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <form
+            className={styles.modal}
+            onSubmit={isCreate ? handleCreate : handleSaveEdit}
+          >
+            {/* Modal header */}
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>
+                {isCreate ? t('createInitiative') : `${t('editInitiativeTitle')}: ${editingTitle}`}
+              </h3>
+              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className={styles.modalBody}>
+              <FormFields form={form} onChange={handleFormChange} />
+            </div>
+
+            {/* Modal footer */}
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.cancelBtn} onClick={closeModal}>
+                {t('cancel')}
+              </button>
+              <button type="submit" className={styles.submitBtn} disabled={saving || !form.title}>
+                {saving
+                  ? (isCreate ? t('creatingDots') : t('savingDots'))
+                  : (isCreate ? t('createInitiativeBtn') : t('saveChangesBtn'))
+                }
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
-      {/* Filter tabs */}
+      {/* ── Filter tabs ── */}
       <div className={styles.filterBar}>
         {([
-          { key: 'all',      label: 'All',      count: initiatives.length },
-          { key: 'active',   label: 'Active',   count: activeCount },
-          { key: 'archived', label: 'Archived', count: archivedCount },
+          { key: 'all',      label: t('filterAll'),      count: initiatives.length },
+          { key: 'active',   label: t('filterActive'),   count: activeCount },
+          { key: 'archived', label: t('filterArchived'), count: archivedCount },
         ] as const).map(f => (
           <button
             key={f.key}
@@ -339,7 +442,7 @@ export default function ManageInitiatives() {
         ))}
       </div>
 
-      {/* Cards */}
+      {/* ── Cards ── */}
       {loading ? (
         <div className={styles.loading}><div className={styles.spinner} /></div>
       ) : filtered.length === 0 ? (
@@ -347,101 +450,97 @@ export default function ManageInitiatives() {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
-          <p>No {filter !== 'all' ? filter : ''} initiatives yet.{filter === 'active' ? ' Click "New Initiative" to create one.' : ''}</p>
+          <p>
+            {t('noInitiativesYet')}
+            {filter === 'active' && <> {t('createFirstInitiative')}</>}
+          </p>
         </div>
       ) : (
         <div className={styles.grid}>
           {filtered.map(init => (
-            <div key={init.id} className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}>
-
-              {editingId === init.id ? (
-                <div className={styles.editForm}>
-                  <p className={styles.formTitle}>Editing: {init.title}</p>
-                  <FormFields f={editForm} sf={setEF} />
-                  <div className={styles.editActions}>
-                    <button className={styles.cancelBtn} onClick={() => setEditingId(null)}>Cancel</button>
-                    <button className={styles.submitBtn} onClick={handleSaveEdit} disabled={saving || !editForm.title}>
-                      {saving ? 'Saving…' : 'Save Changes'}
-                    </button>
-                  </div>
+            <div
+              key={init.id}
+              className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}
+            >
+              {init.imageUrl && (
+                <div className={styles.cardImage}>
+                  <img
+                    src={init.imageUrl}
+                    alt={init.title}
+                    onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                  />
                 </div>
-              ) : (
-                <>
-                  {init.imageUrl && (
-                    <div className={styles.cardImage}>
-                      <img src={init.imageUrl} alt={init.title}
-                        onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
-                    </div>
-                  )}
-                  <div className={styles.cardBody}>
-                    <div className={styles.cardTopRow}>
-                      <span className={styles.statusPill + ' ' + (init.status === 'active' ? styles.statusActive : styles.statusArchived)}>
-                        {init.status}
-                      </span>
-                      {init.category && <span className={styles.categoryPill}>{init.category}</span>}
-                    </div>
-                    <h3 className={styles.cardTitle}>{init.title}</h3>
-                    <p className={styles.cardDesc}>{init.description}</p>
-                    {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
-                    <div className={styles.cardMeta}>
-                      {init.startDate && (
-                        <span className={styles.metaItem}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                          </svg>
-                          {new Date(init.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                          {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
-                        </span>
-                      )}
-                      <span className={styles.metaItem}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                        {(init.members || []).length} members
-                      </span>
-                      {(init.images || []).length > 0 && (
-                        <span className={styles.metaItem}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21 15 16 10 5 21"/>
-                          </svg>
-                          {(init.images || []).length} photos
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button className={styles.editBtn} onClick={() => startEdit(init)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                      Edit
-                    </button>
-                    {init.status === 'active' ? (
-                      <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="21 8 21 21 3 21 3 8"/>
-                          <rect x="1" y="3" width="22" height="5"/>
-                          <line x1="10" y1="12" x2="14" y2="12"/>
-                        </svg>
-                        Archive
-                      </button>
-                    ) : (
-                      <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="1 4 1 10 7 10"/>
-                          <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
-                        </svg>
-                        Restore
-                      </button>
-                    )}
-                  </div>
-                </>
               )}
+
+              <div className={styles.cardBody}>
+                <div className={styles.cardTopRow}>
+                  <span className={styles.statusPill + ' ' + (init.status === 'active' ? styles.statusActive : styles.statusArchived)}>
+                    {init.status === 'active' ? t('statusActive') : t('statusArchived')}
+                  </span>
+                  {init.category && <span className={styles.categoryPill}>{init.category}</span>}
+                </div>
+                <h3 className={styles.cardTitle}>{init.title}</h3>
+                <p className={styles.cardDesc}>{init.description}</p>
+                {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
+                <div className={styles.cardMeta}>
+                  {init.startDate && (
+                    <span className={styles.metaItem}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      {new Date(init.startDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}
+                      {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}`}
+                    </span>
+                  )}
+                  <span className={styles.metaItem}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    {(init.members || []).length} {t('membersLabel')}
+                  </span>
+                  {(init.images || []).length > 0 && (
+                    <span className={styles.metaItem}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      {(init.images || []).length} {t('photosLabel')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.cardActions}>
+                <button className={styles.editBtn} onClick={() => openEdit(init)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  {t('editLabel')}
+                </button>
+                {init.status === 'active' ? (
+                  <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="21 8 21 21 3 21 3 8"/>
+                      <rect x="1" y="3" width="22" height="5"/>
+                      <line x1="10" y1="12" x2="14" y2="12"/>
+                    </svg>
+                    {t('archiveLabel')}
+                  </button>
+                ) : (
+                  <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="1 4 1 10 7 10"/>
+                      <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
+                    </svg>
+                    {t('restoreLabel')}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

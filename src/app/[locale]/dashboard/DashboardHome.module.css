@@ -79,9 +79,25 @@
 }
 
 .statIcon {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 0.5rem; flex-shrink: 0;
+  background: var(--primary-blue-glow);
+  color: var(--primary-blue);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Accent variants via data-accent */
+.statCard[data-accent="blue"]    .statIcon { background: var(--primary-blue-glow); color: var(--primary-blue); }
+.statCard[data-accent="blue"]    .statValue { color: var(--primary-blue); }
+.statCard[data-accent="green"]   .statIcon { background: rgba(16,185,129,0.12); color: var(--success); }
+.statCard[data-accent="green"]   .statValue { color: var(--success); }
+.statCard[data-accent="purple"]  .statIcon { background: rgba(124,58,237,0.1); color: #a78bfa; }
+.statCard[data-accent="purple"]  .statValue { color: #a78bfa; }
+.statCard[data-accent="warning"] .statIcon { background: rgba(245,158,11,0.12); color: var(--warning); }
+.statCard[data-accent="warning"] .statValue { color: var(--warning); }
+.statCard[data-accent="muted"]   .statIcon { background: var(--background-alt); color: var(--text-muted); }
+.statCard[data-accent="muted"]   .statValue { color: var(--text-muted); }
 
 .statValue {
   font-size: 2rem;
@@ -96,6 +112,12 @@
 }
 
 /* Quick Actions */
+.quickActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .sectionTitle {
   font-size: 1.1rem;
   font-weight: 700;
@@ -112,9 +134,9 @@
 .actionCard {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1.25rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
   border-radius: 14px;
   background: var(--card-bg-solid);
   border: 1px solid var(--border-color);
@@ -126,16 +148,44 @@
 .actionCard:hover {
   border-color: var(--primary-blue);
   background: var(--primary-blue-glow);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--primary-blue-glow);
+}
+
+.actionCardAccent {
+  border-color: var(--warning);
+}
+.actionCardAccent:hover {
+  border-color: var(--warning);
+  background: rgba(245,158,11,0.08);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.15);
+}
+
+.actionIcon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; background: var(--primary-blue-glow);
+  color: var(--primary-blue); transition: all 0.2s ease;
+}
+.actionCard:hover .actionIcon {
+  background: var(--primary-blue);
+  color: #fff;
+}
+
+.actionText {
+  flex: 1; min-width: 0;
 }
 
 .actionTitle {
   font-weight: 600;
   color: var(--text-main);
+  font-size: 0.9rem;
 }
 
 .actionDesc {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
+  margin-top: 0.1rem;
 }
 
 .actionArrow {

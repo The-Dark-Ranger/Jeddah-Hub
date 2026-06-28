@@ -106,10 +106,10 @@
 }
 
 .statusDot { width: 6px; height: 6px; border-radius: 50%; }
-.cardStatusActive  .statusDot { background: #10b981; }
-.cardStatusActive  { color: #10b981; }
-.cardStatusArchived .statusDot { background: #94a3b8; }
-.cardStatusArchived { color: #94a3b8; }
+.cardStatusActive  .statusDot { background: var(--success); }
+.cardStatusActive  { color: var(--success); }
+.cardStatusArchived .statusDot { background: var(--secondary-gray); }
+.cardStatusArchived { color: var(--secondary-gray); }
 
 .cardTitle { font-size: 1.15rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
 

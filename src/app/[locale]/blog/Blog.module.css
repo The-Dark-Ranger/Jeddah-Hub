@@ -133,7 +133,7 @@
 /* Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
 }
 
@@ -264,7 +264,7 @@
 
 .cardLikes {
   font-size: 0.78rem;
-  color: #ef4444;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -306,8 +306,9 @@
   margin-bottom: 0.5rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .header { padding: 3.5rem 1.25rem 2.5rem; }
   .container { padding: 2rem 1rem 4rem; }
-  .grid { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .cardGradient { height: 120px; }
 }

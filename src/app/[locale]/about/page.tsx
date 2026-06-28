@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 
@@ -11,6 +11,7 @@ import styles from './About.module.css';
 interface LiveShaper {
   uid: string;
   displayName: string;
+  displayNameAr?: string;
   role: string;
   bio?: string;
   linkedin?: string;
@@ -22,6 +23,7 @@ interface LiveShaper {
 interface LiveCurator {
   uid: string;
   displayName: string;
+  displayNameAr?: string;
   role: string;
   bio?: string;
   linkedin?: string;
@@ -78,20 +80,22 @@ const EmailIcon = () => (
 
 function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
   const gradient = avatarGradient(shaper.uid, index);
+  const locale   = useLocale();
+  const name     = locale === 'ar' && shaper.displayNameAr ? shaper.displayNameAr : shaper.displayName;
   return (
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
         <div className={styles.shaperAvatarWrap}>
           {shaper.photoURL
-            ? <img src={shaper.photoURL} alt={shaper.displayName} className={styles.shaperAvatarImg}
+            ? <img src={shaper.photoURL} alt={name} className={styles.shaperAvatarImg}
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             : <div className={styles.shaperAvatar} style={{ background: gradient }}>
-                {initials(shaper.displayName)}
+                {initials(name)}
               </div>
           }
         </div>
         <div className={styles.shaperMeta}>
-          <h3 className={styles.shaperName}>{shaper.displayName}</h3>
+          <h3 className={styles.shaperName}>{name}</h3>
           <div className={styles.shaperActions}>
             {shaper.linkedin && (
               <a href={shaper.linkedin} target="_blank" rel="noopener noreferrer"
@@ -121,20 +125,22 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
 
 function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; index: number; roleLabel: string }) {
   const gradient = avatarGradient(curator.uid, index);
-  const tc = useTranslations('Common');
+  const tc     = useTranslations('Common');
+  const locale = useLocale();
+  const name   = locale === 'ar' && curator.displayNameAr ? curator.displayNameAr : curator.displayName;
   return (
     <div className={styles.curatorCard}>
       <div className={styles.curatorAvatarWrap}>
         {curator.photoURL
-          ? <img src={curator.photoURL} alt={curator.displayName} className={styles.curatorAvatarImg}
+          ? <img src={curator.photoURL} alt={name} className={styles.curatorAvatarImg}
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           : <div className={styles.curatorAvatar} style={{ background: gradient }}>
-              {initials(curator.displayName)}
+              {initials(name)}
             </div>
         }
       </div>
       <div className={styles.curatorBody}>
-        <div className={styles.curatorName}>{curator.displayName}</div>
+        <div className={styles.curatorName}>{name}</div>
         <div className={styles.curatorRole}>{roleLabel}</div>
         {curator.bio && <p className={styles.curatorBio}>{curator.bio}</p>}
         {curator.linkedin && (
@@ -167,27 +173,29 @@ export default function AboutPage() {
       const live = all
         .filter((u: any) => shaperRoles.includes(u.role) && u.displayName)
         .map((u: any): LiveShaper => ({
-          uid:         u.uid,
-          displayName: u.displayName,
-          role:        u.role,
-          bio:         u.bio         || '',
-          linkedin:    u.linkedin    || '',
-          twitter:     u.twitter     || '',
-          instagram:   u.instagram   || '',
-          photoURL:    u.photoURL    || '',
+          uid:           u.uid,
+          displayName:   u.displayName,
+          displayNameAr: u.displayNameAr || '',
+          role:          u.role,
+          bio:           u.bio         || '',
+          linkedin:      u.linkedin    || '',
+          twitter:       u.twitter     || '',
+          instagram:     u.instagram   || '',
+          photoURL:      u.photoURL    || '',
         }));
 
       const curs = all
         .filter((u: any) => curatorRoles.includes(u.role) && u.displayName)
         .map((u: any): LiveCurator => ({
-          uid:         u.uid,
-          displayName: u.displayName,
-          role:        u.role,
-          bio:         u.bio         || '',
-          linkedin:    u.linkedin    || '',
-          twitter:     u.twitter     || '',
-          instagram:   u.instagram   || '',
-          photoURL:    u.photoURL    || '',
+          uid:           u.uid,
+          displayName:   u.displayName,
+          displayNameAr: u.displayNameAr || '',
+          role:          u.role,
+          bio:           u.bio         || '',
+          linkedin:      u.linkedin    || '',
+          twitter:       u.twitter     || '',
+          instagram:     u.instagram   || '',
+          photoURL:      u.photoURL    || '',
         }))
         .sort((a: LiveCurator, b: LiveCurator) =>
           (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99)

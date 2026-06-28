@@ -3,24 +3,6 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-async function notifySubscribers(post: BlogPost, allPosts: BlogPost[]) {
-  try {
-    const subSnap = await getDocs(collection(db, 'newsletter_subscribers'));
-    const subscribers = subSnap.docs.map(d => (d.data().email as string)).filter(Boolean);
-    if (!subscribers.length) return;
-
-    const related = allPosts
-      .filter(p => p.status === 'published' && p.id !== post.id)
-      .slice(0, 2);
-
-    await fetch('/api/newsletter/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscribers, post, relatedPosts: related }),
-    });
-  } catch { /* email notification is best-effort */ }
-}
 import { UserProfile } from '@/lib/auth';
 import styles from './BlogManager.module.css';
 
@@ -51,10 +33,11 @@ function timeAgo(iso: string) {
   return days + ' days ago';
 }
 
-export default function BlogManager({ user }: { user: UserProfile }) {
+export default function BlogManager({ user, isInitiativeLead = false }: { user: UserProfile; isInitiativeLead?: boolean }) {
   const isCurator = user.role === 'curator' || user.role === 'vice_curator';
   const isImpact  = user.role === 'impact_officer';
-  const canPublishDirectly = isCurator || isImpact;
+  const canPublishDirectly = isCurator || isImpact || isInitiativeLead;
+  const canSeeAll = isCurator;
 
   const [posts, setPosts]       = useState<BlogPost[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -70,7 +53,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   const fetchPosts = async () => {
     setLoading(true);
-    const q = isCurator
+    const q = canSeeAll
       ? query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
       : query(collection(db, 'blogs'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
@@ -117,11 +100,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       newPostId = ref.id;
     }
     setSaving(false); resetForm(); setView('list');
-    const updated = await fetchPosts();
-    if (status === 'published' && newPostId) {
-      const newPost = updated?.find((p: BlogPost) => p.id === newPostId);
-      if (newPost) notifySubscribers(newPost, updated || []);
-    }
+    await fetchPosts();
   };
 
   const handleDelete = async (id: string) => {
@@ -132,14 +111,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   const handleStatusChange = async (id: string, newStatus: BlogPost['status']) => {
     await updateDoc(doc(db, 'blogs', id), { status: newStatus });
-    setPosts(prev => {
-      const updated = prev.map(p => p.id === id ? { ...p, status: newStatus } : p);
-      if (newStatus === 'published') {
-        const publishedPost = updated.find(p => p.id === id);
-        if (publishedPost) notifySubscribers(publishedPost, updated);
-      }
-      return updated;
-    });
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
   };
 
   const filtered = posts.filter(p => filter === 'all' || p.status === filter);
@@ -201,7 +173,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         <div>
           <h2 className={styles.pageTitle}>Blog Portal</h2>
           <p className={styles.pageSubtitle}>
-            {isCurator ? 'Manage and moderate all community posts.' : 'Write and manage your posts.'}
+            {canSeeAll ? 'Manage and moderate all community posts.' : 'Write and manage your posts.'}
           </p>
         </div>
         <button className={styles.newBtn} onClick={() => { resetForm(); setView('write'); }}>
@@ -235,7 +207,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         <div className={styles.postList}>
           {filtered.map(post => {
             const si = STATUS_LABELS[post.status] ?? { label: post.status, color: '#94a3b8' };
-            const canEdit = isCurator || post.authorId === user.uid;
+            const canEdit = canSeeAll || post.authorId === user.uid;
             return (
               <div key={post.id} className={styles.postItem}>
                 <div className={styles.postMain}>
@@ -250,18 +222,18 @@ export default function BlogManager({ user }: { user: UserProfile }) {
                       {post.tags.slice(0, 3).map(tag => <span key={tag} className={styles.postTag}>{tag}</span>)}
                     </div>
                   )}
-                  {isCurator && (
+                  {canSeeAll && (
                     <div className={styles.postAuthorLine}>By: <strong>{post.authorName}</strong> · {post.authorRole?.replace('_', ' ')}</div>
                   )}
                 </div>
                 <div className={styles.postActions}>
-                  {isCurator && post.status === 'pending_review' && (
+                  {canSeeAll && post.status === 'pending_review' && (
                     <>
                       <button className={styles.approveBtn} onClick={() => handleStatusChange(post.id, 'published')}>Publish</button>
                       <button className={styles.rejectBtn} onClick={() => handleStatusChange(post.id, 'draft')}>Reject</button>
                     </>
                   )}
-                  {isCurator && post.status === 'published' && (
+                  {canSeeAll && post.status === 'published' && (
                     <button className={styles.draftBtn} onClick={() => handleStatusChange(post.id, 'draft')}>Unpublish</button>
                   )}
                   {canEdit && <button className={styles.editBtn} onClick={() => openEdit(post)}>Edit</button>}

@@ -180,14 +180,14 @@
   padding: 0.4rem 0.85rem;
   border-radius: 7px;
   background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
+  color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.3);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.approveBtn:hover { background: #10b981; color: white; }
+.approveBtn:hover { background: var(--success); color: white; }
 
 .rejectBtn {
   padding: 0.4rem 0.85rem;

@@ -12,6 +12,7 @@ export interface UserProfile {
   email: string | null;
   role: UserRole;
   displayName: string | null;
+  displayNameAr?: string;
   photoURL?: string;
   bio?: string;
   linkedin?: string;
@@ -84,7 +85,8 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
       return {
         uid, email: data.email || email || null, role,
-        displayName: data.displayName || null,
+        displayName:   data.displayName   || null,
+        displayNameAr: data.displayNameAr || undefined,
         photoURL:  data.photoURL  || undefined,
         bio:       data.bio       || undefined,
         linkedin:  data.linkedin  || undefined,

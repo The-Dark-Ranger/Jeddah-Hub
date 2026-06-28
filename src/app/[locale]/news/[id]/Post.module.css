@@ -155,13 +155,13 @@
 }
 
 .likeBtn:hover:not(:disabled) {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .likeBtnActive {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--danger);
+  color: var(--danger);
   background: rgba(239, 68, 68, 0.06);
 }
 

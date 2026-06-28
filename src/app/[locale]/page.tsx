@@ -2,16 +2,8 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
-
-// Shaper names shown in the home-page team preview (first 10 are displayed).
-// Full bios live in src/app/[locale]/about/page.tsx → SHAPERS array.
-const MEMBERS = [
-  'Abdulaziz Alahmadi','Hanin Aljifri','Ammar Koshak','Aseel Basnawi',
-  'Hashem Hashem','Haya Haddad','Masarah Hussain','Riyadh Alshehri',
-  'Suhaib Darweesh','Dana Sayyadah','Jana Jambi','Toleen Attar',
-  'Nagy ElSokkary','Toulin Tabbash','Faisal Aldaheri','Jodie Alsasi',
-  'Musaad Aljafari','Shahad Alattas','Mohammed Al Nahari','Samar Alzanbaqi',
-];
+import HomeShapers from '@/components/HomeShapers';
+import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 
 // Retreat venue cards shown inside the dark Retreat section.
 // Each entry: name (displayed large) + tag (small descriptor below).
@@ -24,29 +16,11 @@ const RETREAT_VENUES = [
   { name: 'Taibat Alhijaz', tag: 'Restaurant' },
 ];
 
-const PROJECT_GRADIENTS = [
-  'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
-  'linear-gradient(135deg,#10b981,#34d399)',
-  'linear-gradient(135deg,#7c3aed,#a78bfa)',
-];
-
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
-  'linear-gradient(135deg,#10b981,#34d399)',
-  'linear-gradient(135deg,#7c3aed,#a78bfa)',
-  'linear-gradient(135deg,#f59e0b,#fbbf24)',
-  'linear-gradient(135deg,#0891b2,#22d3ee)',
-];
-
 // Active partners — update this list to add/remove partner badges on the home page
 const PARTNERS = [
   'SHADA Hotel',
   'Zawiya 97',
 ];
-
-function initials(name: string) {
-  return name.split(' ').slice(0, 2).map(w => w[0]).join('');
-}
 
 export default function HomePage() {
   const t   = useTranslations('HomePage');
@@ -170,7 +144,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. Featured projects */}
+      {/* 5. Featured projects — live from Firestore */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
@@ -178,25 +152,14 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('projectsSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <div className={styles.projectsGrid}>
-            {[1, 2, 3].map(n => (
-              <Link key={n} href={`/projects/p${n}`} className={styles.projectCard}>
-                <div className={styles.projectBanner} style={{ background: PROJECT_GRADIENTS[n - 1] }} />
-                <div className={styles.projectInfo}>
-                  <h3 className={styles.projectTitle}>{t(('featuredProjects.project' + n + '.title') as Parameters<typeof t>[0])}</h3>
-                  <p className={styles.projectDesc}>{t(('featuredProjects.project' + n + '.description') as Parameters<typeof t>[0])}</p>
-                  <span className={styles.projectBadge}>{t('active')}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <HomeFeaturedInitiatives />
           <div className={styles.sectionCta}>
             <Link href="/projects" className={styles.secondaryButton}>{t('viewAllInitiatives')}</Link>
           </div>
         </div>
       </section>
 
-      {/* 6. Shapers — show first 10 */}
+      {/* 6. Shapers — live from Firestore */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
@@ -204,17 +167,7 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('membersSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <div className={styles.membersGrid}>
-            {MEMBERS.slice(0, 10).map((name, i) => (
-              <div key={name} className={styles.memberCard}>
-                <div className={styles.memberAvatar} style={{ background: AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length] }}>
-                  {initials(name)}
-                </div>
-                <div className={styles.memberName}>{name}</div>
-                <div className={styles.memberRole}>{t('globalShaper')}</div>
-              </div>
-            ))}
-          </div>
+          <HomeShapers />
           <div className={styles.sectionCta}>
             <Link href="/about" className={styles.secondaryButton}>{t('viewAllShapers')}</Link>
           </div>

@@ -9,6 +9,7 @@ import styles from './Profile.module.css';
 
 interface ProfileForm {
   displayName: string;
+  displayNameAr: string;
   photoURL: string;
   bio: string;
   linkedin: string;
@@ -16,7 +17,7 @@ interface ProfileForm {
   instagram: string;
 }
 
-const empty: ProfileForm = { displayName: '', photoURL: '', bio: '', linkedin: '', twitter: '', instagram: '' };
+const empty: ProfileForm = { displayName: '', displayNameAr: '', photoURL: '', bio: '', linkedin: '', twitter: '', instagram: '' };
 
 export default function MyProfile() {
   const { user } = useAuth();
@@ -35,12 +36,13 @@ export default function MyProfile() {
       if (snap.exists()) {
         const d = snap.data();
         setForm({
-          displayName: d.displayName || '',
-          photoURL:    d.photoURL    || '',
-          bio:         d.bio         || '',
-          linkedin:    d.linkedin    || '',
-          twitter:     d.twitter     || '',
-          instagram:   d.instagram   || '',
+          displayName:   d.displayName   || '',
+          displayNameAr: d.displayNameAr || '',
+          photoURL:      d.photoURL      || '',
+          bio:           d.bio           || '',
+          linkedin:      d.linkedin      || '',
+          twitter:       d.twitter       || '',
+          instagram:     d.instagram     || '',
         });
       }
       setLoaded(true);
@@ -66,12 +68,13 @@ export default function MyProfile() {
     setSaving(true);
     setSaved(false);
     await updateDoc(doc(db, 'users', user.uid), {
-      displayName: form.displayName.trim(),
-      photoURL:    form.photoURL.trim(),
-      bio:         form.bio.trim(),
-      linkedin:    form.linkedin.trim(),
-      twitter:     form.twitter.trim(),
-      instagram:   form.instagram.trim(),
+      displayName:   form.displayName.trim(),
+      displayNameAr: form.displayNameAr.trim(),
+      photoURL:      form.photoURL.trim(),
+      bio:           form.bio.trim(),
+      linkedin:      form.linkedin.trim(),
+      twitter:       form.twitter.trim(),
+      instagram:     form.instagram.trim(),
     });
     setSaving(false);
     setSaved(true);
@@ -113,6 +116,11 @@ export default function MyProfile() {
               <label className={styles.label}>{t('displayName')}</label>
               <input className={styles.input} value={form.displayName} onChange={set('displayName')} placeholder={t('phDisplayName')} />
               <span className={styles.hint}>{t('displayNameHint')}</span>
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.label}>{t('displayNameAr')}</label>
+              <input className={styles.input} value={form.displayNameAr} onChange={set('displayNameAr')} placeholder={t('phDisplayNameAr')} dir="rtl" />
+              <span className={styles.hint}>{t('displayNameArHint')}</span>
             </div>
             <div className={styles.formField}>
               <label className={styles.label}>{t('photoUrl')}</label>

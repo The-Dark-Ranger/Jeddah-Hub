@@ -1,7 +1,7 @@
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
-  doc, getDoc, setDoc, deleteDoc,
+  doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, addDoc
 } from 'firebase/firestore';
 
@@ -46,8 +46,11 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
     );
     const snap = await getDocs(q);
     if (!snap.empty) {
+      const data = snap.docs[0].data();
+      // Skip already-joined records — they exist only for curator notification
+      if (data.status === 'joined') return { role: null, docId: null };
       return {
-        role: ((snap.docs[0].data().role as string)?.toLowerCase() as UserRole) || null,
+        role: ((data.role as string)?.toLowerCase() as UserRole) || null,
         docId: snap.docs[0].id,
       };
     }
@@ -60,7 +63,13 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
 async function applyAndClearAssignment(docRef: ReturnType<typeof doc>, role: UserRole, docId: string | null) {
   await setDoc(docRef, { role }, { merge: true });
   if (docId) {
-    try { await deleteDoc(doc(db, 'role_assignments', docId)); } catch { /* ignore */ }
+    // Mark as joined instead of deleting — curator sees the notification and acknowledges it
+    try {
+      await updateDoc(doc(db, 'role_assignments', docId), {
+        status: 'joined',
+        joinedAt: new Date().toISOString(),
+      });
+    } catch { /* ignore */ }
   }
 }
 
@@ -99,7 +108,12 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
       const profile: UserProfile = { uid, email, role: result.role, displayName: null };
       await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
       if (result.role && result.docId) {
-        try { await deleteDoc(doc(db, 'role_assignments', result.docId)); } catch { /* ignore */ }
+        try {
+          await updateDoc(doc(db, 'role_assignments', result.docId), {
+            status: 'joined',
+            joinedAt: new Date().toISOString(),
+          });
+        } catch { /* ignore */ }
       }
       return profile;
     }

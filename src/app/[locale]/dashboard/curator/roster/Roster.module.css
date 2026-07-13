@@ -57,6 +57,7 @@
 
 .noMembersRow { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
 
+.tableScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .memberTable { width: 100%; border-collapse: collapse; }
 .memberTable th {
   padding: 0.6rem 1.25rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase;

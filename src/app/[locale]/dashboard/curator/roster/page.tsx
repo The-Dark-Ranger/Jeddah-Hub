@@ -194,7 +194,7 @@ export default function ManageRoster() {
                   {members.length === 0 ? (
                     <p className={styles.noMembersRow}>{t('noMembers')}</p>
                   ) : (
-                    <table className={styles.memberTable}>
+                    <div className={styles.tableScroll}><table className={styles.memberTable}>
                       <thead>
                         <tr>
                           <th>{t('colMember')}</th>
@@ -220,7 +220,7 @@ export default function ManageRoster() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </table></div>
                   )}
                 </div>
               );

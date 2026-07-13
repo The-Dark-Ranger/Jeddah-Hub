@@ -58,8 +58,12 @@ export default function Navbar() {
 
   const handleLogout = async () => { await logout(); router.push('/'); setMobileOpen(false); };
   const closeMobile  = () => setMobileOpen(false);
-  const handleLangSwitch = () => {
-    try { sessionStorage.setItem('jh-lang-switch', '1'); } catch { /* ignore */ }
+  const handleLangSwitch = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    try {
+      sessionStorage.setItem('jh-lang-switch', '1');
+      // Set on current page BEFORE navigation so the outgoing view-transition uses the cross-fade CSS
+      document.documentElement.setAttribute('data-lang-switch', '');
+    } catch { /* ignore */ }
   };
 
   const NAV_LINKS = [
@@ -110,8 +114,10 @@ export default function Navbar() {
             {mounted ? (theme === 'light' ? <MoonIcon /> : <SunIcon />) : <MoonIcon />}
           </button>
 
-          <Link href={pathname} locale={nextLocale} className={styles.langSwitcher} onClick={handleLangSwitch}>
-            {locale === 'en' ? 'AR' : 'EN'}
+          <Link href={pathname} locale={nextLocale} className={styles.langPill} onClick={handleLangSwitch}>
+            <span className={locale === 'en' ? styles.langActive : styles.langInactive}>EN</span>
+            <span className={styles.langDivider} />
+            <span className={locale === 'ar' ? styles.langActive : styles.langInactive}>AR</span>
           </Link>
 
           {user ? (

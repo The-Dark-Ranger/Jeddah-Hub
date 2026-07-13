@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -16,6 +16,8 @@ interface RoleAssignment {
   role: UserRole;
   createdAt: string;
   note?: string;
+  status?: 'pending' | 'joined';
+  joinedAt?: string;
 }
 
 interface KnownUser { email: string; displayName?: string; }
@@ -41,6 +43,7 @@ export default function MembersPage() {
   const [note, setNote]   = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
+  const [inviteState, setInviteState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
 
   const isCurator = user?.role === 'curator' || user?.role === 'vice_curator';
 
@@ -52,12 +55,12 @@ export default function MembersPage() {
     { value: 'alumni',         label: t('roleLabelAlumni') },
   ];
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     setLoading(true);
     const snap = await getDocs(query(collection(db, 'role_assignments'), orderBy('createdAt', 'desc')));
     setAssignments(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment)));
     setLoading(false);
-  };
+  }, []);
 
   const fetchKnownUsers = async () => {
     try {
@@ -69,9 +72,8 @@ export default function MembersPage() {
     } catch { /* users collection may not exist */ }
   };
 
-  useEffect(() => { fetchAssignments(); fetchKnownUsers(); }, []);
+  useEffect(() => { fetchAssignments(); fetchKnownUsers(); }, [fetchAssignments]);
 
-  /* When email is entered, try to auto-fill name from known users */
   const handleEmailBlur = () => {
     if (!name.trim()) {
       const found = knownUsers.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
@@ -93,6 +95,7 @@ export default function MembersPage() {
       displayName: name.trim() || null,
       role,
       note: note.trim(),
+      status: 'pending',
       createdAt: new Date().toISOString(),
       addedBy: user?.email,
     });
@@ -107,16 +110,104 @@ export default function MembersPage() {
     setAssignments(prev => prev.filter(a => a.id !== id));
   };
 
-  /* Resolve display name: stored name → known users lookup → null */
+  const handleAcknowledge = async (id: string) => {
+    await deleteDoc(doc(db, 'role_assignments', id));
+    setAssignments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleSendInvite = async (a: RoleAssignment) => {
+    setInviteState(s => ({ ...s, [a.id]: 'sending' }));
+    try {
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: a.email, displayName: a.displayName, role: a.role }),
+      });
+      setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));
+      // reset after 3s
+      setTimeout(() => setInviteState(s => ({ ...s, [a.id]: 'idle' })), 3000);
+    } catch {
+      setInviteState(s => ({ ...s, [a.id]: 'failed' }));
+      setTimeout(() => setInviteState(s => ({ ...s, [a.id]: 'idle' })), 3000);
+    }
+  };
+
   const resolveName = (a: RoleAssignment) => {
     if (a.displayName) return a.displayName;
     const found = knownUsers.find(u => u.email.toLowerCase() === a.email.toLowerCase());
     return found?.displayName || null;
   };
 
+  const pending = assignments.filter(a => a.status !== 'joined');
+  const joined  = assignments.filter(a => a.status === 'joined');
+
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
   }
+
+  const renderRow = (a: RoleAssignment, isJoined: boolean) => {
+    const displayName = resolveName(a);
+    const invState = inviteState[a.id] ?? 'idle';
+    return (
+      <tr key={a.id}>
+        <td className={styles.emailCell}>
+          {displayName && <div className={styles.memberName}>{displayName}</div>}
+          <div className={styles.memberEmail}>{a.email}</div>
+        </td>
+        <td>
+          <span className={styles.roleBadge} style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}>
+            {ROLES.find(r => r.value === a.role)?.label ?? a.role}
+          </span>
+        </td>
+        <td className={styles.noteCell}>{a.note || ''}</td>
+        <td className={styles.dateCell}>
+          {new Date(isJoined && a.joinedAt ? a.joinedAt : a.createdAt).toLocaleDateString(
+            locale === 'ar' ? 'ar-SA' : 'en-US',
+            { month: 'short', day: 'numeric', year: 'numeric' }
+          )}
+        </td>
+        <td className={styles.actionsCell}>
+          {isJoined ? (
+            <button className={styles.acknowledgeBtn} onClick={() => handleAcknowledge(a.id)}>
+              {t('acknowledge')}
+            </button>
+          ) : (
+            <>
+              <button
+                className={styles.inviteBtn + (invState === 'sent' ? ' ' + styles.inviteSent : invState === 'failed' ? ' ' + styles.inviteFailed : '')}
+                onClick={() => handleSendInvite(a)}
+                disabled={invState === 'sending'}
+              >
+                {invState === 'sent' ? t('inviteSent') : invState === 'failed' ? t('inviteFailed') : invState === 'sending' ? '…' : t('sendInvite')}
+              </button>
+              <button className={styles.removeBtn} onClick={() => handleDelete(a.id)}>
+                {t('remove')}
+              </button>
+            </>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
+  const renderTable = (rows: RoleAssignment[], isJoined: boolean) => (
+    <div className={styles.tableScroll}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>{t('colRole')}</th>
+            <th>{t('colNote')}</th>
+            <th>{isJoined ? t('statusJoined') : t('colAdded')}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(a => renderRow(a, isJoined))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className={styles.page}>
@@ -177,60 +268,35 @@ export default function MembersPage() {
         </button>
       </form>
 
-      {/* Table */}
-      <div className={styles.tableWrap}>
-        <div className={styles.tableHeader}>
-          <span>{t('assignmentsLabel')}</span>
-          <span className={styles.count}>{assignments.length}</span>
-        </div>
-        {loading ? (
-          <div className={styles.loading}><div className={styles.spinner} /></div>
-        ) : assignments.length === 0 ? (
-          <div className={styles.empty}>{t('noAssignments')}</div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>{t('colRole')}</th>
-                <th>{t('colNote')}</th>
-                <th>{t('colAdded')}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignments.map(a => {
-                const displayName = resolveName(a);
-                return (
-                  <tr key={a.id}>
-                    <td className={styles.emailCell}>
-                      {displayName && <div className={styles.memberName}>{displayName}</div>}
-                      <div className={styles.memberEmail}>{a.email}</div>
-                    </td>
-                    <td>
-                      <span className={styles.roleBadge} style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}>
-                        {ROLES.find(r => r.value === a.role)?.label ?? a.role}
-                      </span>
-                    </td>
-                    <td className={styles.noteCell}>{a.note || ''}</td>
-                    <td className={styles.dateCell}>
-                      {new Date(a.createdAt).toLocaleDateString(
-                        locale === 'ar' ? 'ar-SA' : 'en-US',
-                        { month: 'short', day: 'numeric', year: 'numeric' }
-                      )}
-                    </td>
-                    <td>
-                      <button className={styles.removeBtn} onClick={() => handleDelete(a.id)}>
-                        {t('remove')}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {loading ? (
+        <div className={styles.loading}><div className={styles.spinner} /></div>
+      ) : (
+        <>
+          {/* Recently Joined — needs acknowledgement */}
+          {joined.length > 0 && (
+            <div className={styles.tableWrap}>
+              <div className={styles.tableHeader}>
+                <span className={styles.joinedDot} />
+                <span>{t('joinedSection')}</span>
+                <span className={styles.countJoined}>{joined.length}</span>
+              </div>
+              <p className={styles.tableSubtitle}>{t('roleAssignmentsSubtitleJoined')}</p>
+              {renderTable(joined, true)}
+            </div>
+          )}
+
+          {/* Pending assignments */}
+          <div className={styles.tableWrap}>
+            <div className={styles.tableHeader}>
+              <span>{t('pendingSection')}</span>
+              <span className={styles.count}>{pending.length}</span>
+            </div>
+            {pending.length === 0 ? (
+              <div className={styles.empty}>{t('noAssignments')}</div>
+            ) : renderTable(pending, false)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -59,7 +59,7 @@ export default async function LocaleLayout({
         />
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
-        <SplashScreen />
+        <SplashScreen locale={locale} />
         <LangSwitchHandler />
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>

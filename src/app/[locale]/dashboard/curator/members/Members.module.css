@@ -59,9 +59,40 @@
   color: var(--text-main);
 }
 
+.tableSubtitle {
+  padding: 0 1.5rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .count {
   background: var(--primary-blue-glow); color: var(--primary-blue);
   border-radius: 10px; padding: 0.05rem 0.5rem; font-size: 0.8rem; font-weight: 700;
+}
+
+.countJoined {
+  background: rgba(16,185,129,0.12); color: var(--success);
+  border-radius: 10px; padding: 0.05rem 0.5rem; font-size: 0.8rem; font-weight: 700;
+}
+
+.joinedDot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
 }
 
 .table { width: 100%; border-collapse: collapse; }
@@ -90,12 +121,36 @@
   background: transparent;
 }
 
+.actionsCell { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+
 .removeBtn {
   padding: 0.3rem 0.75rem; border-radius: 6px; background: rgba(239,68,68,0.08);
   color: var(--danger); border: 1px solid rgba(239,68,68,0.2);
   font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .removeBtn:hover { background: var(--danger); color: white; }
+
+.acknowledgeBtn {
+  padding: 0.3rem 0.85rem; border-radius: 6px;
+  background: rgba(16,185,129,0.1); color: var(--success);
+  border: 1px solid rgba(16,185,129,0.25);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.acknowledgeBtn:hover { background: var(--success); color: white; }
+
+.inviteBtn {
+  padding: 0.3rem 0.75rem; border-radius: 6px;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+  border: 1px solid rgba(15,90,159,0.2);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.inviteBtn:hover:not(:disabled) { background: var(--primary-blue); color: white; }
+.inviteBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.inviteBtn.inviteSent { background: rgba(16,185,129,0.1); color: var(--success); border-color: rgba(16,185,129,0.25); cursor: default; }
+.inviteBtn.inviteFailed { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); cursor: default; }
 
 .loading { display: flex; justify-content: center; padding: 3rem; }
 .spinner { width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
@@ -108,6 +163,5 @@
 }
 @media (max-width: 600px) {
   .formRow { grid-template-columns: 1fr; }
-  .table th:nth-child(3), .table td:nth-child(3),
-  .table th:nth-child(4), .table td:nth-child(4) { display: none; }
+  .actionsCell { flex-direction: column; align-items: flex-start; }
 }

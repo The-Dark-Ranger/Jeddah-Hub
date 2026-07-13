@@ -119,7 +119,7 @@
   margin: 2.5rem 0;
 }
 
-/* Content sections — Masarak style */
+/* Content sections (Masarak style) */
 .sections { display: flex; flex-direction: column; gap: 0; }
 
 .contentSection { padding: 2.5rem 0; border-bottom: 1px solid var(--border-color); }
@@ -155,6 +155,42 @@
   padding: 0.35rem 0.95rem; border-radius: 6px;
   background: var(--background-alt); border: 1px solid var(--border-color);
   font-size: 0.85rem; color: var(--text-main); font-weight: 500;
+}
+
+/* Team section */
+.teamSection { padding-bottom: 1rem; }
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.teamCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: var(--background-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.teamAvatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+}
+
+.teamInfo { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+
+.teamName {
+  font-size: 0.9rem; font-weight: 600; color: var(--text-main);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.teamRole {
+  font-size: 0.75rem; color: var(--text-muted); font-weight: 500;
 }
 
 /* Loading/404 */

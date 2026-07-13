@@ -81,7 +81,7 @@ export default function ManageRoster() {
 
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
-    return u?.email || u?.displayName || userId;
+    return u?.displayName || u?.email || userId;
   };
 
   const activeInitiatives = initiatives.filter(i => i.status !== 'archived');
@@ -147,7 +147,7 @@ export default function ManageRoster() {
           <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className={styles.select}>
             <option value="">{t('selectUser')}</option>
             {users.map(u => (
-              <option key={u.id} value={u.id}>{u.email || u.id}</option>
+              <option key={u.id} value={u.id}>{u.displayName || u.email || u.id}</option>
             ))}
           </select>
           <input
@@ -197,7 +197,7 @@ export default function ManageRoster() {
                     <table className={styles.memberTable}>
                       <thead>
                         <tr>
-                          <th>{t('colEmail')}</th>
+                          <th>{t('colMember')}</th>
                           <th>{t('colRole')}</th>
                           <th />
                         </tr>

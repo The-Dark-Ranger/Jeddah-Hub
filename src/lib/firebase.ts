@@ -22,7 +22,7 @@ try {
   db = getFirestore(app);
 } catch (e) {
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('[firebase] Init failed — set NEXT_PUBLIC_FIREBASE_* env vars:', (e as Error).message);
+    console.warn('[firebase] Init failed, set NEXT_PUBLIC_FIREBASE_* env vars:', (e as Error).message);
   }
   // Provide stub objects so imports don't crash; actual calls will fail gracefully at the usage site
   app = undefined as unknown as FirebaseApp;

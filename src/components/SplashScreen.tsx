@@ -19,7 +19,7 @@ export default function SplashScreen() {
         return () => clearTimeout(timer);
       }
     } catch {
-      // sessionStorage unavailable — skip splash
+      // sessionStorage unavailable, skip splash
     }
   }, []);
 

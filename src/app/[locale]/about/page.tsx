@@ -160,15 +160,19 @@ export default function AboutPage() {
   const t  = useTranslations('AboutPage');
   const tr = useTranslations('Role');
 
-  const [shapers, setShapers]               = useState<LiveShaper[]>([]);
-  const [curators, setCurators]             = useState<LiveCurator[]>([]);
-  const [loadingShapers, setLoadingShapers] = useState(true);
+  const [shapers, setShapers]                     = useState<LiveShaper[]>([]);
+  const [curators, setCurators]                   = useState<LiveCurator[]>([]);
+  const [initiativeCount, setInitiativeCount]     = useState<number | null>(null);
+  const [loadingShapers, setLoadingShapers]       = useState(true);
 
   useEffect(() => {
-    getDocs(collection(db, 'users')).then(snap => {
+    Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'initiatives')),
+    ]).then(([usersSnap, initSnap]) => {
       const shaperRoles   = ['shaper', 'alumni'];
       const curatorRoles  = ['curator', 'vice_curator', 'impact_officer'];
-      const all = snap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
+      const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
 
       const live = all
         .filter((u: any) => shaperRoles.includes(u.role) && u.displayName)
@@ -203,6 +207,7 @@ export default function AboutPage() {
 
       setShapers(live);
       setCurators(curs);
+      setInitiativeCount(initSnap.size);
       setLoadingShapers(false);
     }).catch(() => setLoadingShapers(false));
   }, []);
@@ -222,9 +227,19 @@ export default function AboutPage() {
 
       {/* Stats bar */}
       <div className={styles.statsBar}>
-        <div className={styles.statItem}><span className={styles.statNum}>37</span><span className={styles.statLabel}>{t('shapers')}</span></div>
+        <div className={styles.statItem}>
+          <span className={styles.statNum}>
+            {loadingShapers ? '...' : shapers.length > 0 ? shapers.length : '37'}
+          </span>
+          <span className={styles.statLabel}>{t('shapers')}</span>
+        </div>
         <div className={styles.statDivider} />
-        <div className={styles.statItem}><span className={styles.statNum}>44</span><span className={styles.statLabel}>{t('statsInitiatives')}</span></div>
+        <div className={styles.statItem}>
+          <span className={styles.statNum}>
+            {initiativeCount !== null ? initiativeCount : '44'}
+          </span>
+          <span className={styles.statLabel}>{t('statsInitiatives')}</span>
+        </div>
         <div className={styles.statDivider} />
         <div className={styles.statItem}><span className={styles.statNum}>100K+</span><span className={styles.statLabel}>{t('statsBenefited')}</span></div>
         <div className={styles.statDivider} />
@@ -252,7 +267,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Current Curatorship — dynamic from Firestore */}
+      {/* Current Curatorship (dynamic from Firestore */}
       {curators.length > 0 && (
         <section className={styles.section}>
           <div className={styles.container}>
@@ -272,7 +287,7 @@ export default function AboutPage() {
         </section>
       )}
 
-      {/* Shapers — live from Firestore */}
+      {/* Shapers (live from Firestore */}
       <section className={styles.sectionAlt}>
         <div className={styles.container}>
           <h2 className={styles.sectionTitle}>{t('shapers')}</h2>

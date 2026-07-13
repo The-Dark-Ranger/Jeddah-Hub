@@ -106,9 +106,6 @@ export default function Footer() {
           <p className={styles.copyright}>
             &copy; {new Date().getFullYear()} {t('copyright')}
           </p>
-          <a href="mailto:jeddahglobalshapers@gmail.com" className={styles.email}>
-            jeddahglobalshapers@gmail.com
-          </a>
         </div>
       </div>
     </footer>

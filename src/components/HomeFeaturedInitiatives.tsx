@@ -13,7 +13,7 @@ const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#7c3aed,#a78bfa)',
 ];
 
-interface Initiative { id: string; title: string; description: string; category?: string; }
+interface Initiative { id: string; title: string; description: string; category?: string; images?: string[]; stat?: string; }
 
 export default function HomeFeaturedInitiatives() {
   const t = useTranslations('HomePage');
@@ -63,17 +63,31 @@ export default function HomeFeaturedInitiatives() {
 
   return (
     <div className={styles.projectsGrid}>
-      {items.map((init, i) => (
-        <Link key={init.id} href={`/projects/${init.id}`} className={styles.projectCard}>
-          <div className={styles.projectBanner} style={{ background: PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length] }} />
-          <div className={styles.projectInfo}>
-            {init.category && <span className={styles.projectCategory}>{init.category}</span>}
-            <h3 className={styles.projectTitle}>{init.title}</h3>
-            <p className={styles.projectDesc}>{init.description?.slice(0, 120)}{init.description?.length > 120 ? '…' : ''}</p>
-            <span className={styles.projectBadge}>{t('active')}</span>
-          </div>
-        </Link>
-      ))}
+      {items.map((init, i) => {
+        const img = init.images?.[0];
+        const gradient = PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length];
+        return (
+          <Link key={init.id} href={`/projects/${init.id}`} className={styles.projectCard}>
+            <div
+              className={styles.projectBanner}
+              style={img ? {
+                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 100%), url(${img})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              } : { background: gradient }}
+            >
+              {init.category && (
+                <span className={styles.projectBannerTag}>{init.category}</span>
+              )}
+            </div>
+            <div className={styles.projectInfo}>
+              <h3 className={styles.projectTitle}>{init.title}</h3>
+              <p className={styles.projectDesc}>{init.description?.slice(0, 120)}{init.description?.length > 120 ? '…' : ''}</p>
+              <span className={styles.projectBadge}>{t('active')}</span>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

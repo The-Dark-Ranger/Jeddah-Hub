@@ -79,7 +79,7 @@
 /* Criteria */
 .criteriaGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 1.5rem; }
 .criteriaCard { background: var(--card-bg-solid); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; position: relative; }
-/* Decorative large number badge (01/02/03) — full blue, no opacity wash */
+/* Decorative large number badge (01/02/03) - full blue, no opacity wash */
 .criteriaNum  { font-size: 2.5rem; font-weight: 800; color: var(--primary-blue); line-height: 1; margin-bottom: 0.75rem; }
 .criteriaTitle{ font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.25rem; }
 .criteriaList { display: flex; flex-direction: column; gap: .75rem; }
@@ -97,7 +97,7 @@
   transition:transform .2s ease, box-shadow .2s ease;
 }
 .stepCard:hover { transform:translateY(-3px); box-shadow:0 8px 24px var(--primary-blue-glow); }
-/* Step number (01/02/03/04) — full blue */
+/* Step number (01/02/03/04) - full blue */
 .stepNum   {
   font-size:2rem;font-weight:800;
   color:var(--primary-blue);
@@ -182,16 +182,15 @@
 .quoteRole { font-size: 0.78rem; color: var(--primary-blue); font-weight: 500; }
 
 /* ── Dark mode overrides ──────────────────────────────────────────────────
-   In dark mode --primary-blue becomes #3b9eff (bright electric blue).
-   The hero uses that as a solid fill, which is very harsh on dark screens.
-   Override it to a deep navy so the hero stays clearly blue but not glaring.
+   In dark mode the hero uses a deep navy gradient so the blue tones remain
+   without the bright #4a9eff fill being visually jarring.
    ─────────────────────────────────────────────────────────────────────── */
 [data-theme="dark"] .hero {
-  background: #0d3461;
+  background: linear-gradient(160deg, #0c2040 0%, #091528 100%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .hero {
-    background: #0d3461;
+    background: linear-gradient(160deg, #0c2040 0%, #091528 100%);
   }
 }
 
@@ -210,4 +209,14 @@
   .stepsGrid { grid-template-columns: 1fr; }
   .quotesGrid { grid-template-columns: 1fr; }
   .valuesGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .hero { padding: 4rem 0.75rem 0; }
+  .heroTitle { font-size: 1.9rem; }
+  .heroBtn { padding: 0.8rem 1.5rem; font-size: 0.92rem; }
+  .section, .sectionAlt, .ctaSection { padding: 3rem 0.75rem; }
+  .container { padding: 0 0.75rem; }
+  .criteriaCard, .stepCard, .valueCard, .quoteCard { padding: 1.25rem; }
+  .heroChip { padding: 0.9rem 0.6rem; }
+  .heroChip strong { font-size: 1.1rem; }
 }

@@ -12,7 +12,7 @@ export default function BecomeAShaperPage() {
 
   const steps = t.raw('steps') as Array<{ num: string; title: string; body: string }>;
 
-  // "Life as a Shaper" value cards — edit icon SVGs or add/remove cards here.
+  // "Life as a Shaper" value cards -- edit icon SVGs or add/remove cards here.
   // Corresponding text keys live in messages/[locale].json → BecomeShaperPage.
   const values = [
     {
@@ -53,7 +53,7 @@ export default function BecomeAShaperPage() {
     },
   ];
 
-  // Testimonial quotes — add/remove entries here. Text is pulled from i18n keys.
+  // Testimonial quotes -- add/remove entries here. Text is pulled from i18n keys.
   // To add a quote: add quoteN / quoteNAuthor / quoteNRole keys to both message files,
   // then push a new object to this array.
   const quotes = [
@@ -150,7 +150,7 @@ export default function BecomeAShaperPage() {
         </div>
       </section>
 
-      {/* Life as a Shaper — Values */}
+      {/* Life as a Shaper: Values */}
       <section className={styles.sectionAlt}>
         <div className={styles.container}>
           <div className={styles.valuesHeader}>

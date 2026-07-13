@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
               You're receiving this because you subscribed at <a href="https://jeddahhub.com" style="color:#0f5a9f;text-decoration:none;">jeddahhub.com</a>.
             </p>
             <p style="margin:0;font-size:13px;color:#cbd5e1;">
-              © ${new Date().getFullYear()} Global Shapers Community — Jeddah Hub · Jeddah, Saudi Arabia
+              © ${new Date().getFullYear()} Global Shapers Community, Jeddah Hub · Jeddah, Saudi Arabia
             </p>
           </td>
         </tr>

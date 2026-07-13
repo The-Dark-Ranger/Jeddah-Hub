@@ -78,8 +78,6 @@
 }
 
 .copyright { font-size: .8rem; color: var(--text-muted); }
-.email     { font-size: .8rem; color: var(--text-muted); transition: color .18s ease; }
-.email:hover { color: var(--primary-blue); }
 
 /* ── Responsive ── */
 

@@ -32,7 +32,7 @@
 .tag:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .tagActive  { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
 
-/* Grid — editorial card layout */
+/* Grid - editorial card layout */
 .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap: 2rem; }
 
 .card {

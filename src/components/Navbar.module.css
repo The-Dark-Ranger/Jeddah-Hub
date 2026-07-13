@@ -189,7 +189,7 @@
     position: fixed;
     inset-inline-start: 0; inset-inline-end: 0; top: 0;
     height: 68px; padding: 0 1rem;
-    /* Solid on mobile — no blur needed */
+    /* Solid on mobile, no blur needed */
     background: var(--sidebar-bg);
     backdrop-filter: none; -webkit-backdrop-filter: none;
     border-bottom: 1px solid var(--border-color);

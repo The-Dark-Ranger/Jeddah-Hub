@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiative.module.css';
 
 interface Initiative {
@@ -20,10 +20,18 @@ interface Initiative {
   impact?: string;
   impactAreas?: string[];
   images?: string[];
-  members?: unknown[];
+  members?: { userId: string; role?: string }[];
   createdAt?: string;
   startDate?: string;
   endDate?: string;
+}
+
+interface UserRecord {
+  id: string;
+  displayName?: string;
+  displayNameAr?: string;
+  photoURL?: string;
+  role?: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -38,7 +46,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Default:        '#0891b2',
 };
 
-/* Mirror of the placeholder list in projects/page.tsx — used as fallback
+/* Mirror of the placeholder list in projects/page.tsx -- used as fallback
    when the Firebase document doesn't exist (demo / offline mode). */
 const PLACEHOLDER_PROJECTS: Initiative[] = [
   {
@@ -54,7 +62,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     id: 'p2', title: 'Anti-Bullying Campaign', category: 'Wellbeing', status: 'active',
     stat: '4,000+ students reached',
     description: 'Creating spaces where youth feel heard, understood, and accepted. Encouraging empathy and kindness among young people.',
-    problem: "Bullying — including cyberbullying — remains a significant issue in Jeddah schools. Many students suffer in silence due to stigma, lack of reporting channels, and limited awareness among educators and parents.",
+    problem: "Bullying (including cyberbullying) remains a significant issue in Jeddah schools. Many students suffer in silence due to stigma, lack of reporting channels, and limited awareness among educators and parents.",
     objective: 'Run awareness campaigns in schools, train student ambassadors, and provide resources for teachers and parents. Build peer-support structures that empower bystanders to act and normalize conversations about mental wellbeing.',
     impact: 'Reached over 4,000 students across 12 schools. Trained 200+ student ambassadors. Partner schools reported a measurable increase in students seeking support from counselors.',
     impactAreas: ['Wellbeing', 'Education', 'Youth', 'Community'],
@@ -117,7 +125,7 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
     id: 'p9', title: 'Smart Jeddah Hackathon', category: 'Education', status: 'archived',
     stat: '220 participants, 42 teams',
     description: 'A 48-hour hackathon where student teams built tech solutions for city challenges.',
-    problem: 'Jeddah faces urban challenges — from traffic to waste management — that require creative technology solutions, yet local youth rarely get the opportunity to tackle real civic problems.',
+    problem: 'Jeddah faces urban challenges, from traffic to waste management, that require creative technology solutions, yet local youth rarely get the opportunity to tackle real civic problems.',
     objective: 'Bring together 200+ students, engineers, and designers to prototype technology solutions for real Jeddah city challenges over a 48-hour sprint.',
     impact: "Three winning solutions were piloted by city partners. 220 participants, 42 teams. Winning team's parking optimization app was adopted by a private mall operator.",
     impactAreas: ['Education', 'Technology', 'Economy'],
@@ -153,14 +161,20 @@ const PLACEHOLDER_PROJECTS: Initiative[] = [
 
 export default function InitiativePage() {
   const { id } = useParams() as { id: string };
-  const t = useTranslations('ProjectsPage');
+  const t      = useTranslations('ProjectsPage');
+  const locale = useLocale();
   const [initiative, setInitiative] = useState<Initiative | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers]           = useState<UserRecord[]>([]);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const snap = await getDoc(doc(db, 'initiatives', id));
+        const [snap, usersSnap] = await Promise.all([
+          getDoc(doc(db, 'initiatives', id)),
+          getDocs(collection(db, 'users')),
+        ]);
+        setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord)));
         if (snap.exists()) {
           setInitiative({ id: snap.id, ...snap.data() } as Initiative);
         } else {
@@ -175,6 +189,12 @@ export default function InitiativePage() {
     };
     load();
   }, [id]);
+
+  const getUserName = (userId: string) => {
+    const u = users.find(u => u.id === userId);
+    if (!u) return null;
+    return (locale === 'ar' && u.displayNameAr) ? u.displayNameAr : (u.displayName || null);
+  };
 
   if (loading) return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
 
@@ -227,7 +247,7 @@ export default function InitiativePage() {
                   <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
                 {initiative.startDate && new Date(initiative.startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                {initiative.startDate && initiative.endDate && ' — '}
+                {initiative.startDate && initiative.endDate && ' – '}
                 {initiative.endDate && new Date(initiative.endDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </div>
             )}
@@ -338,6 +358,32 @@ export default function InitiativePage() {
                     {area}
                   </span>
                 ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* Team / Shapers */}
+        {Array.isArray(initiative.members) && initiative.members.length > 0 && (
+          <>
+            <div className={styles.divider} />
+            <section className={styles.teamSection}>
+              <h3 className={styles.impactAreasTitle}>{t('teamMembers')}</h3>
+              <div className={styles.teamGrid}>
+                {initiative.members.map((m, i) => {
+                  const name = getUserName(m.userId) ?? m.userId;
+                  return (
+                    <div key={m.userId + i} className={styles.teamCard}>
+                      <div className={styles.teamAvatar} style={{ background: categoryColor + '22', color: categoryColor }}>
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className={styles.teamInfo}>
+                        <span className={styles.teamName}>{name}</span>
+                        {m.role && <span className={styles.teamRole}>{m.role}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </>

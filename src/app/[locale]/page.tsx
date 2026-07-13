@@ -16,7 +16,7 @@ const RETREAT_VENUES = [
   { name: 'Taibat Alhijaz', tag: 'Restaurant' },
 ];
 
-// Active partners — update this list to add/remove partner badges on the home page
+// Active partners -- update this list to add/remove partner badges on the home page
 const PARTNERS = [
   'SHADA Hotel',
   'Zawiya 97',
@@ -144,7 +144,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. Featured projects — live from Firestore */}
+      {/* 5. Featured projects (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
@@ -159,7 +159,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. Shapers — live from Firestore */}
+      {/* 6. Shapers (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>

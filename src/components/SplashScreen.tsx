@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
 import styles from './SplashScreen.module.css';
 
-export default function SplashScreen() {
-  const locale   = useLocale();
-  const isRtl    = locale === 'ar';
+export default function SplashScreen({ locale }: { locale: string }) {
+  const isRtl = locale === 'ar';
   const [visible,    setVisible]    = useState(false);
   const [dismissing, setDismissing] = useState(false);
 

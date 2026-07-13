@@ -28,13 +28,43 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
-  animation: logoIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  gap: 2rem;
+  animation: logoIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 @keyframes logoIn {
-  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.logoRing {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoRing::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0) 70%);
+  animation: ringRotate 2s linear infinite;
+}
+
+.logoRing::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+
+@keyframes ringRotate {
+  to { transform: rotate(360deg); }
 }
 
 .wordmark {
@@ -62,11 +92,13 @@
 }
 
 .logo {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
-  border-radius: 16px;
-  filter: drop-shadow(0 4px 16px rgba(0,0,0,.25));
+  border-radius: 20px;
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,.3));
+  position: relative;
+  z-index: 1;
 }
 
 .progressTrack {
@@ -90,6 +122,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .inner, .progressFill { animation: none !important; }
+  .overlay, .inner, .progressFill, .logoRing::before { animation: none !important; }
   .progressFill { width: 100%; }
 }

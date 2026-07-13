@@ -1,6 +1,6 @@
 {
   "HomePage": {
-    "title": "Think Global, Act Jeddah",
+    "title": "Local Roots. Global Impact.",
     "subtitle": "A community of driven young leaders shaping the future of Jeddah through innovation, collaboration, and grassroots action.",
     "aboutHub": "The Jeddah Shapers are a group of young change-makers committed to driving positive impact in their community through projects in education, wellbeing, sustainability, and more. As part of the Global Shapers Community, an initiative of the World Economic Forum, we bring together passionate youth to lead grassroots solutions and connect with global peers to shape a better future.",
     "projects": "Featured Initiatives",
@@ -271,7 +271,7 @@
     "alumni": "Alumni"
   },
   "Footer": {
-    "tagline": "Think Global, Act Jeddah.",
+    "tagline": "Local Roots. Global Impact.",
     "description": "A Global Shapers Community Hub, an initiative of the World Economic Forum, uniting passionate young leaders in Jeddah.",
     "explore": "Explore",
     "getInvolved": "Get Involved",
@@ -432,6 +432,15 @@
     "accessRestricted": "Access restricted to Curators.",
     "confirmRemove": "Remove this role assignment?",
     "emailAlreadyAssigned": "This email already has a role assignment.",
+    "statusPending": "Pending Login",
+    "statusJoined": "Entered",
+    "acknowledge": "Acknowledge",
+    "sendInvite": "Send Invite",
+    "inviteSent": "Invite Sent",
+    "inviteFailed": "Failed to send",
+    "pendingSection": "Pending Assignments",
+    "joinedSection": "Recently Joined",
+    "roleAssignmentsSubtitleJoined": "These members have logged in and received their role. Acknowledge to dismiss.",
     "roleLabelCurator": "Curator",
     "roleLabelViceCurator": "Vice Curator",
     "roleLabelImpactOfficer": "Impact Officer",

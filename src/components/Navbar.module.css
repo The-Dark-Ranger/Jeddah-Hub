@@ -57,14 +57,34 @@
 }
 .iconBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
 
-.langSwitcher {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 36px; padding: 0 .85rem; border-radius: 9px;
-  border: 1px solid var(--border-color); color: var(--text-main);
-  font-weight: 700; font-size: .8rem; background: transparent;
-  transition: all .2s ease; white-space: nowrap; letter-spacing: .04em;
+.langPill {
+  display: flex; align-items: center; gap: 0;
+  height: 36px; border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--background-alt);
+  overflow: hidden;
+  transition: border-color .2s ease;
 }
-.langSwitcher:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
+.langPill:hover { border-color: var(--primary-blue); }
+
+.langActive {
+  padding: 0 .7rem; height: 100%; display: flex; align-items: center;
+  font-size: .75rem; font-weight: 700; letter-spacing: .06em;
+  background: var(--primary-blue); color: #fff;
+}
+.langInactive {
+  padding: 0 .7rem; height: 100%; display: flex; align-items: center;
+  font-size: .75rem; font-weight: 600; letter-spacing: .06em;
+  color: var(--text-muted);
+  transition: color .2s ease, background .2s ease;
+}
+.langPill:hover .langInactive { color: var(--primary-blue); background: var(--primary-blue-glow); }
+
+.langDivider {
+  width: 1px; height: 60%;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
 
 .loginBtn {
   display: flex; align-items: center; min-height: 36px; padding: 0 1.1rem;
@@ -207,7 +227,8 @@
 
   .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 34px; border-radius: 8px; }
   .iconBtn   { min-width: 34px; min-height: 34px; border-radius: 8px; }
-  .langSwitcher { min-height: 34px; padding: 0 .65rem; font-size: .8rem; border-radius: 8px; }
+  .langPill { height: 34px; border-radius: 8px; }
+  .langActive, .langInactive { padding: 0 .55rem; font-size: .72rem; }
   .hamburger { display: flex; }
 }
 

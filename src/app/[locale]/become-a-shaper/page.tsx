@@ -72,7 +72,7 @@ export default function BecomeAShaperPage() {
           <h1 className={styles.heroTitle}>{t('title')}</h1>
           <p className={styles.heroSubtitle}>{t('subtitle')}</p>
           <a
-            href="https://www.weforum.org/communities/global-shapers-community"
+            href="https://wefglobal.eu.qualtrics.com/jfe/form/SV_6F4bAg3fL2x1eXb"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.heroBtn}
@@ -201,7 +201,7 @@ export default function BecomeAShaperPage() {
             <h2>{t('ctaTitle')}</h2>
             <p>{t('ctaBody')}</p>
             <a
-              href="https://www.weforum.org/communities/global-shapers-community"
+              href="https://wefglobal.eu.qualtrics.com/jfe/form/SV_6F4bAg3fL2x1eXb"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.ctaBtn}

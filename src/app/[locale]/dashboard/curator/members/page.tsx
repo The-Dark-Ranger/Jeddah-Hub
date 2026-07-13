@@ -212,7 +212,7 @@ export default function MembersPage() {
                         {ROLES.find(r => r.value === a.role)?.label ?? a.role}
                       </span>
                     </td>
-                    <td className={styles.noteCell}>{a.note || '—'}</td>
+                    <td className={styles.noteCell}>{a.note || ''}</td>
                     <td className={styles.dateCell}>
                       {new Date(a.createdAt).toLocaleDateString(
                         locale === 'ar' ? 'ar-SA' : 'en-US',

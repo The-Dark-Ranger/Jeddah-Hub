@@ -98,7 +98,7 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Right controls — theme + lang + login + hamburger */}
+        {/* Right controls: theme + lang + login + hamburger */}
         <div className={styles.actions}>
           {/* suppressHydrationWarning prevents icon flash during locale switch */}
           <button
@@ -169,7 +169,7 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Auth actions — only when logged in */}
+        {/* Auth actions: only when logged in */}
         {user && (
           <>
             <div className={styles.mobileDivider} />

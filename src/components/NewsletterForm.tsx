@@ -43,7 +43,7 @@ export default function NewsletterForm() {
   return (
     <div className={styles.newsletterContainer}>
       <h3 className={styles.title}>{t('newsletter')}</h3>
-      <p className={styles.subtitle}>Get updates on our latest initiatives, stories, and events — straight to your inbox.</p>
+      <p className={styles.subtitle}>Get updates on our latest initiatives, stories, and events, delivered straight to your inbox.</p>
       <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="email"

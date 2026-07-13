@@ -9,6 +9,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SplashScreen from '@/components/SplashScreen';
+import LangSwitchHandler from '@/components/LangSwitchHandler';
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));
@@ -59,6 +60,7 @@ export default async function LocaleLayout({
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
         <SplashScreen />
+        <LangSwitchHandler />
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <AuthProvider>

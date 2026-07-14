@@ -81,30 +81,6 @@
   letter-spacing: 0.07em; color: var(--text-muted);
 }
 
-/* Photo marquee */
-.marqueeSection {
-  overflow: hidden; background: var(--background-alt);
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  padding: 1.25rem 0;
-}
-.marqueeTrack {
-  display: flex; gap: 1rem;
-  animation: marquee 28s linear infinite;
-  width: max-content;
-}
-.marqueeTrack:hover { animation-play-state: paused; }
-.marqueeItem {
-  width: 260px; height: 170px; border-radius: 12px;
-  overflow: hidden; flex-shrink: 0;
-  background: var(--background);
-}
-.marqueeItem img { width: 100%; height: 100%; object-fit: cover; display: block; }
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
 /* Back link */
 .back {
   display: inline-flex; align-items: center; gap: 0.4rem;

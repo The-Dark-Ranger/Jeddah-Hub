@@ -56,23 +56,29 @@ export default function NewsPage() {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const q = query(
-        collection(db, 'blogs'),
-        where('status', '==', 'published'),
-        orderBy('createdAt', 'desc')
-      );
       try {
-        const snap = await getDocs(q);
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsPost));
+        let data: NewsPost[] = [];
+        try {
+          const snap = await getDocs(query(
+            collection(db, 'blogs'),
+            where('status', '==', 'published'),
+            orderBy('createdAt', 'desc')
+          ));
+          data = snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsPost));
+        } catch {
+          // Composite index may be missing — fall back to unfiltered fetch
+          const snap = await getDocs(query(collection(db, 'blogs'), orderBy('createdAt', 'desc')));
+          data = snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as NewsPost))
+            .filter(p => !p.status || p.status === 'published');
+        }
         setPosts(data);
         setFiltered(data);
       } catch {
-        const fallback = await getDocs(query(collection(db, 'blogs'), orderBy('createdAt', 'desc')));
-        const data = fallback.docs.map(d => ({ id: d.id, ...d.data() } as NewsPost));
-        setPosts(data);
-        setFiltered(data);
+        /* Firestore unavailable — leave empty list, stop spinner */
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchPosts();
   }, []);

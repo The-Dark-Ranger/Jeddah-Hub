@@ -14,27 +14,37 @@
 
 /* Hero */
 .hero {
-  background: var(--primary-blue);
+  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   color: #fff;
   padding: 7rem 1.5rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
-.heroContent { max-width: 700px; margin-inline: auto; padding-bottom: 3rem; }
-.heroEyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 1.1rem; }
-.heroTitle   { font-size: clamp(2.2rem,5vw,3.75rem); font-weight: 800; letter-spacing: -.02em; margin-bottom: 1.1rem; line-height: 1.1; }
-.heroSubtitle{ font-size: clamp(1rem,2vw,1.2rem); line-height: 1.7; color: rgba(255,255,255,.8); margin-bottom: 2.5rem; }
-.heroBtn { display: inline-flex; align-items: center; gap: .5rem; background: #fff; color: var(--primary-blue); padding: .95rem 2.25rem; border-radius: 8px; font-weight: 700; font-size: 1rem; transition: all .2s ease; -webkit-tap-highlight-color: transparent; }
-.heroBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.heroContent { max-width: 700px; margin-inline: auto; padding-bottom: 4rem; position: relative; z-index: 1; }
+.heroEyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 1.1rem; }
+.heroTitle   { font-size: clamp(2.4rem,5.5vw,4rem); font-weight: 800; letter-spacing: -.03em; margin-bottom: 1.25rem; line-height: 1.08; }
+.heroSubtitle{ font-size: clamp(1rem,2vw,1.2rem); line-height: 1.75; color: rgba(255,255,255,.75); margin-bottom: 2.5rem; max-width: 560px; margin-inline: auto; }
+.heroBtn { display: inline-flex; align-items: center; gap: .5rem; background: #fff; color: #0a3272; padding: 1rem 2.5rem; border-radius: 10px; font-weight: 700; font-size: 1rem; transition: all .2s ease; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 20px rgba(0,0,0,.25); }
+.heroBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,.3); }
 
+.heroWave {
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  line-height: 0;
+  z-index: 1;
+}
+.heroWave svg { width: 100%; height: 80px; display: block; }
+
+/* Stats row — sits below the wave, in page background */
 .heroChips {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  padding: 2rem 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.15);
+  padding: 2.5rem 1.5rem 1rem;
+  max-width: 800px;
+  margin-inline: auto;
 }
 
 .heroChip {
@@ -42,32 +52,32 @@
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  padding: 1.25rem 2rem;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 16px;
-  min-width: 120px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.2s ease, transform 0.2s ease;
+  padding: 1.5rem 2.5rem;
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-top: 3px solid var(--primary-blue);
+  border-radius: 14px;
+  min-width: 140px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .heroChip:hover {
-  background: rgba(255,255,255,0.14);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(15,90,159,.12);
 }
 
 .heroChip strong {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--primary-blue);
   letter-spacing: -0.03em;
   line-height: 1;
 }
 
 .heroChip span {
   font-size: 0.72rem;
-  color: rgba(255,255,255,0.65);
+  color: var(--text-muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -198,12 +208,13 @@
    In dark mode the hero uses a deep navy gradient so the blue tones remain
    without the bright #4a9eff fill being visually jarring.
    ─────────────────────────────────────────────────────────────────────── */
+/* Dark mode: deepen the gradient further */
 [data-theme="dark"] .hero {
-  background: linear-gradient(160deg, #0c2040 0%, #091528 100%);
+  background: linear-gradient(160deg, #020d20 0%, #061c40 55%, #0a3272 100%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .hero {
-    background: linear-gradient(160deg, #0c2040 0%, #091528 100%);
+    background: linear-gradient(160deg, #020d20 0%, #061c40 55%, #0a3272 100%);
   }
 }
 
@@ -211,12 +222,13 @@
 @media (max-width: 900px) {
   .splitRow { grid-template-columns: 1fr; }
   .splitStats { flex-direction: row; }
-  .heroChips { flex-wrap: wrap; }
 }
 @media (max-width: 640px) {
   .hero { padding: 5rem 1rem 0; }
-  .heroContent { padding-bottom: 2.5rem; }
-  .heroChip strong { font-size: 1.25rem; }
+  .heroContent { padding-bottom: 3rem; }
+  .heroChips { gap: 1rem; padding: 2rem 1rem 0.5rem; }
+  .heroChip { padding: 1.25rem 1.5rem; min-width: 110px; }
+  .heroChip strong { font-size: 1.6rem; }
   .section, .sectionAlt, .ctaSection { padding: 4rem 1rem; }
   .splitStats { flex-direction: column; }
   .stepsGrid { grid-template-columns: 1fr; }
@@ -225,11 +237,9 @@
 }
 @media (max-width: 400px) {
   .hero { padding: 4rem 0.75rem 0; }
-  .heroTitle { font-size: 1.9rem; }
-  .heroBtn { padding: 0.8rem 1.5rem; font-size: 0.92rem; }
+  .heroTitle { font-size: 2rem; }
+  .heroBtn { padding: 0.85rem 1.75rem; font-size: 0.95rem; }
   .section, .sectionAlt, .ctaSection { padding: 3rem 0.75rem; }
   .container { padding: 0 0.75rem; }
   .criteriaCard, .stepCard, .valueCard, .quoteCard { padding: 1.25rem; }
-  .heroChip { padding: 0.9rem 0.6rem; }
-  .heroChip strong { font-size: 1.1rem; }
 }

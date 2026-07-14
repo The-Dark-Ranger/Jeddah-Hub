@@ -58,7 +58,7 @@
 /* Stats Grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
 }
 
@@ -66,7 +66,8 @@
   background: var(--card-bg-solid);
   border: 1px solid var(--border-color);
   border-radius: 14px;
-  padding: 1.5rem;
+  border-top: 3px solid var(--primary-blue);
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -74,9 +75,14 @@
 }
 
 .statCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--glass-shadow);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
 }
+
+.statCard[data-accent="green"]   { border-top-color: var(--success); }
+.statCard[data-accent="purple"]  { border-top-color: #a78bfa; }
+.statCard[data-accent="warning"] { border-top-color: var(--warning); }
+.statCard[data-accent="muted"]   { border-top-color: var(--border-color); }
 
 .statIcon {
   width: 40px; height: 40px; border-radius: 10px;

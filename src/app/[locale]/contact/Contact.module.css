@@ -229,6 +229,7 @@
 .resetBtn {
   margin-top: 0.5rem;
   padding: 0.65rem 1.5rem;
+  min-height: 44px;
   border-radius: 10px;
   border: 1.5px solid var(--border-color);
   background: transparent;
@@ -338,4 +339,9 @@
   .hero { padding: 3rem 1.25rem 2.5rem; }
   .body { padding: 2rem 1rem 4rem; }
   .formCard { padding: 1.75rem 1.25rem; border-radius: 16px; }
+}
+@media (max-width: 400px) {
+  .hero { padding: 2.5rem 0.75rem 2rem; }
+  .body { padding: 1.5rem 0.75rem 3rem; }
+  .formCard { padding: 1.25rem 1rem; }
 }

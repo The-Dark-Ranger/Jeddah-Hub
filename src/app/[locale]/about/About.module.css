@@ -110,7 +110,7 @@
 .curatorLinkedIn {
   display: inline-flex; align-items: center; gap: .35rem;
   font-size: .78rem; font-weight: 600; color: var(--primary-blue);
-  margin-top: .5rem; padding: .3rem .75rem; border-radius: 20px;
+  margin-top: .5rem; padding: .6rem 1rem; min-height: 44px; border-radius: 20px;
   background: var(--primary-blue-glow);
   transition: all .2s ease;
 }
@@ -162,7 +162,7 @@
 .shaperActions { display: flex; gap: .35rem; }
 .shaperIconLink {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 44px; height: 44px; border-radius: 10px;
   color: var(--primary-blue);
   background: var(--primary-blue-glow);
   border: 1px solid transparent;
@@ -228,5 +228,12 @@
   .missionGrid{ grid-template-columns: 1fr; }
   .curatorshipGrid { grid-template-columns: 1fr; }
   .shapersList { grid-template-columns: 1fr; }
-
+}
+@media (max-width: 400px) {
+  .hero { padding: 3rem 0.75rem 2rem; }
+  .section, .sectionAlt { padding: 2.5rem 0.75rem; }
+  .ctaSection { padding: 2.5rem 0.75rem; }
+  .statsBar { padding: 0.75rem; }
+  .statItem { padding: .35rem .75rem; }
+  .cta h2 { font-size: 1.6rem; }
 }

@@ -81,6 +81,14 @@ export default function JoinInitiatives() {
 
   const handleRequest = async (initId: string) => {
     if (!user) return;
+    // Remove any previous rejected request for this initiative
+    const rejected = myRequests.find(r => r.initiativeId === initId && r.status === 'rejected');
+    if (rejected) {
+      setMyRequests(prev => prev.filter(r => r.id !== rejected.id));
+      if (!rejected.id.startsWith('tmp_')) {
+        await deleteDoc(doc(db, 'join_requests', rejected.id));
+      }
+    }
     const optimistic: JoinRequest = {
       id: 'tmp_' + Date.now(), initiativeId: initId, status: 'pending',
     };
@@ -183,7 +191,9 @@ export default function JoinInitiatives() {
                     <button className={styles.cancelBtn} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
                   </div>
                 ) : req?.status === 'rejected' ? (
-                  <span className={styles.rejectedBadge}>{t('joinRequestRejected')}</span>
+                  <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
+                    {t('requestToJoin')}
+                  </button>
                 ) : req?.status === 'accepted' ? (
                   <span className={styles.memberBadge}>{t('joinRequestAccepted')}</span>
                 ) : (

@@ -10,22 +10,31 @@
 
 /* ── Hero ── */
 .hero {
-  position: relative; text-align: center; padding: 6rem 1.25rem 4rem;
-  background: linear-gradient(160deg,rgba(15,90,159,.06) 0%,rgba(136,146,158,.08) 100%);
+  position: relative; text-align: center; padding: 6rem 1.25rem 5rem;
+  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   overflow: hidden;
+  color: #fff;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--background);
+  clip-path: ellipse(55% 100% at 50% 100%);
 }
 .heroOrb {
   position: absolute; top: -80px; left: -80px; width: 350px; height: 350px;
   border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle,rgba(15,90,159,.1) 0%,transparent 70%);
+  background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
 }
 .heroContent { position: relative; z-index: 1; max-width: 700px; margin-inline: auto; }
 .heroEyebrow {
   font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--primary-blue); margin-bottom: 1.25rem;
+  color: rgba(255,255,255,.55); margin-bottom: 1.25rem;
 }
-.title { font-size: clamp(2rem,4vw,3.5rem); font-weight: 800; color: var(--primary-blue); margin-bottom: 1.1rem; letter-spacing: -.02em; }
-.description { font-size: 1.1rem; line-height: 1.8; color: var(--text-muted); max-width: 640px; margin-inline: auto; }
+.title { font-size: clamp(2rem,4vw,3.5rem); font-weight: 800; color: #fff; margin-bottom: 1.1rem; letter-spacing: -.02em; }
+.description { font-size: 1.1rem; line-height: 1.8; color: rgba(255,255,255,.75); max-width: 640px; margin-inline: auto; }
 
 /* ── Stats bar ── */
 .statsBar {

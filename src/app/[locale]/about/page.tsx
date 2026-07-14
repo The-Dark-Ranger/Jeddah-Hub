@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
+import JeddahStripe from '@/components/JeddahStripe';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -224,6 +225,8 @@ export default function AboutPage() {
           <p className={styles.description}>{t('description')}</p>
         </div>
       </section>
+
+      <JeddahStripe />
 
       {/* Stats bar */}
       <div className={styles.statsBar}>

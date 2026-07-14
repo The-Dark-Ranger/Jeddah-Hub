@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -150,6 +150,18 @@ interface Project {
 function ProjectCard({ project, archived, t, index = 0 }: { project: Project; archived?: boolean; t: ReturnType<typeof useTranslations>; index?: number }) {
   const color = CATEGORY_COLORS[project.category ?? ''] ?? CATEGORY_COLORS.Default;
   const isActive = !archived;
+  const imgs = project.images ?? [];
+  const [imgIdx, setImgIdx] = useState(0);
+
+  const prevImg = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setImgIdx(i => (i - 1 + imgs.length) % imgs.length);
+  }, [imgs.length]);
+
+  const nextImg = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setImgIdx(i => (i + 1) % imgs.length);
+  }, [imgs.length]);
 
   return (
     <Link
@@ -157,6 +169,30 @@ function ProjectCard({ project, archived, t, index = 0 }: { project: Project; ar
       className={styles.card + (archived ? ' ' + styles.cardArchived : '')}
       style={{ '--card-index': index } as React.CSSProperties}
     >
+      {imgs.length > 0 && (
+        <div className={styles.cardSlider}>
+          <img src={imgs[imgIdx]} alt={project.title} className={styles.cardSliderImg} loading="lazy" />
+          {imgs.length > 1 && (
+            <>
+              <button className={styles.sliderPrev} onClick={prevImg} aria-label="Previous image">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button className={styles.sliderNext} onClick={nextImg} aria-label="Next image">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div className={styles.sliderDots}>
+                {imgs.map((_, i) => (
+                  <span
+                    key={i}
+                    className={styles.sliderDot + (i === imgIdx ? ' ' + styles.sliderDotActive : '')}
+                    onClick={e => { e.preventDefault(); setImgIdx(i); }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       <div className={styles.cardAccent} style={{ background: color }} />
       <div className={styles.cardBody}>
         <div className={styles.cardMeta}>
@@ -234,26 +270,8 @@ export default function ProjectsPage() {
           <h1 className={styles.headerTitle}>{t('title')}</h1>
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
-        <WaveDivider fill="var(--background-alt)" className={styles.headerWave} />
+        <WaveDivider fill="var(--background)" className={styles.headerWave} />
       </section>
-
-      {/* Photo marquee — only shown when live initiatives have images */}
-      {(() => {
-        const imgs = projects.flatMap(p => p.images?.[0] ? [{ src: p.images[0], title: p.title }] : []);
-        if (imgs.length === 0) return null;
-        const doubled = [...imgs, ...imgs];
-        return (
-          <div className={styles.marqueeSection} aria-hidden="true">
-            <div className={styles.marqueeTrack}>
-              {doubled.map((img, i) => (
-                <div key={i} className={styles.marqueeItem}>
-                  <img src={img.src} alt={img.title} loading="lazy" />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
       <div className={styles.container}>
         <div className={styles.filters}>

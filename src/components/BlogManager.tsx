@@ -53,14 +53,19 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
 
   const fetchPosts = async () => {
     setLoading(true);
-    const q = canSeeAll
-      ? query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
-      : query(collection(db, 'blogs'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const snap = await getDocs(q);
-    const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
-    setPosts(data);
-    setLoading(false);
-    return data;
+    try {
+      const q = canSeeAll
+        ? query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
+        : query(collection(db, 'blogs'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
+      setPosts(data);
+      return data;
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchPosts(); }, []);

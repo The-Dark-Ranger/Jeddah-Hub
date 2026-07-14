@@ -1,6 +1,6 @@
 {
   "HomePage": {
-    "title": "Local Roots. Global Impact.",
+    "title": "From Jeddah to the Globe",
     "subtitle": "A community of driven young leaders shaping the future of Jeddah through innovation, collaboration, and grassroots action.",
     "aboutHub": "The Jeddah Shapers are a group of young change-makers committed to driving positive impact in their community through projects in education, wellbeing, sustainability, and more. As part of the Global Shapers Community, an initiative of the World Economic Forum, we bring together passionate youth to lead grassroots solutions and connect with global peers to shape a better future.",
     "projects": "Featured Initiatives",
@@ -66,6 +66,9 @@
     "curatorship": "Current Curatorship",
     "shapers": "Our Shapers",
     "shapersSubtitle": "Driven leaders from diverse backgrounds: entrepreneurs, doctors, engineers, artists, and more.",
+    "alumni": "Our Alumni",
+    "alumniSubtitle": "Past shapers who continue to inspire and make a difference.",
+    "noAlumni": "Alumni profiles coming soon.",
     "noShapers": "Shapers are setting up their profiles. Check back soon.",
     "wefTitle": "Part of Something Bigger",
     "wefDesc": "The Global Shapers Community is a World Economic Forum initiative connecting young people whose ideas and actions drive positive change. With 500+ hubs worldwide, we are part of a vibrant global movement.",
@@ -149,7 +152,7 @@
     "subtitle": "Join a new generation of young leaders shaping the future of Jeddah, one initiative at a time.",
     "applyNow": "Apply Now",
     "whoTitle": "Who Are Global Shapers?",
-    "whoBody": "Global Shapers are driven young people between the ages of 18 and 30 who are committed to creating positive change in their cities. Our members come from all walks of life: engineers, educators, entrepreneurs, and creatives, united by a shared passion for meaningful impact. Membership is entirely voluntary and requires roughly 10 hours of engagement per week.",
+    "whoBody": "Global Shapers are driven young people between the ages of 18 and 27 who are committed to creating positive change in their cities. Our members come from all walks of life: engineers, educators, entrepreneurs, and creatives, united by a shared passion for meaningful impact. Membership is entirely voluntary and requires roughly 10 hours of engagement per week.",
     "applyTitle": "Who Can Apply?",
     "lookTitle": "What We Look For",
     "expectTitle": "What to Expect",
@@ -158,7 +161,7 @@
     "ctaBody": "Applications are reviewed on a rolling basis. Take the first step today.",
     "ctaNote": "You will be redirected to the official World Economic Forum application portal.",
     "criteria1": [
-      "Youth aged between 18 and 30",
+      "Youth aged between 18 and 27",
       "Based in or connected to Jeddah",
       "Strong communication skills in English or Arabic",
       "Genuinely passionate about community-driven change"
@@ -271,7 +274,7 @@
     "alumni": "Alumni"
   },
   "Footer": {
-    "tagline": "Local Roots. Global Impact.",
+    "tagline": "From Jeddah to the Globe",
     "description": "A Global Shapers Community Hub, an initiative of the World Economic Forum, uniting passionate young leaders in Jeddah.",
     "explore": "Explore",
     "getInvolved": "Get Involved",

@@ -110,6 +110,7 @@
   display: inline-flex; align-items: center; gap: 0.4rem;
   color: var(--text-muted); font-size: 0.85rem; font-weight: 500;
   margin-top: 2.5rem; margin-bottom: 0; transition: color 0.2s ease;
+  min-height: 44px;
 }
 .back:hover { color: var(--primary-blue); }
 
@@ -209,4 +210,14 @@
   .sectionTitle { font-size: 1.2rem; }
   .statCallout { padding: 0.75rem 1.1rem; }
   .statValue { font-size: 1.25rem; }
+  .teamGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .page { padding-bottom: 3rem; }
+  .hero { padding: 2rem 0.75rem 2rem; }
+  .container { padding: 0 0.75rem; }
+  .heroTitle { font-size: 1.6rem; }
+}
+@media (hover: none) {
+  .marqueeTrack:hover { animation-play-state: running; }
 }

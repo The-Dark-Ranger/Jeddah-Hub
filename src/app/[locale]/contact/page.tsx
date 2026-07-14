@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import styles from './Contact.module.css';
+import WaveDivider from '@/components/WaveDivider';
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
@@ -35,6 +36,7 @@ export default function ContactPage() {
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
+        <WaveDivider fill="var(--background)" className={styles.heroWave} />
       </div>
 
 

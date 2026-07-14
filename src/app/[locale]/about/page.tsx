@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
+import WaveDivider from '@/components/WaveDivider';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -223,6 +224,7 @@ export default function AboutPage() {
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.description}>{t('description')}</p>
         </div>
+        <WaveDivider fill="var(--background)" className={styles.heroWave} />
       </section>
 
 

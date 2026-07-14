@@ -35,6 +35,7 @@
   z-index: 1;
 }
 .heroWave svg { width: 100%; height: 80px; display: block; }
+@media (max-width: 640px) { .heroWave svg { height: 50px; } }
 
 /* Stats row — sits below the wave, in page background */
 .heroChips {

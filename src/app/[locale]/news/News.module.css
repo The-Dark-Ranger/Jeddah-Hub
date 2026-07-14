@@ -2,19 +2,16 @@
 
 .header {
   position: relative;
-  padding: 5.5rem 1.5rem 5rem;
+  padding: 5.5rem 1.5rem 7rem;
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   text-align: center;
   overflow: hidden;
 }
 
-.header::after {
-  content: '';
+.headerWave {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--background);
-  clip-path: ellipse(55% 100% at 50% 100%);
+  bottom: -1px; left: 0; right: 0;
+  z-index: 1; pointer-events: none;
 }
 
 .headerContent { max-width: 640px; margin-inline: auto; position: relative; z-index: 1; }
@@ -36,19 +33,19 @@
 
 .tags { display: flex; flex-wrap: wrap; gap: .5rem; }
 .tag {
-  padding: .3rem .85rem; border-radius: 6px; border: 1px solid var(--border-color);
+  padding: .55rem .85rem; min-height: 44px; border-radius: 6px; border: 1px solid var(--border-color);
   background: transparent; color: var(--text-muted); font-size: .82rem; font-weight: 500;
-  cursor: pointer; transition: all .2s ease;
+  cursor: pointer; transition: all .2s ease; display: inline-flex; align-items: center;
 }
 .tag:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .tagActive  { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
 
 /* Grid - editorial card layout */
-.grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap: 2rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 2rem; }
 
 .card {
   background: var(--card-bg-solid); border-radius: 12px;
-  border: 1px solid var(--border-color); padding: 2rem;
+  border: 1px solid var(--border-color); padding: 1.5rem;
   display: flex; flex-direction: column; gap: .9rem;
   transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
   text-decoration: none; color: inherit;
@@ -73,8 +70,15 @@
 .empty { text-align: center; padding: 5rem; color: var(--text-muted); }
 .empty h3 { font-size: 1.25rem; color: var(--text-main); margin-bottom: .5rem; }
 
-@media (max-width: 640px) {
-  .header { padding: 3.5rem 1rem 2.5rem; }
-  .container { padding: 2rem 1rem 4rem; }
+@media (max-width: 768px) {
   .grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .header { padding: 3.5rem 1rem 5.5rem; }
+  .container { padding: 2rem 1rem 4rem; }
+  .card { padding: 1.25rem; }
+}
+@media (max-width: 400px) {
+  .header { padding: 3rem 0.75rem 2rem; }
+  .container { padding: 1.5rem 0.75rem 3rem; }
 }

@@ -6,6 +6,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
+import WaveDivider from '@/components/WaveDivider';
 
 const CATEGORY_KEYS = ['all', 'education', 'sustainability', 'wellbeing', 'economy', 'community'] as const;
 
@@ -232,6 +233,7 @@ export default function ProjectsPage() {
           <h1 className={styles.headerTitle}>{t('title')}</h1>
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
+        <WaveDivider fill="var(--background)" className={styles.headerWave} />
       </section>
 
 

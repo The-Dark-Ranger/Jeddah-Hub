@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import styles from './BecomeShaper.module.css';
+import JeddahStripe from '@/components/JeddahStripe';
 
 export default function BecomeAShaperPage() {
   const t = useTranslations('BecomeShaperPage');
@@ -98,6 +99,9 @@ export default function BecomeAShaperPage() {
         <div className={styles.heroChip}><strong>44</strong><span>{t('statInitiatives')}</span></div>
         <div className={styles.heroChip}><strong>100K+</strong><span>{t('statBenefited')}</span></div>
       </div>
+
+      {/* Jeddah stripe divider */}
+      <JeddahStripe />
 
       {/* Who Are Global Shapers */}
       <section className={styles.section}>

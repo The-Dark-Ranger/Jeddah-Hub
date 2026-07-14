@@ -265,19 +265,6 @@ export default function InitiativePage() {
         </div>
       </div>
 
-      {/* Photo marquee */}
-      {photos.length > 0 && (
-        <div className={styles.marqueeSection}>
-          <div className={styles.marqueeTrack}>
-            {[...photos, ...photos].map((src, i) => (
-              <div key={i} className={styles.marqueeItem}>
-                <img src={src} alt="" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className={styles.container}>
         {/* Back navigation */}
         <Link href="/projects" className={styles.back}>

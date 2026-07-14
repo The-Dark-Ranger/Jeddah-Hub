@@ -104,18 +104,9 @@ export default function BecomeAShaperPage() {
       {/* Who Are Global Shapers */}
       <section className={styles.section}>
         <div className={styles.container}>
-          <div className={styles.splitRow}>
-            <div className={styles.splitText}>
-              <p className={styles.eyebrow}>{t('whoTitle')}</p>
-              <h2 className={styles.sectionTitle}>{t('drivenSubtitle')}</h2>
-              <p className={styles.sectionBody}>{t('whoBody')}</p>
-            </div>
-            <div className={styles.splitStats}>
-              <div className={styles.statBox}><span className={styles.statNum}>37</span><p className={styles.statLabel}>{t('statShapers')}</p></div>
-              <div className={styles.statBox}><span className={styles.statNum}>44</span><p className={styles.statLabel}>{t('statInitiatives')}</p></div>
-              <div className={styles.statBox}><span className={styles.statNum}>100K+</span><p className={styles.statLabel}>{t('statBenefited')}</p></div>
-            </div>
-          </div>
+          <p className={styles.eyebrow}>{t('whoTitle')}</p>
+          <h2 className={styles.sectionTitle}>{t('drivenSubtitle')}</h2>
+          <p className={styles.sectionBody}>{t('whoBody')}</p>
         </div>
       </section>
 

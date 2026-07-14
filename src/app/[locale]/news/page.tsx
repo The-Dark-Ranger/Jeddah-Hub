@@ -13,7 +13,6 @@ import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import styles from './News.module.css';
-import JeddahStripe from '@/components/JeddahStripe';
 
 interface NewsPost {
   id: string;
@@ -106,7 +105,6 @@ export default function NewsPage() {
         </div>
       </section>
 
-      <JeddahStripe />
 
       <div className={styles.container}>
         <div className={styles.filters}>

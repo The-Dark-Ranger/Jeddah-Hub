@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import styles from './Contact.module.css';
-import JeddahStripe from '@/components/JeddahStripe';
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
@@ -38,7 +37,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <JeddahStripe />
 
       <div className={styles.body}>
         <div className={styles.grid}>

@@ -139,6 +139,7 @@ interface Project {
   category?: string;
   status?: string;
   stat?: string;
+  images?: string[];
   problem?: string;
   objective?: string;
   impact?: string;
@@ -233,9 +234,26 @@ export default function ProjectsPage() {
           <h1 className={styles.headerTitle}>{t('title')}</h1>
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
-        <WaveDivider fill="var(--background)" className={styles.headerWave} />
+        <WaveDivider fill="var(--background-alt)" className={styles.headerWave} />
       </section>
 
+      {/* Photo marquee — only shown when live initiatives have images */}
+      {(() => {
+        const imgs = projects.flatMap(p => p.images?.[0] ? [{ src: p.images[0], title: p.title }] : []);
+        if (imgs.length === 0) return null;
+        const doubled = [...imgs, ...imgs];
+        return (
+          <div className={styles.marqueeSection} aria-hidden="true">
+            <div className={styles.marqueeTrack}>
+              {doubled.map((img, i) => (
+                <div key={i} className={styles.marqueeItem}>
+                  <img src={img.src} alt={img.title} loading="lazy" />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className={styles.container}>
         <div className={styles.filters}>

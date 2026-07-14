@@ -84,12 +84,20 @@ export default function BecomeAShaperPage() {
             </svg>
           </a>
         </div>
-        <div className={styles.heroChips}>
-          <div className={styles.heroChip}><strong>37</strong><span>{t('statShapers')}</span></div>
-          <div className={styles.heroChip}><strong>44</strong><span>{t('statInitiatives')}</span></div>
-          <div className={styles.heroChip}><strong>100K+</strong><span>{t('statBenefited')}</span></div>
+        {/* Wave divider */}
+        <div className={styles.heroWave} aria-hidden="true">
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="var(--background)" />
+          </svg>
         </div>
       </section>
+
+      {/* Stats row below wave */}
+      <div className={styles.heroChips}>
+        <div className={styles.heroChip}><strong>37</strong><span>{t('statShapers')}</span></div>
+        <div className={styles.heroChip}><strong>44</strong><span>{t('statInitiatives')}</span></div>
+        <div className={styles.heroChip}><strong>100K+</strong><span>{t('statBenefited')}</span></div>
+      </div>
 
       {/* Who Are Global Shapers */}
       <section className={styles.section}>

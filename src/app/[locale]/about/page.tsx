@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
+import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -33,24 +34,6 @@ interface LiveCurator {
   photoURL?: string;
 }
 
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
-  'linear-gradient(135deg,#10b981,#34d399)',
-  'linear-gradient(135deg,#7c3aed,#a78bfa)',
-  'linear-gradient(135deg,#f59e0b,#fbbf24)',
-  'linear-gradient(135deg,#0891b2,#22d3ee)',
-  'linear-gradient(135deg,#e11d48,#fb7185)',
-];
-
-function avatarGradient(uid: string, index: number) {
-  let hash = 0;
-  for (const c of uid) hash = ((hash << 5) - hash) + c.charCodeAt(0);
-  return AVATAR_GRADIENTS[Math.abs(hash || index) % AVATAR_GRADIENTS.length];
-}
-
-function initials(name: string) {
-  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
 
 const LinkedInIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
@@ -161,33 +144,39 @@ export default function AboutPage() {
   const t  = useTranslations('AboutPage');
   const tr = useTranslations('Role');
 
-  const [shapers, setShapers]                     = useState<LiveShaper[]>([]);
-  const [curators, setCurators]                   = useState<LiveCurator[]>([]);
-  const [initiativeCount, setInitiativeCount]     = useState<number | null>(null);
-  const [loadingShapers, setLoadingShapers]       = useState(true);
+  const [shapers, setShapers]                 = useState<LiveShaper[]>([]);
+  const [alumni, setAlumni]                   = useState<LiveShaper[]>([]);
+  const [curators, setCurators]               = useState<LiveCurator[]>([]);
+  const [initiativeCount, setInitiativeCount] = useState<number | null>(null);
+  const [loadingShapers, setLoadingShapers]   = useState(true);
 
   useEffect(() => {
     Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'initiatives')),
     ]).then(([usersSnap, initSnap]) => {
-      const shaperRoles   = ['shaper', 'alumni'];
-      const curatorRoles  = ['curator', 'vice_curator', 'impact_officer'];
+      const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
       const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
 
+      const toShaper = (u: any): LiveShaper => ({
+        uid:           u.uid,
+        displayName:   u.displayName,
+        displayNameAr: u.displayNameAr || '',
+        role:          u.role,
+        bio:           u.bio          || '',
+        linkedin:      u.linkedin     || '',
+        twitter:       u.twitter      || '',
+        instagram:     u.instagram    || '',
+        photoURL:      u.photoURL     || '',
+      });
+
       const live = all
-        .filter((u: any) => shaperRoles.includes(u.role) && u.displayName)
-        .map((u: any): LiveShaper => ({
-          uid:           u.uid,
-          displayName:   u.displayName,
-          displayNameAr: u.displayNameAr || '',
-          role:          u.role,
-          bio:           u.bio         || '',
-          linkedin:      u.linkedin    || '',
-          twitter:       u.twitter     || '',
-          instagram:     u.instagram   || '',
-          photoURL:      u.photoURL    || '',
-        }));
+        .filter((u: any) => u.role === 'shaper' && u.displayName)
+        .map(toShaper);
+
+      const liveAlumni = all
+        .filter((u: any) => u.role === 'alumni' && u.displayName)
+        .map(toShaper);
 
       const curs = all
         .filter((u: any) => curatorRoles.includes(u.role) && u.displayName)
@@ -207,6 +196,7 @@ export default function AboutPage() {
         );
 
       setShapers(live);
+      setAlumni(liveAlumni);
       setCurators(curs);
       setInitiativeCount(initSnap.size);
       setLoadingShapers(false);
@@ -311,6 +301,26 @@ export default function AboutPage() {
           )}
         </div>
       </section>
+
+      {/* Alumni */}
+      {(loadingShapers || alumni.length > 0) && (
+        <section className={styles.section}>
+          <div className={styles.container}>
+            <h2 className={styles.sectionTitle}>{t('alumni')}</h2>
+            <p className={styles.sectionSubtitle}>{t('alumniSubtitle')}</p>
+            <div className={styles.divider} />
+            {loadingShapers ? (
+              <div className={styles.shapersLoading}><div className={styles.shapersSpinner} /></div>
+            ) : alumni.length === 0 ? (
+              <p className={styles.noShapers}>{t('noAlumni')}</p>
+            ) : (
+              <div className={styles.shapersList}>
+                {alumni.map((s, i) => <LiveShaperCard key={s.uid} shaper={s} index={i} />)}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* WEF Context */}
       <section className={styles.section}>

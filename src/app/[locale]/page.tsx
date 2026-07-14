@@ -1,6 +1,5 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import Image from 'next/image';
 import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
 import HomeShapers from '@/components/HomeShapers';
@@ -41,28 +40,6 @@ export default function HomePage() {
       <section className={styles.hero}>
         <div className={styles.heroOrb1} />
         <div className={styles.heroOrb2} />
-        {/* Decorative globe image */}
-        <div className={styles.heroGlobe} aria-hidden="true">
-          <Image
-            src="/globe-mosaic.png"
-            alt=""
-            width={420}
-            height={440}
-            className={styles.heroGlobeImg}
-            priority
-          />
-        </div>
-        {/* Jeddah building image */}
-        <div className={styles.heroBuilding} aria-hidden="true">
-          <Image
-            src="/jeddah-building.png"
-            alt=""
-            width={320}
-            height={520}
-            className={styles.heroBuildingImg}
-            priority
-          />
-        </div>
         <div className={styles.heroContent}>
           <p className={styles.heroEyebrow + ' ' + styles.fadeInUp}>
             {t('eyebrow')}

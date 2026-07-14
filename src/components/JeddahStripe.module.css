@@ -1,32 +1,18 @@
 .stripe {
   width: 100%;
-  height: 48px;
-  overflow: hidden;
-  flex-shrink: 0;
+  height: 52px;
   position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
-.stripeBlue {
-  background: linear-gradient(160deg, #051535 0%, #0a3272 60%, #0f5a9f 100%);
-  color: #fff;
+.img {
+  object-fit: cover;
+  object-position: center;
 }
 
-.stripeWhite {
-  background: var(--card-bg-solid);
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--primary-blue);
-}
-
-.svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* Slightly taller for desktop */
 @media (min-width: 640px) {
   .stripe {
-    height: 56px;
+    height: 60px;
   }
 }

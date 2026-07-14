@@ -3,18 +3,15 @@
 /* Header */
 .header {
   position: relative;
-  padding: 5.5rem 2rem 5rem;
+  padding: 5.5rem 2rem 7rem;
   text-align: center;
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   overflow: hidden;
 }
-.header::after {
-  content: '';
+.headerWave {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--background);
-  clip-path: ellipse(55% 100% at 50% 100%);
+  bottom: -1px; left: 0; right: 0;
+  z-index: 1; pointer-events: none;
 }
 
 .headerOrb {
@@ -51,9 +48,10 @@
 
 .categoryTabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .catBtn {
-  padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border-color);
+  padding: 0.55rem 1rem; min-height: 44px; border-radius: 20px; border: 1px solid var(--border-color);
   background: transparent; color: var(--text-muted); font-size: 0.85rem;
   font-weight: 500; cursor: pointer; transition: all 0.2s ease;
+  display: inline-flex; align-items: center;
 }
 .catBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .catBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
@@ -150,7 +148,12 @@
 .empty p { font-size: 0.9rem; }
 
 @media (max-width: 640px) {
-  .header { padding: 3.5rem 1.25rem 2.5rem; }
+  .header { padding: 3.5rem 1.25rem 5.5rem; }
   .container { padding: 2rem 1rem 4rem; }
   .grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .header { padding: 3rem 0.75rem 2rem; }
+  .container { padding: 1.5rem 0.75rem 3rem; }
+  .cardBody { padding: 1.1rem; }
 }

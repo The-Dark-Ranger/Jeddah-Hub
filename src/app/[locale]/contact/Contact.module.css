@@ -8,15 +8,12 @@
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   position: relative;
   overflow: hidden;
-  padding: 5rem 1.5rem 5rem;
+  padding: 5rem 1.5rem 7rem;
 }
-.hero::after {
-  content: '';
+.heroWave {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--background);
-  clip-path: ellipse(55% 100% at 50% 100%);
+  bottom: -1px; left: 0; right: 0;
+  z-index: 1; pointer-events: none;
 }
 
 .heroInner {
@@ -229,6 +226,7 @@
 .resetBtn {
   margin-top: 0.5rem;
   padding: 0.65rem 1.5rem;
+  min-height: 44px;
   border-radius: 10px;
   border: 1.5px solid var(--border-color);
   background: transparent;
@@ -335,7 +333,12 @@
     grid-template-columns: 1fr;
   }
 
-  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .hero { padding: 3rem 1.25rem 5.5rem; }
   .body { padding: 2rem 1rem 4rem; }
   .formCard { padding: 1.75rem 1.25rem; border-radius: 16px; }
+}
+@media (max-width: 400px) {
+  .hero { padding: 2.5rem 0.75rem 5rem; }
+  .body { padding: 1.5rem 0.75rem 3rem; }
+  .formCard { padding: 1.25rem 1rem; }
 }

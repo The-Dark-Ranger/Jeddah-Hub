@@ -13,6 +13,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 500;
@@ -143,7 +144,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 44px;
   border-radius: 30px;
   border: 2px solid var(--border-color);
   background: transparent;
@@ -262,7 +264,8 @@
 }
 
 .commentSubmit {
-  padding: 0.6rem 1.5rem;
+  padding: 0.75rem 1.5rem;
+  min-height: 44px;
   border-radius: 8px;
   background: var(--primary-blue);
   color: white;
@@ -345,7 +348,7 @@
 
 .commentDeleteBtn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 6px;
+  width: 44px; height: 44px; border-radius: 8px;
   border: 1px solid transparent; background: transparent;
   color: var(--text-muted); cursor: pointer;
   transition: all 0.15s ease; flex-shrink: 0;
@@ -394,6 +397,14 @@
 }
 
 @media (max-width: 600px) {
-  .article { padding: 1.5rem; }
-  .comments { padding: 1.25rem; }
+  .article { padding: 1.5rem; border-radius: 14px; }
+  .comments { padding: 1.25rem; border-radius: 14px; }
+  .articleTitle { font-size: 1.4rem; }
+  .commentFormRow { flex-direction: column; }
+}
+@media (max-width: 400px) {
+  .page { padding: 1.5rem 0 3rem; }
+  .article, .comments { padding: 1rem; }
+  .container { padding: 0 0.75rem; }
+  .back { margin-bottom: 1.5rem; }
 }

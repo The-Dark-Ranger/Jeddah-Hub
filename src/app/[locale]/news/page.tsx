@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import styles from './News.module.css';
+import WaveDivider from '@/components/WaveDivider';
 
 interface NewsPost {
   id: string;
@@ -103,6 +104,7 @@ export default function NewsPage() {
           <h1 className={styles.headerTitle}>{t('title')}</h1>
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
+        <WaveDivider fill="var(--background)" className={styles.headerWave} />
       </section>
 
 

@@ -4,7 +4,6 @@ import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
 import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
-import JeddahStripe from '@/components/JeddahStripe';
 
 // Retreat venue cards shown inside the dark Retreat section.
 // Each entry: name (displayed large) + tag (small descriptor below).
@@ -64,7 +63,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <JeddahStripe />
 
       {/* 2. About */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
@@ -109,7 +107,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <JeddahStripe />
 
       {/* 4. Retreat */}
       <section className={styles.retreatSection}>

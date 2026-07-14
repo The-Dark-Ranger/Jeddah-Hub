@@ -6,7 +6,6 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
-import JeddahStripe from '@/components/JeddahStripe';
 
 const CATEGORY_KEYS = ['all', 'education', 'sustainability', 'wellbeing', 'economy', 'community'] as const;
 
@@ -235,7 +234,6 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      <JeddahStripe />
 
       <div className={styles.container}>
         <div className={styles.filters}>

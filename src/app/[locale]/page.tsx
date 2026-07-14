@@ -4,6 +4,7 @@ import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
 import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
+import WaveDivider from '@/components/WaveDivider';
 
 // Retreat venue cards shown inside the dark Retreat section.
 // Each entry: name (displayed large) + tag (small descriptor below).
@@ -61,6 +62,7 @@ export default function HomePage() {
             <div className={styles.heroStat}><span>30+</span> {t('metrics.partners')}</div>
           </div>
         </div>
+        <WaveDivider fill="var(--background)" className={styles.heroWave} />
       </section>
 
 
@@ -110,6 +112,7 @@ export default function HomePage() {
 
       {/* 4. Retreat */}
       <section className={styles.retreatSection}>
+        <WaveDivider flip fill="var(--card-bg)" />
         <div className={styles.container}>
           <div className={styles.retreatInner}>
             <div className={styles.retreatText}>
@@ -144,6 +147,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        <WaveDivider fill="var(--background)" />
       </section>
 
       {/* 5. Featured projects (live from Firestore) */}

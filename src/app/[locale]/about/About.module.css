@@ -10,18 +10,15 @@
 
 /* ── Hero ── */
 .hero {
-  position: relative; text-align: center; padding: 6rem 1.25rem 5rem;
+  position: relative; text-align: center; padding: 6rem 1.25rem 7rem;
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   overflow: hidden;
   color: #fff;
 }
-.hero::after {
-  content: '';
+.heroWave {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--background);
-  clip-path: ellipse(55% 100% at 50% 100%);
+  bottom: -1px; left: 0; right: 0;
+  z-index: 1; pointer-events: none;
 }
 .heroOrb {
   position: absolute; top: -80px; left: -80px; width: 350px; height: 350px;
@@ -219,7 +216,7 @@
   .wefStats   { flex-direction: row; justify-content: center; }
 }
 @media (max-width: 640px) {
-  .hero       { padding: 3.5rem 1rem 2.5rem; }
+  .hero       { padding: 3.5rem 1rem 5.5rem; }
   .section, .sectionAlt { padding: 3.5rem 1rem; }
   .ctaSection { padding: 3.5rem 1rem; }
   .statsBar   { padding: 1rem; }

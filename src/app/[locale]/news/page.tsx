@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import styles from './News.module.css';
+import JeddahStripe from '@/components/JeddahStripe';
 
 interface NewsPost {
   id: string;
@@ -66,11 +67,14 @@ export default function NewsPage() {
           ));
           data = snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsPost));
         } catch {
-          // Composite index may be missing — fall back to unfiltered fetch
-          const snap = await getDocs(query(collection(db, 'blogs'), orderBy('createdAt', 'desc')));
+          // Composite index missing — query with status filter only, sort client-side
+          const snap = await getDocs(query(
+            collection(db, 'blogs'),
+            where('status', '==', 'published')
+          ));
           data = snap.docs
             .map(d => ({ id: d.id, ...d.data() } as NewsPost))
-            .filter(p => !p.status || p.status === 'published');
+            .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
         }
         setPosts(data);
         setFiltered(data);
@@ -101,6 +105,8 @@ export default function NewsPage() {
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
       </section>
+
+      <JeddahStripe />
 
       <div className={styles.container}>
         <div className={styles.filters}>

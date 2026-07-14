@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #0f5a9f;
+  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
   display: flex;
   align-items: center;
   justify-content: center;

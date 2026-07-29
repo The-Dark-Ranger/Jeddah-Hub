@@ -1,27 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import styles from './Contact.module.css';
 import WaveDivider from '@/components/WaveDivider';
+import ReCaptcha from '@/components/ReCaptcha';
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(null), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) return;
     setStatus('loading');
     try {
+      const verify = await fetch('/api/verify-recaptcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+      if (!verify.ok) { setStatus('error'); return; }
+
       await addDoc(collection(db, 'contact_messages'), {
         ...formData,
         submittedAt: new Date().toISOString(),
       });
       setStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
+      setCaptchaToken(null);
     } catch (err) {
       console.error(err);
       setStatus('error');
@@ -118,7 +132,15 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <button type="submit" className={styles.submitBtn} disabled={status === 'loading'}>
+                <div className={styles.captchaWrap}>
+                  <ReCaptcha onVerify={handleCaptchaVerify} onExpire={handleCaptchaExpire} />
+                </div>
+
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={status === 'loading' || !captchaToken}
+                >
                   {status === 'loading' ? (
                     <span className={styles.spinner} aria-hidden="true" />
                   ) : null}

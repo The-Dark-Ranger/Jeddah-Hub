@@ -1,27 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import styles from './Login.module.css';
+import ReCaptcha from '@/components/ReCaptcha';
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const router = useRouter();
   const t = useTranslations('LoginPage');
 
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(null), []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) return;
     setError('');
     setLoading(true);
 
     try {
+      const verify = await fetch('/api/verify-recaptcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+      if (!verify.ok) {
+        setError(t('errorGeneral'));
+        setLoading(false);
+        return;
+      }
+
       const cred    = await signInWithEmailAndPassword(auth, email, password);
       const profile = await getUserProfile(cred.user.uid);
 
@@ -93,7 +110,15 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" className={'btn-primary ' + styles.submitBtn} disabled={loading}>
+          <div className={styles.captchaWrap}>
+            <ReCaptcha onVerify={handleCaptchaVerify} onExpire={handleCaptchaExpire} />
+          </div>
+
+          <button
+            type="submit"
+            className={'btn-primary ' + styles.submitBtn}
+            disabled={loading || !captchaToken}
+          >
             {loading ? <span className={styles.spinner} /> : t('signIn')}
           </button>
         </form>

@@ -17,9 +17,11 @@ export async function POST(req: NextRequest) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
   });
-  const data: { success: boolean; 'error-codes'?: string[] } = await res.json();
+  const data: { success: boolean; score?: number; 'error-codes'?: string[] } = await res.json();
 
-  if (data.success) {
+  // For v3 keys a score of 0.0–1.0 is returned; require ≥ 0.5 to pass.
+  // For v2 keys the score field is absent and success alone is sufficient.
+  if (data.success && (data.score === undefined || data.score >= 0.5)) {
     return NextResponse.json({ ok: true });
   }
   return NextResponse.json({ ok: false, error: 'reCAPTCHA verification failed' }, { status: 400 });

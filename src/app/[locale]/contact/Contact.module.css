@@ -136,11 +136,6 @@
   line-height: 1.6;
 }
 
-.captchaWrap {
-  display: flex;
-  justify-content: center;
-}
-
 .submitBtn {
   width: 100%;
   padding: 0.95rem;

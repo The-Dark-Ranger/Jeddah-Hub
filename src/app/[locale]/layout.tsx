@@ -57,6 +57,15 @@ export default async function LocaleLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap"
           rel="stylesheet"
         />
+        {/* reCAPTCHA v3 \u2014 loaded globally so grecaptcha.execute() is available on any page */}
+        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script
+            src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
+            async
+            defer
+          />
+        )}
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
         <SplashScreen locale={locale} />

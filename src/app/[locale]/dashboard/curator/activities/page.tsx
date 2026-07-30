@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc,
-  query, orderBy, serverTimestamp,
+  query, serverTimestamp, where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -66,10 +66,21 @@ export default function ActivitiesPage() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, 'hub_activities'), orderBy('createdAt', 'desc')));
-      setActivities(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) })));
+      // Stored in the existing 'initiatives' collection with type:'hub_activity'
+      // so no extra Firestore security rules are needed.
+      // Query by type only — no orderBy — to avoid needing a composite Firestore index.
+      const snap = await getDocs(
+        query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))
+      );
+      const sorted = snap.docs
+        .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
+        .sort((a, b) => {
+          const ta = (a as any).createdAt?.toMillis?.() ?? 0;
+          const tb = (b as any).createdAt?.toMillis?.() ?? 0;
+          return tb - ta;
+        });
+      setActivities(sorted);
     } catch {
-      // Collection may not exist yet — treat as empty
       setActivities([]);
     } finally {
       setLoading(false);
@@ -97,26 +108,40 @@ export default function ActivitiesPage() {
   async function handleSave() {
     if (!form.title.trim()) return;
     setSaving(true);
-    const payload = { ...form, highlights: parseHighlights(highlightsText) };
-    if (editing) {
-      await updateDoc(doc(db, 'hub_activities', editing.id), { ...payload, updatedAt: serverTimestamp() });
-    } else {
-      await addDoc(collection(db, 'hub_activities'), { ...payload, createdAt: serverTimestamp() });
+    try {
+      const payload = { ...form, highlights: parseHighlights(highlightsText), type: 'hub_activity' };
+      if (editing) {
+        await updateDoc(doc(db, 'initiatives', editing.id), { ...payload, updatedAt: serverTimestamp() });
+      } else {
+        await addDoc(collection(db, 'initiatives'), { ...payload, createdAt: serverTimestamp() });
+      }
+      setModalOpen(false);
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to save activity:', err);
+      alert('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setModalOpen(false);
-    fetchAll();
   }
 
   async function handleToggleActive(a: Activity) {
-    await updateDoc(doc(db, 'hub_activities', a.id), { active: !a.active });
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', a.id), { active: !a.active });
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to toggle activity:', err);
+    }
   }
 
   async function handleDelete(a: Activity) {
     if (!confirm(t('deleteActivityConfirm'))) return;
-    await deleteDoc(doc(db, 'hub_activities', a.id));
-    fetchAll();
+    try {
+      await deleteDoc(doc(db, 'initiatives', a.id));
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to delete activity:', err);
+    }
   }
 
   if (!canEdit) {

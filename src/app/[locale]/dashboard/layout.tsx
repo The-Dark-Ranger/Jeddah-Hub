@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const role      = user.role?.toLowerCase();
+  const role      = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const isCurator = role === 'curator' || role === 'vice_curator';
   const isImpact  = role === 'impact_officer';
   const isShaper  = role === 'shaper' || role === 'alumni';

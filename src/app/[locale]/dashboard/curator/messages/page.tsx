@@ -55,7 +55,8 @@ export default function MessagesPage() {
   const [sending, setSending]         = useState(false);
   const [replyingId, setReplyingId]   = useState<string | null>(null);
 
-  const isCurator = user?.role?.toLowerCase() === 'curator' || user?.role?.toLowerCase() === 'vice_curator';
+  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const isCurator = normRole === 'curator' || normRole === 'vice_curator';
 
   useEffect(() => {
     if (!isCurator) return;

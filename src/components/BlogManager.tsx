@@ -34,10 +34,11 @@ function timeAgo(iso: string) {
 }
 
 export default function BlogManager({ user, isInitiativeLead = false }: { user: UserProfile; isInitiativeLead?: boolean }) {
-  const isCurator = user.role === 'curator' || user.role === 'vice_curator';
-  const isImpact  = user.role === 'impact_officer';
+  const normRole   = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const isCurator  = normRole === 'curator' || normRole === 'vice_curator';
+  const isImpact   = normRole === 'impact_officer';
   const canPublishDirectly = isCurator || isImpact || isInitiativeLead;
-  const canSeeAll = isCurator;
+  const canSeeAll  = isCurator;
 
   const [posts, setPosts]       = useState<BlogPost[]>([]);
   const [loading, setLoading]   = useState(true);

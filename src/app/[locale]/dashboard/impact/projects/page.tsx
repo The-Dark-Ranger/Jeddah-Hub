@@ -150,7 +150,7 @@ export default function ImpactProjects() {
   const [assignRole, setAssignRole]     = useState('');
   const [assigning, setAssigning]       = useState(false);
 
-  const role      = user?.role?.toLowerCase();
+  const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {

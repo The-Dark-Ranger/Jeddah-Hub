@@ -219,7 +219,7 @@ export default function ManageInitiatives() {
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
 
-  const role      = user?.role?.toLowerCase();
+  const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   /* Stable onChange for FormFields */

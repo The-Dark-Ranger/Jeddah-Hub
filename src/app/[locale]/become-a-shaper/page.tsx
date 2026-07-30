@@ -94,9 +94,9 @@ export default function BecomeAShaperPage() {
 
       {/* Stats row below wave */}
       <div className={styles.heroChips}>
-        <div className={styles.heroChip}><strong>37</strong><span>{t('statShapers')}</span></div>
-        <div className={styles.heroChip}><strong>44</strong><span>{t('statInitiatives')}</span></div>
-        <div className={styles.heroChip}><strong>100K+</strong><span>{t('statBenefited')}</span></div>
+        <div className={styles.heroChip}><strong>32</strong><span>{t('statShapers')}</span></div>
+        <div className={styles.heroChip}><strong>50+</strong><span>{t('statInitiatives')}</span></div>
+        <div className={styles.heroChip}><strong>120K+</strong><span>{t('statBenefited')}</span></div>
       </div>
 
       {/* Jeddah stripe divider */}

@@ -546,6 +546,16 @@
     "acceptRequest": "Accept",
     "rejectRequest": "Decline",
     "pendingJoinRequests": "Pending Join Requests",
-    "noJoinRequests": "No pending join requests."
+    "noJoinRequests": "No pending join requests.",
+    "impactProjectsTitle": "Projects",
+    "myProjects": "Projects",
+    "newProjectBtn": "New Project",
+    "createProject": "Create Project",
+    "createProjectBtn": "Create Project",
+    "teamLabel": "Team",
+    "assignShapers": "Assign Shapers",
+    "selectShaper": "Select a shaper…",
+    "addToTeam": "Add",
+    "noTeamMembers": "No shapers assigned yet."
   }
 }

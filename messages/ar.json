@@ -546,6 +546,16 @@
     "acceptRequest": "قبول",
     "rejectRequest": "رفض",
     "pendingJoinRequests": "طلبات الانضمام المعلقة",
-    "noJoinRequests": "لا توجد طلبات انضمام معلقة."
+    "noJoinRequests": "لا توجد طلبات انضمام معلقة.",
+    "impactProjectsTitle": "المشاريع",
+    "myProjects": "المشاريع",
+    "newProjectBtn": "مشروع جديد",
+    "createProject": "إنشاء مشروع",
+    "createProjectBtn": "إنشاء مشروع",
+    "teamLabel": "الفريق",
+    "assignShapers": "تعيين الصُنَّاع",
+    "selectShaper": "اختر صانعاً…",
+    "addToTeam": "إضافة",
+    "noTeamMembers": "لم يُعيَّن أي صانع بعد."
   }
 }

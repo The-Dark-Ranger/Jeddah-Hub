@@ -21,6 +21,7 @@ interface Activity {
   ctaUrl?: string;
   highlights?: Highlight[];
   active?: boolean;
+  color?: string;
 }
 
 export default function HomeActivity() {
@@ -45,6 +46,8 @@ export default function HomeActivity() {
 
   if (activity === 'loading') return null;
 
+  const hasHighlights = activity && (activity.highlights?.length ?? 0) > 0;
+
   return (
     <section className={styles.retreatSection}>
       <WaveDivider flip fill="var(--card-bg)" />
@@ -53,7 +56,7 @@ export default function HomeActivity() {
         <div className={styles.container}>
           <div
             className={styles.retreatInner}
-            style={(!activity.highlights?.length) ? { gridTemplateColumns: '1fr' } : undefined}
+            style={!hasHighlights ? { gridTemplateColumns: '1fr' } : undefined}
           >
             <div className={styles.retreatText}>
               {activity.eyebrow && (
@@ -85,6 +88,7 @@ export default function HomeActivity() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.retreatBtn}
+                  style={activity.color ? { background: activity.color, borderColor: activity.color } : undefined}
                 >
                   {activity.ctaText}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -95,11 +99,11 @@ export default function HomeActivity() {
               )}
             </div>
 
-            {activity.highlights && activity.highlights.length > 0 && (
+            {hasHighlights && (
               <div className={styles.retreatVenues}>
                 <p className={styles.retreatVenuesTitle}>{t('activityHighlightsLabel')}</p>
                 <div className={styles.retreatVenuesGrid}>
-                  {activity.highlights.map(h => (
+                  {activity.highlights!.map(h => (
                     <div key={h.name} className={styles.retreatVenueCard}>
                       <div className={styles.retreatVenueName}>{h.name}</div>
                       <div className={styles.retreatVenueTag}>{h.tag}</div>

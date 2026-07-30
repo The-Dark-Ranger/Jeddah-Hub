@@ -45,7 +45,8 @@ export default function MembersPage() {
   const [error, setError]   = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
 
-  const isCurator = user?.role === 'curator' || user?.role === 'vice_curator';
+  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const isCurator = normRole === 'curator' || normRole === 'vice_curator';
 
   const ROLES: { value: UserRole; label: string }[] = [
     { value: 'curator',        label: t('roleLabelCurator') },

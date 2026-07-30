@@ -38,11 +38,12 @@ export default function LoginPage() {
       const cred    = await signInWithEmailAndPassword(auth, email, password);
       const profile = await getUserProfile(cred.user.uid);
 
-      if (profile?.role === 'curator' || profile?.role === 'vice_curator') {
+      const normRole = profile?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+      if (normRole === 'curator' || normRole === 'vice_curator') {
         router.push('/dashboard/curator/initiatives');
-      } else if (profile?.role === 'impact_officer') {
-        router.push('/dashboard/impact/reports');
-      } else if (profile?.role === 'shaper' || profile?.role === 'alumni') {
+      } else if (normRole === 'impact_officer') {
+        router.push('/dashboard/impact/projects');
+      } else if (normRole === 'shaper' || normRole === 'alumni') {
         router.push('/dashboard/shaper/profile');
       } else {
         router.push('/dashboard');

@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
+import { CATEGORY_COLORS } from '@/lib/placeholderProjects';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -20,6 +21,19 @@ interface Initiative {
   category?: string;
   images?: string[];
   stat?: string;
+  color?: string;
+}
+
+function cardGradient(init: Initiative, fallback: string): string {
+  if (init.images?.[0]) {
+    return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),url(${init.images[0]})`;
+  }
+  if (init.color) {
+    return `linear-gradient(135deg,${init.color}ee,${init.color}99)`;
+  }
+  const cat = CATEGORY_COLORS[init.category ?? ''];
+  if (cat) return `linear-gradient(135deg,${cat}ee,${cat}88)`;
+  return fallback;
 }
 
 export default function HomeFeaturedInitiatives() {
@@ -28,20 +42,23 @@ export default function HomeFeaturedInitiatives() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const activeQuery = query(
+    const activeQ = query(
       collection(db, 'initiatives'),
       where('status', '==', 'active'),
       orderBy('createdAt', 'desc'),
       limit(3),
     );
-    getDocs(activeQuery)
+    getDocs(activeQ)
       .then(snap => {
-        setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
+        const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+        setItems(all.filter(i => !(i as any).type));
       })
       .catch(() =>
-        // Composite index missing — fall back to filter-only, skip sort
         getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'), limit(3)))
-          .then(snap => setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative))))
+          .then(snap => {
+            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+            setItems(all.filter(i => !(i as any).type));
+          })
           .catch(() => {})
       )
       .finally(() => setLoaded(true));
@@ -79,16 +96,16 @@ export default function HomeFeaturedInitiatives() {
   return (
     <div className={styles.projectsGrid}>
       {items.map((init, i) => {
-        const img = init.images?.[0];
+        const bg = cardGradient(init, PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length]);
+        const hasImage = !!init.images?.[0];
         return (
           <Link key={init.id} href={`/projects/${init.id}`} className={styles.projectCard}>
             <div
               className={styles.projectBanner}
-              style={img ? {
-                backgroundImage: `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.55) 100%),url(${img})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              } : { background: PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length] }}
+              style={hasImage
+                ? { backgroundImage: bg, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { background: bg }
+              }
             >
               {init.category && <span className={styles.projectBannerTag}>{init.category}</span>}
             </div>

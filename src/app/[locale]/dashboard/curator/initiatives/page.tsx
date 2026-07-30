@@ -258,7 +258,11 @@ export default function ManageInitiatives() {
         getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc'))),
         getDocs(collection(db, 'users')),
       ]);
-      setInitiatives(initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
+      setInitiatives(
+        initSnap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Initiative))
+          .filter(i => !(i as any).type)
+      );
       setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string })));
     } catch { /* Firestore not configured */ }
     setLoading(false);

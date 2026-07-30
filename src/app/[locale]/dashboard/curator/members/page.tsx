@@ -196,11 +196,11 @@ export default function MembersPage() {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>Member</th>
+            <th>{t('colMember')}</th>
             <th>{t('colRole')}</th>
             <th>{t('colNote')}</th>
             <th>{isJoined ? t('statusJoined') : t('colAdded')}</th>
-            <th></th>
+            <th>{t('colActions')}</th>
           </tr>
         </thead>
         <tbody>

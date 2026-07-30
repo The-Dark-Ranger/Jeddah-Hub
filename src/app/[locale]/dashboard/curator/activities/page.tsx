@@ -65,9 +65,15 @@ export default function ActivitiesPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const snap = await getDocs(query(collection(db, 'hub_activities'), orderBy('createdAt', 'desc')));
-    setActivities(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) })));
-    setLoading(false);
+    try {
+      const snap = await getDocs(query(collection(db, 'hub_activities'), orderBy('createdAt', 'desc')));
+      setActivities(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) })));
+    } catch {
+      // Collection may not exist yet — treat as empty
+      setActivities([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { fetchAll(); }, []);

@@ -20,6 +20,7 @@ interface Activity {
   ctaText?: string;
   ctaUrl?: string;
   highlights?: Highlight[];
+  active?: boolean;
 }
 
 export default function HomeActivity() {

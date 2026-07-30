@@ -57,7 +57,10 @@
     "retreatVenuesTitle": "أماكن الملتقى",
     "retreatCta": "استكشف الملتقى",
     "newsletterSuccess": "شكراً لاشتراكك!",
-    "newsletterError": "فشل الاشتراك. يرجى المحاولة مرة أخرى."
+    "newsletterError": "فشل الاشتراك. يرجى المحاولة مرة أخرى.",
+    "stayTunedTitle": "ترقّب",
+    "stayTunedDesc": "يعمل فريقنا على تحضير شيء مميز لمجتمعنا. عد قريباً لآخر أخبار مركز جدة.",
+    "activityHighlightsLabel": "أبرز ما يميزه"
   },
   "AboutPage": {
     "title": "من نحن",
@@ -182,12 +185,12 @@
       {
         "num": "٠١",
         "title": "التقديم",
-        "body": "أرسل طلبك مع خلفيتك واهتماماتك ودوافعك للانضمام. تُراجَع الطلبات بصورة مستمرة طوال العام."
+        "body": "أرسل طلبك مع خلفيتك واهتماماتك ودوافعك للانضمام. تُفتح دورات التقديم مرة أو مرتين في السنة وفق رؤية المركز السنوية."
       },
       {
         "num": "٠٢",
         "title": "الفرز",
-        "body": "يراجع فريقنا الطلبات في دورتين رئيسيتين، وقد نتواصل معك بأسئلة إضافية."
+        "body": "يراجع فريقنا الطلبات خلال نافذة الدورة، وقد نتواصل معك بأسئلة إضافية أو خطوات متابعة."
       },
       {
         "num": "٠٣",
@@ -197,7 +200,7 @@
       {
         "num": "٠٤",
         "title": "الترحيب",
-        "body": "ينضم المقبولون كصناع ضيوف، في فترة تجريبية تعاونية قبل العضوية الكاملة."
+        "body": "ينضم المقبولون كصناع ضيوف — فترة تجريبية منظمة. بعد اجتياز التقييم، يرتقون إلى العضوية الكاملة بكامل حقوقها ومسؤولياتها."
       }
     ],
     "statShapers": "عضو",
@@ -225,7 +228,7 @@
     "quote2Author": "رياض الشهري",
     "quote2Role": "صانع عالمي",
     "quote3": "منحني المركز الأدوات والشبكة والتشجيع لأحوّل أفكاري إلى تأثير حقيقي. كل مبادرة علّمتني شيئاً لا تعلّمه المدرسة.",
-    "quote3Author": "طلين عطار",
+    "quote3Author": "تولين عطار",
     "quote3Role": "صانع عالمي"
   },
   "ContactPage": {
@@ -558,6 +561,37 @@
     "addToTeam": "إضافة",
     "noTeamMembers": "لم يُعيَّن أي صانع بعد.",
     "downloadReport": "تحميل التقرير",
-    "notifyCurator": "إشعار المنسق"
+    "notifyCurator": "إشعار المنسق",
+    "activitiesTitle": "أنشطة المركز",
+    "activitiesSubtitle": "أدر فقرة الأضواء المجتمعية الظاهرة في الصفحة الرئيسية.",
+    "newActivityBtn": "نشاط جديد",
+    "activityEyebrowLabel": "التسمية التعريفية",
+    "activityEyebrowPh": "مثال: حدث قادم",
+    "activityTitleLabel": "العنوان",
+    "activityTitlePh": "اسم النشاط أو الحدث",
+    "activitySubtitleLabel": "شعار الحدث",
+    "activitySubtitlePh": "مثال: حيث تلتقي الثقافات",
+    "activityDescLabel": "الوصف",
+    "activityDescPh": "وصف مختصر يظهر في الصفحة الرئيسية...",
+    "activityDateLabel": "التاريخ",
+    "activityDatePh": "مثال: ٢٣–٢٥ أبريل ٢٠٢٦",
+    "activityLocationLabel": "الموقع",
+    "activityLocationPh": "مثال: جدة، المملكة العربية السعودية",
+    "activityCtaTextLabel": "نص زر الإجراء",
+    "activityCtaTextPh": "مثال: اعرف أكثر",
+    "activityCtaUrlLabel": "رابط زر الإجراء",
+    "activityCtaUrlPh": "https://...",
+    "activityHighlightsLabel": "أبرز ما يميزه",
+    "activityHighlightsPh": "الاسم،الوصف — سطر واحد لكل إدخال\nمثال: البلد،التراث",
+    "activityActiveLabel": "عرض في الصفحة الرئيسية",
+    "saveActivity": "حفظ النشاط",
+    "createActivity": "إنشاء نشاط",
+    "editActivity": "تعديل النشاط",
+    "deleteActivity": "حذف",
+    "deleteActivityConfirm": "حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء.",
+    "noActivities": "لا توجد أنشطة بعد.",
+    "createFirstActivity": "أنشئ أول نشاط للمركز لعرضه في الصفحة الرئيسية.",
+    "activityActive": "نشط",
+    "activityInactive": "مخفي"
   }
 }

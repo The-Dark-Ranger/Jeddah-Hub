@@ -55,11 +55,11 @@ export default function HomePage() {
             <Link href="/projects" className={styles.secondaryButton}>{t('exploreProjects')}</Link>
           </div>
           <div className={styles.heroStats + ' ' + styles.fadeInUp + ' ' + styles.delay3}>
-            <div className={styles.heroStat}><span>37</span> {t('metrics.shapers')}</div>
+            <div className={styles.heroStat}><span>120+</span> {t('metrics.shapers')}</div>
             <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}><span>44</span> {t('metrics.projects')}</div>
+            <div className={styles.heroStat}><span>50+</span> {t('metrics.projects')}</div>
             <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}><span>30+</span> {t('metrics.partners')}</div>
+            <div className={styles.heroStat}><span>120K+</span> {t('benefited')}</div>
           </div>
         </div>
         <WaveDivider fill="var(--background)" className={styles.heroWave} />
@@ -95,10 +95,10 @@ export default function HomePage() {
           </div>
           <div className={styles.impactGrid}>
             {[
-              { num: '100K+', label: t('benefited') },
-              { num: '44',    label: t('metrics.projects') },
-              { num: '37',    label: t('metrics.shapers') },
-              { num: '30+',   label: t('metrics.partners') },
+              { num: '120K+', label: t('benefited') },
+              { num: '50+',   label: t('metrics.projects') },
+              { num: '120+',  label: t('metrics.shapers') },
+              { num: '40+',   label: t('metrics.partners') },
             ].map(({ num, label }) => (
               <div key={label} className={styles.impactCard}>
                 <div className={styles.impactNumber}>{num}</div>

@@ -81,10 +81,15 @@ export default function Navbar() {
   return (
     <>
       <nav className={styles.navbar + (navHidden ? ' ' + styles.navbarHidden : '')}>
-        {/* Logo */}
+        {/* Logo — switches to dark variant when theme is dark */}
         <div className={styles.left}>
           <Link href="/" onClick={closeMobile}>
-            <img src="/logo.png" onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.svg'; }} alt="Jeddah Hub" className={styles.logo} />
+            <img
+              src={mounted && theme === 'dark' ? '/logo-dark.png' : '/logo.png'}
+              onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
+              alt="Jeddah Hub"
+              className={styles.logo}
+            />
           </Link>
         </div>
 

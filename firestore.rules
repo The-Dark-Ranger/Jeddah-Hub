@@ -12,8 +12,11 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Normalize to lowercase so "Curator" / "curator" / "CURATOR" all match.
+    // Also handle "impact officer" (space) alongside "impact_officer" (underscore).
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      let raw = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return raw is string ? raw.lower() : '';
     }
 
     function isCurator() {
@@ -21,7 +24,7 @@ service cloud.firestore {
     }
 
     function isImpactOfficer() {
-      return isSignedIn() && userRole() == 'impact_officer';
+      return isSignedIn() && userRole() in ['impact_officer', 'impact officer'];
     }
 
     function isCuratorOrImpact() {
@@ -33,13 +36,13 @@ service cloud.firestore {
     }
 
     function isAnyMember() {
-      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
+      return isSignedIn() && userRole() in [
+        'curator', 'vice_curator', 'impact_officer', 'impact officer',
+        'shaper', 'alumni'
+      ];
     }
 
     // ── users ─────────────────────────────────────────────────
-    // Public can read (for About/shapers pages).
-    // Users write only their own doc.
-    // Curators can write any user doc (role assignment).
     match /users/{uid} {
       allow read: if true;
       allow create: if isOwner(uid);
@@ -48,15 +51,14 @@ service cloud.firestore {
     }
 
     // ── initiatives ───────────────────────────────────────────
-    // Public can read. Curators can create/update/delete.
+    // Hub activities are stored here with type:'hub_activity'.
+    // Public read. Curators create/update/delete all initiative docs.
     match /initiatives/{docId} {
       allow read: if true;
       allow create, update, delete: if isCurator();
     }
 
     // ── join_requests ─────────────────────────────────────────
-    // Shapers create requests for themselves.
-    // Curators, impact officers, and the initiative lead can read + update.
     match /join_requests/{docId} {
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid;
@@ -67,9 +69,6 @@ service cloud.firestore {
     }
 
     // ── blogs ─────────────────────────────────────────────────
-    // Published posts are publicly readable.
-    // Any authenticated member can create (status will be 'draft' or 'pending').
-    // Curators can read/write all. Authors can read/edit their own draft/pending.
     match /blogs/{docId} {
       allow read: if resource.data.status == 'published'
                   || (isSignedIn() && (
@@ -86,21 +85,18 @@ service cloud.firestore {
     }
 
     // ── newsletter_subscribers ────────────────────────────────
-    // Anyone can subscribe. Only curators can read the list.
     match /newsletter_subscribers/{docId} {
       allow create: if true;
       allow read, update, delete: if isCurator();
     }
 
     // ── impact_reports ────────────────────────────────────────
-    // Public can read. Impact officers and curators can write.
     match /impact_reports/{docId} {
       allow read: if true;
       allow create, update, delete: if isCuratorOrImpact();
     }
 
     // ── role_assignments ──────────────────────────────────────
-    // Curators create/delete. Assigned user can read and delete their own.
     match /role_assignments/{docId} {
       allow read:   if isOwner(resource.data.uid) || isCurator();
       allow create: if isCurator();
@@ -108,26 +104,29 @@ service cloud.firestore {
     }
 
     // ── contact_messages ──────────────────────────────────────
-    // Anyone can submit. Only curators can read + manage.
     match /contact_messages/{docId} {
       allow create: if true;
       allow read, update, delete: if isCurator();
     }
 
     // ── blog_likes ────────────────────────────────────────────
-    // Any signed-in user can like/unlike. Public can read counts.
     match /blog_likes/{docId} {
       allow read: if true;
       allow create, delete: if isSignedIn();
     }
 
     // ── blog_comments ─────────────────────────────────────────
-    // Public can read. Signed-in users can add. Authors and curators can delete.
     match /blog_comments/{docId} {
       allow read: if true;
       allow create: if isSignedIn();
       allow delete: if isSignedIn()
                     && (request.auth.uid == resource.data.authorId || isCurator());
+    }
+
+    // ── notifications ─────────────────────────────────────────
+    match /notifications/{docId} {
+      allow read, update: if isCurator();
+      allow create: if isSignedIn();
     }
   }
 }

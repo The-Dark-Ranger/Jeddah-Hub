@@ -495,7 +495,7 @@ export default function ImpactProjects() {
 
                   <button
                     className={styles.downloadBtn}
-                    onClick={() => downloadInitiativeReport(init as any, getMemberNames(init))}
+                    onClick={() => void downloadInitiativeReport(init as any, getMemberNames(init))}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>

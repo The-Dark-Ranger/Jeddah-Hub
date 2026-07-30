@@ -556,6 +556,8 @@
     "assignShapers": "Assign Shapers",
     "selectShaper": "Select a shaper…",
     "addToTeam": "Add",
-    "noTeamMembers": "No shapers assigned yet."
+    "noTeamMembers": "No shapers assigned yet.",
+    "downloadReport": "Download Report",
+    "notifyCurator": "notify curator"
   }
 }

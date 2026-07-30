@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, updateDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import styles from './DashboardHome.module.css';
@@ -14,6 +14,12 @@ interface Stats {
   myProjects: number; unreadMessages: number;
 }
 
+interface Notification {
+  id: string; type: string; message: string;
+  initiativeTitle?: string; fromUserName?: string;
+  read: boolean; createdAt: string;
+}
+
 export default function DashboardHome() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -22,6 +28,7 @@ export default function DashboardHome() {
     initiatives: 0, activeInitiatives: 0, blogs: 0,
     subscribers: 0, reports: 0, myProjects: 0, unreadMessages: 0,
   });
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!loading && user?.role) fetchStats();
@@ -50,6 +57,13 @@ export default function DashboardHome() {
         try {
           const unreadSnap = await getDocs(query(collection(db, 'contact_messages'), where('read', '==', false)));
           unreadMessages = unreadSnap.size;
+        } catch { /* ignore */ }
+
+        try {
+          const notifSnap = await getDocs(
+            query(collection(db, 'notifications'), orderBy('createdAt', 'desc')),
+          );
+          setNotifications(notifSnap.docs.map(d => ({ id: d.id, ...d.data() } as Notification)));
         } catch { /* ignore */ }
       }
 
@@ -92,6 +106,15 @@ export default function DashboardHome() {
     if (h < 18) return t('goodAfternoon');
     return t('goodEvening');
   };
+
+  const markNotifRead = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'notifications', id), { read: true });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch { /* ignore */ }
+  };
+
+  const unreadNotifs = notifications.filter(n => !n.read);
 
   return (
     <div className={styles.page}>
@@ -226,6 +249,47 @@ export default function DashboardHome() {
           </>)}
         </div>
       </div>
+      {/* Curator notifications panel */}
+      {isCurator && notifications.length > 0 && (
+        <div className={styles.notifSection}>
+          <h3 className={styles.sectionTitle}>
+            Notifications
+            {unreadNotifs.length > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 20, height: 20, padding: '0 5px', borderRadius: 10,
+                background: 'var(--primary-blue)', color: 'white',
+                fontSize: '0.72rem', fontWeight: 700, marginInlineStart: '0.5rem',
+              }}>{unreadNotifs.length}</span>
+            )}
+          </h3>
+          <div className={styles.notifList}>
+            {notifications.slice(0, 10).map(n => (
+              <div key={n.id} className={styles.notifCard + (!n.read ? ' ' + styles.unread : '')}>
+                <div className={styles.notifIcon}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
+                  </svg>
+                </div>
+                <div className={styles.notifBody}>
+                  <p className={styles.notifMsg}>{n.message}</p>
+                  <p className={styles.notifTime}>
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                  {!n.read && (
+                    <div className={styles.notifActions}>
+                      <button className={styles.notifMarkRead} onClick={() => markNotifRead(n.id)}>
+                        Mark as read
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

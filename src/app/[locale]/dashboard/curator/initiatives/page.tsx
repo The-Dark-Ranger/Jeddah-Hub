@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
+import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import styles from './Initiatives.module.css';
 
 interface Initiative {
@@ -208,6 +209,7 @@ export default function ManageInitiatives() {
   const locale   = useLocale();
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
+  const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [seeding, setSeeding]   = useState(false);
@@ -218,6 +220,12 @@ export default function ManageInitiatives() {
   const [editingId, setEditingId]       = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
+
+  /* Team panel state */
+  const [teamOpenId, setTeamOpenId] = useState<string | null>(null);
+  const [assignUser, setAssignUser] = useState('');
+  const [assignRole, setAssignRole] = useState('');
+  const [assigning, setAssigning]   = useState(false);
 
   const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
@@ -230,8 +238,12 @@ export default function ManageInitiatives() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc')));
-      setInitiatives(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
+      const [initSnap, usersSnap] = await Promise.all([
+        getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc'))),
+        getDocs(collection(db, 'users')),
+      ]);
+      setInitiatives(initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string })));
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
@@ -345,6 +357,40 @@ export default function ManageInitiatives() {
     await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
     fetchAll();
   };
+
+  /* ── Team helpers ── */
+  const toggleTeam = (id: string) => {
+    setTeamOpenId(prev => prev === id ? null : id);
+    setAssignUser(''); setAssignRole('');
+  };
+
+  const handleAssign = async (initiativeId: string) => {
+    if (!assignUser) return;
+    setAssigning(true);
+    await updateDoc(doc(db, 'initiatives', initiativeId), {
+      members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
+    });
+    setAssignUser(''); setAssignRole('');
+    setAssigning(false);
+    fetchAll();
+  };
+
+  const handleRemoveMember = async (initiativeId: string, userId: string) => {
+    if (!confirm(t('confirmRemoveMember'))) return;
+    const init = initiatives.find(i => i.id === initiativeId);
+    if (!init) return;
+    const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
+    await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
+    fetchAll();
+  };
+
+  const getUserLabel = (userId: string) => {
+    const u = users.find(u => u.id === userId);
+    return u?.displayName || u?.email || userId;
+  };
+
+  const getMemberNames = (init: Initiative) =>
+    Object.fromEntries((init.members as any[] || []).map((m: any) => [m.userId, getUserLabel(m.userId)]));
 
   const filtered      = initiatives.filter(i => filter === 'all' || i.status === filter);
   const activeCount   = initiatives.filter(i => i.status === 'active').length;
@@ -522,6 +568,29 @@ export default function ManageInitiatives() {
                   </svg>
                   {t('editLabel')}
                 </button>
+                <button
+                  className={styles.teamBtn + (teamOpenId === init.id ? ' ' + styles.teamBtnOpen : '')}
+                  onClick={() => toggleTeam(init.id)}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  {t('teamLabel')} ({(init.members as any[] || []).length})
+                </button>
+                <button
+                  className={styles.downloadBtn}
+                  onClick={() => downloadInitiativeReport(init as any, getMemberNames(init))}
+                  title={t('downloadReport')}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  {t('downloadReport')}
+                </button>
                 {init.status === 'active' ? (
                   <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -541,6 +610,45 @@ export default function ManageInitiatives() {
                   </button>
                 )}
               </div>
+
+              {/* Team panel */}
+              {teamOpenId === init.id && (
+                <div className={styles.teamPanel}>
+                  <p className={styles.teamPanelTitle}>{t('assignShapers')}</p>
+                  <div className={styles.teamAssignRow}>
+                    <select value={assignUser} onChange={e => setAssignUser(e.target.value)} className={styles.teamSelect}>
+                      <option value="">{t('selectShaper')}</option>
+                      {users
+                        .filter(u => !(init.members as any[] || []).some((m: any) => m.userId === u.id))
+                        .map(u => <option key={u.id} value={u.id}>{u.displayName || u.email || u.id}</option>)}
+                    </select>
+                    <input
+                      value={assignRole}
+                      onChange={e => setAssignRole(e.target.value)}
+                      placeholder={t('tempRolePlaceholder')}
+                      className={styles.teamRoleInput}
+                    />
+                    <button className={styles.assignBtn} onClick={() => handleAssign(init.id)} disabled={!assignUser || assigning}>
+                      {assigning ? '…' : t('addToTeam')}
+                    </button>
+                  </div>
+                  {(init.members as any[] || []).length === 0 ? (
+                    <p className={styles.noTeamMsg}>{t('noTeamMembers')}</p>
+                  ) : (
+                    <div className={styles.memberList}>
+                      {(init.members as any[]).map((m: any, idx: number) => (
+                        <div key={m.userId + idx} className={styles.memberRow}>
+                          <span className={styles.memberName}>{getUserLabel(m.userId)}</span>
+                          <span className={styles.memberRole}>{m.role || 'Member'}</span>
+                          <button className={styles.removeBtn} onClick={() => handleRemoveMember(init.id, m.userId)}>
+                            {t('removeMember')}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

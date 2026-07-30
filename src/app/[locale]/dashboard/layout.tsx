@@ -21,8 +21,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
+        <div className={styles.loadingLogo}>Jeddah Hub</div>
         <div className={styles.loadingSpinner} />
-        <p>{t('loading')}</p>
+        <p className={styles.loadingText}>{t('loading')}</p>
       </div>
     );
   }

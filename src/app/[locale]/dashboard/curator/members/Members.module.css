@@ -121,7 +121,7 @@
   background: transparent;
 }
 
-.actionsCell { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.actionsCell { display: flex; gap: 0.4rem; align-items: center; white-space: nowrap; }
 
 .removeBtn {
   padding: 0.3rem 0.75rem; border-radius: 6px; background: rgba(239,68,68,0.08);

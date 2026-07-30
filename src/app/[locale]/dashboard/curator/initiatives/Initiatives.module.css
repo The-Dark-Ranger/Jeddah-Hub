@@ -340,3 +340,23 @@
 }
 .removeBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
 .noTeamMsg { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.25rem 0; }
+
+/* Color bar at top of card */
+.colorBar { height: 5px; width: 100%; flex-shrink: 0; }
+
+/* Color picker row in form */
+.colorRow { display: flex; align-items: center; gap: 0.5rem; }
+.colorInput {
+  width: 40px; height: 38px; border-radius: 8px;
+  border: 1px solid var(--border-color); cursor: pointer; padding: 2px;
+  background: var(--input-bg); flex-shrink: 0;
+}
+.colorHex {
+  font-size: 0.82rem; color: var(--text-muted); font-family: monospace; flex: 1;
+}
+.colorClear {
+  padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-color);
+  background: transparent; color: var(--text-muted); font-size: 1rem; cursor: pointer;
+  line-height: 1; transition: all 0.15s;
+}
+.colorClear:hover { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.3); }

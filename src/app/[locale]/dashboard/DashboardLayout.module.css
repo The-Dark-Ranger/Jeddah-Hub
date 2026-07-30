@@ -9,18 +9,33 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  min-height: 50vh;
+  gap: 1.25rem;
+  min-height: 100vh;
   color: var(--text-muted);
+  background: var(--background);
+}
+
+.loadingLogo {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary-blue);
+  letter-spacing: -0.01em;
+  opacity: 0.9;
 }
 
 .loadingSpinner {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 3px solid var(--border-color);
   border-top-color: var(--primary-blue);
   border-radius: 50%;
-  animation: dashSpin 0.7s linear infinite;
+  animation: dashSpin 0.75s linear infinite;
+}
+
+.loadingText {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
 }
 
 @keyframes dashSpin {

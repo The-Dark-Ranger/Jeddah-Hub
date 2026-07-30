@@ -23,6 +23,7 @@ interface Initiative {
   objective?: string;
   impact?: string;
   impactAreas?: string[];
+  color?: string;
   createdAt: string;
   members?: unknown[];
 }
@@ -35,7 +36,7 @@ const CATEGORIES = [
 const emptyForm = {
   title: '', description: '', category: '', startDate: '', endDate: '',
   imageUrl: '', images: '', stat: '', problem: '', objective: '', impact: '',
-  impactAreas: '',
+  impactAreas: '', color: '',
 };
 
 type FormShape = typeof emptyForm;
@@ -102,7 +103,7 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
       </div>
 
-      <div className={styles.editRow}>
+      <div className={styles.editRow3}>
         <div className={styles.formField}>
           <label className={styles.label}>
             {t('fieldImpactAreas')}
@@ -113,6 +114,21 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         <div className={styles.formField}>
           <label className={styles.label}>{t('fieldCoverImage')}</label>
           <input className={styles.input} value={form.imageUrl} onChange={mk('imageUrl')} placeholder={t('phCoverImageUrl')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldThemeColor')}</label>
+          <div className={styles.colorRow}>
+            <input
+              type="color"
+              className={styles.colorInput}
+              value={form.color || '#0F5A9F'}
+              onChange={mk('color')}
+            />
+            <span className={styles.colorHex}>{form.color || t('fieldThemeColorNone')}</span>
+            {form.color && (
+              <button type="button" className={styles.colorClear} onClick={() => onChange('color', '')}>×</button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -274,6 +290,7 @@ export default function ManageInitiatives() {
       objective:   init.objective   || '',
       impact:      init.impact      || '',
       impactAreas: (init.impactAreas || []).join(', '),
+      color:       init.color        || '',
     });
     setModalMode('edit');
   };
@@ -307,6 +324,7 @@ export default function ManageInitiatives() {
     objective:   f.objective,
     impact:      f.impact,
     impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
+    color:       f.color || null,
   });
 
   /* ── CRUD handlers ── */
@@ -508,6 +526,9 @@ export default function ManageInitiatives() {
               key={init.id}
               className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}
             >
+              {init.color && (
+                <div className={styles.colorBar} style={{ background: init.color }} />
+              )}
               {init.imageUrl && (
                 <div className={styles.cardImage}>
                   <img

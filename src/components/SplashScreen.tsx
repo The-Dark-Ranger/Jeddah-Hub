@@ -7,8 +7,15 @@ export default function SplashScreen({ locale }: { locale: string }) {
   const isRtl = locale === 'ar';
   const [visible,    setVisible]    = useState(false);
   const [dismissing, setDismissing] = useState(false);
+  const [isDark,     setIsDark]     = useState(false);
 
   useEffect(() => {
+    // Detect theme from the html element before showing splash
+    const html = document.documentElement;
+    const savedTheme = html.getAttribute('data-theme');
+    const sysDark    = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDark(savedTheme === 'dark' || (savedTheme !== 'light' && sysDark));
+
     let shouldShow = false;
     try {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -26,11 +33,13 @@ export default function SplashScreen({ locale }: { locale: string }) {
     const t = setTimeout(() => {
       setDismissing(true);
       setTimeout(() => setVisible(false), 600);
-    }, 2000);
+    }, 2200);
     return () => clearTimeout(t);
   }, []);
 
   if (!visible) return null;
+
+  const logoSrc = isDark ? '/logo-dark.png' : '/logo.png';
 
   return (
     <div
@@ -41,10 +50,10 @@ export default function SplashScreen({ locale }: { locale: string }) {
       <div className={styles.inner}>
         <div className={styles.logoRing}>
           <img
-            src="/logo.png"
+            src={logoSrc}
             alt="Jeddah Hub"
             className={styles.logo}
-            onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.svg'; }}
+            onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
           />
         </div>
         <div className={styles.wordmark}>

@@ -22,7 +22,7 @@
     "metrics": {
       "projects": "Initiatives",
       "beneficiaries": "Beneficiaries",
-      "shapers": "Active Shapers",
+      "shapers": "Members",
       "partners": "Partners"
     },
     "featuredProjects": {
@@ -200,7 +200,7 @@
         "body": "Successful applicants join as Guest Shapers, a collaborative trial period before full membership."
       }
     ],
-    "statShapers": "Active Shapers",
+    "statShapers": "Members",
     "statInitiatives": "Initiatives",
     "statBenefited": "Benefited",
     "drivenSubtitle": "Driven young people creating positive change.",

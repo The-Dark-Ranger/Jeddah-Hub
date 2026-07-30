@@ -22,7 +22,7 @@
     "metrics": {
       "projects": "مبادرة",
       "beneficiaries": "مستفيد",
-      "shapers": "صانع نشط",
+      "shapers": "عضو",
       "partners": "شريك"
     },
     "featuredProjects": {
@@ -200,7 +200,7 @@
         "body": "ينضم المقبولون كصناع ضيوف، في فترة تجريبية تعاونية قبل العضوية الكاملة."
       }
     ],
-    "statShapers": "صانع نشط",
+    "statShapers": "عضو",
     "statInitiatives": "مبادرة",
     "statBenefited": "مستفيد",
     "drivenSubtitle": "شباب مُحرِّكون للتغيير الإيجابي في مجتمعاتهم.",

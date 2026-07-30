@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
@@ -27,15 +27,21 @@ export default function HomeActivity() {
   const [activity, setActivity] = useState<Activity | null | 'loading'>('loading');
 
   useEffect(() => {
-    // Simple orderBy-only query avoids requiring a composite Firestore index.
-    // We filter active=true client-side and pick the most recent.
-    const q = query(collection(db, 'hub_activities'), orderBy('createdAt', 'desc'));
+    // Stored in 'initiatives' with type:'hub_activity' — uses existing public-read rules.
+    // We filter active=true client-side to avoid a composite index requirement.
+    // Query by type only (no orderBy) to avoid needing a composite Firestore index.
+    // Sort and filter active=true client-side.
+    const q = query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'));
     getDocs(q)
       .then(snap => {
-        const active = snap.docs
+        const all = snap.docs
           .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
-          .find(a => a.active === true);
-        setActivity(active ?? null);
+          .sort((a, b) => {
+            const ta = (a as any).createdAt?.toMillis?.() ?? 0;
+            const tb = (b as any).createdAt?.toMillis?.() ?? 0;
+            return tb - ta;
+          });
+        setActivity(all.find(a => a.active === true) ?? null);
       })
       .catch(() => setActivity(null));
   }, []);

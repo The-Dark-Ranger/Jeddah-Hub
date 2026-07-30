@@ -97,7 +97,6 @@ export default function HomePage() {
             {[
               { num: '120K+', label: t('benefited') },
               { num: '50+',   label: t('metrics.projects') },
-              { num: '120+',  label: t('metrics.shapers') },
               { num: '40+',   label: t('metrics.partners') },
             ].map(({ num, label }) => (
               <div key={label} className={styles.impactCard}>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { getRecaptchaToken } from '@/lib/recaptcha';
+import { useTheme } from '@/context/ThemeContext';
 import styles from './Login.module.css';
 
 export default function LoginPage() {
@@ -16,6 +17,9 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const router = useRouter();
   const t = useTranslations('LoginPage');
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +67,12 @@ export default function LoginPage() {
     <main className={styles.page}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <img src="/logo.png" alt="Jeddah Hub" className={styles.logo} />
+          <img
+            src={mounted && theme === 'dark' ? '/logo-dark.png' : '/logo.png'}
+            alt="Jeddah Hub"
+            className={styles.logo}
+            onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
+          />
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>

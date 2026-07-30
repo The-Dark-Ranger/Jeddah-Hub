@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection, addDoc, getDocs, updateDoc, doc,
-  query, orderBy, arrayUnion,
+  query, orderBy, arrayUnion, where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
+import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import styles from './Projects.module.css';
 
 interface Member { userId: string; role: string; }
@@ -251,7 +252,36 @@ export default function ImpactProjects() {
   };
 
   const handleRestore = async (id: string) => {
+    const init = initiatives.find(i => i.id === id);
     await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
+
+    /* Notify all curators and vice curators */
+    try {
+      const roleSnap = await getDocs(
+        query(collection(db, 'role_assignments'), where('status', '==', 'joined')),
+      );
+      const curators = roleSnap.docs
+        .map(d => d.data())
+        .filter(d => {
+          const r = d.role?.toLowerCase().replace(/\s+/g, '_');
+          return r === 'curator' || r === 'vice_curator';
+        });
+
+      await Promise.all(curators.map(c =>
+        addDoc(collection(db, 'notifications'), {
+          type: 'restore_request',
+          initiativeId: id,
+          initiativeTitle: init?.title || id,
+          fromUserId: user?.uid,
+          fromUserName: user?.displayName || user?.email || 'Impact Officer',
+          toEmail: c.email,
+          message: `${user?.displayName || 'Impact Officer'} restored the project "${init?.title}" from archive.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        }),
+      ));
+    } catch { /* notifications optional */ }
+
     fetchAll();
   };
 
@@ -290,6 +320,9 @@ export default function ImpactProjects() {
 
   const unassignedUsers = (init: Initiative) =>
     users.filter(u => !(init.members || []).some(m => m.userId === u.id));
+
+  const getMemberNames = (init: Initiative) =>
+    Object.fromEntries((init.members || []).map(m => [m.userId, getUserLabel(m.userId)]));
 
   const filtered      = initiatives.filter(i => filter === 'all' || i.status === filter);
   const activeCount   = initiatives.filter(i => i.status === 'active').length;
@@ -460,6 +493,18 @@ export default function ImpactProjects() {
                     {t('teamLabel')} ({members.length})
                   </button>
 
+                  <button
+                    className={styles.downloadBtn}
+                    onClick={() => downloadInitiativeReport(init as any, getMemberNames(init))}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {t('downloadReport')}
+                  </button>
+
                   {init.status === 'active' ? (
                     <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -475,7 +520,7 @@ export default function ImpactProjects() {
                         <polyline points="1 4 1 10 7 10"/>
                         <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
                       </svg>
-                      {t('restoreLabel')}
+                      {t('restoreLabel')} · {t('notifyCurator')}
                     </button>
                   )}
                 </div>

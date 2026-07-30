@@ -12,16 +12,19 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Normalize to lowercase so "Curator"/"curator"/"CURATOR" all match.
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      let raw = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return raw is string ? raw.lower() : '';
     }
 
     function isCurator() {
       return isSignedIn() && userRole() in ['curator', 'vice_curator'];
     }
 
+    // Accept both "impact_officer" (underscore) and "impact officer" (space).
     function isImpactOfficer() {
-      return isSignedIn() && userRole() == 'impact_officer';
+      return isSignedIn() && userRole() in ['impact_officer', 'impact officer'];
     }
 
     function isCuratorOrImpact() {
@@ -33,7 +36,7 @@ service cloud.firestore {
     }
 
     function isAnyMember() {
-      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
+      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
     }
 
     // ── users ─────────────────────────────────────────────────
@@ -128,6 +131,13 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow delete: if isSignedIn()
                     && (request.auth.uid == resource.data.authorId || isCurator());
+    }
+
+    // ── notifications ─────────────────────────────────────────
+    // Signed-in users can create. Only curators can read and update.
+    match /notifications/{docId} {
+      allow read, update: if isCurator();
+      allow create: if isSignedIn();
     }
   }
 }

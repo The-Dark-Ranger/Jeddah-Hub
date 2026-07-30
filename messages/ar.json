@@ -556,6 +556,8 @@
     "assignShapers": "تعيين الصُنَّاع",
     "selectShaper": "اختر صانعاً…",
     "addToTeam": "إضافة",
-    "noTeamMembers": "لم يُعيَّن أي صانع بعد."
+    "noTeamMembers": "لم يُعيَّن أي صانع بعد.",
+    "downloadReport": "تحميل التقرير",
+    "notifyCurator": "إشعار المنسق"
   }
 }

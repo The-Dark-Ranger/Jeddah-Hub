@@ -117,9 +117,10 @@ export default function ActivitiesPage() {
       }
       setModalOpen(false);
       fetchAll();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save activity:', err);
-      alert('Failed to save. Please try again.');
+      const code = err?.code || err?.message || 'unknown';
+      alert(`Failed to save (${code}). If this is "permission-denied", the Firestore rules may not be deployed yet.`);
     } finally {
       setSaving(false);
     }

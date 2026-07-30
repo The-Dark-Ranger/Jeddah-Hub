@@ -4,18 +4,8 @@ import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
 import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
+import HomeActivity from '@/components/HomeActivity';
 import WaveDivider from '@/components/WaveDivider';
-
-// Retreat venue cards shown inside the dark Retreat section.
-// Each entry: name (displayed large) + tag (small descriptor below).
-const RETREAT_VENUES = [
-  { name: 'Al-Balad',       tag: 'Heritage District' },
-  { name: 'teamLab',        tag: 'Immersive Art' },
-  { name: 'Marbat Dhaban',  tag: 'Coastal Experience' },
-  { name: 'Corniche',       tag: 'Waterfront' },
-  { name: 'Red Sea Museum', tag: 'Museum' },
-  { name: 'Taibat Alhijaz', tag: 'Restaurant' },
-];
 
 // Active partners -- update this list to add/remove partner badges on the home page
 const PARTNERS = [
@@ -109,45 +99,8 @@ export default function HomePage() {
       </section>
 
 
-      {/* 4. Retreat */}
-      <section className={styles.retreatSection}>
-        <WaveDivider flip fill="var(--card-bg)" />
-        <div className={styles.container}>
-          <div className={styles.retreatInner}>
-            <div className={styles.retreatText}>
-              <h2 className={styles.retreatTitle}>{t('retreat')}</h2>
-              <p className={styles.retreatSubtitle}>{t('retreatSubtitle')}</p>
-              <p className={styles.retreatDesc}>{t('retreatDesc')}</p>
-              <div className={styles.retreatMeta}>
-                <span className={styles.retreatMetaItem}>{t('retreatDate')}</span>
-                <span className={styles.retreatMetaDot} />
-                <span className={styles.retreatMetaItem}>{t('retreatLocation')}</span>
-                <span className={styles.retreatMetaDot} />
-                <span className={styles.retreatMetaItem}>{t('retreatVenues')}</span>
-              </div>
-              <a href="https://jeddahretreat.com" target="_blank" rel="noopener noreferrer" className={styles.retreatBtn}>
-                {t('retreatCta')}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
-                </svg>
-              </a>
-            </div>
-            <div className={styles.retreatVenues}>
-              <p className={styles.retreatVenuesTitle}>{t('retreatVenuesTitle')}</p>
-              <div className={styles.retreatVenuesGrid}>
-                {RETREAT_VENUES.map(v => (
-                  <div key={v.name} className={styles.retreatVenueCard}>
-                    <div className={styles.retreatVenueName}>{v.name}</div>
-                    <div className={styles.retreatVenueTag}>{v.tag}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        <WaveDivider fill="var(--background)" />
-      </section>
+      {/* 4. Hub Activity (dynamic, managed by curator) */}
+      <HomeActivity />
 
       {/* 5. Featured projects (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>

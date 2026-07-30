@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
@@ -27,20 +27,15 @@ export default function HomeActivity() {
   const [activity, setActivity] = useState<Activity | null | 'loading'>('loading');
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'hub_activities'),
-      where('active', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(1),
-    );
+    // Simple orderBy-only query avoids requiring a composite Firestore index.
+    // We filter active=true client-side and pick the most recent.
+    const q = query(collection(db, 'hub_activities'), orderBy('createdAt', 'desc'));
     getDocs(q)
       .then(snap => {
-        if (!snap.empty) {
-          const d = snap.docs[0];
-          setActivity({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) });
-        } else {
-          setActivity(null);
-        }
+        const active = snap.docs
+          .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
+          .find(a => a.active === true);
+        setActivity(active ?? null);
       })
       .catch(() => setActivity(null));
   }, []);

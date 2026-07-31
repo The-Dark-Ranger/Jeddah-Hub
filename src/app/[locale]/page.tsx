@@ -7,11 +7,6 @@ import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
 
-// Active partners -- update this list to add/remove partner badges on the home page
-const PARTNERS = [
-  'SHADA Hotel',
-  'Zawiya 97',
-];
 
 export default function HomePage() {
   const t   = useTranslations('HomePage');
@@ -140,9 +135,12 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('partnersSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <div className={styles.partnersGrid}>
-            {PARTNERS.map(p => <div key={p} className={styles.partnerCard}>{p}</div>)}
-          </div>
+          <img
+            src="/partners.png"
+            alt={t('partners')}
+            className={styles.partnersImage}
+            loading="lazy"
+          />
         </div>
       </section>
 

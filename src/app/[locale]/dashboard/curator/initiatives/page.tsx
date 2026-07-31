@@ -1,12 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  collection, addDoc, getDocs, updateDoc, doc,
-  query, orderBy, arrayUnion, arrayRemove,
-} from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
@@ -28,7 +24,6 @@ interface Initiative {
   impact?: string;
   impactAreas?: string[];
   color?: string;
-  leads?: string[];
   createdAt: string;
   members?: unknown[];
 }
@@ -54,46 +49,9 @@ interface FormFieldsProps {
 
 function FormFields({ form, onChange }: FormFieldsProps) {
   const t = useTranslations('Dashboard');
-  const [uploading, setUploading] = useState(false);
-
   const mk = (k: keyof FormShape) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       onChange(k, e.target.value);
-
-  const mediaUrls = form.images
-    ? form.images.split('\n').map(s => s.trim()).filter(Boolean)
-    : [];
-
-  const isVideoUrl = (url: string) =>
-    /\.(mp4|mov|webm|ogg|avi|mkv)(\?|$)/i.test(url) || url.includes('video');
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const inputEl = e.target;
-    setUploading(true);
-    try {
-      if (!storage) throw new Error('Firebase Storage is not configured. Add NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET to your environment variables.');
-      const newUrls: string[] = [];
-      for (const file of files) {
-        const sRef = storageRef(storage, `initiatives/${Date.now()}_${file.name}`);
-        await uploadBytes(sRef, file);
-        const url = await getDownloadURL(sRef);
-        newUrls.push(url);
-      }
-      const existing = form.images ? form.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
-      onChange('images', [...existing, ...newUrls].join('\n'));
-    } catch (err: any) {
-      alert('Upload failed: ' + (err?.message || err?.code || 'unknown error'));
-    }
-    setUploading(false);
-    inputEl.value = '';
-  };
-
-  const removeMedia = (url: string) => {
-    const existing = form.images ? form.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
-    onChange('images', existing.filter(u => u !== url).join('\n'));
-  };
 
   return (
     <>
@@ -174,46 +132,12 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         </div>
       </div>
 
-      {/* Photo / video upload */}
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldPhotos')}</label>
-        <div className={styles.uploadZone}>
-          <label className={uploading ? styles.uploadBtnBusy : styles.uploadBtnIdle}>
-            {uploading ? (
-              <><span className={styles.uploadSpinner} />{t('uploading')}</>
-            ) : (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                {t('uploadPhotos')}
-              </>
-            )}
-            <input
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-              disabled={uploading}
-            />
-          </label>
-          {mediaUrls.length > 0 && (
-            <div className={styles.uploadThumbs}>
-              {mediaUrls.map(url => (
-                <div key={url} className={styles.thumbWrap}>
-                  {isVideoUrl(url) ? (
-                    <video src={url} className={styles.thumb} muted playsInline />
-                  ) : (
-                    <img src={url} alt="" className={styles.thumb} />
-                  )}
-                  <button type="button" className={styles.thumbRemove} onClick={() => removeMedia(url)}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <label className={styles.label}>
+          {t('fieldPhotos')}
+          <span className={styles.fieldHint}>{t('fieldPhotosHint')}</span>
+        </label>
+        <textarea className={styles.textarea} value={form.images} onChange={mk('images')} placeholder={t('phPhotoUrls')} rows={3} />
       </div>
     </>
   );
@@ -312,11 +236,6 @@ export default function ManageInitiatives() {
   const [editingId, setEditingId]       = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
-  const [initialForm, setInitialForm]   = useState<FormShape>(emptyForm);
-  const [hasEdits, setHasEdits]         = useState(false);
-  const [discardConfirm, setDiscardConfirm] = useState(false);
-
-  const isDirty = hasEdits || JSON.stringify(form) !== JSON.stringify(initialForm);
 
   /* Team panel state */
   const [teamOpenId, setTeamOpenId] = useState<string | null>(null);
@@ -327,10 +246,9 @@ export default function ManageInitiatives() {
   const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
-  /* Stable onChange for FormFields — also sets dirty flag */
+  /* Stable onChange for FormFields */
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
     setForm(f => ({ ...f, [key]: value }));
-    setHasEdits(true);
   }, []);
 
   const fetchAll = async () => {
@@ -355,16 +273,15 @@ export default function ManageInitiatives() {
   /* ── Modal helpers ── */
   const openCreate = () => {
     setForm(emptyForm);
-    setInitialForm(emptyForm);
-    setHasEdits(false);
-    setDiscardConfirm(false);
     setEditingId(null);
     setEditingTitle('');
     setModalMode('create');
   };
 
   const openEdit = (init: Initiative) => {
-    const f: FormShape = {
+    setEditingId(init.id);
+    setEditingTitle(init.title);
+    setForm({
       title:       init.title,
       description: init.description,
       category:    init.category    || '',
@@ -378,13 +295,7 @@ export default function ManageInitiatives() {
       impact:      init.impact      || '',
       impactAreas: (init.impactAreas || []).join(', '),
       color:       init.color        || '',
-    };
-    setEditingId(init.id);
-    setEditingTitle(init.title);
-    setForm(f);
-    setInitialForm(f);
-    setHasEdits(false);
-    setDiscardConfirm(false);
+    });
     setModalMode('edit');
   };
 
@@ -392,31 +303,14 @@ export default function ManageInitiatives() {
     setModalMode(null);
     setEditingId(null);
     setEditingTitle('');
-    setHasEdits(false);
-    setDiscardConfirm(false);
-  };
-
-  const requestClose = () => {
-    if (isDirty) setDiscardConfirm(true);
-    else closeModal();
-  };
-
-  const handleDiscard = () => {
-    setDiscardConfirm(false);
-    closeModal();
   };
 
   /* Close on Escape key */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (discardConfirm) { setDiscardConfirm(false); return; }
-      requestClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal(); };
     if (modalMode) document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalMode, discardConfirm, isDirty]);
+  }, [modalMode]);
 
   /* Prevent body scroll when modal is open */
   useEffect(() => {
@@ -443,7 +337,7 @@ export default function ManageInitiatives() {
     if (!form.title) return;
     setSaving(true);
     await addDoc(collection(db, 'initiatives'), {
-      ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(),
+      ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
     });
     closeModal();
     setSaving(false);
@@ -468,7 +362,7 @@ export default function ManageInitiatives() {
       const d = new Date(now);
       d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
       await addDoc(collection(db, 'initiatives'), {
-        ...init, members: [], leads: [], images: [], createdAt: d.toISOString(),
+        ...init, members: [], images: [], createdAt: d.toISOString(),
       });
     }
     setSeeding(false);
@@ -495,11 +389,8 @@ export default function ManageInitiatives() {
   const handleAssign = async (initiativeId: string) => {
     if (!assignUser) return;
     setAssigning(true);
-    const roleValue = assignRole.trim() || 'Member';
-    const isLead    = roleValue.toLowerCase().includes('lead');
     await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: arrayUnion({ userId: assignUser, role: roleValue }),
-      ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
+      members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
     });
     setAssignUser(''); setAssignRole('');
     setAssigning(false);
@@ -510,13 +401,8 @@ export default function ManageInitiatives() {
     if (!confirm(t('confirmRemoveMember'))) return;
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
-    const memberEntry = (init.members as any[] || []).find((m: any) => m.userId === userId);
-    const wasLead = typeof memberEntry?.role === 'string' && memberEntry.role.toLowerCase().includes('lead');
     const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
-    await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: updated,
-      ...(wasLead ? { leads: arrayRemove(userId) } : {}),
-    });
+    await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
     fetchAll();
   };
 
@@ -566,7 +452,7 @@ export default function ManageInitiatives() {
       {modalMode !== null && (
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget) requestClose(); }}
+          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
         >
           <form
             className={styles.modal}
@@ -577,7 +463,7 @@ export default function ManageInitiatives() {
               <h3 className={styles.modalTitle}>
                 {isCreate ? t('createInitiative') : `${t('editInitiativeTitle')}: ${editingTitle}`}
               </h3>
-              <button type="button" className={styles.modalClose} onClick={requestClose} aria-label="Close">
+              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label="Close">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
@@ -592,7 +478,7 @@ export default function ManageInitiatives() {
 
             {/* Modal footer */}
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.cancelBtn} onClick={requestClose}>
+              <button type="button" className={styles.cancelBtn} onClick={closeModal}>
                 {t('cancel')}
               </button>
               <button type="submit" className={styles.submitBtn} disabled={saving || !form.title}>
@@ -602,23 +488,6 @@ export default function ManageInitiatives() {
                 }
               </button>
             </div>
-
-            {/* Discard confirmation overlay */}
-            {discardConfirm && (
-              <div className={styles.discardOverlay}>
-                <div className={styles.discardBox}>
-                  <p className={styles.discardMsg}>{t('discardChangesMsg')}</p>
-                  <div className={styles.discardActions}>
-                    <button type="button" className={styles.cancelBtn} onClick={() => setDiscardConfirm(false)}>
-                      {t('keepEditing')}
-                    </button>
-                    <button type="button" className={styles.discardBtn} onClick={handleDiscard}>
-                      {t('discardChanges')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </form>
         </div>
       )}

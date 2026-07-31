@@ -51,10 +51,15 @@ service cloud.firestore {
     }
 
     // ── initiatives ───────────────────────────────────────────
-    // Public can read. Curators can create/update/delete.
+    // Public can read. Curators can create/delete. Curators and initiative
+    // leads (UIDs in the `leads` array) can update content.
     match /initiatives/{docId} {
       allow read: if true;
-      allow create, update, delete: if isCurator();
+      allow create, delete: if isCurator();
+      allow update: if isCurator()
+                    || (isSignedIn()
+                        && 'leads' in resource.data
+                        && request.auth.uid in resource.data.leads);
     }
 
     // ── join_requests ─────────────────────────────────────────

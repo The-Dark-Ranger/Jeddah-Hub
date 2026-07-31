@@ -2,15 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  collection, getDocs, addDoc, query, where, deleteDoc, doc
+  collection, getDocs, addDoc, query, where, deleteDoc, doc, updateDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
 
-interface Initiative { id: string; title: string; description: string; status: string; category?: string; stat?: string; members?: any[]; }
+interface Initiative { id: string; title: string; description: string; status: string; category?: string; stat?: string; members?: any[]; problem?: string; objective?: string; impact?: string; }
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
+
+const emptyLeadForm = { title: '', stat: '', description: '', problem: '', objective: '', impact: '' };
+type LeadForm = typeof emptyLeadForm;
 
 export default function JoinInitiatives() {
   const { user } = useAuth();
@@ -24,6 +27,11 @@ export default function JoinInitiatives() {
   const [leadInitiativeIds, setLeadInitiativeIds] = useState<string[]>([]);
   /* Pending join requests for initiatives where user is a lead */
   const [incomingRequests, setIncomingRequests]   = useState<any[]>([]);
+
+  /* Lead edit modal */
+  const [leadEditInit, setLeadEditInit]   = useState<Initiative | null>(null);
+  const [leadForm, setLeadForm]           = useState<LeadForm>(emptyLeadForm);
+  const [leadSaving, setLeadSaving]       = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -125,6 +133,45 @@ export default function JoinInitiatives() {
     setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
+  /* Lead edit modal handlers */
+  const openLeadEdit = (init: Initiative) => {
+    setLeadEditInit(init);
+    setLeadForm({
+      title:       init.title,
+      stat:        init.stat        || '',
+      description: init.description,
+      problem:     init.problem     || '',
+      objective:   init.objective   || '',
+      impact:      init.impact      || '',
+    });
+  };
+
+  const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyLeadForm); };
+
+  const handleLeadSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadEditInit || !leadForm.title) return;
+    setLeadSaving(true);
+    try {
+      await updateDoc(doc(db, 'initiatives', leadEditInit.id), {
+        title:       leadForm.title,
+        stat:        leadForm.stat,
+        description: leadForm.description,
+        problem:     leadForm.problem,
+        objective:   leadForm.objective,
+        impact:      leadForm.impact,
+      });
+      setInitiatives(prev => prev.map(i =>
+        i.id === leadEditInit.id ? { ...i, ...leadForm } : i
+      ));
+      closeLeadEdit();
+    } catch (err: any) {
+      alert(`Failed to save: ${err?.code || err?.message || 'unknown error'}`);
+    } finally {
+      setLeadSaving(false);
+    }
+  };
+
   if (loading) return (
     <div className={styles.loading}><div className={styles.spinner} /></div>
   );
@@ -134,6 +181,54 @@ export default function JoinInitiatives() {
       <div>
         <h2 className={styles.pageTitle}>{t('joinInitiativesTitle')}</h2>
       </div>
+
+      {/* Lead edit modal */}
+      {leadEditInit && (
+        <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) closeLeadEdit(); }}>
+          <form className={styles.modal} onSubmit={handleLeadSave}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
+              <button type="button" className={styles.modalClose} onClick={closeLeadEdit} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldTitle')} *</label>
+                <input className={styles.formInput} value={leadForm.title} onChange={e => setLeadForm(f => ({ ...f, title: e.target.value }))} required />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldKeyStat')}</label>
+                <input className={styles.formInput} value={leadForm.stat} onChange={e => setLeadForm(f => ({ ...f, stat: e.target.value }))} placeholder={t('phStat')} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldDescription')} *</label>
+                <textarea className={styles.formTextarea} value={leadForm.description} onChange={e => setLeadForm(f => ({ ...f, description: e.target.value }))} rows={3} required />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldProblem')}</label>
+                <textarea className={styles.formTextarea} value={leadForm.problem} onChange={e => setLeadForm(f => ({ ...f, problem: e.target.value }))} rows={2} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldObjective')}</label>
+                <textarea className={styles.formTextarea} value={leadForm.objective} onChange={e => setLeadForm(f => ({ ...f, objective: e.target.value }))} rows={2} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.formLabel}>{t('fieldImpact')}</label>
+                <textarea className={styles.formTextarea} value={leadForm.impact} onChange={e => setLeadForm(f => ({ ...f, impact: e.target.value }))} rows={2} />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.modalCancelBtn} onClick={closeLeadEdit}>{t('cancel')}</button>
+              <button type="submit" className={styles.modalSubmitBtn} disabled={leadSaving || !leadForm.title}>
+                {leadSaving ? t('savingDots') : t('saveChangesBtn')}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Incoming requests for leads */}
       {incomingRequests.length > 0 && (
@@ -173,6 +268,15 @@ export default function JoinInitiatives() {
                 {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
               </div>
               <div className={styles.cardFooter}>
+                {leadInitiativeIds.includes(init.id) && (
+                  <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    {t('editLeadInitiative')}
+                  </button>
+                )}
                 {member ? (
                   <span className={styles.memberBadge}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

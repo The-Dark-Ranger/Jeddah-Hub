@@ -598,6 +598,7 @@
     "activityActive": "نشط",
     "activityInactive": "مخفي",
     "setActive": "تفعيل",
-    "setHidden": "إخفاء"
+    "setHidden": "إخفاء",
+    "editLeadInitiative": "تعديل المبادرة"
   }
 }

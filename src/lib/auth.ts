@@ -50,7 +50,7 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
       // Skip already-joined records — they exist only for curator notification
       if (data.status === 'joined') return { role: null, docId: null };
       return {
-        role: ((data.role as string)?.toLowerCase() as UserRole) || null,
+        role: ((data.role as string)?.toLowerCase().replace(/\s+/g, '_') as UserRole) || null,
         docId: snap.docs[0].id,
       };
     }
@@ -80,7 +80,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      let role = ((data.role as string)?.toLowerCase() as UserRole) || null;
+      let role = ((data.role as string)?.toLowerCase().replace(/\s+/g, '_') as UserRole) || null;
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;

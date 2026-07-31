@@ -60,15 +60,20 @@ function FormFields({ form, onChange }: FormFieldsProps) {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       onChange(k, e.target.value);
 
-  const imageUrls = form.images
+  const mediaUrls = form.images
     ? form.images.split('\n').map(s => s.trim()).filter(Boolean)
     : [];
+
+  const isVideoUrl = (url: string) =>
+    /\.(mp4|mov|webm|ogg|avi|mkv)(\?|$)/i.test(url) || url.includes('video');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    const inputEl = e.target;
     setUploading(true);
     try {
+      if (!storage) throw new Error('Firebase Storage is not configured. Add NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET to your environment variables.');
       const newUrls: string[] = [];
       for (const file of files) {
         const sRef = storageRef(storage, `initiatives/${Date.now()}_${file.name}`);
@@ -76,17 +81,18 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         const url = await getDownloadURL(sRef);
         newUrls.push(url);
       }
-      const updated = [...imageUrls, ...newUrls].join('\n');
-      onChange('images', updated);
+      const existing = form.images ? form.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
+      onChange('images', [...existing, ...newUrls].join('\n'));
     } catch (err: any) {
-      alert('Upload failed: ' + (err?.code || err?.message || 'unknown'));
+      alert('Upload failed: ' + (err?.message || err?.code || 'unknown error'));
     }
     setUploading(false);
-    e.target.value = '';
+    inputEl.value = '';
   };
 
-  const removeImage = (url: string) => {
-    onChange('images', imageUrls.filter(u => u !== url).join('\n'));
+  const removeMedia = (url: string) => {
+    const existing = form.images ? form.images.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    onChange('images', existing.filter(u => u !== url).join('\n'));
   };
 
   return (
@@ -168,7 +174,7 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         </div>
       </div>
 
-      {/* Photo upload */}
+      {/* Photo / video upload */}
       <div className={styles.formField}>
         <label className={styles.label}>{t('fieldPhotos')}</label>
         <div className={styles.uploadZone}>
@@ -176,7 +182,7 @@ function FormFields({ form, onChange }: FormFieldsProps) {
             {uploading ? (
               <><span className={styles.uploadSpinner} />{t('uploading')}</>
             ) : (
-              <>{/* upload icon */}
+              <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -187,18 +193,22 @@ function FormFields({ form, onChange }: FormFieldsProps) {
             <input
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,video/*"
               style={{ display: 'none' }}
               onChange={handleFileUpload}
               disabled={uploading}
             />
           </label>
-          {imageUrls.length > 0 && (
+          {mediaUrls.length > 0 && (
             <div className={styles.uploadThumbs}>
-              {imageUrls.map(url => (
+              {mediaUrls.map(url => (
                 <div key={url} className={styles.thumbWrap}>
-                  <img src={url} alt="" className={styles.thumb} />
-                  <button type="button" className={styles.thumbRemove} onClick={() => removeImage(url)}>×</button>
+                  {isVideoUrl(url) ? (
+                    <video src={url} className={styles.thumb} muted playsInline />
+                  ) : (
+                    <img src={url} alt="" className={styles.thumb} />
+                  )}
+                  <button type="button" className={styles.thumbRemove} onClick={() => removeMedia(url)}>×</button>
                 </div>
               ))}
             </div>
@@ -303,9 +313,10 @@ export default function ManageInitiatives() {
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
   const [initialForm, setInitialForm]   = useState<FormShape>(emptyForm);
+  const [hasEdits, setHasEdits]         = useState(false);
   const [discardConfirm, setDiscardConfirm] = useState(false);
 
-  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isDirty = hasEdits || JSON.stringify(form) !== JSON.stringify(initialForm);
 
   /* Team panel state */
   const [teamOpenId, setTeamOpenId] = useState<string | null>(null);
@@ -316,9 +327,10 @@ export default function ManageInitiatives() {
   const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
-  /* Stable onChange for FormFields */
+  /* Stable onChange for FormFields — also sets dirty flag */
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
     setForm(f => ({ ...f, [key]: value }));
+    setHasEdits(true);
   }, []);
 
   const fetchAll = async () => {
@@ -344,6 +356,7 @@ export default function ManageInitiatives() {
   const openCreate = () => {
     setForm(emptyForm);
     setInitialForm(emptyForm);
+    setHasEdits(false);
     setDiscardConfirm(false);
     setEditingId(null);
     setEditingTitle('');
@@ -370,6 +383,7 @@ export default function ManageInitiatives() {
     setEditingTitle(init.title);
     setForm(f);
     setInitialForm(f);
+    setHasEdits(false);
     setDiscardConfirm(false);
     setModalMode('edit');
   };
@@ -378,6 +392,7 @@ export default function ManageInitiatives() {
     setModalMode(null);
     setEditingId(null);
     setEditingTitle('');
+    setHasEdits(false);
     setDiscardConfirm(false);
   };
 

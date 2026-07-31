@@ -19,7 +19,7 @@ service cloud.firestore {
     }
 
     function isCurator() {
-      return isSignedIn() && userRole() in ['curator', 'vice_curator'];
+      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator'];
     }
 
     // Accept both "impact_officer" (underscore) and "impact officer" (space).
@@ -36,7 +36,7 @@ service cloud.firestore {
     }
 
     function isAnyMember() {
-      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
+      return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
     }
 
     // ── users ─────────────────────────────────────────────────

@@ -2,15 +2,30 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  collection, getDocs, addDoc, query, where, deleteDoc, doc
+  collection, getDocs, addDoc, updateDoc, query, where, deleteDoc, doc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
 
-interface Initiative { id: string; title: string; description: string; status: string; category?: string; stat?: string; members?: any[]; }
+interface Initiative {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  category?: string;
+  stat?: string;
+  problem?: string;
+  objective?: string;
+  impact?: string;
+  members?: any[];
+  leads?: string[];
+}
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
+
+const emptyLeadForm = { title: '', description: '', stat: '', problem: '', objective: '', impact: '' };
+type LeadForm = typeof emptyLeadForm;
 
 export default function JoinInitiatives() {
   const { user } = useAuth();
@@ -20,10 +35,17 @@ export default function JoinInitiatives() {
   const [myRequests, setMyRequests]   = useState<JoinRequest[]>([]);
   const [loading, setLoading]         = useState(true);
 
-  /* Initiatives where this user is a lead */
   const [leadInitiativeIds, setLeadInitiativeIds] = useState<string[]>([]);
-  /* Pending join requests for initiatives where user is a lead */
   const [incomingRequests, setIncomingRequests]   = useState<any[]>([]);
+
+  /* Lead edit modal */
+  const [leadEditInit, setLeadEditInit]       = useState<Initiative | null>(null);
+  const [leadForm, setLeadForm]               = useState<LeadForm>(emptyLeadForm);
+  const [leadInitialForm, setLeadInitialForm] = useState<LeadForm>(emptyLeadForm);
+  const [leadSaving, setLeadSaving]           = useState(false);
+  const [leadDiscardConfirm, setLeadDiscardConfirm] = useState(false);
+
+  const leadIsDirty = JSON.stringify(leadForm) !== JSON.stringify(leadInitialForm);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -40,7 +62,6 @@ export default function JoinInitiatives() {
     setInitiatives(inits);
     setMyRequests(reqs);
 
-    /* Find initiatives where user is a lead */
     const leadIds = inits
       .filter(i => (i.members || []).some((m: any) =>
         (m.userId === user.uid || m === user.uid) &&
@@ -50,7 +71,6 @@ export default function JoinInitiatives() {
 
     setLeadInitiativeIds(leadIds);
 
-    /* Fetch incoming pending requests for those initiatives */
     if (leadIds.length > 0) {
       const incoming: any[] = [];
       for (const initId of leadIds) {
@@ -73,6 +93,71 @@ export default function JoinInitiatives() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  /* Lead edit modal helpers */
+  const openLeadEdit = (init: Initiative) => {
+    const f: LeadForm = {
+      title:       init.title,
+      description: init.description,
+      stat:        init.stat        || '',
+      problem:     init.problem     || '',
+      objective:   init.objective   || '',
+      impact:      init.impact      || '',
+    };
+    setLeadForm(f);
+    setLeadInitialForm(f);
+    setLeadDiscardConfirm(false);
+    setLeadEditInit(init);
+  };
+
+  const closeLeadEdit = () => {
+    setLeadEditInit(null);
+    setLeadDiscardConfirm(false);
+  };
+
+  const requestLeadClose = () => {
+    if (leadIsDirty) setLeadDiscardConfirm(true);
+    else closeLeadEdit();
+  };
+
+  const handleLeadSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadEditInit || !leadForm.title) return;
+    setLeadSaving(true);
+    try {
+      await updateDoc(doc(db, 'initiatives', leadEditInit.id), {
+        title:       leadForm.title,
+        description: leadForm.description,
+        stat:        leadForm.stat,
+        problem:     leadForm.problem,
+        objective:   leadForm.objective,
+        impact:      leadForm.impact,
+      });
+      closeLeadEdit();
+      fetchData();
+    } catch (err: any) {
+      alert('Save failed: ' + (err?.code || err?.message || 'unknown'));
+    }
+    setLeadSaving(false);
+  };
+
+  /* Escape key for lead modal */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (leadDiscardConfirm) { setLeadDiscardConfirm(false); return; }
+      requestLeadClose();
+    };
+    if (leadEditInit) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadEditInit, leadDiscardConfirm, leadIsDirty]);
+
+  /* Prevent body scroll when modal is open */
+  useEffect(() => {
+    document.body.style.overflow = leadEditInit ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [leadEditInit]);
+
   const getRequestForInit = (initId: string) =>
     myRequests.find(r => r.initiativeId === initId);
 
@@ -81,7 +166,6 @@ export default function JoinInitiatives() {
 
   const handleRequest = async (initId: string) => {
     if (!user) return;
-    // Remove any previous rejected request for this initiative
     const rejected = myRequests.find(r => r.initiativeId === initId && r.status === 'rejected');
     if (rejected) {
       setMyRequests(prev => prev.filter(r => r.id !== rejected.id));
@@ -109,7 +193,6 @@ export default function JoinInitiatives() {
     await deleteDoc(doc(db, 'join_requests', reqId));
   };
 
-  /* Lead actions */
   const handleAcceptRequest = async (reqId: string, initiativeId: string, userId: string) => {
     const { arrayUnion, updateDoc: ud } = await import('firebase/firestore');
     await ud(doc(db, 'initiatives', initiativeId), {
@@ -134,6 +217,90 @@ export default function JoinInitiatives() {
       <div>
         <h2 className={styles.pageTitle}>{t('joinInitiativesTitle')}</h2>
       </div>
+
+      {/* Lead edit modal */}
+      {leadEditInit && (
+        <div
+          className={styles.modalOverlay}
+          onClick={e => { if (e.target === e.currentTarget) requestLeadClose(); }}
+        >
+          <form className={styles.modal} onSubmit={handleLeadSave}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
+              <button type="button" className={styles.modalClose} onClick={requestLeadClose} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldTitle')} *</label>
+                <input className={styles.input} value={leadForm.title}
+                  onChange={e => setLeadForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder={t('phInitiativeName')} required />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldKeyStat')}</label>
+                <input className={styles.input} value={leadForm.stat}
+                  onChange={e => setLeadForm(f => ({ ...f, stat: e.target.value }))}
+                  placeholder={t('phStat')} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldDescription')} *</label>
+                <textarea className={styles.textarea} value={leadForm.description}
+                  onChange={e => setLeadForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder={t('phDescription')} required rows={2} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldProblem')}</label>
+                <textarea className={styles.textarea} value={leadForm.problem}
+                  onChange={e => setLeadForm(f => ({ ...f, problem: e.target.value }))}
+                  placeholder={t('phProblem')} rows={2} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldObjective')}</label>
+                <textarea className={styles.textarea} value={leadForm.objective}
+                  onChange={e => setLeadForm(f => ({ ...f, objective: e.target.value }))}
+                  placeholder={t('phObjective')} rows={2} />
+              </div>
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('fieldImpact')}</label>
+                <textarea className={styles.textarea} value={leadForm.impact}
+                  onChange={e => setLeadForm(f => ({ ...f, impact: e.target.value }))}
+                  placeholder={t('phImpact')} rows={2} />
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.cancelBtn} onClick={requestLeadClose}>
+                {t('cancel')}
+              </button>
+              <button type="submit" className={styles.submitBtn} disabled={leadSaving || !leadForm.title}>
+                {leadSaving ? t('savingDots') : t('saveChangesBtn')}
+              </button>
+            </div>
+
+            {/* Discard confirmation */}
+            {leadDiscardConfirm && (
+              <div className={styles.discardOverlay}>
+                <div className={styles.discardBox}>
+                  <p className={styles.discardMsg}>{t('discardChangesMsg')}</p>
+                  <div className={styles.discardActions}>
+                    <button type="button" className={styles.cancelBtn} onClick={() => setLeadDiscardConfirm(false)}>
+                      {t('keepEditing')}
+                    </button>
+                    <button type="button" className={styles.discardBtn} onClick={() => { setLeadDiscardConfirm(false); closeLeadEdit(); }}>
+                      {t('discardChanges')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      )}
 
       {/* Incoming requests for leads */}
       {incomingRequests.length > 0 && (
@@ -164,6 +331,7 @@ export default function JoinInitiatives() {
         {initiatives.map(init => {
           const req    = getRequestForInit(init.id);
           const member = isAlreadyMember(init);
+          const isLead = leadInitiativeIds.includes(init.id);
           return (
             <div key={init.id} className={styles.card}>
               <div className={styles.cardBody}>
@@ -173,34 +341,45 @@ export default function JoinInitiatives() {
                 {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
               </div>
               <div className={styles.cardFooter}>
-                {member ? (
-                  <span className={styles.memberBadge}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    {t('alreadyMember')}
-                  </span>
-                ) : req?.status === 'pending' ? (
-                  <div className={styles.pendingWrap}>
-                    <span className={styles.pendingBadge}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {member ? (
+                    <span className={styles.memberBadge}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      {t('joinRequestPending')}
+                      {t('alreadyMember')}
                     </span>
-                    <button className={styles.cancelBtn} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
-                  </div>
-                ) : req?.status === 'rejected' ? (
-                  <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
-                    {t('requestToJoin')}
-                  </button>
-                ) : req?.status === 'accepted' ? (
-                  <span className={styles.memberBadge}>{t('joinRequestAccepted')}</span>
-                ) : (
-                  <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
-                    {t('requestToJoin')}
-                  </button>
-                )}
+                  ) : req?.status === 'pending' ? (
+                    <div className={styles.pendingWrap}>
+                      <span className={styles.pendingBadge}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        {t('joinRequestPending')}
+                      </span>
+                      <button className={styles.cancelBtn} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
+                    </div>
+                  ) : req?.status === 'rejected' ? (
+                    <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
+                      {t('requestToJoin')}
+                    </button>
+                  ) : req?.status === 'accepted' ? (
+                    <span className={styles.memberBadge}>{t('joinRequestAccepted')}</span>
+                  ) : (
+                    <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
+                      {t('requestToJoin')}
+                    </button>
+                  )}
+                  {isLead && (
+                    <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      {t('editLeadInitiative')}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

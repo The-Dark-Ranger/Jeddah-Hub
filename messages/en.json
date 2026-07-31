@@ -598,6 +598,7 @@
     "activityActive": "Active",
     "activityInactive": "Hidden",
     "setActive": "Set Active",
-    "setHidden": "Set Hidden"
+    "setHidden": "Set Hidden",
+    "editLeadInitiative": "Edit Initiative"
   }
 }

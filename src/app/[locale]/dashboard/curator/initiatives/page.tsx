@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -389,8 +389,11 @@ export default function ManageInitiatives() {
   const handleAssign = async (initiativeId: string) => {
     if (!assignUser) return;
     setAssigning(true);
+    const role = assignRole.trim() || 'Member';
+    const isLead = role.toLowerCase().includes('lead');
     await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
+      members: arrayUnion({ userId: assignUser, role }),
+      ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
     });
     setAssignUser(''); setAssignRole('');
     setAssigning(false);
@@ -401,8 +404,14 @@ export default function ManageInitiatives() {
     if (!confirm(t('confirmRemoveMember'))) return;
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
+    const wasLead = (init.members as any[] || []).some(
+      (m: any) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+    );
     const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
-    await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
+    await updateDoc(doc(db, 'initiatives', initiativeId), {
+      members: updated,
+      ...(wasLead ? { leads: arrayRemove(userId) } : {}),
+    });
     fetchAll();
   };
 

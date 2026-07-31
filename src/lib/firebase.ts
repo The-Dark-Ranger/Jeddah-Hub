@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,12 +15,11 @@ const firebaseConfig = {
 // we avoid crashing so that public pages still render. Auth/DB features won't work until
 // the env vars are added to the Vercel project settings.
 // eslint-disable-next-line prefer-const
-let app: FirebaseApp, auth: Auth, db: Firestore, storage: FirebaseStorage;
+let app: FirebaseApp, auth: Auth, db: Firestore;
 try {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
 } catch (e) {
   if (process.env.NODE_ENV !== 'production') {
     console.warn('[firebase] Init failed, set NEXT_PUBLIC_FIREBASE_* env vars:', (e as Error).message);
@@ -30,7 +28,6 @@ try {
   app = undefined as unknown as FirebaseApp;
   auth = undefined as unknown as Auth;
   db = undefined as unknown as Firestore;
-  storage = undefined as unknown as FirebaseStorage;
 }
 
-export { app, auth, db, storage };
+export { app, auth, db };

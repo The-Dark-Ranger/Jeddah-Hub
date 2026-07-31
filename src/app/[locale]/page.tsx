@@ -7,29 +7,6 @@ import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
 
-const PARTNERS = [
-  { name: 'The Hive',                   file: 'the-hive.png' },
-  { name: 'huna',                        file: 'huna.png' },
-  { name: 'Zawiya 97',                   file: 'zawiya-97.png' },
-  { name: 'TAM',                         file: 'tam.png' },
-  { name: "Monsha'at",                   file: 'monshaat.png' },
-  { name: 'Jadwa',                       file: 'jadwa.png' },
-  { name: 'SHADA Hotels',               file: 'shada-hotels.png' },
-  { name: 'Islamic Development Bank',   file: 'isdb.png' },
-  { name: 'SIDF',                        file: 'sidf.png' },
-  { name: 'UNICEF',                      file: 'unicef.png' },
-  { name: 'VIBES',                       file: 'vibes.png' },
-  { name: "WED Women's Entrepreneurship Day", file: 'wed.png' },
-  { name: 'Social Development Bank',    file: 'social-dev-bank.png' },
-  { name: 'PwC',                         file: 'pwc.png' },
-  { name: 'flyadeal',                    file: 'flyadeal.png' },
-  { name: 'Dar Al-Hekma University',    file: 'dar-al-hekma.png' },
-  { name: 'MBSC',                        file: 'mbsc.png' },
-  { name: 'KAUST',                       file: 'kaust.png' },
-  { name: 'Effat University',            file: 'effat.png' },
-  { name: 'UBT',                         file: 'ubt.png' },
-  { name: 'Cruise Saudi',               file: 'cruise-saudi.png' },
-];
 
 export default function HomePage() {
   const t   = useTranslations('HomePage');
@@ -158,18 +135,12 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('partnersSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <div className={styles.partnersLogoGrid}>
-            {PARTNERS.map(p => (
-              <div key={p.file} className={styles.partnerLogoWrap}>
-                <img
-                  src={`/partners/${p.file}`}
-                  alt={p.name}
-                  className={styles.partnerLogo}
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
+          <img
+            src="/partners.png"
+            alt={t('partners')}
+            className={styles.partnersImage}
+            loading="lazy"
+          />
         </div>
       </section>
 

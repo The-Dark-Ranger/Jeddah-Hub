@@ -109,37 +109,12 @@
 .memberRole   { font-size:.68rem;color:var(--text-muted); }
 
 /* ── Partners ── */
-.partnersLogoGrid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1.25rem 1.5rem;
-  align-items: center;
-}
-@media (max-width: 1100px) { .partnersLogoGrid { grid-template-columns: repeat(5, 1fr); } }
-@media (max-width: 768px)  { .partnersLogoGrid { grid-template-columns: repeat(4, 1fr); gap: 1rem; } }
-@media (max-width: 520px)  { .partnersLogoGrid { grid-template-columns: repeat(3, 1fr); gap: .75rem; } }
-
-.partnerLogoWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: .85rem 1rem;
-  background: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e8eaf0;
-  min-height: 68px;
-  transition: box-shadow .2s ease, transform .2s ease;
-}
-.partnerLogoWrap:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,.1);
-  transform: translateY(-2px);
-}
-.partnerLogo {
-  max-height: 44px;
-  max-width: 100%;
-  width: auto;
-  object-fit: contain;
+.partnersImage {
   display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
 }
 
 /* ── Animations ── */

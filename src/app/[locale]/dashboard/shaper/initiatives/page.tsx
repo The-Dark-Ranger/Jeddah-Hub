@@ -158,6 +158,10 @@ export default function JoinInitiatives() {
   /* Pending join requests for initiatives where user is a lead */
   const [incomingRequests, setIncomingRequests]   = useState<any[]>([]);
 
+  /* Leave request state */
+  const [myLeaveRequests, setMyLeaveRequests] = useState<{id: string; initiativeId: string; status: string}[]>([]);
+  const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<any[]>([]);
+
   /* Lead edit modal */
   const [leadEditInit, setLeadEditInit] = useState<Initiative | null>(null);
   const [leadForm, setLeadForm]         = useState<FormShape>(emptyForm);
@@ -209,6 +213,30 @@ export default function JoinInitiatives() {
         setIncomingRequests(incoming);
       } else {
         setIncomingRequests([]);
+      }
+
+      // Fetch user's own leave requests
+      const leaveReqSnap = await getDocs(query(
+        collection(db, 'leave_requests'),
+        where('userId', '==', user.uid),
+        where('status', '==', 'pending'),
+      ));
+      setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+
+      // Fetch incoming leave requests for initiatives where user is a lead
+      if (leadIds.length > 0) {
+        const leaveSnap = await getDocs(query(
+          collection(db, 'leave_requests'),
+          where('initiativeId', 'in', leadIds),
+          where('status', '==', 'pending'),
+        ));
+        setIncomingLeaveRequests(leaveSnap.docs.map(d => {
+          const data = d.data();
+          const initiative = inits.find(i => i.id === data.initiativeId);
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || initiative?.title };
+        }));
+      } else {
+        setIncomingLeaveRequests([]);
       }
     } catch {
       /* Firestore not configured or permission error — show empty state */
@@ -279,6 +307,51 @@ export default function JoinInitiatives() {
     const { updateDoc: ud } = await import('firebase/firestore');
     await ud(doc(db, 'join_requests', reqId), { status: 'rejected' });
     setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+  };
+
+  /* Leave request handlers */
+  const handleLeaveRequest = async (init: Initiative) => {
+    if (!user) return;
+    const optimisticId = 'tmp_' + Date.now();
+    setMyLeaveRequests(prev => [...prev, { id: optimisticId, initiativeId: init.id, status: 'pending' }]);
+    const ref = await addDoc(collection(db, 'leave_requests'), {
+      initiativeId: init.id,
+      initiativeTitle: init.title,
+      userId: user.uid,
+      userEmail: user.email,
+      userName: user.displayName || user.email,
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+    });
+    setMyLeaveRequests(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+  };
+
+  const handleCancelLeaveRequest = async (reqId: string) => {
+    setMyLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'leave_requests', reqId));
+  };
+
+  // Lead approves leave: remove member from initiative, mark leave request approved
+  const handleApproveLeave = async (req: any) => {
+    const init = initiatives.find(i => i.id === req.initiativeId);
+    if (!init) return;
+    const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
+    if (memberObj) {
+      const { arrayRemove: ar, updateDoc: ud } = await import('firebase/firestore');
+      await ud(doc(db, 'initiatives', req.initiativeId), { members: ar(memberObj) });
+    }
+    await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
+    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== req.id));
+    setInitiatives(prev => prev.map(i =>
+      i.id === req.initiativeId
+        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
+        : i
+    ));
+  };
+
+  const handleDeclineLeave = async (reqId: string) => {
+    await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
+    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
   /* Lead edit modal */
@@ -385,6 +458,30 @@ export default function JoinInitiatives() {
         </div>
       )}
 
+      {/* Incoming leave requests (for leads) */}
+      {incomingLeaveRequests.length > 0 && (
+        <div className={styles.incomingSection} style={{ borderLeftColor: 'var(--danger)' }}>
+          <h3 className={styles.sectionTitle}>
+            {t('incomingLeaveRequests')}
+            <span className={styles.badge} style={{ background: 'var(--danger)' }}>{incomingLeaveRequests.length}</span>
+          </h3>
+          <div className={styles.requestList}>
+            {incomingLeaveRequests.map(req => (
+              <div key={req.id} className={styles.incomingRow}>
+                <div className={styles.incomingInfo}>
+                  <span className={styles.incomingUser}>{req.userName || req.userEmail}</span>
+                  <span className={styles.incomingMeta}>{t('wantsToLeave')} <strong>{req.initiativeTitle}</strong></span>
+                </div>
+                <div className={styles.incomingActions}>
+                  <button className={styles.acceptBtn} onClick={() => handleApproveLeave(req)}>{t('approveLeave')}</button>
+                  <button className={styles.rejectBtn} onClick={() => handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Initiatives grid */}
       <div className={styles.grid}>
         {initiatives.map(init => {
@@ -417,12 +514,35 @@ export default function JoinInitiatives() {
                     </button>
                   </div>
                 ) : member ? (
-                  <span className={styles.memberBadge}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    {t('alreadyMember')}
-                  </span>
+                  <div>
+                    {(() => {
+                      const leaveReq = myLeaveRequests.find(r => r.initiativeId === init.id);
+                      if (leaveReq) return (
+                        <div className={styles.pendingWrap}>
+                          <span className={styles.leavePendingBadge}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            {t('leaveRequestPending')}
+                          </span>
+                          <button className={styles.cancelBtn} onClick={() => handleCancelLeaveRequest(leaveReq.id)}>{t('cancelLeaveRequest')}</button>
+                        </div>
+                      );
+                      return (
+                        <div className={styles.memberFooter}>
+                          <span className={styles.memberBadge}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            {t('alreadyMember')}
+                          </span>
+                          <button className={styles.leaveBtn} onClick={() => handleLeaveRequest(init)}>
+                            {t('requestToLeave')}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 ) : req?.status === 'pending' ? (
                   <div className={styles.pendingWrap}>
                     <span className={styles.pendingBadge}>

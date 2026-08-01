@@ -144,5 +144,15 @@ service cloud.firestore {
       allow read, update: if isCurator();
       allow create: if isSignedIn();
     }
+
+    // ── leave_requests ─────────────────────────────────────────
+    // Members request to leave their own initiative.
+    // Curators, impact officers, and other members (leads use isAnyMember) can manage.
+    match /leave_requests/{docId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isOwner(resource.data.userId) || isCuratorOrImpact() || isAnyMember();
+      allow update: if isCuratorOrImpact() || isAnyMember();
+      allow delete: if isOwner(resource.data.userId) || isCuratorOrImpact();
+    }
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -226,6 +226,7 @@ export default function ManageInitiatives() {
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [seeding, setSeeding]   = useState(false);
@@ -258,12 +259,21 @@ export default function ManageInitiatives() {
         getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc'))),
         getDocs(collection(db, 'users')),
       ]);
-      setInitiatives(
-        initSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as Initiative))
-          .filter(i => !(i as any).type)
-      );
+      const inits = initSnap.docs
+        .map(d => ({ id: d.id, ...d.data() } as Initiative))
+        .filter(i => !(i as any).type);
+      setInitiatives(inits);
       setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string })));
+
+      // Leave requests (non-critical, catch separately)
+      try {
+        const leaveSnap = await getDocs(query(collection(db, 'leave_requests'), where('status', '==', 'pending')));
+        setLeaveRequests(leaveSnap.docs.map(d => {
+          const data = d.data();
+          const init = inits.find(i => i.id === data.initiativeId);
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+        }));
+      } catch { setLeaveRequests([]); }
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
@@ -415,6 +425,29 @@ export default function ManageInitiatives() {
     fetchAll();
   };
 
+  /* Leave request handlers */
+  const handleApproveLeave = async (req: any) => {
+    const init = initiatives.find(i => i.id === req.initiativeId);
+    if (init) {
+      const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
+      if (memberObj) {
+        await updateDoc(doc(db, 'initiatives', req.initiativeId), { members: arrayRemove(memberObj) });
+      }
+    }
+    await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
+    setLeaveRequests(prev => prev.filter(r => r.id !== req.id));
+    setInitiatives(prev => prev.map(i =>
+      i.id === req.initiativeId
+        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
+        : i
+    ));
+  };
+
+  const handleDeclineLeave = async (reqId: string) => {
+    await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
+    setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+  };
+
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
     return u?.displayName || u?.email || userId;
@@ -518,6 +551,35 @@ export default function ManageInitiatives() {
           </button>
         ))}
       </div>
+
+      {/* ── Leave Requests ── */}
+      {leaveRequests.length > 0 && (
+        <div className={styles.leaveSection}>
+          <h3 className={styles.leaveSectionTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            {t('incomingLeaveRequests')}
+            <span className={styles.leaveBadge}>{leaveRequests.length}</span>
+          </h3>
+          <div className={styles.leaveList}>
+            {leaveRequests.map(req => (
+              <div key={req.id} className={styles.leaveRow}>
+                <div className={styles.leaveInfo}>
+                  <span className={styles.leaveName}>{req.userName || req.userEmail}</span>
+                  <span className={styles.leaveMeta}>{t('wantsToLeave')} <strong>{req.initiativeTitle}</strong></span>
+                </div>
+                <div className={styles.leaveActions}>
+                  <button className={styles.approveLeaveBtn} onClick={() => handleApproveLeave(req)}>{t('approveLeave')}</button>
+                  <button className={styles.declineLeaveBtn} onClick={() => handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Cards ── */}
       {loading ? (

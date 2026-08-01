@@ -360,3 +360,40 @@
   line-height: 1; transition: all 0.15s;
 }
 .colorClear:hover { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+
+/* Leave requests section */
+.leaveSection {
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  border-left: 3px solid var(--danger); border-radius: 14px; padding: 1.25rem 1.5rem;
+}
+.leaveSectionTitle {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;
+}
+.leaveBadge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
+  background: var(--danger); color: white; font-size: 0.72rem; font-weight: 700;
+}
+.leaveList { display: flex; flex-direction: column; gap: 0.65rem; }
+.leaveRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.85rem 1rem; background: var(--background-alt);
+  border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;
+}
+.leaveInfo { display: flex; flex-direction: column; gap: 0.15rem; }
+.leaveName { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+.leaveMeta { font-size: 0.8rem; color: var(--text-muted); }
+.leaveActions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.approveLeaveBtn {
+  padding: 0.38rem 0.85rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600;
+  background: rgba(16,185,129,0.1); color: var(--success);
+  border: 1px solid rgba(16,185,129,0.3); cursor: pointer; transition: all 0.15s ease;
+}
+.approveLeaveBtn:hover { background: var(--success); color: white; border-color: var(--success); }
+.declineLeaveBtn {
+  padding: 0.38rem 0.85rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s ease;
+}
+.declineLeaveBtn:hover { border-color: var(--text-muted); color: var(--text-main); }

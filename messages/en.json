@@ -599,6 +599,13 @@
     "activityInactive": "Hidden",
     "setActive": "Set Active",
     "setHidden": "Set Hidden",
-    "editLeadInitiative": "Edit Initiative"
+    "editLeadInitiative": "Edit Initiative",
+    "requestToLeave": "Request to Leave",
+    "leaveRequestPending": "Leave Pending",
+    "cancelLeaveRequest": "Cancel",
+    "approveLeave": "Approve",
+    "declineLeave": "Decline",
+    "wantsToLeave": "wants to leave",
+    "incomingLeaveRequests": "Leave Requests"
   }
 }

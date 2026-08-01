@@ -599,6 +599,13 @@
     "activityInactive": "مخفي",
     "setActive": "تفعيل",
     "setHidden": "إخفاء",
-    "editLeadInitiative": "تعديل المبادرة"
+    "editLeadInitiative": "تعديل المبادرة",
+    "requestToLeave": "طلب المغادرة",
+    "leaveRequestPending": "بانتظار المغادرة",
+    "cancelLeaveRequest": "إلغاء",
+    "approveLeave": "موافقة",
+    "declineLeave": "رفض",
+    "wantsToLeave": "يريد مغادرة",
+    "incomingLeaveRequests": "طلبات المغادرة"
   }
 }

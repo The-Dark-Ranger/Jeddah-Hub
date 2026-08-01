@@ -154,5 +154,17 @@ service cloud.firestore {
       allow update: if isCuratorOrImpact() || isAnyMember();
       allow delete: if isOwner(resource.data.userId) || isCuratorOrImpact();
     }
+
+    // ── removal_requests ────────────────────────────────────────
+    // Initiative leads submit removal requests for members.
+    // Curators and impact officers review and approve/decline.
+    match /removal_requests/{docId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.requestedByUserId == request.auth.uid;
+      allow read: if isCuratorOrImpact()
+                  || isOwner(resource.data.requestedByUserId);
+      allow update: if isCuratorOrImpact();
+      allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
+    }
   }
 }

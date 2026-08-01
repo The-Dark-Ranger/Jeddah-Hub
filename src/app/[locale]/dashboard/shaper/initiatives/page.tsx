@@ -9,11 +9,141 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
 
-interface Initiative { id: string; title: string; description: string; status: string; category?: string; stat?: string; members?: any[]; problem?: string; objective?: string; impact?: string; }
+interface Initiative {
+  id: string; title: string; description: string; status: string;
+  category?: string; stat?: string; members?: any[];
+  problem?: string; objective?: string; impact?: string;
+  startDate?: string; endDate?: string; imageUrl?: string; images?: string[];
+  impactAreas?: string[]; color?: string;
+}
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
 
-const emptyLeadForm = { title: '', stat: '', description: '', problem: '', objective: '', impact: '' };
-type LeadForm = typeof emptyLeadForm;
+const CATEGORIES = [
+  'Environment', 'Education', 'Health', 'Technology',
+  'Arts & Culture', 'Economic Empowerment', 'Community', 'Wellbeing', 'Economy', 'Other',
+];
+
+const emptyForm = {
+  title: '', description: '', category: '', startDate: '', endDate: '',
+  imageUrl: '', images: '', stat: '', problem: '', objective: '', impact: '',
+  impactAreas: '', color: '',
+};
+type FormShape = typeof emptyForm;
+
+/* Full form fields — identical capability to the curator edit modal */
+interface LeadFormFieldsProps {
+  form: FormShape;
+  onChange: (key: keyof FormShape, value: string) => void;
+}
+
+function LeadFormFields({ form, onChange }: LeadFormFieldsProps) {
+  const t = useTranslations('Dashboard');
+  const mk = (k: keyof FormShape) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      onChange(k, e.target.value);
+
+  return (
+    <>
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldTitle')} *</label>
+        <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+      </div>
+
+      <div className={styles.editRow3}>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldCategory')}</label>
+          <select className={styles.input} value={form.category} onChange={mk('category')}>
+            <option value="">{t('categorySelectPrompt')}</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldStartDate')}</label>
+          <input className={styles.input} type="date" value={form.startDate} onChange={mk('startDate')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldEndDate')}</label>
+          <input className={styles.input} type="date" value={form.endDate} onChange={mk('endDate')} />
+        </div>
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldKeyStat')}</label>
+        <input className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldDescription')} *</label>
+        <textarea className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldProblem')}</label>
+        <textarea className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldObjective')}</label>
+        <textarea className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>{t('fieldImpact')}</label>
+        <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
+      </div>
+
+      <div className={styles.editRow3}>
+        <div className={styles.formField}>
+          <label className={styles.label}>
+            {t('fieldImpactAreas')}
+            <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
+          </label>
+          <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldCoverImage')}</label>
+          <input className={styles.input} value={form.imageUrl} onChange={mk('imageUrl')} placeholder={t('phCoverImageUrl')} />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldThemeColor')}</label>
+          <div className={styles.colorRow}>
+            <input type="color" className={styles.colorInput} value={form.color || '#0F5A9F'} onChange={mk('color')} />
+            <span className={styles.colorHex}>{form.color || t('fieldThemeColorNone')}</span>
+            {form.color && (
+              <button type="button" className={styles.colorClear} onClick={() => onChange('color', '')}>×</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>
+          {t('fieldPhotos')}
+          <span className={styles.fieldHint}>{t('fieldPhotosHint')}</span>
+        </label>
+        <textarea className={styles.textarea} value={form.images} onChange={mk('images')} placeholder={t('phPhotoUrls')} rows={3} />
+      </div>
+    </>
+  );
+}
+
+function formToDoc(f: FormShape) {
+  return {
+    title:       f.title,
+    description: f.description,
+    category:    f.category,
+    startDate:   f.startDate,
+    endDate:     f.endDate,
+    imageUrl:    f.imageUrl,
+    images:      f.images      ? f.images.split('\n').map(s => s.trim()).filter(Boolean) : [],
+    stat:        f.stat,
+    problem:     f.problem,
+    objective:   f.objective,
+    impact:      f.impact,
+    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
+    color:       f.color || null,
+  };
+}
 
 export default function JoinInitiatives() {
   const { user } = useAuth();
@@ -29,57 +159,78 @@ export default function JoinInitiatives() {
   const [incomingRequests, setIncomingRequests]   = useState<any[]>([]);
 
   /* Lead edit modal */
-  const [leadEditInit, setLeadEditInit]   = useState<Initiative | null>(null);
-  const [leadForm, setLeadForm]           = useState<LeadForm>(emptyLeadForm);
-  const [leadSaving, setLeadSaving]       = useState(false);
+  const [leadEditInit, setLeadEditInit] = useState<Initiative | null>(null);
+  const [leadForm, setLeadForm]         = useState<FormShape>(emptyForm);
+  const [leadSaving, setLeadSaving]     = useState(false);
+
+  const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
+    setLeadForm(f => ({ ...f, [key]: value }));
+  }, []);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     setLoading(true);
+    try {
+      const [initSnap, reqSnap] = await Promise.all([
+        getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
+        getDocs(query(collection(db, 'join_requests'), where('userId', '==', user.uid))),
+      ]);
 
-    const [initSnap, reqSnap] = await Promise.all([
-      getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
-      getDocs(query(collection(db, 'join_requests'), where('userId', '==', user.uid))),
-    ]);
+      const inits = initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+      const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
-    const inits = initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
-    const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
+      setInitiatives(inits);
+      setMyRequests(reqs);
 
-    setInitiatives(inits);
-    setMyRequests(reqs);
+      /* Find initiatives where user is a lead */
+      const leadIds = inits
+        .filter(i => (i.members || []).some((m: any) =>
+          (m.userId === user.uid || m === user.uid) &&
+          typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+        ))
+        .map(i => i.id);
 
-    /* Find initiatives where user is a lead */
-    const leadIds = inits
-      .filter(i => (i.members || []).some((m: any) =>
-        (m.userId === user.uid || m === user.uid) &&
-        typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
-      ))
-      .map(i => i.id);
+      setLeadInitiativeIds(leadIds);
 
-    setLeadInitiativeIds(leadIds);
-
-    /* Fetch incoming pending requests for those initiatives */
-    if (leadIds.length > 0) {
-      const incoming: any[] = [];
-      for (const initId of leadIds) {
-        const s = await getDocs(query(
-          collection(db, 'join_requests'),
-          where('initiativeId', '==', initId),
-          where('status', '==', 'pending'),
-        ));
-        s.docs.forEach(d => {
-          const data = d.data();
-          const initiative = inits.find(i => i.id === initId);
-          incoming.push({ id: d.id, ...data, initiativeTitle: initiative?.title });
-        });
+      /* Fetch incoming pending requests for those initiatives */
+      if (leadIds.length > 0) {
+        const incoming: any[] = [];
+        for (const initId of leadIds) {
+          const s = await getDocs(query(
+            collection(db, 'join_requests'),
+            where('initiativeId', '==', initId),
+            where('status', '==', 'pending'),
+          ));
+          s.docs.forEach(d => {
+            const initiative = inits.find(i => i.id === initId);
+            incoming.push({ id: d.id, ...d.data(), initiativeTitle: initiative?.title });
+          });
+        }
+        setIncomingRequests(incoming);
+      } else {
+        setIncomingRequests([]);
       }
-      setIncomingRequests(incoming);
+    } catch {
+      /* Firestore not configured or permission error — show empty state */
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* Close modal on Escape */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeLeadEdit(); };
+    if (leadEditInit) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [leadEditInit]);
+
+  /* Prevent body scroll when modal is open */
+  useEffect(() => {
+    document.body.style.overflow = leadEditInit ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [leadEditInit]);
 
   const getRequestForInit = (initId: string) =>
     myRequests.find(r => r.initiativeId === initId);
@@ -89,7 +240,6 @@ export default function JoinInitiatives() {
 
   const handleRequest = async (initId: string) => {
     if (!user) return;
-    // Remove any previous rejected request for this initiative
     const rejected = myRequests.find(r => r.initiativeId === initId && r.status === 'rejected');
     if (rejected) {
       setMyRequests(prev => prev.filter(r => r.id !== rejected.id));
@@ -97,9 +247,7 @@ export default function JoinInitiatives() {
         await deleteDoc(doc(db, 'join_requests', rejected.id));
       }
     }
-    const optimistic: JoinRequest = {
-      id: 'tmp_' + Date.now(), initiativeId: initId, status: 'pending',
-    };
+    const optimistic: JoinRequest = { id: 'tmp_' + Date.now(), initiativeId: initId, status: 'pending' };
     setMyRequests(prev => [...prev, optimistic]);
     const ref = await addDoc(collection(db, 'join_requests'), {
       initiativeId: initId,
@@ -117,7 +265,7 @@ export default function JoinInitiatives() {
     await deleteDoc(doc(db, 'join_requests', reqId));
   };
 
-  /* Lead actions */
+  /* Lead actions — accept / reject join requests */
   const handleAcceptRequest = async (reqId: string, initiativeId: string, userId: string) => {
     const { arrayUnion, updateDoc: ud } = await import('firebase/firestore');
     await ud(doc(db, 'initiatives', initiativeId), {
@@ -133,36 +281,39 @@ export default function JoinInitiatives() {
     setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
-  /* Lead edit modal handlers */
+  /* Lead edit modal */
   const openLeadEdit = (init: Initiative) => {
     setLeadEditInit(init);
     setLeadForm({
       title:       init.title,
-      stat:        init.stat        || '',
       description: init.description,
+      category:    init.category    || '',
+      startDate:   init.startDate   || '',
+      endDate:     init.endDate     || '',
+      imageUrl:    init.imageUrl    || '',
+      images:      (init.images     || []).join('\n'),
+      stat:        init.stat        || '',
       problem:     init.problem     || '',
       objective:   init.objective   || '',
       impact:      init.impact      || '',
+      impactAreas: (init.impactAreas || []).join(', '),
+      color:       init.color        || '',
     });
   };
 
-  const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyLeadForm); };
+  const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyForm); };
 
   const handleLeadSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadEditInit || !leadForm.title) return;
     setLeadSaving(true);
     try {
-      await updateDoc(doc(db, 'initiatives', leadEditInit.id), {
-        title:       leadForm.title,
-        stat:        leadForm.stat,
-        description: leadForm.description,
-        problem:     leadForm.problem,
-        objective:   leadForm.objective,
-        impact:      leadForm.impact,
-      });
+      await updateDoc(doc(db, 'initiatives', leadEditInit.id), formToDoc(leadForm));
+      const updated = formToDoc(leadForm);
       setInitiatives(prev => prev.map(i =>
-        i.id === leadEditInit.id ? { ...i, ...leadForm } : i
+        i.id === leadEditInit.id
+          ? { ...i, ...updated, color: updated.color ?? undefined }
+          : i
       ));
       closeLeadEdit();
     } catch (err: any) {
@@ -182,9 +333,12 @@ export default function JoinInitiatives() {
         <h2 className={styles.pageTitle}>{t('joinInitiativesTitle')}</h2>
       </div>
 
-      {/* Lead edit modal */}
+      {/* Lead edit modal — full curator-equivalent form */}
       {leadEditInit && (
-        <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) closeLeadEdit(); }}>
+        <div
+          className={styles.modalOverlay}
+          onClick={e => { if (e.target === e.currentTarget) closeLeadEdit(); }}
+        >
           <form className={styles.modal} onSubmit={handleLeadSave}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
@@ -195,30 +349,7 @@ export default function JoinInitiatives() {
               </button>
             </div>
             <div className={styles.modalBody}>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldTitle')} *</label>
-                <input className={styles.formInput} value={leadForm.title} onChange={e => setLeadForm(f => ({ ...f, title: e.target.value }))} required />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldKeyStat')}</label>
-                <input className={styles.formInput} value={leadForm.stat} onChange={e => setLeadForm(f => ({ ...f, stat: e.target.value }))} placeholder={t('phStat')} />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldDescription')} *</label>
-                <textarea className={styles.formTextarea} value={leadForm.description} onChange={e => setLeadForm(f => ({ ...f, description: e.target.value }))} rows={3} required />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldProblem')}</label>
-                <textarea className={styles.formTextarea} value={leadForm.problem} onChange={e => setLeadForm(f => ({ ...f, problem: e.target.value }))} rows={2} />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldObjective')}</label>
-                <textarea className={styles.formTextarea} value={leadForm.objective} onChange={e => setLeadForm(f => ({ ...f, objective: e.target.value }))} rows={2} />
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.formLabel}>{t('fieldImpact')}</label>
-                <textarea className={styles.formTextarea} value={leadForm.impact} onChange={e => setLeadForm(f => ({ ...f, impact: e.target.value }))} rows={2} />
-              </div>
+              <LeadFormFields form={leadForm} onChange={handleFormChange} />
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.modalCancelBtn} onClick={closeLeadEdit}>{t('cancel')}</button>
@@ -230,7 +361,7 @@ export default function JoinInitiatives() {
         </div>
       )}
 
-      {/* Incoming requests for leads */}
+      {/* Incoming join requests (for leads) */}
       {incomingRequests.length > 0 && (
         <div className={styles.incomingSection}>
           <h3 className={styles.sectionTitle}>
@@ -254,11 +385,12 @@ export default function JoinInitiatives() {
         </div>
       )}
 
-      {/* Initiatives list */}
+      {/* Initiatives grid */}
       <div className={styles.grid}>
         {initiatives.map(init => {
           const req    = getRequestForInit(init.id);
           const member = isAlreadyMember(init);
+          const isLead = leadInitiativeIds.includes(init.id);
           return (
             <div key={init.id} className={styles.card}>
               <div className={styles.cardBody}>
@@ -268,16 +400,23 @@ export default function JoinInitiatives() {
                 {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
               </div>
               <div className={styles.cardFooter}>
-                {leadInitiativeIds.includes(init.id) && (
-                  <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                    {t('editLeadInitiative')}
-                  </button>
-                )}
-                {member ? (
+                {isLead ? (
+                  <div className={styles.leadFooter}>
+                    <span className={styles.memberBadge}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      {t('alreadyMember')}
+                    </span>
+                    <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      {t('editLeadInitiative')}
+                    </button>
+                  </div>
+                ) : member ? (
                   <span className={styles.memberBadge}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <polyline points="20 6 9 17 4 12"/>
@@ -294,10 +433,6 @@ export default function JoinInitiatives() {
                     </span>
                     <button className={styles.cancelBtn} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
                   </div>
-                ) : req?.status === 'rejected' ? (
-                  <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
-                    {t('requestToJoin')}
-                  </button>
                 ) : req?.status === 'accepted' ? (
                   <span className={styles.memberBadge}>{t('joinRequestAccepted')}</span>
                 ) : (

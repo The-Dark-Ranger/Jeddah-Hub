@@ -24,7 +24,7 @@ export default function MyProfile() {
   const t = useTranslations('Dashboard');
 
   const [form, setForm]                   = useState<ProfileForm>(empty);
-  const [myProjectsCount, setMyProjects]  = useState(0);
+  const [myProjects, setMyProjects] = useState<{id: string; title: string}[]>([]);
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [loaded, setLoaded]               = useState(false);
@@ -49,12 +49,14 @@ export default function MyProfile() {
     });
 
     getDocs(collection(db, 'initiatives')).then(snap => {
-      let count = 0;
+      const joined: {id: string; title: string}[] = [];
       snap.docs.forEach(d => {
         const data = d.data();
-        if (data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) count++;
+        if (data.status === 'active' && data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) {
+          joined.push({ id: d.id, title: data.title || d.id });
+        }
       });
-      setMyProjects(count);
+      setMyProjects(joined);
     });
   }, [user]);
 
@@ -167,9 +169,24 @@ export default function MyProfile() {
       </div>
 
       {/* Active projects */}
-      <div className={`${styles.card} ${styles.countCard}`}>
-        <span className={styles.countNum}>{myProjectsCount}</span>
-        <p className={styles.countLabel}>{t('profileActiveProjects')}</p>
+      <div className={styles.card}>
+        <p className={styles.cardTitle}>{t('profileActiveProjects')}</p>
+        {myProjects.length === 0 ? (
+          <p className={styles.countLabel} style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+            {t('noActiveProjects')}
+          </p>
+        ) : (
+          <ul className={styles.projectList}>
+            {myProjects.map(p => (
+              <li key={p.id} className={styles.projectItem}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                {p.title}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Save button */}

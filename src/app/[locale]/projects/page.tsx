@@ -139,7 +139,11 @@ export default function ProjectsPage() {
   }, []);
 
   const filtered = projects.filter(p => {
-    const matchCat = activeCategoryKey === 'all' || p.category?.toLowerCase() === activeCategoryKey;
+    const cat = p.category?.toLowerCase() ?? '';
+    const matchCat = activeCategoryKey === 'all'
+      || cat === activeCategoryKey
+      || (activeCategoryKey === 'wellbeing' && cat === 'health')
+      || (activeCategoryKey === 'sustainability' && cat === 'environment');
     const matchSearch = !search ||
       p.title?.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase());

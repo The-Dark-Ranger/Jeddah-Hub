@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import styles from './NewsletterForm.module.css';
 
@@ -17,11 +17,6 @@ export default function NewsletterForm() {
 
     setStatus('loading');
     try {
-      const existing = await getDocs(
-        query(collection(db, 'newsletter_subscribers'), where('email', '==', email.toLowerCase().trim()))
-      );
-      if (!existing.empty) { setStatus('duplicate'); return; }
-
       await addDoc(collection(db, 'newsletter_subscribers'), {
         email: email.toLowerCase().trim(),
         subscribedAt: new Date().toISOString(),

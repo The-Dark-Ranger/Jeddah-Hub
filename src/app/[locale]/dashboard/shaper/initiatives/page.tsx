@@ -5,6 +5,7 @@ import {
   collection, getDocs, addDoc, query, where, deleteDoc, doc, updateDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
@@ -573,6 +574,24 @@ export default function JoinInitiatives() {
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                       </svg>
                       {t('viewMembers')} ({nonLeadMembers.length})
+                    </button>
+                    <button
+                      className={styles.editLeadBtn}
+                      style={{ background: 'transparent', color: 'var(--text-muted)', borderColor: 'var(--border-color)' }}
+                      onClick={() => {
+                        const memberNames = Object.fromEntries(
+                          (init.members as any[] || []).map((m: any) => [m.userId, getUserLabel(m.userId)])
+                        );
+                        void downloadInitiativeReport(init as any, memberNames);
+                      }}
+                      title={t('downloadReport')}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      {t('downloadReport')}
                     </button>
                     <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

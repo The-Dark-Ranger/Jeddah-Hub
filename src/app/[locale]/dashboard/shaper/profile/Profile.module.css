@@ -81,6 +81,15 @@
 }
 .countLabel { font-size: 0.9rem; color: var(--text-muted); }
 
+.projectList { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.projectItem {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 0.9rem; border-radius: 10px;
+  background: var(--background-alt); border: 1px solid var(--border-color);
+  font-size: 0.88rem; font-weight: 600; color: var(--text-main);
+}
+.projectItem svg { color: var(--primary-blue); flex-shrink: 0; }
+
 .previewHint {
   font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;
   display: flex; align-items: center; gap: 0.35rem;

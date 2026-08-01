@@ -28,6 +28,7 @@ export default function ContactPage() {
       await addDoc(collection(db, 'contact_messages'), {
         ...formData,
         submittedAt: new Date().toISOString(),
+        read: false,
       });
       setStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });

@@ -261,3 +261,55 @@
   background: rgba(239,68,68,0.08); color: var(--danger);
   border: 1px solid rgba(239,68,68,0.2);
 }
+
+/* Members toggle button on lead cards */
+.membersToggleBtn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.38rem 0.75rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid var(--border-color); color: var(--text-muted);
+  background: transparent; cursor: pointer; transition: all 0.15s ease;
+}
+.membersToggleBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
+.membersToggleBtnOpen { border-color: var(--primary-blue) !important; color: var(--primary-blue) !important; background: var(--primary-blue-glow) !important; }
+
+/* Collapsible member panel inside lead cards */
+.memberPanel {
+  padding: 1rem 1.25rem; border-top: 1px solid var(--border-color);
+  background: var(--background-alt);
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.memberPanelTitle {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.82rem; font-weight: 700; color: var(--text-main);
+  margin: 0 0 0.25rem;
+}
+.memberPanelEmpty { font-size: 0.82rem; color: var(--text-muted); }
+.memberPanelItem {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.55rem 0.75rem; border-radius: 8px;
+  background: var(--card-bg); border: 1px solid var(--border-color); flex-wrap: wrap;
+}
+.memberPanelInfo { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.memberPanelName { font-size: 0.85rem; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.memberPanelRole { font-size: 0.75rem; color: var(--text-muted); }
+.memberPanelActions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+
+/* Removal request button and badges */
+.requestRemovalBtn {
+  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: 0.76rem; font-weight: 600;
+  border: 1px solid rgba(239,68,68,0.25); color: var(--danger);
+  background: rgba(239,68,68,0.06); cursor: pointer; transition: all 0.15s ease; flex-shrink: 0;
+}
+.requestRemovalBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+.removalPendingBadge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: 0.76rem; font-weight: 600;
+  background: rgba(245,158,11,0.1); color: var(--warning);
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.cancelRemovalBtn {
+  padding: 0.22rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-color);
+  color: var(--text-muted); background: transparent; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.cancelRemovalBtn:hover { border-color: var(--danger); color: var(--danger); }

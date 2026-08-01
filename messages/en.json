@@ -606,6 +606,15 @@
     "approveLeave": "Approve",
     "declineLeave": "Decline",
     "wantsToLeave": "wants to leave",
-    "incomingLeaveRequests": "Leave Requests"
+    "incomingLeaveRequests": "Leave Requests",
+    "viewMembers": "Members",
+    "requestRemoval": "Request Removal",
+    "removalPending": "Removal Pending",
+    "cancelRemoval": "Cancel",
+    "removalRequests": "Removal Requests",
+    "approveRemoval": "Remove",
+    "declineRemoval": "Decline",
+    "requestedToRemove": "requested to remove from",
+    "by": "by"
   }
 }

@@ -227,6 +227,7 @@ export default function ManageInitiatives() {
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [removalRequests, setRemovalRequests] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [seeding, setSeeding]   = useState(false);
@@ -274,6 +275,16 @@ export default function ManageInitiatives() {
           return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
         }));
       } catch { setLeaveRequests([]); }
+
+      // Removal requests (non-critical, catch separately)
+      try {
+        const removalSnap = await getDocs(query(collection(db, 'removal_requests'), where('status', '==', 'pending')));
+        setRemovalRequests(removalSnap.docs.map(d => {
+          const data = d.data();
+          const init = inits.find(i => i.id === data.initiativeId);
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+        }));
+      } catch { setRemovalRequests([]); }
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
@@ -448,6 +459,33 @@ export default function ManageInitiatives() {
     setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
   };
 
+  /* Removal request handlers */
+  const handleApproveRemoval = async (req: any) => {
+    const init = initiatives.find(i => i.id === req.initiativeId);
+    if (init) {
+      const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.targetUserId);
+      const wasLead = memberObj && typeof memberObj.role === 'string' && memberObj.role.toLowerCase().includes('lead');
+      if (memberObj) {
+        await updateDoc(doc(db, 'initiatives', req.initiativeId), {
+          members: arrayRemove(memberObj),
+          ...(wasLead ? { leads: arrayRemove(req.targetUserId) } : {}),
+        });
+      }
+    }
+    await updateDoc(doc(db, 'removal_requests', req.id), { status: 'approved' });
+    setRemovalRequests(prev => prev.filter(r => r.id !== req.id));
+    setInitiatives(prev => prev.map(i =>
+      i.id === req.initiativeId
+        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.targetUserId) }
+        : i
+    ));
+  };
+
+  const handleDeclineRemoval = async (reqId: string) => {
+    await updateDoc(doc(db, 'removal_requests', reqId), { status: 'declined' });
+    setRemovalRequests(prev => prev.filter(r => r.id !== reqId));
+  };
+
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
     return u?.displayName || u?.email || userId;
@@ -574,6 +612,38 @@ export default function ManageInitiatives() {
                 <div className={styles.leaveActions}>
                   <button className={styles.approveLeaveBtn} onClick={() => handleApproveLeave(req)}>{t('approveLeave')}</button>
                   <button className={styles.declineLeaveBtn} onClick={() => handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Removal Requests ── */}
+      {removalRequests.length > 0 && (
+        <div className={styles.removalSection}>
+          <h3 className={styles.removalSectionTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+            </svg>
+            {t('removalRequests')}
+            <span className={styles.removalBadge}>{removalRequests.length}</span>
+          </h3>
+          <div className={styles.removalList}>
+            {removalRequests.map(req => (
+              <div key={req.id} className={styles.removalRow}>
+                <div className={styles.removalInfo}>
+                  <span className={styles.removalName}>{req.targetUserName || req.targetUserId}</span>
+                  <span className={styles.removalMeta}>
+                    {t('requestedToRemove')} <strong>{req.initiativeTitle}</strong>
+                    {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
+                  </span>
+                </div>
+                <div className={styles.removalActions}>
+                  <button className={styles.approveRemovalBtn} onClick={() => handleApproveRemoval(req)}>{t('approveRemoval')}</button>
+                  <button className={styles.declineRemovalBtn} onClick={() => handleDeclineRemoval(req.id)}>{t('declineRemoval')}</button>
                 </div>
               </div>
             ))}

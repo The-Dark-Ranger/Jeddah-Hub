@@ -162,6 +162,11 @@ export default function JoinInitiatives() {
   const [myLeaveRequests, setMyLeaveRequests] = useState<{id: string; initiativeId: string; status: string}[]>([]);
   const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<any[]>([]);
 
+  /* Member panel (for leads) */
+  const [users, setUsers] = useState<{id: string; displayName?: string; email?: string}[]>([]);
+  const [memberPanelOpenId, setMemberPanelOpenId] = useState<string | null>(null);
+  const [pendingRemovals, setPendingRemovals] = useState<{id: string; targetUserId: string; initiativeId: string}[]>([]);
+
   /* Lead edit modal */
   const [leadEditInit, setLeadEditInit] = useState<Initiative | null>(null);
   const [leadForm, setLeadForm]         = useState<FormShape>(emptyForm);
@@ -211,11 +216,29 @@ export default function JoinInitiatives() {
           });
         }
         setIncomingRequests(incoming);
+
+        /* Fetch all users for member name display */
+        try {
+          const usersSnap = await getDocs(collection(db, 'users'));
+          setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        } catch { setUsers([]); }
+
+        /* Fetch pending removal requests submitted by this lead */
+        try {
+          const removalSnap = await getDocs(query(
+            collection(db, 'removal_requests'),
+            where('requestedByUserId', '==', user.uid),
+            where('status', '==', 'pending'),
+          ));
+          setPendingRemovals(removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        } catch { setPendingRemovals([]); }
       } else {
         setIncomingRequests([]);
+        setUsers([]);
+        setPendingRemovals([]);
       }
 
-      // Fetch user's own leave requests
+      /* Fetch user's own leave requests */
       const leaveReqSnap = await getDocs(query(
         collection(db, 'leave_requests'),
         where('userId', '==', user.uid),
@@ -223,7 +246,7 @@ export default function JoinInitiatives() {
       ));
       setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
 
-      // Fetch incoming leave requests for initiatives where user is a lead
+      /* Fetch incoming leave requests for initiatives where user is a lead */
       if (leadIds.length > 0) {
         const leaveSnap = await getDocs(query(
           collection(db, 'leave_requests'),
@@ -265,6 +288,15 @@ export default function JoinInitiatives() {
 
   const isAlreadyMember = (init: Initiative) =>
     (init.members || []).some((m: any) => m.userId === user?.uid || m === user?.uid);
+
+  const getUserLabel = (userId: string) => {
+    const u = users.find(u => u.id === userId);
+    return u?.displayName || u?.email || userId;
+  };
+
+  const toggleMemberPanel = (id: string) => {
+    setMemberPanelOpenId(prev => prev === id ? null : id);
+  };
 
   const handleRequest = async (initId: string) => {
     if (!user) return;
@@ -331,7 +363,7 @@ export default function JoinInitiatives() {
     if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'leave_requests', reqId));
   };
 
-  // Lead approves leave: remove member from initiative, mark leave request approved
+  /* Lead approves leave: remove member from initiative, mark leave request approved */
   const handleApproveLeave = async (req: any) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
     if (!init) return;
@@ -352,6 +384,31 @@ export default function JoinInitiatives() {
   const handleDeclineLeave = async (reqId: string) => {
     await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
     setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+  };
+
+  /* Removal request handlers (lead requests; curator/impact officer reviews) */
+  const handleRequestRemoval = async (init: Initiative, member: any) => {
+    if (!user) return;
+    const memberName = getUserLabel(member.userId);
+    if (!confirm(`Request removal of ${memberName} from ${init.title}? A curator will review this request.`)) return;
+    const optimisticId = 'tmp_' + Date.now();
+    setPendingRemovals(prev => [...prev, { id: optimisticId, targetUserId: member.userId, initiativeId: init.id }]);
+    const ref = await addDoc(collection(db, 'removal_requests'), {
+      initiativeId: init.id,
+      initiativeTitle: init.title,
+      targetUserId: member.userId,
+      targetUserName: memberName,
+      requestedByUserId: user.uid,
+      requestedByName: user.displayName || user.email,
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+    });
+    setPendingRemovals(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+  };
+
+  const handleCancelRemoval = async (reqId: string) => {
+    setPendingRemovals(prev => prev.filter(r => r.id !== reqId));
+    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'removal_requests', reqId));
   };
 
   /* Lead edit modal */
@@ -488,6 +545,7 @@ export default function JoinInitiatives() {
           const req    = getRequestForInit(init.id);
           const member = isAlreadyMember(init);
           const isLead = leadInitiativeIds.includes(init.id);
+          const nonLeadMembers = (init.members as any[] || []).filter((m: any) => m.userId !== user?.uid);
           return (
             <div key={init.id} className={styles.card}>
               <div className={styles.cardBody}>
@@ -505,6 +563,17 @@ export default function JoinInitiatives() {
                       </svg>
                       {t('alreadyMember')}
                     </span>
+                    <button
+                      className={styles.membersToggleBtn + (memberPanelOpenId === init.id ? ' ' + styles.membersToggleBtnOpen : '')}
+                      onClick={() => toggleMemberPanel(init.id)}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                      {t('viewMembers')} ({nonLeadMembers.length})
+                    </button>
                     <button className={styles.editLeadBtn} onClick={() => openLeadEdit(init)}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -561,6 +630,45 @@ export default function JoinInitiatives() {
                   </button>
                 )}
               </div>
+
+              {/* Collapsible member panel — visible to leads only */}
+              {isLead && memberPanelOpenId === init.id && (
+                <div className={styles.memberPanel}>
+                  <p className={styles.memberPanelTitle}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    {t('membersLabel')}
+                  </p>
+                  {nonLeadMembers.length === 0 ? (
+                    <p className={styles.memberPanelEmpty}>{t('noTeamMembers')}</p>
+                  ) : (
+                    nonLeadMembers.map((m: any, idx: number) => {
+                      const removal = pendingRemovals.find(r => r.targetUserId === m.userId && r.initiativeId === init.id);
+                      return (
+                        <div key={m.userId + idx} className={styles.memberPanelItem}>
+                          <div className={styles.memberPanelInfo}>
+                            <span className={styles.memberPanelName}>{getUserLabel(m.userId)}</span>
+                            <span className={styles.memberPanelRole}>{m.role || 'Member'}</span>
+                          </div>
+                          {removal ? (
+                            <div className={styles.memberPanelActions}>
+                              <span className={styles.removalPendingBadge}>{t('removalPending')}</span>
+                              <button className={styles.cancelRemovalBtn} onClick={() => handleCancelRemoval(removal.id)}>{t('cancelRemoval')}</button>
+                            </div>
+                          ) : (
+                            <button className={styles.requestRemovalBtn} onClick={() => handleRequestRemoval(init, m)}>
+                              {t('requestRemoval')}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

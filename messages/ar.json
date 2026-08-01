@@ -606,6 +606,15 @@
     "approveLeave": "موافقة",
     "declineLeave": "رفض",
     "wantsToLeave": "يريد مغادرة",
-    "incomingLeaveRequests": "طلبات المغادرة"
+    "incomingLeaveRequests": "طلبات المغادرة",
+    "viewMembers": "الأعضاء",
+    "requestRemoval": "طلب الإزالة",
+    "removalPending": "الإزالة قيد الانتظار",
+    "cancelRemoval": "إلغاء",
+    "removalRequests": "طلبات الإزالة",
+    "approveRemoval": "إزالة",
+    "declineRemoval": "رفض",
+    "requestedToRemove": "طُلب إزالته من",
+    "by": "بواسطة"
   }
 }

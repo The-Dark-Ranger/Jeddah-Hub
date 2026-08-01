@@ -397,3 +397,40 @@
   border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s ease;
 }
 .declineLeaveBtn:hover { border-color: var(--text-muted); color: var(--text-main); }
+
+/* Removal requests section */
+.removalSection {
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  border-left: 3px solid var(--warning); border-radius: 14px; padding: 1.25rem 1.5rem;
+}
+.removalSectionTitle {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;
+}
+.removalBadge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
+  background: var(--warning); color: white; font-size: 0.72rem; font-weight: 700;
+}
+.removalList { display: flex; flex-direction: column; gap: 0.65rem; }
+.removalRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.85rem 1rem; background: var(--background-alt);
+  border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;
+}
+.removalInfo { display: flex; flex-direction: column; gap: 0.15rem; }
+.removalName { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+.removalMeta { font-size: 0.8rem; color: var(--text-muted); }
+.removalActions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.approveRemovalBtn {
+  padding: 0.38rem 0.85rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600;
+  background: rgba(239,68,68,0.08); color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.25); cursor: pointer; transition: all 0.15s ease;
+}
+.approveRemovalBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+.declineRemovalBtn {
+  padding: 0.38rem 0.85rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s ease;
+}
+.declineRemovalBtn:hover { border-color: var(--text-muted); color: var(--text-main); }

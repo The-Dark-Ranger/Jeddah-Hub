@@ -18,10 +18,7 @@ interface BlogPost {
   status: 'draft' | 'published' | 'pending_review';
   createdAt: string;
   likedBy?: string[];
-  instagramUrl?: string;
 }
-
-const INSTAGRAM_URL_RE = /^https:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[A-Za-z0-9_-]+\/?/;
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   published:      { label: 'Published', color: '#10b981' },
@@ -52,11 +49,8 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
   const [excerpt, setExcerpt]   = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [status, setStatus]     = useState<BlogPost['status']>(canPublishDirectly ? 'published' : 'draft');
-  const [instagramUrl, setInstagramUrl] = useState('');
   const [saving, setSaving]     = useState(false);
   const [filter, setFilter]     = useState('all');
-
-  const instagramUrlInvalid = instagramUrl.trim() !== '' && !INSTAGRAM_URL_RE.test(instagramUrl.trim());
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -78,7 +72,7 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
   useEffect(() => { fetchPosts(); }, []);
 
   const resetForm = () => {
-    setTitle(''); setContent(''); setExcerpt(''); setTagsInput(''); setInstagramUrl('');
+    setTitle(''); setContent(''); setExcerpt(''); setTagsInput('');
     setStatus(canPublishDirectly ? 'published' : 'draft');
     setEditId(null);
   };
@@ -87,24 +81,21 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
     setTitle(post.title); setContent(post.content);
     setExcerpt(post.excerpt || '');
     setTagsInput((post.tags || []).join(', '));
-    setInstagramUrl(post.instagramUrl || '');
     setStatus(post.status); setEditId(post.id);
     setView('edit');
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim() || instagramUrlInvalid) return;
+    if (!title.trim() || !content.trim()) return;
     setSaving(true);
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
     const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
-    const cleanInstagramUrl = instagramUrl.trim();
     const payload = {
       title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
       tags, status, authorId: user.uid,
       authorName: user.displayName || user.email || 'Shaper',
       authorRole: user.role || 'shaper',
-      instagramUrl: cleanInstagramUrl || null,
       updatedAt: new Date().toISOString(),
     };
     let newPostId: string | null = null;
@@ -170,27 +161,9 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
               )}
             </div>
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Instagram post <span className={styles.labelHint}>(optional — embeds a post or reel in the article)</span>
-            </label>
-            <input
-              className={styles.input}
-              value={instagramUrl}
-              onChange={e => setInstagramUrl(e.target.value)}
-              placeholder="https://www.instagram.com/reel/..."
-              type="url"
-              aria-invalid={instagramUrlInvalid}
-            />
-            {instagramUrlInvalid && (
-              <p className={styles.statusNote} style={{ color: 'var(--danger)' }}>
-                Paste a link to a specific Instagram post or reel (instagram.com/p/... or /reel/...).
-              </p>
-            )}
-          </div>
           <div className={styles.formActions}>
             <button type="button" className={styles.cancelBtn} onClick={() => { setView('list'); resetForm(); }}>Cancel</button>
-            <button type="submit" className={styles.saveBtn} disabled={saving || instagramUrlInvalid}>
+            <button type="submit" className={styles.saveBtn} disabled={saving}>
               {saving ? 'Saving...' : view === 'edit' ? 'Save Changes' : 'Publish Post'}
             </button>
           </div>

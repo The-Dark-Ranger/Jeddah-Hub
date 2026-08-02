@@ -339,9 +339,7 @@
     "justNow": "الآن",
     "minutesAgo": "{n, plural, one {منذ دقيقة} two {منذ دقيقتين} few {منذ # دقائق} many {منذ # دقيقة} other {منذ # دقيقة}}",
     "hoursAgo": "{n, plural, one {منذ ساعة} two {منذ ساعتين} few {منذ # ساعات} many {منذ # ساعة} other {منذ # ساعة}}",
-    "daysAgo": "{n, plural, one {منذ يوم} two {منذ يومين} few {منذ # أيام} many {منذ # يوماً} other {منذ # يوم}}",
-    "instagramViewPost": "مشاهدة المنشور على إنستغرام",
-    "instagramUnavailable": "مشاهدة المنشور على إنستغرام (يفتح في تبويب جديد)"
+    "daysAgo": "{n, plural, one {منذ يوم} two {منذ يومين} few {منذ # أيام} many {منذ # يوماً} other {منذ # يوم}}"
   },
   "Dashboard": {
     "loading": "جارٍ التحميل...",

@@ -1,5 +1,17 @@
 import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import { alternateLanguages } from '@/lib/seo';
 import styles from './BecomeShaper.module.css';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'BecomeShaperPage' });
+  return {
+    title: t('title'),
+    description: t('subtitle'),
+    alternates: { canonical: `/${locale}/become-a-shaper`, languages: alternateLanguages('/become-a-shaper') },
+  };
+}
 
 export default function BecomeAShaperPage() {
   const t = useTranslations('BecomeShaperPage');

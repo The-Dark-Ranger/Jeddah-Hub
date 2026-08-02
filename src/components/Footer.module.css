@@ -79,6 +79,9 @@
 
 .copyright { font-size: .8rem; color: var(--text-muted); }
 
+.legalLinks { display: flex; align-items: center; gap: .6rem; }
+.legalDivider { color: var(--border-color); font-size: .8rem; }
+
 /* ── Responsive ── */
 
 /* Tablet: 2-column (brand full-width, then 3 cols below) */

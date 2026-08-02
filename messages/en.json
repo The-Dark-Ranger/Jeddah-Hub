@@ -60,7 +60,8 @@
     "newsletterError": "Failed to subscribe. Please try again.",
     "stayTunedTitle": "Stay Tuned",
     "stayTunedDesc": "Something exciting is being planned for our community. Check back soon for the latest from Jeddah Hub.",
-    "activityHighlightsLabel": "Highlights"
+    "activityHighlightsLabel": "Highlights",
+    "newsletterSubtitle": "Subscribe to our monthly newsletter."
   },
   "AboutPage": {
     "title": "Who We Are",
@@ -273,7 +274,8 @@
     "becomeShaper": "Become a Shaper",
     "dashboard": "Dashboard",
     "logout": "Sign Out",
-    "login": "Member Login"
+    "login": "Member Login",
+    "impactReports": "Impact Reports"
   },
   "Role": {
     "curator": "Curator",
@@ -289,7 +291,9 @@
     "getInvolved": "Get Involved",
     "community": "Community",
     "partnerWithUs": "Partner With Us",
-    "copyright": "Global Shapers Community, Jeddah Hub"
+    "copyright": "Global Shapers Community, Jeddah Hub",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use"
   },
   "Categories": {
     "all": "All",
@@ -640,6 +644,150 @@
     "uploadPhoto": "Upload photo",
     "changePhoto": "Change photo",
     "avatarHint": "Square images work best. Larger photos are resized automatically.",
-    "avatarBrokenUrl": "That image link could not be loaded."
+    "avatarBrokenUrl": "That image link could not be loaded.",
+    "createFirstReport": "Upload your first impact report to have it appear here and on the public site.",
+    "deleteReportConfirm": "Delete this impact report? This cannot be undone.",
+    "editReport": "Edit Impact Report",
+    "impactReportsSubtitle": "Upload PDF impact reports for the public Impact Reports page and the homepage preview.",
+    "newReportBtn": "New Report",
+    "noReportsYet": "No impact reports yet.",
+    "pdfView": "View PDF",
+    "reportInitiativeGeneral": "— General report (not tied to one initiative) —",
+    "reportInitiativeLabel": "Related Initiative",
+    "reportPdfLabel": "PDF File",
+    "reportSummaryLabel": "Summary",
+    "reportTitleLabel": "Report Title",
+    "reportTitlePh": "e.g. 2025 Annual Impact Report",
+    "pdfHint": "PDF only, up to 25 MB",
+    "pdfReplace": "Replace",
+    "pdfTooLarge": "That PDF is over the 25 MB limit.",
+    "pdfUploadFailed": "The PDF could not be uploaded. Please try again.",
+    "pdfWrongType": "Please choose a PDF file.",
+    "uploadPdf": "Upload PDF",
+    "uploadingPdf": "Uploading"
+  },
+  "PrivacyPolicyPage": {
+    "title": "Privacy Policy",
+    "subtitle": "How Jeddah Hub collects, uses, and protects your information.",
+    "lastUpdated": "Last updated: August 2, 2026",
+    "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy explains what information we collect through jeddahhub.com, why we collect it, and the choices you have. It applies to visitors, newsletter subscribers, and members who use our dashboard.",
+    "sections": [
+      {
+        "heading": "Information We Collect",
+        "body": "Newsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nMember accounts: Global Shapers, curators, and other dashboard members create an account with an email address and password. Your profile may also include a display name, photo, short bio, and links to your social profiles, all of which you control and can edit at any time.\n\nContent you post: blog posts, comments, and likes you submit while signed in are stored under your account.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post without an account using an anonymous, randomly generated identifier that is not linked to your real identity."
+      },
+      {
+        "heading": "Become a Shaper Applications",
+        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.com. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form — it is governed by the World Economic Forum's own privacy practices, not this policy."
+      },
+      {
+        "heading": "How We Use Your Information",
+        "body": "We use the information above to: send the newsletter you subscribed to; respond to messages sent through the contact form; operate your member account and display your public profile on the Our Shapers page if you choose to add one; and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
+      },
+      {
+        "heading": "Cookies and Similar Technologies",
+        "body": "We use functional local storage rather than tracking cookies. This includes your saved language and theme preference, a flag so the welcome animation shows once per visit, and — only if you interact with a blog post while signed out — an anonymous identifier for your like. None of these are used to track you across other websites."
+      },
+      {
+        "heading": "Third-Party Services",
+        "body": "We rely on a small number of service providers to operate the site: Google Firebase for authentication, our database, and file storage; Google reCAPTCHA to protect our contact form from automated abuse; and a transactional email provider to deliver the newsletter welcome email and account invitations you request. Each of these providers processes data on our behalf and maintains its own privacy and security practices."
+      },
+      {
+        "heading": "Data Sharing and Disclosure",
+        "body": "We do not sell or rent your personal information. We share it only with the service providers described above, to the extent needed to operate the site, and if required to comply with a legal obligation or to protect the rights, safety, or property of Jeddah Hub or others."
+      },
+      {
+        "heading": "Data Retention",
+        "body": "We keep newsletter and contact form data for as long as needed to serve their purpose, or until you ask us to remove it. Member account data is kept for as long as your account is active, and is removed if your account is deleted."
+      },
+      {
+        "heading": "Your Choices and Rights",
+        "body": "You can update or remove your member profile information at any time from your dashboard. To unsubscribe from the newsletter or request that we delete personal information we hold about you, contact us using the details below and we will act on your request promptly."
+      },
+      {
+        "heading": "Children's Privacy",
+        "body": "Jeddah Hub is a Global Shapers Community hub for young people generally between 18 and 27 years old. Our site is not directed at children, and we do not knowingly collect personal information from anyone under 13."
+      },
+      {
+        "heading": "Data Security",
+        "body": "We use industry-standard measures — including encrypted connections and access controls provided by our infrastructure providers — to protect the information we hold. No method of transmission or storage is completely secure, but we work to protect your information appropriately."
+      },
+      {
+        "heading": "International Data Transfers",
+        "body": "Jeddah Hub is based in Jeddah, Saudi Arabia. Because we use global infrastructure providers, your information may be processed in other countries. We take steps to ensure it continues to receive an appropriate level of protection wherever it is processed."
+      },
+      {
+        "heading": "Changes to This Policy",
+        "body": "We may update this policy from time to time to reflect changes to the site or our practices. The date at the top of this page shows when it was last revised. Continued use of the site after an update means you accept the revised policy."
+      },
+      {
+        "heading": "Contact Us",
+        "body": "If you have questions about this policy or how your information is handled, reach us at jeddahglobalshapers@gmail.com or through our Contact page."
+      }
+    ]
+  },
+  "TermsOfUsePage": {
+    "title": "Terms of Use",
+    "subtitle": "The rules for using the Jeddah Hub website.",
+    "lastUpdated": "Last updated: August 2, 2026",
+    "intro": "These terms govern your use of jeddahhub.com, operated by Jeddah Hub, a Global Shapers Community hub and an initiative of the World Economic Forum. By using this site, you agree to these terms.",
+    "sections": [
+      {
+        "heading": "Using This Site",
+        "body": "You may browse public pages of this site freely. Creating a member account and accessing the dashboard is reserved for Global Shapers, alumni, curators, vice curators, and impact officers affiliated with Jeddah Hub, and is granted at our discretion."
+      },
+      {
+        "heading": "Eligibility to Become a Shaper",
+        "body": "Membership as a Global Shaper is a separate process, administered by the World Economic Forum through its own application platform, and is generally open to driven young people between 18 and 27 years old. Applying does not guarantee acceptance, and eligibility criteria are set by the World Economic Forum, not by these terms."
+      },
+      {
+        "heading": "Your Account",
+        "body": "If you are given a member account, you are responsible for keeping your login credentials confidential and for all activity under your account. Tell us right away if you suspect unauthorized use of your account."
+      },
+      {
+        "heading": "Content You Submit",
+        "body": "If you publish a blog post, comment, or profile information, you confirm you have the right to share it and you grant Jeddah Hub a non-exclusive right to display it on this site. You keep ownership of what you write. We may remove content that violates these terms or that we determine is inappropriate, at our discretion.\n\nDo not submit content that is unlawful, defamatory, harassing, or that infringes someone else's rights."
+      },
+      {
+        "heading": "Acceptable Use",
+        "body": "You agree not to misuse the site — including attempting to access accounts or data that are not yours, disrupting the site's normal operation, or using automated tools to scrape or overload it."
+      },
+      {
+        "heading": "Third-Party Links",
+        "body": "This site links to third-party destinations we do not control, including the World Economic Forum's Global Shapers application form and our social media profiles. We are not responsible for the content, terms, or privacy practices of those external sites."
+      },
+      {
+        "heading": "Intellectual Property",
+        "body": "The Jeddah Hub name, logo, and the design and text of this site (excluding content you submit and excluding third-party marks such as the Global Shapers Community and World Economic Forum names) belong to Jeddah Hub or its licensors and may not be used without permission."
+      },
+      {
+        "heading": "Disclaimers",
+        "body": "This site and its content are provided \"as is,\" without warranties of any kind. We do not guarantee the site will be uninterrupted, error-free, or that impact figures and other statistics will be precisely up to date at every moment."
+      },
+      {
+        "heading": "Limitation of Liability",
+        "body": "To the fullest extent permitted by law, Jeddah Hub is not liable for indirect, incidental, or consequential damages arising from your use of this site."
+      },
+      {
+        "heading": "Termination",
+        "body": "We may suspend or remove a member account that violates these terms, without notice, at our discretion."
+      },
+      {
+        "heading": "Changes to These Terms",
+        "body": "We may update these terms from time to time. The date at the top of this page shows when they were last revised. Continued use of the site after an update means you accept the revised terms."
+      },
+      {
+        "heading": "Contact Us",
+        "body": "Questions about these terms can be sent to jeddahglobalshapers@gmail.com or through our Contact page."
+      }
+    ]
+  },
+  "ImpactReportsPage": {
+    "title": "Impact Reports",
+    "subtitle": "Our published reports on the measurable difference Jeddah Hub initiatives are making.",
+    "homeSubtitle": "See the numbers behind our work, published for full transparency.",
+    "viewAll": "View All Reports",
+    "noReports": "No impact reports have been published yet. Check back soon.",
+    "download": "Download PDF"
   }
 }

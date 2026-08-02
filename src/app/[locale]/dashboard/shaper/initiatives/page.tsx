@@ -193,37 +193,31 @@ export default function JoinInitiatives() {
 
       setLeadInitiativeIds(leadIds);
 
-      /* Fetch incoming pending requests for those initiatives */
       if (leadIds.length > 0) {
-        const incoming: any[] = [];
-        for (const initId of leadIds) {
-          const s = await getDocs(query(
+        /* One `in` query across every led initiative rather than one per
+         * initiative — these all run concurrently. */
+        const [joinSnap, usersSnap, removalSnap] = await Promise.all([
+          getDocs(query(
             collection(db, 'join_requests'),
-            where('initiativeId', '==', initId),
+            where('initiativeId', 'in', leadIds),
             where('status', '==', 'pending'),
-          ));
-          s.docs.forEach(d => {
-            const initiative = inits.find(i => i.id === initId);
-            incoming.push({ id: d.id, ...d.data(), initiativeTitle: initiative?.title });
-          });
-        }
-        setIncomingRequests(incoming);
-
-        /* Fetch all users for member name display */
-        try {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
-        } catch { setUsers([]); }
-
-        /* Fetch pending removal requests submitted by this lead */
-        try {
-          const removalSnap = await getDocs(query(
+          )).catch(() => null),
+          getDocs(collection(db, 'users')).catch(() => null),
+          getDocs(query(
             collection(db, 'removal_requests'),
             where('requestedByUserId', '==', user.uid),
             where('status', '==', 'pending'),
-          ));
-          setPendingRemovals(removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
-        } catch { setPendingRemovals([]); }
+          )).catch(() => null),
+        ]);
+
+        setIncomingRequests(joinSnap
+          ? joinSnap.docs.map(d => {
+              const data = d.data();
+              return { id: d.id, ...data, initiativeTitle: inits.find(i => i.id === data.initiativeId)?.title };
+            })
+          : []);
+        setUsers(usersSnap ? usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
+        setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
       } else {
         setIncomingRequests([]);
         setUsers([]);

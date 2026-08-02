@@ -68,6 +68,9 @@
 
 .filterBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .filterBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
+/* Selected filter is filled blue — keep its label white instead of inheriting
+   the blue hover colour above, which would make it unreadable. */
+.filterBtnActive:hover { color: white; }
 
 .filterCount {
   background: rgba(255,255,255,0.2);

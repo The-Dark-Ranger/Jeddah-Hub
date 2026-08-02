@@ -130,6 +130,21 @@
 }
 .editLeadBtn:hover { background: var(--primary-blue); color: white; }
 
+/* Secondary action next to Edit. Needs its own class rather than inline
+   styles on .editLeadBtn — inline styles outrank the :hover rule, which
+   left the button with no hover feedback at all. */
+.downloadLeadBtn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.38rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border-color); cursor: pointer;
+  transition: all 0.15s ease;
+}
+.downloadLeadBtn:hover {
+  border-color: var(--primary-blue); color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+}
+
 /* ── Lead edit modal ── */
 .modalOverlay {
   position: fixed; inset: 0; z-index: 1050;

@@ -97,6 +97,10 @@
 }
 .catBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .catBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
+/* The selected pill already has a solid blue fill, so the hover colour above
+   would render blue text on blue. Keep it white. Must stay after .catBtn:hover
+   — equal specificity, so source order decides. */
+.catBtnActive:hover { color: white; }
 
 /* Section label */
 .section { margin-bottom: 3rem; }

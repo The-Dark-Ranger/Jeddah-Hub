@@ -21,6 +21,7 @@ interface Initiative {
   objective?: string;
   impact?: string;
   impactAreas?: string[];
+  imageUrl?: string;
   images?: string[];
   members?: { userId: string; role?: string }[];
   createdAt?: string;
@@ -84,7 +85,12 @@ export default function InitiativePage() {
   const isActive = !initiative.status || initiative.status === 'active';
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
   const heroColor = initiative.color || categoryColor;
-  const photos = (initiative.images || []).filter(Boolean);
+  /* Cover image first, then the gallery photos, deduped — so the curator's
+   * cover doubles as the faded hero backdrop without having to be re-added to
+   * the photo list just to produce that effect. */
+  const photos = [...new Set(
+    [initiative.imageUrl, ...(initiative.images || [])].filter(Boolean),
+  )] as string[];
 
   return (
     <main className={styles.page}>

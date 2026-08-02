@@ -1,0 +1,149 @@
+.wrap { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.count {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--text-muted); font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+
+/* ── Main stage ── */
+.stage {
+  position: relative; width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px; overflow: hidden;
+  background: var(--background-alt);
+  border: 1px solid var(--border-color);
+}
+
+.stageBtn {
+  display: block; width: 100%; height: 100%; padding: 0;
+  border: none; background: none; cursor: zoom-in;
+}
+
+.stageImg {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  animation: photoIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes photoIn {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.expandHint {
+  position: absolute; inset-inline-end: 10px; bottom: 10px;
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5); color: #fff;
+  opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+}
+.stage:hover .expandHint { opacity: 1; }
+
+/* ── Navigation arrows ── */
+.nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.45); color: #fff;
+  border: none; cursor: pointer; z-index: 2;
+  transition: background 0.15s ease, transform 0.15s ease;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.nav:hover { background: rgba(0,0,0,0.72); }
+.nav:active { transform: translateY(-50%) scale(0.93); }
+.navPrev { inset-inline-start: 10px; }
+.navNext { inset-inline-end: 10px; }
+
+/* Arrows are drawn for LTR; mirror them when the page is RTL. */
+[dir="rtl"] .nav svg { transform: scaleX(-1); }
+
+.navLightbox { width: 44px; height: 44px; background: rgba(255,255,255,0.14); }
+.navLightbox:hover { background: rgba(255,255,255,0.26); }
+
+/* ── Thumbnail strip ── */
+.strip {
+  display: flex; gap: 0.5rem;
+  overflow-x: auto; padding-bottom: 0.25rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.strip::-webkit-scrollbar { height: 4px; }
+
+.thumb {
+  flex: 0 0 auto; width: 84px; height: 60px;
+  border-radius: 8px; overflow: hidden; padding: 0;
+  border: 2px solid transparent; cursor: pointer;
+  opacity: 0.55; scroll-snap-align: center;
+  transition: opacity 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  background: var(--background-alt);
+}
+.thumb:hover { opacity: 0.85; transform: translateY(-2px); }
+.thumbActive { opacity: 1; border-color: var(--primary-blue); }
+.thumbImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Lightbox ── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(3, 8, 20, 0.94);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 3.5rem 1rem;
+  animation: lbIn 0.2s ease both;
+}
+@keyframes lbIn { from { opacity: 0; } to { opacity: 1; } }
+
+.lightboxStage {
+  position: relative; max-width: min(1100px, 100%); max-height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.lightboxImg {
+  max-width: 100%; max-height: calc(100vh - 7rem);
+  object-fit: contain; border-radius: 10px; display: block;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+  animation: photoIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.close {
+  position: absolute; top: 1rem; inset-inline-end: 1rem;
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.12); color: #fff;
+  border: none; cursor: pointer; z-index: 3;
+  transition: background 0.15s ease;
+}
+.close:hover { background: rgba(255,255,255,0.26); }
+
+.lightboxCount {
+  position: absolute; bottom: 1.15rem; left: 50%; transform: translateX(-50%);
+  padding: 0.3rem 0.85rem; border-radius: 20px;
+  background: rgba(255,255,255,0.12); color: #fff;
+  font-size: 0.8rem; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .stage { aspect-ratio: 4 / 3; border-radius: 12px; }
+  .nav { width: 34px; height: 34px; }
+  .navPrev { inset-inline-start: 6px; }
+  .navNext { inset-inline-end: 6px; }
+  .thumb { width: 66px; height: 48px; }
+  .lightbox { padding: 3rem 0.5rem; }
+  .lightboxImg { max-height: calc(100vh - 6rem); border-radius: 6px; }
+  /* Touch devices have no hover, so keep the expand affordance visible. */
+  .expandHint { opacity: 1; }
+}
+
+@media (hover: none) {
+  .expandHint { opacity: 1; }
+  .thumb { opacity: 0.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageImg, .lightboxImg { animation: none; }
+  .thumb:hover { transform: none; }
+}

@@ -56,12 +56,14 @@
     "retreatVenues": "٩ أماكن",
     "retreatVenuesTitle": "أماكن الملتقى",
     "retreatCta": "استكشف الملتقى",
-    "newsletterSuccess": "شكراً لاشتراكك!",
     "newsletterError": "فشل الاشتراك. يرجى المحاولة مرة أخرى.",
     "stayTunedTitle": "ترقّب",
     "stayTunedDesc": "يعمل فريقنا على تحضير شيء مميز لمجتمعنا. عد قريباً لآخر أخبار مركز جدة.",
     "activityHighlightsLabel": "أبرز ما يميزه",
-    "newsletterSubtitle": "اشترك في نشرتنا الإخبارية الشهرية."
+    "newsletterSubtitle": "اشترك في نشرتنا الإخبارية الشهرية.",
+    "newsletterSubscribing": "جارٍ الاشتراك…",
+    "newsletterSuccessTitle": "أنت الآن ضمننا! مرحباً بك في مركز جدة.",
+    "newsletterSuccessDetail": "تحقق من بريدك الإلكتروني لرسالة ترحيب تحتوي على كل ما تحتاج معرفته. سنُبقيك على اطلاع بأحدث المبادرات والقصص والفعاليات."
   },
   "AboutPage": {
     "title": "من نحن",

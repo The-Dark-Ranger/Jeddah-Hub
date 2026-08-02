@@ -5,6 +5,7 @@ import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from '
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale } from 'next-intl';
+import ModalPortal from '@/components/ModalPortal';
 import styles from './Messages.module.css';
 
 interface ContactMessage {
@@ -249,6 +250,7 @@ export default function MessagesPage() {
 
       {/* Compose / Reply modal */}
       {composeOpen && (
+        <ModalPortal>
         <div className={styles.overlay} onClick={() => setComposeOpen(false)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -295,6 +297,7 @@ export default function MessagesPage() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

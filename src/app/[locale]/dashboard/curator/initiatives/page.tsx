@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import ImageUploader from '@/components/ImageUploader';
+import ModalPortal from '@/components/ModalPortal';
 import styles from './Initiatives.module.css';
 
 interface Initiative {
@@ -531,6 +532,7 @@ export default function ManageInitiatives() {
 
       {/* ── Modal (create & edit) ── */}
       {modalMode !== null && (
+        <ModalPortal>
         <div
           className={styles.modalOverlay}
           onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
@@ -571,6 +573,7 @@ export default function ManageInitiatives() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* ── Filter tabs ── */}

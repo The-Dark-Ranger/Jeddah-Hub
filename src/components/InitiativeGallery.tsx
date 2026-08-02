@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import ModalPortal from './ModalPortal';
 import styles from './InitiativeGallery.module.css';
 
 interface Props {
@@ -169,6 +170,7 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
 
       {/* Full-screen lightbox */}
       {lightbox && (
+        <ModalPortal>
         <div
           className={styles.lightbox}
           onClick={() => setLightbox(false)}
@@ -203,6 +205,7 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
             </div>
           )}
         </div>
+        </ModalPortal>
       )}
     </section>
   );

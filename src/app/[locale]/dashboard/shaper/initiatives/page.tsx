@@ -7,6 +7,7 @@ import {
 import { db } from '@/lib/firebase';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import ImageUploader from '@/components/ImageUploader';
+import ModalPortal from '@/components/ModalPortal';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
@@ -451,6 +452,7 @@ export default function JoinInitiatives() {
 
       {/* Lead edit modal — full curator-equivalent form */}
       {leadEditInit && (
+        <ModalPortal>
         <div
           className={styles.modalOverlay}
           onClick={e => { if (e.target === e.currentTarget) closeLeadEdit(); }}
@@ -475,6 +477,7 @@ export default function JoinInitiatives() {
             </div>
           </form>
         </div>
+        </ModalPortal>
       )}
 
       {/* Incoming join requests (for leads) */}

@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
+import InstagramEmbed from '@/components/InstagramEmbed';
 import styles from './Post.module.css';
 
 interface Comment {
@@ -202,6 +203,7 @@ export default function NewsPostPage() {
               para.trim() ? <p key={i}>{para}</p> : <br key={i} />
             )}
           </div>
+          {post.instagramUrl && <InstagramEmbed url={post.instagramUrl} />}
           <div className={styles.articleActions}>
             <button
               className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}

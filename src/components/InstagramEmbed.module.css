@@ -1,0 +1,36 @@
+.wrap {
+  display: flex;
+  justify-content: center;
+  margin: 1.75rem 0;
+}
+
+/* Instagram's script overwrites this element's content with an iframe once
+   it processes; until then (or if it never runs) these rules style our
+   fallback link. */
+.blockquote {
+  width: 100%;
+  max-width: 540px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 2.25rem 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.fallback:hover { color: var(--primary-blue); background: var(--primary-blue-glow); }
+
+@media (max-width: 480px) {
+  .fallback { padding: 1.75rem 1rem; font-size: 0.85rem; }
+}

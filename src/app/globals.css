@@ -80,7 +80,13 @@
 /* -- Reset ---------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; padding: 0; margin: 0; }
 
-html { scroll-behavior: smooth; font-size: 16px; }
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  /* Stop iOS inflating text when a phone is rotated to landscape. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 html, body {
   max-width: 100vw;
@@ -90,6 +96,18 @@ html, body {
   /* Smooth theme transitions */
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Grey flash on tap looks broken next to the custom active states. */
+  -webkit-tap-highlight-color: transparent;
+  /* Stop scroll chaining from bubbling to the page behind modals. */
+  overscroll-behavior-y: none;
+}
+
+/* Anchor targets shouldn't hide behind the fixed mobile navbar. */
+:target { scroll-margin-top: 80px; }
 
 /* LTR font stack */
 body.ltr {
@@ -108,11 +126,19 @@ body.rtl {
   flex: 1;
   display: flex;
   flex-direction: column;
-  animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Remounted per route by <PageTransition>, so this replays on every
+   client-side navigation rather than only on first paint. */
+.page-enter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  animation: pageFadeIn 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -158,11 +184,9 @@ html[data-lang-switch] ::view-transition-new(root) {
 @keyframes lang-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes lang-fade-in  { from { opacity: 0; } to { opacity: 1; } }
 
-/* Suppress double-fade: when View Transitions API handles the entrance,
-   the .page-content CSS animation is redundant */
-@supports (view-transition-name: none) {
-  .page-content { animation: none; }
-}
+/* @view-transition only covers cross-document navigation (direct loads and
+   reloads). Client-side route changes are animated by .page-enter instead, so
+   the two never run at the same time and neither needs suppressing. */
 
 /* -- Typography helpers --------------------------------------- */
 a  { color: inherit; text-decoration: none; }
@@ -300,6 +324,15 @@ input, textarea, select {
   body  { padding-inline: 0; }
 }
 
+/* Respect the notch / home indicator on modern phones. */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .page-content {
+      padding-inline: max(0px, env(safe-area-inset-left), env(safe-area-inset-right));
+    }
+  }
+}
+
 /* Center page content on very wide screens */
 .page-content {
   width: 100%;
@@ -308,5 +341,14 @@ input, textarea, select {
 
 /* -- Reduced motion ----------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+
+  /* View-transition pseudo-elements are not matched by the * selector above,
+     so they need disabling explicitly. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+
+  .page-enter { animation: none !important; }
 }

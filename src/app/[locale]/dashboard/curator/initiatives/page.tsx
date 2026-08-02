@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import ImageUploader from '@/components/ImageUploader';
 import styles from './Initiatives.module.css';
 
 interface Initiative {
@@ -103,17 +104,13 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
       </div>
 
-      <div className={styles.editRow3}>
+      <div className={styles.editRow}>
         <div className={styles.formField}>
           <label className={styles.label}>
             {t('fieldImpactAreas')}
             <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
           </label>
           <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldCoverImage')}</label>
-          <input className={styles.input} value={form.imageUrl} onChange={mk('imageUrl')} placeholder={t('phCoverImageUrl')} />
         </div>
         <div className={styles.formField}>
           <label className={styles.label}>{t('fieldThemeColor')}</label>
@@ -132,13 +129,7 @@ function FormFields({ form, onChange }: FormFieldsProps) {
         </div>
       </div>
 
-      <div className={styles.formField}>
-        <label className={styles.label}>
-          {t('fieldPhotos')}
-          <span className={styles.fieldHint}>{t('fieldPhotosHint')}</span>
-        </label>
-        <textarea className={styles.textarea} value={form.images} onChange={mk('images')} placeholder={t('phPhotoUrls')} rows={3} />
-      </div>
+      <ImageUploader coverUrl={form.imageUrl} photos={form.images} onChange={onChange} />
     </>
   );
 }
@@ -357,22 +348,32 @@ export default function ManageInitiatives() {
     e.preventDefault();
     if (!form.title) return;
     setSaving(true);
-    await addDoc(collection(db, 'initiatives'), {
-      ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
-    });
-    closeModal();
-    setSaving(false);
-    fetchAll();
+    try {
+      await addDoc(collection(db, 'initiatives'), {
+        ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
+      });
+      closeModal();
+      fetchAll();
+    } catch (err: any) {
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingId || !form.title) return;
     setSaving(true);
-    await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
-    closeModal();
-    setSaving(false);
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
+      closeModal();
+      fetchAll();
+    } catch (err: any) {
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSeedDefaults = async () => {

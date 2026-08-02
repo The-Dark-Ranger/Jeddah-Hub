@@ -72,6 +72,7 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
         <div className={styles.shaperAvatarWrap}>
           {shaper.photoURL
             ? <img src={shaper.photoURL} alt={name} className={styles.shaperAvatarImg}
+                loading="lazy" decoding="async"
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             : <div className={styles.shaperAvatar} style={{ background: gradient }}>
                 {initials(name)}
@@ -117,6 +118,7 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
       <div className={styles.curatorAvatarWrap}>
         {curator.photoURL
           ? <img src={curator.photoURL} alt={name} className={styles.curatorAvatarImg}
+              loading="lazy" decoding="async"
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           : <div className={styles.curatorAvatar} style={{ background: gradient }}>
               {initials(name)}

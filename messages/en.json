@@ -494,8 +494,8 @@
     "fieldImpactAreasHint": "comma-separated",
     "fieldThemeColor": "Theme Color",
     "fieldThemeColorNone": "No color",
-    "fieldCoverImage": "Cover Image URL",
-    "fieldPhotos": "Photo URLs",
+    "fieldCoverImage": "Cover Image",
+    "fieldPhotos": "Photos",
     "fieldPhotosHint": "one per line",
     "phInitiativeName": "Initiative name...",
     "phStat": "e.g. 500 beneficiaries",
@@ -553,9 +553,9 @@
     "phDisplayNameAr": "اسمك بالعربية",
     "displayNameArHint": "Your name in Arabic, shown to Arabic-speaking visitors on the website.",
     "socialsHint": "Your social links appear as icons on the Our Shapers page.",
-    "photoUrl": "Profile Photo URL",
+    "photoUrl": "Profile Photo",
     "phPhotoUrl": "https://example.com/photo.jpg",
-    "photoUrlHint": "Paste a direct image URL. It will appear as your avatar in the dashboard and on the Our Shapers page.",
+    "photoUrlHint": "Upload a photo from your device, or paste a direct image link. It appears as your avatar in the dashboard and on the Our Shapers page.",
     "photoPreview": "Preview",
     "joinRequestPending": "Pending Approval",
     "joinRequestAccepted": "Request Accepted",
@@ -630,6 +630,10 @@
     "approveRemoval": "Remove",
     "declineRemoval": "Decline",
     "requestedToRemove": "requested to remove from",
-    "by": "by"
+    "by": "by",
+    "uploadPhoto": "Upload photo",
+    "changePhoto": "Change photo",
+    "avatarHint": "Square images work best. Larger photos are resized automatically.",
+    "avatarBrokenUrl": "That image link could not be loaded."
   }
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
+import AvatarUploader from '@/components/AvatarUploader';
 import styles from './Profile.module.css';
 
 interface ProfileForm {
@@ -48,16 +49,17 @@ export default function MyProfile() {
       setLoaded(true);
     });
 
-    getDocs(collection(db, 'initiatives')).then(snap => {
+    // Filter server-side so archived initiatives are never downloaded.
+    getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))).then(snap => {
       const joined: {id: string; title: string}[] = [];
       snap.docs.forEach(d => {
         const data = d.data();
-        if (data.status === 'active' && data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) {
+        if (data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) {
           joined.push({ id: d.id, title: data.title || d.id });
         }
       });
       setMyProjects(joined);
-    });
+    }).catch(() => setMyProjects([]));
   }, [user]);
 
   const set = (k: keyof ProfileForm) =>
@@ -124,18 +126,14 @@ export default function MyProfile() {
               <input className={styles.input} value={form.displayNameAr} onChange={set('displayNameAr')} placeholder={t('phDisplayNameAr')} dir="rtl" />
               <span className={styles.hint}>{t('displayNameArHint')}</span>
             </div>
-            <div className={styles.formField}>
-              <label className={styles.label}>{t('photoUrl')}</label>
-              <input className={styles.input} value={form.photoURL} onChange={set('photoURL')} placeholder={t('phPhotoUrl')} type="url" />
-              <span className={styles.hint}>{t('photoUrlHint')}</span>
-            </div>
           </div>
-          {form.photoURL && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src={form.photoURL} alt="preview" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{t('photoPreview')}</span>
-            </div>
-          )}
+          <div className={styles.formField}>
+            <label className={styles.label}>{t('photoUrl')}</label>
+            <AvatarUploader
+              value={form.photoURL}
+              onChange={v => setForm(f => ({ ...f, photoURL: v }))}
+            />
+          </div>
           <div className={styles.formField}>
             <label className={styles.label}>{t('bioLabel')}</label>
             <textarea className={styles.textarea} value={form.bio} onChange={set('bio')} placeholder={t('phBio')} rows={3} />

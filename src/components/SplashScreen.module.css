@@ -10,7 +10,7 @@
 }
 
 .overlay.dismissing {
-  animation: splashOut 0.55s ease both;
+  animation: splashOut 0.42s cubic-bezier(0.4, 0, 1, 1) both;
   pointer-events: none;
 }
 
@@ -119,19 +119,30 @@
   overflow: hidden;
 }
 
+/* Indeterminate: the splash now leaves when the page is actually ready, so a
+   fixed-duration sweep would either stall at 100% or get cut off mid-way. */
 .progressFill {
+  width: 45%;
   height: 100%;
   background: #fff;
   border-radius: 99px;
-  animation: progressSweep 1.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: progressShuttle 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
-@keyframes progressSweep {
-  from { width: 0%; }
-  to   { width: 100%; }
+@keyframes progressShuttle {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(240%); }
+}
+
+[dir="rtl"] .progressFill {
+  animation-name: progressShuttleRtl;
+}
+@keyframes progressShuttleRtl {
+  0%   { transform: translateX(110%); }
+  100% { transform: translateX(-240%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .inner, .progressFill, .logoRing::before { animation: none !important; }
-  .progressFill { width: 100%; }
+  .overlay, .inner, .logoRing::before { animation: none !important; }
+  .progressFill { animation: none !important; width: 100%; transform: none; }
 }

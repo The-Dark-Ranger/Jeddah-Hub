@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import styles from './SplashScreen.module.css';
 
+/** Shown below this and the splash is just a flash. */
+const MIN_VISIBLE_MS = 450;
+/** Never hold the user back longer than this, however slow the page is. */
+const MAX_VISIBLE_MS = 1600;
+const DISMISS_MS     = 420;
+
 export default function SplashScreen({ locale }: { locale: string }) {
   const isRtl = locale === 'ar';
   const [visible,    setVisible]    = useState(false);
@@ -10,8 +16,7 @@ export default function SplashScreen({ locale }: { locale: string }) {
   const [isDark,     setIsDark]     = useState(false);
 
   useEffect(() => {
-    // Detect theme from the html element before showing splash
-    const html = document.documentElement;
+    const html       = document.documentElement;
     const savedTheme = html.getAttribute('data-theme');
     const sysDark    = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(savedTheme === 'dark' || (savedTheme !== 'light' && sysDark));
@@ -25,17 +30,52 @@ export default function SplashScreen({ locale }: { locale: string }) {
         if (isFirstVisit) sessionStorage.setItem('jh-visited', '1');
         shouldShow = true;
       }
-    } catch { /* sessionStorage unavailable, skip splash */ }
+    } catch { /* sessionStorage unavailable — skip the splash entirely */ }
 
     if (!shouldShow) return;
 
     setVisible(true);
-    const t = setTimeout(() => {
-      setDismissing(true);
-      setTimeout(() => setVisible(false), 600);
-    }, 2200);
-    return () => clearTimeout(t);
+    const start = performance.now();
+    let settled = false;
+    let dismissTimer: ReturnType<typeof setTimeout>;
+    let holdTimer:    ReturnType<typeof setTimeout>;
+
+    /* Leave as soon as the page is genuinely ready rather than after a fixed
+     * wait — but never so fast that the splash just flickers. */
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      const hold = Math.max(0, MIN_VISIBLE_MS - (performance.now() - start));
+      holdTimer = setTimeout(() => {
+        setDismissing(true);
+        dismissTimer = setTimeout(() => setVisible(false), DISMISS_MS);
+      }, hold);
+    };
+
+    const loaded = document.readyState === 'complete'
+      ? Promise.resolve()
+      : new Promise<void>(res => window.addEventListener('load', () => res(), { once: true }));
+
+    // Waiting on fonts avoids the wordmark reflowing the moment the splash lifts.
+    const fonts = document.fonts?.ready ?? Promise.resolve();
+
+    Promise.all([loaded, fonts]).then(finish).catch(finish);
+    const cap = setTimeout(finish, MAX_VISIBLE_MS);
+
+    return () => {
+      clearTimeout(cap);
+      clearTimeout(holdTimer);
+      clearTimeout(dismissTimer);
+    };
   }, []);
+
+  /* Hold the scroll position while the overlay covers the page. */
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -51,8 +91,10 @@ export default function SplashScreen({ locale }: { locale: string }) {
         <div className={styles.logoRing}>
           <img
             src={logoSrc}
-            alt="Jeddah Hub"
+            alt=""
             className={styles.logo}
+            fetchPriority="high"
+            decoding="async"
             onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
           />
         </div>

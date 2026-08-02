@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiative.module.css';
+import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
 
 interface Initiative {
@@ -208,6 +209,13 @@ export default function InitiativePage() {
             </section>
           )}
         </div>
+
+        {photos.length > 0 && (
+          <>
+            <div className={styles.divider} />
+            <InitiativeGallery photos={photos} title={initiative.title} accent={heroColor} />
+          </>
+        )}
 
         {initiative.impactAreas && initiative.impactAreas.length > 0 && (
           <>

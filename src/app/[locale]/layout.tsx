@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SplashScreen from '@/components/SplashScreen';
 import LangSwitchHandler from '@/components/LangSwitchHandler';
+import PageTransition from '@/components/PageTransition';
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));
@@ -76,7 +77,7 @@ export default async function LocaleLayout({
             <AuthProvider>
               <Navbar />
               <div className="page-content">
-                {children}
+                <PageTransition>{children}</PageTransition>
               </div>
               <Footer />
             </AuthProvider>

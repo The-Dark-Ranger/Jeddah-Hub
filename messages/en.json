@@ -132,7 +132,13 @@
     "archiveStatus": "Completed",
     "shapers": "Shapers",
     "keyResult": "Key Result",
-    "teamMembers": "Team"
+    "teamMembers": "Team",
+    "galleryTitle": "Gallery",
+    "galleryPrev": "Previous photo",
+    "galleryNext": "Next photo",
+    "galleryExpand": "View full screen",
+    "galleryClose": "Close",
+    "galleryGoTo": "Go to photo"
   },
   "NewsPage": {
     "title": "Voices from the Hub",

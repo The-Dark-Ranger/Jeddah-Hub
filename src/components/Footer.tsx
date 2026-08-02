@@ -6,6 +6,11 @@ import { useTranslations } from 'next-intl';
 import { useTheme } from '@/context/ThemeContext';
 import styles from './Footer.module.css';
 
+// Matches AboutPage's "Hub Founded" milestone (2015). Computed at render
+// time, and the page renders per-request rather than being frozen into a
+// static build, so this — and the current year below — never go stale.
+const FOUNDING_YEAR = 2015;
+
 function FooterLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
   if (external || href.startsWith('http')) {
     return (
@@ -23,12 +28,14 @@ export default function Footer() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const currentYear = new Date().getFullYear();
 
   const EXPLORE_LINKS = [
     { href: '/',                label: tn('home') },
     { href: '/about',           label: tn('about') },
     { href: '/projects',        label: tn('projects') },
     { href: '/news',            label: tn('news') },
+    { href: '/impact-reports',  label: tn('impactReports') },
     { href: '/contact',         label: tn('contact') },
   ];
 
@@ -114,8 +121,14 @@ export default function Footer() {
       <div className={styles.bottomBar}>
         <div className={styles.bottomInner}>
           <p className={styles.copyright}>
-            &copy; {new Date().getFullYear()} {t('copyright')}
+            &copy; {FOUNDING_YEAR}
+            {currentYear > FOUNDING_YEAR ? `–${currentYear}` : ''} {t('copyright')}
           </p>
+          <nav className={styles.legalLinks}>
+            <FooterLink href="/privacy-policy" label={t('privacyPolicy')} />
+            <span className={styles.legalDivider} aria-hidden="true">·</span>
+            <FooterLink href="/terms-of-use" label={t('termsOfUse')} />
+          </nav>
         </div>
       </div>
     </footer>

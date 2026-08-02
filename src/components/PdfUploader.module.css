@@ -1,0 +1,71 @@
+.wrap { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* ── Drop zone (no file yet) ── */
+.dropZone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.4rem;
+  width: 100%; padding: 1.75rem 1rem;
+  border: 1.5px dashed var(--border-color); border-radius: 10px;
+  background: var(--input-bg); color: var(--text-muted);
+  font-size: 0.86rem; font-weight: 600; cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.dropZone:hover:not(:disabled) {
+  border-color: var(--primary-blue); color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+}
+.dropZoneActive {
+  border-color: var(--primary-blue); color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+}
+.dropZone:disabled { cursor: not-allowed; }
+
+.dropHint { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+
+/* ── Upload progress ── */
+.progressWrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%; max-width: 260px; }
+.progressTrack { width: 100%; height: 5px; border-radius: 3px; background: var(--border-color); overflow: hidden; }
+.progressFill { height: 100%; border-radius: 3px; background: var(--primary-blue); transition: width 0.15s ease; }
+.progressText { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* ── Uploaded file card ── */
+.fileCard {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.85rem 1rem; border-radius: 10px;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+.fileIcon {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(239,68,68,0.1); color: #ef4444;
+}
+.fileInfo { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.fileName {
+  font-size: 0.88rem; font-weight: 600; color: var(--text-main);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fileMeta { font-size: 0.76rem; color: var(--text-muted); }
+
+.fileActions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.viewBtn, .replaceBtn, .removeFileBtn {
+  padding: 0.32rem 0.7rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--border-color); background: transparent; color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center;
+}
+.viewBtn:hover, .replaceBtn:hover:not(:disabled) { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
+.removeFileBtn:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.06); }
+.replaceBtn:disabled, .removeFileBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.error {
+  font-size: 0.8rem; color: var(--danger);
+  background: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px; padding: 0.5rem 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .fileCard { flex-direction: column; align-items: flex-start; }
+  .fileActions { width: 100%; }
+  .viewBtn, .replaceBtn, .removeFileBtn { flex: 1; justify-content: center; }
+}

@@ -1,0 +1,35 @@
+.page { min-height: 100vh; }
+
+.header {
+  position: relative;
+  padding: 5.5rem 1.5rem 7rem;
+  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
+  text-align: center;
+  overflow: hidden;
+}
+.headerWave { position: absolute; bottom: -1px; left: 0; right: 0; z-index: 1; pointer-events: none; }
+.headerContent { max-width: 640px; margin-inline: auto; position: relative; z-index: 1; }
+.headerTitle    { font-size: clamp(2rem,4vw,3rem); font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: .75rem; }
+.headerSubtitle { font-size: 1.1rem; color: rgba(255,255,255,0.75); line-height: 1.6; }
+.headerMeta { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-top: 1rem; }
+
+.container { max-width: 760px; margin-inline: auto; padding: 3.5rem 1.5rem 6rem; }
+
+.intro { font-size: 1.02rem; color: var(--text-muted); line-height: 1.8; margin-bottom: 2.5rem; }
+
+.sections { display: flex; flex-direction: column; }
+.section { padding: 2rem 0; border-bottom: 1px solid var(--border-color); }
+.section:last-child { border-bottom: none; }
+
+.sectionTitle {
+  font-size: 1.15rem; font-weight: 700; color: var(--text-main);
+  margin-bottom: 0.9rem; letter-spacing: -0.01em;
+}
+.sectionBody { display: flex; flex-direction: column; gap: 0.85rem; }
+.sectionBody p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.8; }
+.sectionBody a { color: var(--primary-blue); text-decoration: underline; text-underline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .header { padding: 4rem 1.25rem 5.5rem; }
+  .container { padding: 2.5rem 1.25rem 4rem; }
+}

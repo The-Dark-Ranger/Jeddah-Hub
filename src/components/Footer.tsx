@@ -35,7 +35,6 @@ export default function Footer() {
     { href: '/about',           label: tn('about') },
     { href: '/projects',        label: tn('projects') },
     { href: '/news',            label: tn('news') },
-    { href: '/impact-reports',  label: tn('impactReports') },
     { href: '/contact',         label: tn('contact') },
   ];
 

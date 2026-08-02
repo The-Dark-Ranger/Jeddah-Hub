@@ -78,20 +78,17 @@
   margin-top: 1rem; padding: 1rem; border-radius: 10px;
   background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
   color: #059669; text-align: start;
+  animation: successIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes successIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .successBox { animation: none; }
 }
 .successTitle { font-size: 0.88rem; font-weight: 700; margin-bottom: 3px; color: #059669; }
 .successDetail { font-size: 0.82rem; line-height: 1.55; color: #047857; }
-
-.infoMessage {
-  margin-top: 0.75rem;
-  font-size: 0.85rem; color: var(--primary-blue);
-}
-
-.successMessage {
-  margin-top: 1rem;
-  color: #10b981;
-  font-size: 0.9rem;
-}
 
 .errorMessage {
   margin-top: 1rem;

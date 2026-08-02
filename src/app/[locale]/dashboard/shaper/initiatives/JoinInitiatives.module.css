@@ -14,7 +14,7 @@
 .incomingSection {
   background: var(--card-bg); border: 1px solid var(--border-color);
   border-radius: 14px; padding: 1.5rem;
-  border-left: 3px solid var(--primary-blue);
+  border-inline-start: 3px solid var(--primary-blue);
 }
 .sectionTitle {
   display: flex; align-items: center; gap: 0.6rem;

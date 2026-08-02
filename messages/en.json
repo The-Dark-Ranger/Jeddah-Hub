@@ -56,12 +56,14 @@
     "retreatVenues": "9 Venues",
     "retreatVenuesTitle": "Retreat Venues",
     "retreatCta": "Explore the Retreat",
-    "newsletterSuccess": "Thank you for subscribing!",
     "newsletterError": "Failed to subscribe. Please try again.",
     "stayTunedTitle": "Stay Tuned",
     "stayTunedDesc": "Something exciting is being planned for our community. Check back soon for the latest from Jeddah Hub.",
     "activityHighlightsLabel": "Highlights",
-    "newsletterSubtitle": "Subscribe to our monthly newsletter."
+    "newsletterSubtitle": "Subscribe to our monthly newsletter.",
+    "newsletterSubscribing": "Subscribing…",
+    "newsletterSuccessTitle": "You're in! Welcome to Jeddah Hub.",
+    "newsletterSuccessDetail": "Check your inbox for a welcome email with everything you need to know. We'll keep you posted on new initiatives, stories, and events."
   },
   "AboutPage": {
     "title": "Who We Are",

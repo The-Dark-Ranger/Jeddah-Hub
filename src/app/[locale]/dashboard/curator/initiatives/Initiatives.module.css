@@ -364,7 +364,7 @@
 /* Leave requests section */
 .leaveSection {
   background: var(--card-bg); border: 1px solid var(--border-color);
-  border-left: 3px solid var(--danger); border-radius: 14px; padding: 1.25rem 1.5rem;
+  border-inline-start: 3px solid var(--danger); border-radius: 14px; padding: 1.25rem 1.5rem;
 }
 .leaveSectionTitle {
   display: flex; align-items: center; gap: 0.5rem;
@@ -401,7 +401,7 @@
 /* Removal requests section */
 .removalSection {
   background: var(--card-bg); border: 1px solid var(--border-color);
-  border-left: 3px solid var(--warning); border-radius: 14px; padding: 1.25rem 1.5rem;
+  border-inline-start: 3px solid var(--warning); border-radius: 14px; padding: 1.25rem 1.5rem;
 }
 .removalSectionTitle {
   display: flex; align-items: center; gap: 0.5rem;

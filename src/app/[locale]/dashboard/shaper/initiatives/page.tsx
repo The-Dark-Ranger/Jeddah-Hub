@@ -506,7 +506,7 @@ export default function JoinInitiatives() {
 
       {/* Incoming leave requests (for leads) */}
       {incomingLeaveRequests.length > 0 && (
-        <div className={styles.incomingSection} style={{ borderLeftColor: 'var(--danger)' }}>
+        <div className={styles.incomingSection} style={{ borderInlineStartColor: 'var(--danger)' }}>
           <h3 className={styles.sectionTitle}>
             {t('incomingLeaveRequests')}
             <span className={styles.badge} style={{ background: 'var(--danger)' }}>{incomingLeaveRequests.length}</span>

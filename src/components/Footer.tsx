@@ -6,10 +6,10 @@ import { useTranslations } from 'next-intl';
 import { useTheme } from '@/context/ThemeContext';
 import styles from './Footer.module.css';
 
-// Matches AboutPage's "Hub Founded" milestone (2015). Computed at render
-// time, and the page renders per-request rather than being frozen into a
-// static build, so this — and the current year below — never go stale.
-const FOUNDING_YEAR = 2015;
+// Computed at render time, and the page renders per-request rather than
+// being frozen into a static build, so this — and the current year below —
+// never go stale.
+const FOUNDING_YEAR = 2011;
 
 function FooterLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
   if (external || href.startsWith('http')) {

@@ -1,4 +1,4 @@
-name: Deploy Firestore Rules
+name: Deploy Firebase Rules
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'firestore.rules'
       - 'firestore.indexes.json'
+      - 'storage.rules'
 
 jobs:
   deploy:
@@ -19,6 +20,18 @@ jobs:
         uses: w9jds/firebase-action@master
         with:
           args: deploy --only firestore
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      # Cloud Storage for Firebase must be enabled once in the console before
+      # this can succeed. Kept as its own step so a not-yet-enabled Storage
+      # bucket never blocks the Firestore rules above from deploying.
+      - name: Deploy Storage rules
+        continue-on-error: true
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only storage
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

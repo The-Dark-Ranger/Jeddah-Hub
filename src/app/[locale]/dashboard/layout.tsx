@@ -80,6 +80,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('roster')}
                 </Link></li>
+                <li><Link href="/dashboard/impact/reports" className={styles.navLink + (active('/dashboard/impact/reports') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  {t('impactReports')}
+                </Link></li>
                 <li><Link href="/dashboard/curator/blogs" className={styles.navLink + (active('/dashboard/curator/blogs') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>

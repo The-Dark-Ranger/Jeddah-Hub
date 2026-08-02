@@ -11,21 +11,34 @@ import Footer from '@/components/Footer';
 import SplashScreen from '@/components/SplashScreen';
 import LangSwitchHandler from '@/components/LangSwitchHandler';
 import PageTransition from '@/components/PageTransition';
+import { SITE_URL, alternateLanguages } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
+  const title = locale === 'ar'
+    ? '\u0635\u0646\u0627\u0639 \u062c\u062f\u0629 | \u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645'
+    : 'Jeddah Hub | Global Shapers Community';
+  const description = locale === 'ar'
+    ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645 \u2014 \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
+    : 'Global Shapers Community \u2014 Jeddah Hub. A network of young leaders driving positive change in Jeddah.';
+
   return {
-    title: locale === 'ar'
-      ? '\u0635\u0646\u0627\u0639 \u062c\u062f\u0629 | \u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645'
-      : 'Jeddah Hub | Global Shapers Community',
-    description: locale === 'ar'
-      ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645 \u2014 \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
-      : 'Global Shapers Community \u2014 Jeddah Hub. A network of young leaders driving positive change in Jeddah.',
+    metadataBase: new URL(SITE_URL),
+    title: { default: title, template: `%s | Jeddah Hub` },
+    description,
     icons: { icon: '/GSCJ.png', apple: '/GSCJ.png' },
+    alternates: { canonical: `/${locale}`, languages: alternateLanguages('/') },
+    openGraph: {
+      title, description, siteName: 'Jeddah Hub', url: `${SITE_URL}/${locale}`,
+      locale: locale === 'ar' ? 'ar_SA' : 'en_US', type: 'website',
+      images: [{ url: '/GSCJ.png' }],
+    },
+    twitter: { card: 'summary', title, description, images: ['/GSCJ.png'] },
   };
 }
 

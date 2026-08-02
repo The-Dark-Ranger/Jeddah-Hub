@@ -99,6 +99,30 @@
 .projectDesc   { color:var(--text-muted);line-height:1.65;font-size:.9rem;flex:1; }
 .projectBadge  { display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;background:rgba(16,185,129,.1);color:var(--success);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:auto; }
 
+/* ── Impact reports preview ── */
+.reportsList { display:flex;flex-direction:column;gap:.75rem;max-width:720px;margin-inline:auto; }
+.reportCard {
+  display:flex;align-items:center;gap:1rem;
+  background:var(--card-bg-solid);border:1px solid var(--border-color);border-radius:12px;
+  padding:1rem 1.25rem;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.reportCard:hover { transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.08);border-color:var(--primary-blue); }
+.reportIcon {
+  width:40px;height:40px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(239,68,68,.1);color:#ef4444;
+}
+.reportInfo  { flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem; }
+.reportTitle { font-size:.95rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.reportMeta  { font-size:.8rem;color:var(--text-muted); }
+.reportArrow { color:var(--text-muted);flex-shrink:0;transition:transform .18s ease,color .18s ease; }
+.reportCard:hover .reportArrow { transform:translateX(3px);color:var(--primary-blue); }
+/* Rotating the glyph itself (rather than mirroring translateX separately)
+   keeps the "forward" direction correct in RTL with one rule, matching the
+   dashboard's .actionArrow pattern. */
+[dir="rtl"] .reportArrow { transform:rotate(180deg); }
+[dir="rtl"] .reportCard:hover .reportArrow { transform:rotate(180deg) translateX(3px); }
+
 /* ── Members ── */
 .membersGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem; }
 .memberCard  { background:var(--card-bg-solid);border-radius:10px;padding:1.25rem 1rem;text-align:center;border:1px solid var(--border-color);transition:all .22s ease;cursor:default; }

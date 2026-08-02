@@ -102,8 +102,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Grey flash on tap looks broken next to the custom active states. */
   -webkit-tap-highlight-color: transparent;
-  /* Stop scroll chaining from bubbling to the page behind modals. */
-  overscroll-behavior-y: none;
 }
 
 /* Anchor targets shouldn't hide behind the fixed mobile navbar. */

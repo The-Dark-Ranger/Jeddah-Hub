@@ -9,6 +9,8 @@ export interface PlaceholderProject {
   objective?: string;
   impact?: string;
   impactAreas?: string[];
+  /** Cover image set by the curator — shown on the card and as the detail hero. */
+  imageUrl?: string;
   images?: string[];
   members?: { userId: string; role?: string }[];
   color?: string;

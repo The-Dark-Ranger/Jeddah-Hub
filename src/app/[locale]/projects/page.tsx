@@ -21,7 +21,9 @@ function ProjectCard({ project, archived, t, index = 0 }: {
 }) {
   const accentColor = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
   const isActive = !archived;
-  const imgs = project.images ?? [];
+  // Lead with the cover image, then the gallery. Deduped so a curator who also
+  // added the cover to the photo list does not get it twice.
+  const imgs = [...new Set([project.imageUrl, ...(project.images ?? [])].filter(Boolean))] as string[];
   const [imgIdx, setImgIdx] = useState(0);
 
   const prevImg = useCallback((e: React.MouseEvent) => {

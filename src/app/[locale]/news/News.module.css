@@ -39,6 +39,9 @@
 }
 .tag:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
 .tagActive  { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+/* Selected tag is filled blue — keep its label white instead of inheriting
+   the blue hover colour above, which would make it unreadable. */
+.tagActive:hover { color: #fff; }
 
 /* Grid - editorial card layout */
 .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 2rem; }

@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './SplashScreen.module.css';
 
-/** Shown below this and the splash is just a flash. */
-const MIN_VISIBLE_MS = 450;
+/** Floor, so the splash reads as a deliberate load rather than a flash. */
+const MIN_VISIBLE_MS = 1000;
 /** Never hold the user back longer than this, however slow the page is. */
-const MAX_VISIBLE_MS = 1600;
+const MAX_VISIBLE_MS = 2000;
 const DISMISS_MS     = 420;
 
 export default function SplashScreen({ locale }: { locale: string }) {
@@ -14,6 +14,8 @@ export default function SplashScreen({ locale }: { locale: string }) {
   const [visible,    setVisible]    = useState(false);
   const [dismissing, setDismissing] = useState(false);
   const [isDark,     setIsDark]     = useState(false);
+  /** Decided once on the first effect run; survives effect re-runs. */
+  const shouldShowRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     const html       = document.documentElement;
@@ -21,18 +23,25 @@ export default function SplashScreen({ locale }: { locale: string }) {
     const sysDark    = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(savedTheme === 'dark' || (savedTheme !== 'light' && sysDark));
 
-    let shouldShow = false;
-    try {
-      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-      const isReload     = nav?.type === 'reload';
-      const isFirstVisit = !sessionStorage.getItem('jh-visited');
-      if (isFirstVisit || isReload) {
-        if (isFirstVisit) sessionStorage.setItem('jh-visited', '1');
-        shouldShow = true;
-      }
-    } catch { /* sessionStorage unavailable — skip the splash entirely */ }
+    /* Decide once and remember it. Reading sessionStorage again on a second
+     * effect run (StrictMode, Fast Refresh, remount) would see the flag this
+     * effect just wrote, bail out before scheduling the dismiss timers, and
+     * strand the overlay on screen with `visible` already true. */
+    if (shouldShowRef.current === null) {
+      let decision = false;
+      try {
+        const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+        const isReload     = nav?.type === 'reload';
+        const isFirstVisit = !sessionStorage.getItem('jh-visited');
+        if (isFirstVisit || isReload) {
+          if (isFirstVisit) sessionStorage.setItem('jh-visited', '1');
+          decision = true;
+        }
+      } catch { /* sessionStorage unavailable — skip the splash entirely */ }
+      shouldShowRef.current = decision;
+    }
 
-    if (!shouldShow) return;
+    if (!shouldShowRef.current) return;
 
     setVisible(true);
     const start = performance.now();
@@ -69,12 +78,14 @@ export default function SplashScreen({ locale }: { locale: string }) {
     };
   }, []);
 
-  /* Hold the scroll position while the overlay covers the page. */
+  /* Deliberately no body scroll lock here. The overlay is fixed and covers the
+   * whole viewport, so scrolling behind it is invisible anyway — and a lock
+   * that fails to release leaves the entire page unscrollable. Clear any
+   * stale lock instead, so a stranded overlay can never trap the page. */
   useEffect(() => {
-    if (!visible) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    if (!visible && document.body.style.overflow === 'hidden') {
+      document.body.style.overflow = '';
+    }
   }, [visible]);
 
   if (!visible) return null;

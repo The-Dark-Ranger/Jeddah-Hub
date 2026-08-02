@@ -561,8 +561,7 @@ export default function JoinInitiatives() {
                       {t('viewMembers')} ({nonLeadMembers.length})
                     </button>
                     <button
-                      className={styles.editLeadBtn}
-                      style={{ background: 'transparent', color: 'var(--text-muted)', borderColor: 'var(--border-color)' }}
+                      className={styles.downloadLeadBtn}
                       onClick={() => {
                         const memberNames = Object.fromEntries(
                           (init.members as any[] || []).map((m: any) => [m.userId, getUserLabel(m.userId)])

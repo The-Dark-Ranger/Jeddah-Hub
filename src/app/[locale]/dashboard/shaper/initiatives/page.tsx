@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import ImageUploader from '@/components/ImageUploader';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
@@ -93,17 +94,13 @@ function LeadFormFields({ form, onChange }: LeadFormFieldsProps) {
         <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
       </div>
 
-      <div className={styles.editRow3}>
+      <div className={styles.editRow}>
         <div className={styles.formField}>
           <label className={styles.label}>
             {t('fieldImpactAreas')}
             <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
           </label>
           <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldCoverImage')}</label>
-          <input className={styles.input} value={form.imageUrl} onChange={mk('imageUrl')} placeholder={t('phCoverImageUrl')} />
         </div>
         <div className={styles.formField}>
           <label className={styles.label}>{t('fieldThemeColor')}</label>
@@ -117,13 +114,7 @@ function LeadFormFields({ form, onChange }: LeadFormFieldsProps) {
         </div>
       </div>
 
-      <div className={styles.formField}>
-        <label className={styles.label}>
-          {t('fieldPhotos')}
-          <span className={styles.fieldHint}>{t('fieldPhotosHint')}</span>
-        </label>
-        <textarea className={styles.textarea} value={form.images} onChange={mk('images')} placeholder={t('phPhotoUrls')} rows={3} />
-      </div>
+      <ImageUploader coverUrl={form.imageUrl} photos={form.images} onChange={onChange} />
     </>
   );
 }
@@ -448,7 +439,7 @@ export default function JoinInitiatives() {
       ));
       closeLeadEdit();
     } catch (err: any) {
-      alert(`Failed to save: ${err?.code || err?.message || 'unknown error'}`);
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
     } finally {
       setLeadSaving(false);
     }

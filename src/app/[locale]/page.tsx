@@ -6,7 +6,6 @@ import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
-import HomeImpactReports from '@/components/HomeImpactReports';
 import { SITE_URL } from '@/lib/seo';
 
 const ORGANIZATION_JSON_LD = {
@@ -136,11 +135,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5b. Impact reports preview (live from Firestore, hidden if none yet) */}
-      <HomeImpactReports />
-
       {/* 6. Shapers (live from Firestore) */}
-      <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
+      <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{t('members')}</h2>
@@ -155,7 +151,7 @@ export default function HomePage() {
       </section>
 
       {/* 7. Partners */}
-      <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
+      <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{t('partners')}</h2>
@@ -172,7 +168,7 @@ export default function HomePage() {
       </section>
 
       {/* 8. Newsletter */}
-      <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
+      <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}><NewsletterForm /></div>
       </section>
     </main>

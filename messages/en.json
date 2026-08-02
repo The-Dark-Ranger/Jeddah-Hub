@@ -339,9 +339,7 @@
     "justNow": "just now",
     "minutesAgo": "{n}m ago",
     "hoursAgo": "{n}h ago",
-    "daysAgo": "{n}d ago",
-    "instagramViewPost": "View this post on Instagram",
-    "instagramUnavailable": "View this post on Instagram (opens in a new tab)"
+    "daysAgo": "{n}d ago"
   },
   "Dashboard": {
     "loading": "Loading...",

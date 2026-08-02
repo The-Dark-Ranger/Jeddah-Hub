@@ -59,6 +59,7 @@ export default function HomeShapers() {
           <div key={s.uid} className={styles.memberCard}>
             {s.photoURL
               ? <img src={s.photoURL} alt={name} className={styles.memberAvatarImg}
+                  loading="lazy" decoding="async"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               : <div className={styles.memberAvatar} style={{ background: avatarGradient(s.uid, i) }}>
                   {initials(name)}

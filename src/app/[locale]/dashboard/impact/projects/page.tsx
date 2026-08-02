@@ -435,6 +435,8 @@ export default function ImpactProjects() {
                     <img
                       src={init.imageUrl}
                       alt={init.title}
+                      loading="lazy"
+                      decoding="async"
                       onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
                     />
                   </div>

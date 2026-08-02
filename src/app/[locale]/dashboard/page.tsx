@@ -3,7 +3,10 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, updateDoc, doc, orderBy } from 'firebase/firestore';
+import {
+  collection, getDocs, getCountFromServer, query, where,
+  updateDoc, doc, orderBy, limit,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import styles from './DashboardHome.module.css';
@@ -35,46 +38,82 @@ export default function DashboardHome() {
   }, [loading, user]);
 
   const fetchStats = async () => {
-    try {
-      const role = user?.role?.toLowerCase().replace(/\s+/g, '_');
-      const isCurator = role === 'curator' || role === 'vice_curator';
-      const [initSnap, blogSnap, subSnap, reportSnap] = await Promise.all([
-        getDocs(collection(db, 'initiatives')),
-        getDocs(collection(db, 'blogs')),
-        getDocs(collection(db, 'newsletter_subscribers')),
-        getDocs(collection(db, 'impact_reports')),
-      ]);
-      let myProjects = 0;
-      let activeInitiatives = 0;
-      initSnap.docs.forEach(d => {
-        const data = d.data();
-        if (data.status === 'active') activeInitiatives++;
-        if (user && data.members?.some((m: any) => m.userId === user.uid)) myProjects++;
-      });
+    const role      = user?.role?.toLowerCase().replace(/\s+/g, '_');
+    const isCurator = role === 'curator' || role === 'vice_curator';
+    const isShaper  = role === 'shaper'  || role === 'alumni';
 
-      let unreadMessages = 0;
-      if (isCurator) {
-        try {
-          const unreadSnap = await getDocs(query(collection(db, 'contact_messages'), where('read', '==', false)));
-          unreadMessages = unreadSnap.size;
-        } catch { /* ignore */ }
+    const next: Stats = {
+      initiatives: 0, activeInitiatives: 0, blogs: 0,
+      subscribers: 0, reports: 0, myProjects: 0, unreadMessages: 0,
+    };
 
-        try {
+    /* Each stat is isolated: a collection the current role may not read must
+     * leave its own card at zero rather than blanking every other card. */
+    const safe = async (fn: () => Promise<void>) => {
+      try { await fn(); } catch { /* leave this stat at 0 */ }
+    };
+
+    await Promise.all([
+      safe(async () => {
+        if (isShaper) {
+          // Shapers need per-document membership, so the active initiatives are
+          // downloaded once and every count derived from that one snapshot.
+          const [total, activeSnap] = await Promise.all([
+            getCountFromServer(collection(db, 'initiatives')),
+            getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
+          ]);
+          next.initiatives       = total.data().count;
+          next.activeInitiatives = activeSnap.size;
+          activeSnap.docs.forEach(d => {
+            const data = d.data();
+            if (user && data.members?.some((m: any) => m.userId === user.uid)) next.myProjects++;
+          });
+        } else {
+          // Nobody else needs the documents — count them server-side instead.
+          const [total, active] = await Promise.all([
+            getCountFromServer(collection(db, 'initiatives')),
+            getCountFromServer(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
+          ]);
+          next.initiatives       = total.data().count;
+          next.activeInitiatives = active.data().count;
+        }
+      }),
+
+      safe(async () => {
+        // Non-curators may only read published posts, so the query has to say
+        // so for the security rules to permit it at all.
+        const target = isCurator
+          ? collection(db, 'blogs')
+          : query(collection(db, 'blogs'), where('status', '==', 'published'));
+        next.blogs = (await getCountFromServer(target)).data().count;
+      }),
+
+      safe(async () => {
+        next.reports = (await getCountFromServer(collection(db, 'impact_reports'))).data().count;
+      }),
+
+      // Curator-only collections — never queried by other roles, so they no
+      // longer fail the whole dashboard with a permission error.
+      ...(isCurator ? [
+        safe(async () => {
+          next.subscribers = (await getCountFromServer(collection(db, 'newsletter_subscribers'))).data().count;
+        }),
+        safe(async () => {
+          next.unreadMessages = (await getCountFromServer(
+            query(collection(db, 'contact_messages'), where('read', '==', false)),
+          )).data().count;
+        }),
+        safe(async () => {
+          // The panel renders at most 10, so only fetch 10.
           const notifSnap = await getDocs(
-            query(collection(db, 'notifications'), orderBy('createdAt', 'desc')),
+            query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(10)),
           );
           setNotifications(notifSnap.docs.map(d => ({ id: d.id, ...d.data() } as Notification)));
-        } catch { /* ignore */ }
-      }
+        }),
+      ] : []),
+    ]);
 
-      setStats({
-        initiatives: initSnap.size, activeInitiatives,
-        blogs: blogSnap.size, subscribers: subSnap.size,
-        reports: reportSnap.size, myProjects, unreadMessages,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    setStats(next);
   };
 
   if (loading) return null;

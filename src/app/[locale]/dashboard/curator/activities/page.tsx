@@ -8,6 +8,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
+import ModalPortal from '@/components/ModalPortal';
 import styles from './Activities.module.css';
 
 interface Highlight { name: string; tag: string; }
@@ -231,6 +232,7 @@ export default function ActivitiesPage() {
       )}
 
       {modalOpen && (
+        <ModalPortal>
         <div className={styles.overlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -320,6 +322,7 @@ export default function ActivitiesPage() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

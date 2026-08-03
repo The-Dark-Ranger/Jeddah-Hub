@@ -100,7 +100,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
 
         {coverUrl ? (
           <div className={styles.coverPreview}>
-            <img src={coverUrl} alt="" className={styles.coverImg} />
+            <img src={coverUrl} alt="" className={styles.coverImg} loading="lazy" />
             <span className={styles.originTag}>{label(coverUrl)}</span>
             <button
               type="button"
@@ -157,7 +157,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
           <div className={styles.grid}>
             {photoList.map((src, i) => (
               <div key={i} className={styles.thumb}>
-                <img src={src} alt="" className={styles.thumbImg} />
+                <img src={src} alt="" className={styles.thumbImg} loading="lazy" />
                 <button
                   type="button"
                   className={styles.removeBtn}

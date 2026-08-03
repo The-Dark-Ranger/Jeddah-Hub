@@ -76,7 +76,7 @@ export default function NewsPostPage() {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'comments'),
+      collection(db, 'blog_comments'),
       where('blogId', '==', id),
       orderBy('createdAt', 'asc'),
     );
@@ -133,7 +133,7 @@ export default function NewsPostPage() {
     };
     setComments(prev => [...prev, optimistic]);
     setPosting(true);
-    const ref = await addDoc(collection(db, 'comments'), {
+    const ref = await addDoc(collection(db, 'blog_comments'), {
       blogId: id,
       authorId:   user.uid,
       authorName: user.displayName || user.email || t('globalShaper'),
@@ -149,7 +149,7 @@ export default function NewsPostPage() {
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm(t('confirmDeleteComment'))) return;
     setComments(prev => prev.filter(c => c.id !== commentId));
-    await deleteDoc(doc(db, 'comments', commentId));
+    await deleteDoc(doc(db, 'blog_comments', commentId));
   };
 
   /* Translated comments header */

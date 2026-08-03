@@ -5,11 +5,15 @@ import {
   collection, getDocs, updateDoc, doc, arrayUnion, deleteDoc, query, where
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './Roster.module.css';
 
 export default function ManageRoster() {
   const t = useTranslations('Dashboard');
+  const { user } = useAuth();
+  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [initiatives, setInitiatives] = useState<any[]>([]);
   const [users, setUsers]             = useState<any[]>([]);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
@@ -44,12 +48,18 @@ export default function ManageRoster() {
   const handleAddMember = async () => {
     if (!selectedInit || !selectedUser) return;
     setSaving(true);
-    await updateDoc(doc(db, 'initiatives', selectedInit), {
-      members: arrayUnion({ userId: selectedUser, role: tempRole.trim() || 'Member' }),
-    });
-    setTempRole('');
-    setSaving(false);
-    fetchData();
+    try {
+      await updateDoc(doc(db, 'initiatives', selectedInit), {
+        members: arrayUnion({ userId: selectedUser, role: tempRole.trim() || 'Member' }),
+      });
+      setTempRole('');
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAcceptJoinRequest = async (req: any) => {
@@ -86,6 +96,10 @@ export default function ManageRoster() {
 
   const activeInitiatives = initiatives.filter(i => i.status !== 'archived');
 
+  if (!isCurator) {
+    return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -94,7 +108,7 @@ export default function ManageRoster() {
 
       {/* Pending join requests */}
       {joinRequests.length > 0 && (
-        <div className={styles.card} style={{ borderLeft: '3px solid var(--primary-blue)' }}>
+        <div className={styles.card} style={{ borderInlineStart: '3px solid var(--primary-blue)' }}>
           <h3 className={styles.cardTitle}>
             {t('pendingJoinRequests')}
             <span style={{

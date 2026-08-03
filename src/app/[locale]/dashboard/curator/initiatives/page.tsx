@@ -380,16 +380,21 @@ export default function ManageInitiatives() {
   const handleSeedDefaults = async () => {
     if (!confirm(t('seedDefaultsConfirm'))) return;
     setSeeding(true);
-    const now = new Date();
-    for (const init of DEFAULT_INITIATIVES) {
-      const d = new Date(now);
-      d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
-      await addDoc(collection(db, 'initiatives'), {
-        ...init, members: [], images: [], createdAt: d.toISOString(),
-      });
+    try {
+      const now = new Date();
+      for (const init of DEFAULT_INITIATIVES) {
+        const d = new Date(now);
+        d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
+        await addDoc(collection(db, 'initiatives'), {
+          ...init, members: [], images: [], createdAt: d.toISOString(),
+        });
+      }
+      await fetchAll();
+    } catch (err: any) {
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } finally {
+      setSeeding(false);
     }
-    setSeeding(false);
-    fetchAll();
   };
 
   const handleArchive = async (id: string) => {

@@ -60,6 +60,7 @@ export default function Footer() {
               onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.png'; }}
               alt="Jeddah Hub"
               className={styles.logo}
+              loading="lazy"
             />
           </Link>
           <p className={styles.tagline}>{t('tagline')}</p>
@@ -68,7 +69,7 @@ export default function Footer() {
               <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
               <circle cx="12" cy="10" r="3"/>
             </svg>
-            Jeddah, Saudi Arabia
+            {t('location')}
           </p>
           <p className={styles.description}>{t('description')}</p>
           <div className={styles.socials}>

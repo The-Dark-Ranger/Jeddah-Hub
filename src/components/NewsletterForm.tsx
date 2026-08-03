@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getRecaptchaToken } from '@/lib/recaptcha';
 import styles from './NewsletterForm.module.css';
 
 /** How long the confirmation stays up before the form resets itself, so a
@@ -33,11 +34,13 @@ export default function NewsletterForm() {
         subscribedAt: new Date().toISOString(),
       });
 
-      fetch('/api/newsletter/welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      }).catch(() => {});
+      getRecaptchaToken('newsletter_subscribe').then(recaptchaToken => {
+        fetch('/api/newsletter/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, recaptchaToken }),
+        }).catch(() => {});
+      });
 
       setStatus('success');
       setEmail('');

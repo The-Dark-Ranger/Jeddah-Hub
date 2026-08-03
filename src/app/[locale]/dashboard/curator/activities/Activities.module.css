@@ -59,7 +59,7 @@
 .toggleOn:hover  { background:rgba(16,185,129,.22); }
 .toggleOff { background:rgba(107,114,128,.1);color:var(--text-muted); }
 .toggleOff:hover { background:rgba(107,114,128,.2); }
-.deleteBtn { padding:.35rem .8rem;border-radius:6px;border:none;background:rgba(239,68,68,.08);color:#dc2626;font-size:.8rem;cursor:pointer;transition:background .18s;margin-left:auto; }
+.deleteBtn { padding:.35rem .8rem;border-radius:6px;border:none;background:rgba(239,68,68,.08);color:#dc2626;font-size:.8rem;cursor:pointer;transition:background .18s;margin-inline-start:auto; }
 .deleteBtn:hover { background:rgba(239,68,68,.18); }
 
 /* ── Modal ── */

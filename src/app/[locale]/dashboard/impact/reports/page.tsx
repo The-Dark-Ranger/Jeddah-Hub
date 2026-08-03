@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 
 export default function ImpactReports() {
   const t = useTranslations('Dashboard');
+  const { user } = useAuth();
+  const normRole = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const canManage = normRole === 'curator' || normRole === 'vice_curator' || normRole === 'impact_officer';
   const [initiativeId, setInitiativeId] = useState('');
   const [metrics, setMetrics]           = useState('');
 
@@ -18,6 +22,10 @@ export default function ImpactReports() {
     setInitiativeId(''); setMetrics('');
     alert(t('reportSaved'));
   };
+
+  if (!canManage) {
+    return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
+  }
 
   return (
     <div>

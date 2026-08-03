@@ -89,35 +89,50 @@ export default function BlogManager({ user, isInitiativeLead = false }: { user: 
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
     setSaving(true);
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-    const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
-    const payload = {
-      title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
-      tags, status, authorId: user.uid,
-      authorName: user.displayName || user.email || 'Shaper',
-      authorRole: user.role || 'shaper',
-      updatedAt: new Date().toISOString(),
-    };
-    let newPostId: string | null = null;
-    if (view === 'edit' && editId) {
-      await updateDoc(doc(db, 'blogs', editId), payload);
-    } else {
-      const ref = await addDoc(collection(db, 'blogs'), { ...payload, createdAt: new Date().toISOString(), likedBy: [] });
-      newPostId = ref.id;
+    try {
+      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+      const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
+      const payload = {
+        title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
+        tags, status, authorId: user.uid,
+        authorName: user.displayName || user.email || 'Shaper',
+        authorRole: user.role || 'shaper',
+        updatedAt: new Date().toISOString(),
+      };
+      if (view === 'edit' && editId) {
+        await updateDoc(doc(db, 'blogs', editId), payload);
+      } else {
+        await addDoc(collection(db, 'blogs'), { ...payload, createdAt: new Date().toISOString(), likedBy: [] });
+      }
+      resetForm(); setView('list');
+      await fetchPosts();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save post.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false); resetForm(); setView('list');
-    await fetchPosts();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this post? This cannot be undone.')) return;
-    await deleteDoc(doc(db, 'blogs', id));
-    setPosts(prev => prev.filter(p => p.id !== id));
+    try {
+      await deleteDoc(doc(db, 'blogs', id));
+      setPosts(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete post.');
+    }
   };
 
   const handleStatusChange = async (id: string, newStatus: BlogPost['status']) => {
-    await updateDoc(doc(db, 'blogs', id), { status: newStatus });
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    try {
+      await updateDoc(doc(db, 'blogs', id), { status: newStatus });
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update post status.');
+    }
   };
 
   const filtered = posts.filter(p => filter === 'all' || p.status === filter);

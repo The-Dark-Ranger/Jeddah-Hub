@@ -46,7 +46,7 @@ export default function AvatarUploader({ value, onChange }: Props) {
       <div className={styles.row}>
         <div className={styles.avatar}>
           {value && !broken ? (
-            <img src={value} alt="" className={styles.avatarImg} onError={() => setBroken(true)} />
+            <img src={value} alt="" className={styles.avatarImg} onError={() => setBroken(true)} loading="lazy" />
           ) : (
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <circle cx="12" cy="8" r="4"/>

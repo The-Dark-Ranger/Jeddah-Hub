@@ -2,7 +2,7 @@ import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, getDocs, addDoc
+  collection, query, where, getDocs, addDoc, limit
 } from 'firebase/firestore';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
@@ -24,7 +24,7 @@ interface RoleResult { role: UserRole; docId: string | null; }
 
 async function bootstrapFirstAdmin(email: string): Promise<RoleResult> {
   try {
-    const snap = await getDocs(collection(db, 'role_assignments'));
+    const snap = await getDocs(query(collection(db, 'role_assignments'), limit(1)));
     if (snap.empty) {
       const ref = await addDoc(collection(db, 'role_assignments'), {
         email: email.toLowerCase().trim(),

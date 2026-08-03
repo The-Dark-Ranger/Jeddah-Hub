@@ -66,7 +66,7 @@ export default function ContactPage() {
                 <h2 className={styles.successTitle}>{t('success')}</h2>
                 <p className={styles.successDetail}>{t('successDetail')}</p>
                 <button className={styles.resetBtn} onClick={() => setStatus('idle')}>
-                  Send another message
+                  {t('sendAnother')}
                 </button>
               </div>
             ) : (

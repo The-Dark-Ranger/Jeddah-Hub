@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/serverAuth';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
 
 export async function POST(req: NextRequest) {
+  const caller = await requireRole(req, ['curator', 'vice_curator']);
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { email, displayName, role } = await req.json();
   if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 

@@ -172,50 +172,50 @@ export default function DashboardHome() {
       {/* Stats */}
       <div className={styles.statsGrid}>
         {isCurator && (<>
-          <StatCard label="Active Initiatives" value={stats.activeInitiatives} colorVar="blue"
+          <StatCard label={t('statActiveInitiatives')} value={stats.activeInitiatives} colorVar="blue"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>} />
-          <StatCard label="Blog Posts" value={stats.blogs} colorVar="purple"
+          <StatCard label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>} />
-          <StatCard label="Newsletter Subscribers" value={stats.subscribers} colorVar="green"
+          <StatCard label={t('statSubscribers')} value={stats.subscribers} colorVar="green"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>} />
-          <StatCard label="Unread Messages" value={stats.unreadMessages} colorVar={stats.unreadMessages > 0 ? 'warning' : 'muted'}
+          <StatCard label={t('statUnreadMessages')} value={stats.unreadMessages} colorVar={stats.unreadMessages > 0 ? 'warning' : 'muted'}
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>} />
         </>)}
         {isImpact && (<>
-          <StatCard label="Impact Reports" value={stats.reports} colorVar="blue"
+          <StatCard label={t('statImpactReports')} value={stats.reports} colorVar="blue"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             </svg>} />
-          <StatCard label="Blog Posts" value={stats.blogs} colorVar="purple"
+          <StatCard label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>} />
-          <StatCard label="Total Initiatives" value={stats.initiatives} colorVar="green"
+          <StatCard label={t('statTotalInitiatives')} value={stats.initiatives} colorVar="green"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>} />
         </>)}
         {isShaper && (<>
-          <StatCard label="My Active Projects" value={stats.myProjects} colorVar="blue"
+          <StatCard label={t('statMyProjects')} value={stats.myProjects} colorVar="blue"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>} />
-          <StatCard label="Total Initiatives" value={stats.initiatives} colorVar="purple"
+          <StatCard label={t('statTotalInitiatives')} value={stats.initiatives} colorVar="purple"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>} />
-          <StatCard label="Blog Posts" value={stats.blogs} colorVar="green"
+          <StatCard label={t('statBlogPosts')} value={stats.blogs} colorVar="green"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -228,32 +228,32 @@ export default function DashboardHome() {
         <h3 className={styles.sectionTitle}>{t('quickActions')}</h3>
         <div className={styles.actionGrid}>
           {isCurator && (<>
-            <ActionCard title="Initiatives" desc="Create, edit & archive projects" href="/dashboard/curator/initiatives" router={router}
+            <ActionCard title={t('dashInitiativesCardTitle')} desc={t('dashInitiativesCardDesc')} href="/dashboard/curator/initiatives" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
               </svg>} />
-            <ActionCard title="Roster" desc="Assign members to initiatives" href="/dashboard/curator/roster" router={router}
+            <ActionCard title={t('roster')} desc={t('dashRosterCardDesc')} href="/dashboard/curator/roster" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>} />
-            <ActionCard title={`Messages${stats.unreadMessages > 0 ? ` (${stats.unreadMessages})` : ''}`}
-              desc="View & reply to contact messages" href="/dashboard/curator/messages" router={router}
+            <ActionCard title={`${t('dashMessagesCardTitle')}${stats.unreadMessages > 0 ? ` (${stats.unreadMessages})` : ''}`}
+              desc={t('dashMessagesCardDesc')} href="/dashboard/curator/messages" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>}
               accent={stats.unreadMessages > 0} />
-            <ActionCard title="Write Blog" desc="Publish a new article" href="/dashboard/curator/blogs" router={router}
+            <ActionCard title={t('actionWriteBlog')} desc={t('actionWriteBlogDesc')} href="/dashboard/curator/blogs" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>} />
-            <ActionCard title="Role Assignments" desc="Manage member roles" href="/dashboard/curator/members" router={router}
+            <ActionCard title={t('roleAssignments')} desc={t('dashRoleAssignmentsCardDesc')} href="/dashboard/curator/members" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="8" r="4"/><path d="M4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1"/>
               </svg>} />
-            <ActionCard title="Export Emails" desc="Download subscriber list" href="/dashboard/curator/exports" router={router}
+            <ActionCard title={t('exportEmails')} desc={t('actionExportEmailsDesc')} href="/dashboard/curator/exports" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -261,26 +261,26 @@ export default function DashboardHome() {
               </svg>} />
           </>)}
           {isImpact && (<>
-            <ActionCard title="Projects" desc="Manage projects & assign shapers" href="/dashboard/impact/projects" router={router}
+            <ActionCard title={t('dashProjectsCardTitle')} desc={t('dashProjectsCardDesc')} href="/dashboard/impact/projects" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
               </svg>} />
-            <ActionCard title="New Report" desc="Create an impact report" href="/dashboard/impact/reports" router={router}
+            <ActionCard title={t('actionNewReport')} desc={t('actionNewReportDesc')} href="/dashboard/impact/reports" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
               </svg>} />
-            <ActionCard title="Write Blog" desc="Share your perspective" href="/dashboard/impact/blogs" router={router}
+            <ActionCard title={t('actionWriteBlog')} desc={t('dashImpactWriteBlogDesc')} href="/dashboard/impact/blogs" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>} />
           </>)}
           {isShaper && (<>
-            <ActionCard title="Browse Initiatives" desc="Find projects to join" href="/dashboard/shaper/initiatives" router={router}
+            <ActionCard title={t('actionBrowseInitiatives')} desc={t('actionBrowseInitiativesDesc')} href="/dashboard/shaper/initiatives" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>} />
-            <ActionCard title="Post Blog" desc="Share your story" href="/dashboard/shaper/blogs" router={router}
+            <ActionCard title={t('actionPostBlog')} desc={t('actionPostBlogDesc')} href="/dashboard/shaper/blogs" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -292,7 +292,7 @@ export default function DashboardHome() {
       {isCurator && notifications.length > 0 && (
         <div className={styles.notifSection}>
           <h3 className={styles.sectionTitle}>
-            Notifications
+            {t('notificationsLabel')}
             {unreadNotifs.length > 0 && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -319,7 +319,7 @@ export default function DashboardHome() {
                   {!n.read && (
                     <div className={styles.notifActions}>
                       <button className={styles.notifMarkRead} onClick={() => markNotifRead(n.id)}>
-                        Mark as read
+                        {t('markAsRead')}
                       </button>
                     </div>
                   )}

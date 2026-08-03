@@ -88,7 +88,13 @@ service cloud.firestore {
       allow update: if isCuratorOrImpact()
                     || (isSignedIn()
                         && request.auth.uid == resource.data.authorId
-                        && resource.data.status in ['draft', 'pending']);
+                        && resource.data.status in ['draft', 'pending'])
+                    // Likes: anyone (including anonymous visitors) may toggle only the
+                    // likedBy/visitorLikes fields on a published post — needed because
+                    // guest likes are written with no Firebase Auth session at all.
+                    || (resource.data.status == 'published'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['likedBy', 'visitorLikes']));
       allow delete: if isCuratorOrImpact()
                     || (isSignedIn() && request.auth.uid == resource.data.authorId);
     }

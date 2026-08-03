@@ -71,18 +71,24 @@ export default function MyProfile() {
     if (!user) return;
     setSaving(true);
     setSaved(false);
-    await updateDoc(doc(db, 'users', user.uid), {
-      displayName:   form.displayName.trim(),
-      displayNameAr: form.displayNameAr.trim(),
-      photoURL:      form.photoURL.trim(),
-      bio:           form.bio.trim(),
-      linkedin:      form.linkedin.trim(),
-      twitter:       form.twitter.trim(),
-      instagram:     form.instagram.trim(),
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3500);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        displayName:   form.displayName.trim(),
+        displayNameAr: form.displayNameAr.trim(),
+        photoURL:      form.photoURL.trim(),
+        bio:           form.bio.trim(),
+        linkedin:      form.linkedin.trim(),
+        twitter:       form.twitter.trim(),
+        instagram:     form.instagram.trim(),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3500);
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!user || !loaded) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</div>;

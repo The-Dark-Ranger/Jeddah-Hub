@@ -113,7 +113,7 @@ export default function Navbar() {
           <button
             onClick={toggleTheme}
             className={styles.iconBtn}
-            aria-label="Toggle theme"
+            aria-label={t('toggleTheme')}
             suppressHydrationWarning
           >
             {mounted ? (theme === 'light' ? <MoonIcon /> : <SunIcon />) : <MoonIcon />}
@@ -128,7 +128,7 @@ export default function Navbar() {
           {user ? (
             <div className={styles.userMenu}>
               <Link href="/dashboard" className={styles.dashboardBtn}>{t('dashboard')}</Link>
-              <button onClick={handleLogout} className={styles.logoutBtn} aria-label="Sign out">
+              <button onClick={handleLogout} className={styles.logoutBtn} aria-label={t('logout')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
@@ -144,7 +144,7 @@ export default function Navbar() {
           <button
             className={styles.hamburger}
             onClick={() => setMobileOpen(v => !v)}
-            aria-label="Toggle menu"
+            aria-label={t('toggleMenu')}
             aria-expanded={mobileOpen}
           >
             <span className={styles.bar + (mobileOpen ? ' ' + styles.barOpen1 : '')} />

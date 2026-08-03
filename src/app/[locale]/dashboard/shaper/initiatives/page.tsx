@@ -309,7 +309,7 @@ export default function JoinInitiatives() {
 
   const handleCancelRequest = async (reqId: string) => {
     setMyRequests(prev => prev.filter(r => r.id !== reqId));
-    await deleteDoc(doc(db, 'join_requests', reqId));
+    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'join_requests', reqId));
   };
 
   /* Lead actions — accept / reject join requests */
@@ -377,7 +377,7 @@ export default function JoinInitiatives() {
   const handleRequestRemoval = async (init: Initiative, member: any) => {
     if (!user) return;
     const memberName = getUserLabel(member.userId);
-    if (!confirm(`Request removal of ${memberName} from ${init.title}? A curator will review this request.`)) return;
+    if (!confirm(t('confirmRequestRemoval', { member: memberName, initiative: init.title }))) return;
     const optimisticId = 'tmp_' + Date.now();
     setPendingRemovals(prev => [...prev, { id: optimisticId, targetUserId: member.userId, initiativeId: init.id }]);
     const ref = await addDoc(collection(db, 'removal_requests'), {

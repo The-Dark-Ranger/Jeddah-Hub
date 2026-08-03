@@ -61,7 +61,7 @@ export default function BlogPostPage() {
   // Live comments
   useEffect(() => {
     const q = query(
-      collection(db, 'comments'),
+      collection(db, 'blog_comments'),
       where('blogId', '==', id),
       orderBy('createdAt', 'asc')
     );
@@ -95,7 +95,7 @@ export default function BlogPostPage() {
     e.preventDefault();
     if (!user || !commentText.trim() || posting) return;
     setPosting(true);
-    await addDoc(collection(db, 'comments'), {
+    await addDoc(collection(db, 'blog_comments'), {
       blogId: id,
       authorId: user.uid,
       authorName: user.displayName || user.email || 'Shaper',

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import styles from './Messages.module.css';
 
@@ -20,10 +20,6 @@ interface ContactMessage {
   repliedAt?: string;
 }
 
-const SUBJECT_LABELS: Record<string, string> = {
-  general: 'General Inquiry', partnership: 'Partnership',
-  join: 'Joining the Hub', media: 'Media & Press', other: 'Other',
-};
 const SUBJECT_COLORS: Record<string, string> = {
   general: '#2563eb', partnership: '#7c3aed',
   join: '#059669', media: '#d97706', other: '#64748b',
@@ -42,9 +38,20 @@ function formatDate(iso: string, locale: string) {
     { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+const SUBJECT_KEYS: Record<string, string> = {
+  general: 'subjectGeneral', partnership: 'subjectPartnership',
+  join: 'subjectJoin', media: 'subjectMedia', other: 'subjectOther',
+};
+
 export default function MessagesPage() {
   const { user } = useAuth();
   const locale   = useLocale();
+  const t  = useTranslations('Dashboard');
+  const tc = useTranslations('ContactPage');
+  const subjectLabel = (subject: string) => {
+    const key = SUBJECT_KEYS[subject];
+    return key ? tc(key) : subject;
+  };
   const [messages, setMessages]       = useState<ContactMessage[]>([]);
   const [loading, setLoading]         = useState(true);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
@@ -71,29 +78,35 @@ export default function MessagesPage() {
     })();
   }, [isCurator]);
 
-  if (!isCurator) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Access restricted to Curators.</div>;
+  if (!isCurator) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
 
   const handleExpand = async (msg: ContactMessage) => {
     if (expandedId === msg.id) { setExpandedId(null); return; }
     setExpandedId(msg.id);
     if (!msg.read) {
-      await updateDoc(doc(db, 'contact_messages', msg.id), { read: true });
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
+      try {
+        await updateDoc(doc(db, 'contact_messages', msg.id), { read: true });
+        setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
+      } catch (err) { console.error(err); }
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Permanently delete this message?')) return;
-    await deleteDoc(doc(db, 'contact_messages', id));
-    setMessages(prev => prev.filter(m => m.id !== id));
-    if (expandedId === id) setExpandedId(null);
+    if (!confirm(t('confirmDeleteMessage'))) return;
+    try {
+      await deleteDoc(doc(db, 'contact_messages', id));
+      setMessages(prev => prev.filter(m => m.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const openReply = (msg: ContactMessage) => {
-    const subjLabel = SUBJECT_LABELS[msg.subject] || msg.subject;
     const quote = `\n\n---\nOn ${new Date(msg.submittedAt).toLocaleDateString()}, ${msg.name} wrote:\n"${msg.message}"`;
     setComposeTo(msg.email);
-    setComposeSubj(`Re: ${subjLabel}`);
+    setComposeSubj(`Re: ${subjectLabel(msg.subject)}`);
     setComposeBody(quote);
     setReplyingId(msg.id);
     setComposeOpen(true);
@@ -108,21 +121,27 @@ export default function MessagesPage() {
   const handleSend = async () => {
     if (!composeTo) return;
     setSending(true);
-    const mailUrl = `mailto:${composeTo}?subject=${encodeURIComponent(composeSubj)}&body=${encodeURIComponent(composeBody)}`;
-    window.open(mailUrl);
+    try {
+      const mailUrl = `mailto:${composeTo}?subject=${encodeURIComponent(composeSubj)}&body=${encodeURIComponent(composeBody)}`;
+      window.open(mailUrl);
 
-    if (replyingId) {
-      await updateDoc(doc(db, 'contact_messages', replyingId), {
-        replied: true, repliedAt: new Date().toISOString(),
-      });
-      setMessages(prev => prev.map(m =>
-        m.id === replyingId ? { ...m, replied: true, repliedAt: new Date().toISOString() } : m
-      ));
+      if (replyingId) {
+        await updateDoc(doc(db, 'contact_messages', replyingId), {
+          replied: true, repliedAt: new Date().toISOString(),
+        });
+        setMessages(prev => prev.map(m =>
+          m.id === replyingId ? { ...m, replied: true, repliedAt: new Date().toISOString() } : m
+        ));
+      }
+
+      setComposeOpen(false);
+      setReplyingId(null);
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setSending(false);
     }
-
-    setSending(false);
-    setComposeOpen(false);
-    setReplyingId(null);
   };
 
   const filtered    = filter === 'all' ? messages : messages.filter(m => m.subject === filter);
@@ -135,17 +154,17 @@ export default function MessagesPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <h2 className={styles.pageTitle}>Contact Messages</h2>
+          <h2 className={styles.pageTitle}>{t('contactMessages')}</h2>
           <p className={styles.pageSubtitle}>
-            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
-            {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount} unread</span>}
+            {t('messagesCount', { count: messages.length })}
+            {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount} {t('unreadSuffix')}</span>}
           </p>
         </div>
         <button className={styles.composeBtn} onClick={() => openCompose()}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Compose
+          {t('composeEmail')}
         </button>
       </div>
 
@@ -153,7 +172,7 @@ export default function MessagesPage() {
       <div className={styles.filterBar}>
         {FILTERS.map(f => (
           <button key={f} className={styles.filterBtn + (filter === f ? ' ' + styles.filterBtnActive : '')} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'All' : SUBJECT_LABELS[f]}
+            {f === 'all' ? t('filterAll') : subjectLabel(f)}
             <span className={styles.filterCount}>
               {f === 'all' ? messages.length : messages.filter(m => m.subject === f).length}
             </span>
@@ -170,7 +189,7 @@ export default function MessagesPage() {
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
-          <p>No messages yet.</p>
+          <p>{t('noMessages')}</p>
         </div>
       ) : (
         <div className={styles.messageList}>
@@ -185,14 +204,14 @@ export default function MessagesPage() {
                   <div className={styles.messageInfo}>
                     <span className={styles.senderName}>{msg.name}</span>
                     <span className={styles.subjectBadge} style={{ color, borderColor: color + '50', background: color + '12' }}>
-                      {SUBJECT_LABELS[msg.subject] || msg.subject}
+                      {subjectLabel(msg.subject)}
                     </span>
                     {msg.replied && (
                       <span className={styles.repliedBadge}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        Replied
+                        {t('repliedLabel')}
                       </span>
                     )}
                   </div>
@@ -220,7 +239,7 @@ export default function MessagesPage() {
                     <p className={styles.messageBody}>{msg.message}</p>
                     {msg.repliedAt && (
                       <p className={styles.repliedNote}>
-                        Replied on {new Date(msg.repliedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        {t('repliedOnLabel', { date: new Date(msg.repliedAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
                       </p>
                     )}
                     <div className={styles.messageActions}>
@@ -229,7 +248,7 @@ export default function MessagesPage() {
                           <polyline points="9 17 4 12 9 7"/>
                           <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
                         </svg>
-                        Reply
+                        {t('replyByEmail')}
                       </button>
                       <button className={styles.deleteBtn} onClick={() => handleDelete(msg.id)}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -237,7 +256,7 @@ export default function MessagesPage() {
                           <path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
                           <path d="M9 6V4h6v2"/>
                         </svg>
-                        Delete
+                        {t('deleteMessage')}
                       </button>
                     </div>
                   </div>
@@ -254,7 +273,7 @@ export default function MessagesPage() {
         <div className={styles.overlay} onClick={() => setComposeOpen(false)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{replyingId ? 'Reply' : 'New Message'}</h3>
+              <h3 className={styles.modalTitle}>{replyingId ? t('replyModalTitle') : t('newMessageModalTitle')}</h3>
               <button className={styles.modalClose} onClick={() => setComposeOpen(false)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -263,36 +282,36 @@ export default function MessagesPage() {
             </div>
             <div className={styles.modalBody}>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>To</label>
+                <label className={styles.modalLabel}>{t('toLabel')}</label>
                 <input className={styles.modalInput} type="email" value={composeTo}
-                  onChange={e => setComposeTo(e.target.value)} placeholder="recipient@email.com" />
+                  onChange={e => setComposeTo(e.target.value)} placeholder={t('phRecipientEmail')} />
               </div>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>Subject</label>
+                <label className={styles.modalLabel}>{t('subjectLabel')}</label>
                 <input className={styles.modalInput} value={composeSubj}
-                  onChange={e => setComposeSubj(e.target.value)} placeholder="Subject line" />
+                  onChange={e => setComposeSubj(e.target.value)} placeholder={t('phSubjectLine')} />
               </div>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>Message</label>
+                <label className={styles.modalLabel}>{t('messageLabel')}</label>
                 <textarea className={styles.modalTextarea} value={composeBody}
                   onChange={e => setComposeBody(e.target.value)}
-                  placeholder={replyingId ? 'Write your reply…' : 'Write your message…'} rows={7} />
+                  placeholder={replyingId ? t('phWriteReply') : t('phWriteMessage')} rows={7} />
               </div>
               <p className={styles.mailtoNote}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                Will open your email client to send. The message will be marked as replied.
+                {t('mailtoNote')}
               </p>
             </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setComposeOpen(false)}>Cancel</button>
+              <button className={styles.cancelBtn} onClick={() => setComposeOpen(false)}>{t('cancel')}</button>
               <button className={styles.sendBtn} onClick={handleSend} disabled={!composeTo || sending}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
-                {sending ? 'Opening…' : replyingId ? 'Send Reply' : 'Send'}
+                {sending ? t('opening') : replyingId ? t('sendReply') : t('send')}
               </button>
             </div>
           </div>

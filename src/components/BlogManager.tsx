@@ -33,11 +33,14 @@ function timeAgo(iso: string) {
   return days + ' days ago';
 }
 
-export default function BlogManager({ user, isInitiativeLead = false }: { user: UserProfile; isInitiativeLead?: boolean }) {
+export default function BlogManager({ user }: { user: UserProfile }) {
   const normRole   = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const isCurator  = normRole === 'curator' || normRole === 'vice_curator';
   const isImpact   = normRole === 'impact_officer';
-  const canPublishDirectly = isCurator || isImpact || isInitiativeLead;
+  // Only curators/impact officers may publish directly — matches the
+  // Firestore rule exactly, which has no way to verify initiative-lead
+  // status server-side, so offering that shortcut here would just fail.
+  const canPublishDirectly = isCurator || isImpact;
   const canSeeAll  = isCurator;
 
   const [posts, setPosts]       = useState<BlogPost[]>([]);

@@ -39,15 +39,6 @@ service cloud.firestore {
       return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
     }
 
-    // Does the given role_assignments doc belong to the caller? These docs
-    // never carry a `uid` field (the invitee doesn't have an account yet
-    // when a curator creates one), so ownership is decided by matching the
-    // caller's own verified auth email against the doc's `email` field.
-    function isAssignee(data) {
-      return isSignedIn() && request.auth.token.email != null
-             && request.auth.token.email.lower() == data.email;
-    }
-
     // Is the caller a lead of the given initiative? Used to scope
     // leave_requests/removal_requests actions to that specific
     // initiative's leads rather than any signed-in member.
@@ -57,46 +48,26 @@ service cloud.firestore {
              && request.auth.uid in get(/databases/$(database)/documents/initiatives/$(initiativeId)).data.leads;
     }
 
-    // A curator-created role_assignments doc keyed by the caller's own
-    // verified auth email (see role_assignments below — new assignments
-    // are created with the lowercased email as the doc ID specifically so
-    // this can look them up directly). Lets a freshly-invited user apply
-    // ANY pre-assigned role — including curator/vice_curator/impact_officer
-    // — to their own account on first login, without opening up
-    // self-escalation: the only way a role_assignments doc can exist at
-    // all is isCurator() creating one (see below), so this just lets the
-    // invitee redeem a grant a curator already made, not invent one.
-    function preassignedRole() {
-      return (isSignedIn() && request.auth.token.email != null
-              && exists(/databases/$(database)/documents/role_assignments/$(request.auth.token.email.lower())))
-             ? get(/databases/$(database)/documents/role_assignments/$(request.auth.token.email.lower())).data.role
-             : null;
-    }
-
     // ── users ─────────────────────────────────────────────────
     // Public can read (for About/shapers pages).
     // Users write only their own doc, but may never self-assign a
-    // privileged role out of thin air — only an existing curator can
-    // grant curator/vice_curator/impact_officer, UNLESS the value being
-    // written exactly matches a role a curator already pre-assigned to
-    // this account's own email via role_assignments (preassignedRole()).
-    // Without either guard, any signed-in user could call
-    // updateDoc(users/{ownUid}, {role:'curator'}) directly via the SDK
-    // and grant themselves admin access, since every
-    // isCurator()/isImpactOfficer() check in this file reads straight
-    // from this field.
+    // privileged role — only an existing curator can grant
+    // curator/vice_curator/impact_officer. This is the only place
+    // `role` is ever safe to trust: without this guard any signed-in
+    // user could call updateDoc(users/{ownUid}, {role:'curator'})
+    // directly via the SDK and grant themselves admin access, since
+    // every isCurator()/isImpactOfficer() check in this file reads
+    // straight from this field.
     match /users/{uid} {
       allow read: if true;
       allow create: if isOwner(uid)
                     && (!('role' in request.resource.data)
                         || request.resource.data.role == null
-                        || request.resource.data.role in ['shaper', 'alumni']
-                        || request.resource.data.role == preassignedRole());
+                        || request.resource.data.role in ['shaper', 'alumni']);
       allow update: if isCurator()
                     || (isOwner(uid)
                         && (request.resource.data.role == resource.data.role
-                            || request.resource.data.role in ['shaper', 'alumni']
-                            || request.resource.data.role == preassignedRole()));
+                            || request.resource.data.role in ['shaper', 'alumni']));
       allow delete: if isCurator();
     }
 
@@ -186,21 +157,14 @@ service cloud.firestore {
     }
 
     // ── role_assignments ──────────────────────────────────────
-    // Curators create/delete. Ownership is by email match (see
-    // isAssignee() above). Impact officers can also read — impact/projects
-    // handleRestore looks up joined curators/vice_curators here to notify
-    // them, and that flow runs for impact officers too.
+    // Curators create/delete. Assigned user can read and delete their own.
+    // Impact officers can also read — impact/projects handleRestore looks up
+    // joined curators/vice_curators here to notify them, and that flow runs
+    // for impact officers too.
     match /role_assignments/{docId} {
-      allow read:   if isAssignee(resource.data) || isCuratorOrImpact();
+      allow read:   if isOwner(resource.data.uid) || isCuratorOrImpact();
       allow create: if isCurator();
-      // The invitee marks their own assignment `joined` (with a timestamp)
-      // on first login — see applyAndClearAssignment in src/lib/auth.ts —
-      // scoped to just those two fields so they can't touch role/note/etc.
-      allow update: if isCurator()
-                    || (isAssignee(resource.data)
-                        && request.resource.data.diff(resource.data).affectedKeys()
-                             .hasOnly(['status', 'joinedAt']));
-      allow delete: if isCurator() || isAssignee(resource.data);
+      allow delete: if isCurator() || isOwner(resource.data.uid);
     }
 
     // ── contact_messages ──────────────────────────────────────

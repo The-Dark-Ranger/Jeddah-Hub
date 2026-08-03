@@ -334,21 +334,7 @@
     "like": "Like",
     "likes": "Likes",
     "signInPrompt": "Sign in to like and comment.",
-    "signIn": "Sign in",
-    "commentsTitle": "{n} Comment",
-    "commentsTitlePlural": "{n} Comments",
-    "commentsEmpty": "Comments",
-    "commentPlaceholder": "Share your thoughts...",
-    "posting": "Posting...",
-    "postComment": "Post Comment",
-    "noComments": "No comments yet.",
-    "beFirst": "Be the first!",
-    "deleteComment": "Delete comment",
-    "confirmDeleteComment": "Delete this comment? This cannot be undone.",
-    "justNow": "just now",
-    "minutesAgo": "{n}m ago",
-    "hoursAgo": "{n}h ago",
-    "daysAgo": "{n}d ago"
+    "signIn": "Sign in"
   },
   "Dashboard": {
     "loading": "Loading...",

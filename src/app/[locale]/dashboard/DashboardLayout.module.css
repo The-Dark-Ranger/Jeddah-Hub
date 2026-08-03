@@ -218,8 +218,12 @@
     background: rgba(255,255,255,0.6);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     /* Own sticky top bar, not the desktop pinned-column behavior above —
-       reset the properties that only make sense for that. */
-    position: sticky; top: 0; z-index: 100;
+       reset the properties that only make sense for that. Navbar is
+       position:fixed on mobile too (Navbar.module.css), so top must match
+       its height — top:0 would stick this bar behind the fixed navbar
+       (which has a higher z-index) instead of right below it, making it
+       appear to jump/hide as soon as the page scrolls. */
+    position: sticky; top: 68px; z-index: 100;
     align-self: stretch;
     max-height: none;
     overflow-y: visible;

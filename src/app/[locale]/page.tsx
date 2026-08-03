@@ -163,6 +163,8 @@ export default function HomePage() {
             alt={t('partners')}
             className={styles.partnersImage}
             loading="lazy"
+            width={1856}
+            height={611}
           />
         </div>
       </section>

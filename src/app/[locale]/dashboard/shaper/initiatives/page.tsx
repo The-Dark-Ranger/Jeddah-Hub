@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  collection, getDocs, addDoc, query, where, deleteDoc, doc, updateDoc
+  collection, getDocs, addDoc, query, where, deleteDoc, doc, updateDoc, documentId
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
@@ -197,13 +197,12 @@ export default function JoinInitiatives() {
       if (leadIds.length > 0) {
         /* One `in` query across every led initiative rather than one per
          * initiative — these all run concurrently. */
-        const [joinSnap, usersSnap, removalSnap] = await Promise.all([
+        const [joinSnap, removalSnap] = await Promise.all([
           getDocs(query(
             collection(db, 'join_requests'),
             where('initiativeId', 'in', leadIds),
             where('status', '==', 'pending'),
           )).catch(() => null),
-          getDocs(collection(db, 'users')).catch(() => null),
           getDocs(query(
             collection(db, 'removal_requests'),
             where('requestedByUserId', '==', user.uid),
@@ -217,8 +216,27 @@ export default function JoinInitiatives() {
               return { id: d.id, ...data, initiativeTitle: inits.find(i => i.id === data.initiativeId)?.title };
             })
           : []);
-        setUsers(usersSnap ? usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
         setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
+
+        // Only fetch the specific users needed to resolve display names —
+        // led initiatives' members plus incoming join-request applicants —
+        // instead of downloading the entire users collection.
+        const ledInits = inits.filter(i => leadIds.includes(i.id));
+        const memberIds = ledInits.flatMap(i =>
+          (i.members || []).map((m: any) => (typeof m === 'string' ? m : m.userId)).filter(Boolean)
+        );
+        const applicantIds = joinSnap ? joinSnap.docs.map(d => d.data().userId).filter(Boolean) : [];
+        const neededIds = Array.from(new Set([...memberIds, ...applicantIds]));
+        if (neededIds.length > 0) {
+          const chunks: string[][] = [];
+          for (let i = 0; i < neededIds.length; i += 30) chunks.push(neededIds.slice(i, i + 30));
+          const userSnaps = await Promise.all(
+            chunks.map(chunk => getDocs(query(collection(db, 'users'), where(documentId(), 'in', chunk))).catch(() => null))
+          );
+          setUsers(userSnaps.filter(Boolean).flatMap(s => s!.docs.map(d => ({ id: d.id, ...d.data() } as any))));
+        } else {
+          setUsers([]);
+        }
       } else {
         setIncomingRequests([]);
         setUsers([]);

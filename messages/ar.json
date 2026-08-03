@@ -334,21 +334,7 @@
     "like": "إعجاب",
     "likes": "إعجاب",
     "signInPrompt": "سجّل الدخول للإعجاب والتعليق.",
-    "signIn": "تسجيل الدخول",
-    "commentsTitle": "{n} تعليق",
-    "commentsTitlePlural": "{n} تعليقات",
-    "commentsEmpty": "التعليقات",
-    "commentPlaceholder": "شاركنا رأيك...",
-    "posting": "جارٍ النشر...",
-    "postComment": "نشر التعليق",
-    "noComments": "لا توجد تعليقات بعد.",
-    "beFirst": "كن أول من يعلّق!",
-    "deleteComment": "حذف التعليق",
-    "confirmDeleteComment": "حذف هذا التعليق؟ لا يمكن التراجع عن هذه الخطوة.",
-    "justNow": "الآن",
-    "minutesAgo": "{n, plural, one {منذ دقيقة} two {منذ دقيقتين} few {منذ # دقائق} many {منذ # دقيقة} other {منذ # دقيقة}}",
-    "hoursAgo": "{n, plural, one {منذ ساعة} two {منذ ساعتين} few {منذ # ساعات} many {منذ # ساعة} other {منذ # ساعة}}",
-    "daysAgo": "{n, plural, one {منذ يوم} two {منذ يومين} few {منذ # أيام} many {منذ # يوماً} other {منذ # يوم}}"
+    "signIn": "تسجيل الدخول"
   },
   "Dashboard": {
     "loading": "جارٍ التحميل...",

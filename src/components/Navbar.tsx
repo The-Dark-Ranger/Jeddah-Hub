@@ -40,8 +40,16 @@ export default function Navbar() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  /* ── Scroll-hide on mobile ── */
+  /* ── Scroll-hide on mobile ──
+   * Skipped on dashboard routes: the dashboard's own sub-nav is pinned
+   * directly below the navbar at a fixed offset matching its height
+   * (DashboardLayout.module.css), so a navbar that hides mid-scroll would
+   * leave that offset pointing at empty space — the sub-nav would still be
+   * correctly "stuck" per position:sticky, but with a gap of scrolled-past
+   * page content revealed above it where the navbar used to be. */
+  const isDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
   useEffect(() => {
+    if (isDashboard) { setNavHidden(false); return; }
     const onScroll = () => {
       const y = window.scrollY;
       if (y > lastScrollY.current && y > 72) {
@@ -54,7 +62,7 @@ export default function Navbar() {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isDashboard]);
 
   const handleLogout = async () => { await logout(); router.push('/'); setMobileOpen(false); };
   const closeMobile  = () => setMobileOpen(false);

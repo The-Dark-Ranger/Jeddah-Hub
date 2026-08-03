@@ -249,13 +249,24 @@ export default function ImpactProjects() {
 
   const handleArchive = async (id: string) => {
     if (!confirm(t('archiveInitiativeConfirm'))) return;
-    await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const handleRestore = async (id: string) => {
     const init = initiatives.find(i => i.id === id);
-    await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+      return;
+    }
 
     /* Notify all curators and vice curators */
     try {
@@ -284,7 +295,7 @@ export default function ImpactProjects() {
       ));
     } catch { /* notifications optional */ }
 
-    fetchAll();
+    await fetchAll();
   };
 
   /* ── Team / shaper assignment ── */
@@ -297,22 +308,33 @@ export default function ImpactProjects() {
   const handleAssign = async (initiativeId: string) => {
     if (!assignUser) return;
     setAssigning(true);
-    await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
-    });
-    setAssignUser('');
-    setAssignRole('');
-    setAssigning(false);
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', initiativeId), {
+        members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
+      });
+      setAssignUser('');
+      setAssignRole('');
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const handleRemoveMember = async (initiativeId: string, userId: string) => {
     if (!confirm(t('confirmRemoveMember'))) return;
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
-    const updated = (init.members || []).filter(m => m.userId !== userId);
-    await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
-    fetchAll();
+    try {
+      const updated = (init.members || []).filter(m => m.userId !== userId);
+      await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const getUserLabel = (userId: string) => {

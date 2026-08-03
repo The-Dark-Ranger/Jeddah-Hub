@@ -135,7 +135,8 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
             src={current}
             alt={`${title} — ${safeIx + 1}`}
             className={styles.stageImg}
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
             decoding="async"
             onError={() => markBroken(photos.indexOf(current))}
           />

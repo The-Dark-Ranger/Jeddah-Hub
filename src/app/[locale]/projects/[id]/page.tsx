@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
@@ -49,13 +49,23 @@ export default function InitiativePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [snap, usersSnap] = await Promise.all([
-          getDoc(doc(db, 'initiatives', id)),
-          getDocs(collection(db, 'users')),
-        ]);
-        setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord)));
+        const snap = await getDoc(doc(db, 'initiatives', id));
         if (snap.exists()) {
-          setInitiative({ id: snap.id, ...snap.data() } as Initiative);
+          const data = { id: snap.id, ...snap.data() } as Initiative;
+          setInitiative(data);
+
+          // Only fetch the specific member docs needed to resolve display
+          // names, in chunks of 30 (Firestore 'in' query limit), instead of
+          // downloading the entire users collection for every project view.
+          const memberIds = Array.from(new Set((data.members || []).map(m => m.userId).filter(Boolean)));
+          if (memberIds.length > 0) {
+            const chunks: string[][] = [];
+            for (let i = 0; i < memberIds.length; i += 30) chunks.push(memberIds.slice(i, i + 30));
+            const snaps = await Promise.all(
+              chunks.map(chunk => getDocs(query(collection(db, 'users'), where(documentId(), 'in', chunk))))
+            );
+            setUsers(snaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord))));
+          }
         } else {
           setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === id) as Initiative ?? null);
         }

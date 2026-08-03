@@ -291,41 +291,72 @@ export default function JoinInitiatives() {
     if (rejected) {
       setMyRequests(prev => prev.filter(r => r.id !== rejected.id));
       if (!rejected.id.startsWith('tmp_')) {
-        await deleteDoc(doc(db, 'join_requests', rejected.id));
+        try {
+          await deleteDoc(doc(db, 'join_requests', rejected.id));
+        } catch (err) {
+          console.error(err);
+          setMyRequests(prev => [...prev, rejected]);
+          alert(t('saveFailed'));
+          return;
+        }
       }
     }
     const optimistic: JoinRequest = { id: 'tmp_' + Date.now(), initiativeId: initId, status: 'pending' };
     setMyRequests(prev => [...prev, optimistic]);
-    const ref = await addDoc(collection(db, 'join_requests'), {
-      initiativeId: initId,
-      userId:      user.uid,
-      userEmail:   user.email,
-      userName:    user.displayName || user.email,
-      status:      'pending',
-      requestedAt: new Date().toISOString(),
-    });
-    setMyRequests(prev => prev.map(r => r.id === optimistic.id ? { ...r, id: ref.id } : r));
+    try {
+      const ref = await addDoc(collection(db, 'join_requests'), {
+        initiativeId: initId,
+        userId:      user.uid,
+        userEmail:   user.email,
+        userName:    user.displayName || user.email,
+        status:      'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setMyRequests(prev => prev.map(r => r.id === optimistic.id ? { ...r, id: ref.id } : r));
+    } catch (err) {
+      console.error(err);
+      setMyRequests(prev => prev.filter(r => r.id !== optimistic.id));
+      alert(t('saveFailed'));
+    }
   };
 
   const handleCancelRequest = async (reqId: string) => {
+    const removed = myRequests.find(r => r.id === reqId);
     setMyRequests(prev => prev.filter(r => r.id !== reqId));
-    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'join_requests', reqId));
+    if (reqId.startsWith('tmp_')) return;
+    try {
+      await deleteDoc(doc(db, 'join_requests', reqId));
+    } catch (err) {
+      console.error(err);
+      if (removed) setMyRequests(prev => [...prev, removed]);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Lead actions — accept / reject join requests */
   const handleAcceptRequest = async (reqId: string, initiativeId: string, userId: string) => {
-    const { arrayUnion, updateDoc: ud } = await import('firebase/firestore');
-    await ud(doc(db, 'initiatives', initiativeId), {
-      members: arrayUnion({ userId, role: 'Member' }),
-    });
-    await deleteDoc(doc(db, 'join_requests', reqId));
-    setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      const { arrayUnion, updateDoc: ud } = await import('firebase/firestore');
+      await ud(doc(db, 'initiatives', initiativeId), {
+        members: arrayUnion({ userId, role: 'Member' }),
+      });
+      await deleteDoc(doc(db, 'join_requests', reqId));
+      setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const handleRejectRequest = async (reqId: string) => {
-    const { updateDoc: ud } = await import('firebase/firestore');
-    await ud(doc(db, 'join_requests', reqId), { status: 'rejected' });
-    setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      const { updateDoc: ud } = await import('firebase/firestore');
+      await ud(doc(db, 'join_requests', reqId), { status: 'rejected' });
+      setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Leave request handlers */
@@ -333,44 +364,68 @@ export default function JoinInitiatives() {
     if (!user) return;
     const optimisticId = 'tmp_' + Date.now();
     setMyLeaveRequests(prev => [...prev, { id: optimisticId, initiativeId: init.id, status: 'pending' }]);
-    const ref = await addDoc(collection(db, 'leave_requests'), {
-      initiativeId: init.id,
-      initiativeTitle: init.title,
-      userId: user.uid,
-      userEmail: user.email,
-      userName: user.displayName || user.email,
-      status: 'pending',
-      requestedAt: new Date().toISOString(),
-    });
-    setMyLeaveRequests(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+    try {
+      const ref = await addDoc(collection(db, 'leave_requests'), {
+        initiativeId: init.id,
+        initiativeTitle: init.title,
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName || user.email,
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setMyLeaveRequests(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+    } catch (err) {
+      console.error(err);
+      setMyLeaveRequests(prev => prev.filter(r => r.id !== optimisticId));
+      alert(t('saveFailed'));
+    }
   };
 
   const handleCancelLeaveRequest = async (reqId: string) => {
+    const removed = myLeaveRequests.find(r => r.id === reqId);
     setMyLeaveRequests(prev => prev.filter(r => r.id !== reqId));
-    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'leave_requests', reqId));
+    if (reqId.startsWith('tmp_')) return;
+    try {
+      await deleteDoc(doc(db, 'leave_requests', reqId));
+    } catch (err) {
+      console.error(err);
+      if (removed) setMyLeaveRequests(prev => [...prev, removed]);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Lead approves leave: remove member from initiative, mark leave request approved */
   const handleApproveLeave = async (req: any) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
     if (!init) return;
-    const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
-    if (memberObj) {
-      const { arrayRemove: ar, updateDoc: ud } = await import('firebase/firestore');
-      await ud(doc(db, 'initiatives', req.initiativeId), { members: ar(memberObj) });
+    try {
+      const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
+      if (memberObj) {
+        const { arrayRemove: ar, updateDoc: ud } = await import('firebase/firestore');
+        await ud(doc(db, 'initiatives', req.initiativeId), { members: ar(memberObj) });
+      }
+      await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
+      setIncomingLeaveRequests(prev => prev.filter(r => r.id !== req.id));
+      setInitiatives(prev => prev.map(i =>
+        i.id === req.initiativeId
+          ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
+          : i
+      ));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
     }
-    await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
-    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== req.id));
-    setInitiatives(prev => prev.map(i =>
-      i.id === req.initiativeId
-        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
-        : i
-    ));
   };
 
   const handleDeclineLeave = async (reqId: string) => {
-    await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
-    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
+      setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Removal request handlers (lead requests; curator/impact officer reviews) */
@@ -380,22 +435,36 @@ export default function JoinInitiatives() {
     if (!confirm(t('confirmRequestRemoval', { member: memberName, initiative: init.title }))) return;
     const optimisticId = 'tmp_' + Date.now();
     setPendingRemovals(prev => [...prev, { id: optimisticId, targetUserId: member.userId, initiativeId: init.id }]);
-    const ref = await addDoc(collection(db, 'removal_requests'), {
-      initiativeId: init.id,
-      initiativeTitle: init.title,
-      targetUserId: member.userId,
-      targetUserName: memberName,
-      requestedByUserId: user.uid,
-      requestedByName: user.displayName || user.email,
-      status: 'pending',
-      requestedAt: new Date().toISOString(),
-    });
-    setPendingRemovals(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+    try {
+      const ref = await addDoc(collection(db, 'removal_requests'), {
+        initiativeId: init.id,
+        initiativeTitle: init.title,
+        targetUserId: member.userId,
+        targetUserName: memberName,
+        requestedByUserId: user.uid,
+        requestedByName: user.displayName || user.email,
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setPendingRemovals(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
+    } catch (err) {
+      console.error(err);
+      setPendingRemovals(prev => prev.filter(r => r.id !== optimisticId));
+      alert(t('saveFailed'));
+    }
   };
 
   const handleCancelRemoval = async (reqId: string) => {
+    const removed = pendingRemovals.find(r => r.id === reqId);
     setPendingRemovals(prev => prev.filter(r => r.id !== reqId));
-    if (!reqId.startsWith('tmp_')) await deleteDoc(doc(db, 'removal_requests', reqId));
+    if (reqId.startsWith('tmp_')) return;
+    try {
+      await deleteDoc(doc(db, 'removal_requests', reqId));
+    } catch (err) {
+      console.error(err);
+      if (removed) setPendingRemovals(prev => [...prev, removed]);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Lead edit modal */

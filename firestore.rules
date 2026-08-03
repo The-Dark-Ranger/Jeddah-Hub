@@ -39,6 +39,15 @@ service cloud.firestore {
       return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
     }
 
+    // Is the caller a lead of the given initiative? Used to scope
+    // leave_requests/removal_requests actions to that specific
+    // initiative's leads rather than any signed-in member.
+    function isLeadOf(initiativeId) {
+      return isSignedIn()
+             && 'leads' in get(/databases/$(database)/documents/initiatives/$(initiativeId)).data
+             && request.auth.uid in get(/databases/$(database)/documents/initiatives/$(initiativeId)).data.leads;
+    }
+
     // ── users ─────────────────────────────────────────────────
     // Public can read (for About/shapers pages).
     // Users write only their own doc, but may never self-assign a
@@ -63,15 +72,20 @@ service cloud.firestore {
     }
 
     // ── initiatives ───────────────────────────────────────────
-    // Public can read. Curators can create/delete. Curators can update
-    // anything; initiative leads (UIDs in the `leads` array) can only edit
-    // their own initiative's content fields — not membership, status,
-    // or the `leads` array itself (which would let a lead self-promote
-    // arbitrary co-leads or remove others via a raw write).
+    // Public can read. Curators and impact officers can create/update
+    // (the impact/projects dashboard page is impact officers' primary
+    // tool for managing projects — create, archive/restore, assign
+    // members — so they need the same access curators have here; hard
+    // delete stays curator-only since the impact officer UI never
+    // exposes it). Initiative leads (UIDs in the `leads` array) can only
+    // edit their own initiative's content fields — not membership,
+    // status, or the `leads` array itself (which would let a lead
+    // self-promote arbitrary co-leads or remove others via a raw write).
     match /initiatives/{docId} {
       allow read: if true;
-      allow create, delete: if isCurator();
-      allow update: if isCurator()
+      allow create: if isCuratorOrImpact();
+      allow delete: if isCurator();
+      allow update: if isCuratorOrImpact()
                     || (isSignedIn()
                         && 'leads' in resource.data
                         && request.auth.uid in resource.data.leads
@@ -168,10 +182,13 @@ service cloud.firestore {
     }
 
     // ── blog_comments ─────────────────────────────────────────
-    // Public can read. Signed-in users can add. Authors and curators can delete.
+    // Public can read. Signed-in users can add as themselves only —
+    // authorId must match the writer's own uid, or anyone could post a
+    // comment impersonating another member (e.g. a curator) via a raw
+    // SDK call. Authors and curators can delete.
     match /blog_comments/{docId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
       allow delete: if isSignedIn()
                     && (request.auth.uid == resource.data.authorId || isCurator());
     }
@@ -185,20 +202,30 @@ service cloud.firestore {
 
     // ── leave_requests ─────────────────────────────────────────
     // Members request to leave their own initiative.
-    // Curators, impact officers, and other members (leads use isAnyMember) can manage.
+    // Curators, impact officers, and that specific initiative's leads can
+    // manage it — update is scoped to only the `status` field so a lead
+    // can't rewrite anything else on the request doc.
     match /leave_requests/{docId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isOwner(resource.data.userId) || isCuratorOrImpact() || isAnyMember();
-      allow update: if isCuratorOrImpact() || isAnyMember();
+      allow read: if isOwner(resource.data.userId)
+                  || isCuratorOrImpact()
+                  || isLeadOf(resource.data.initiativeId);
+      allow update: if isCuratorOrImpact()
+                    || (isLeadOf(resource.data.initiativeId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isOwner(resource.data.userId) || isCuratorOrImpact();
     }
 
     // ── removal_requests ────────────────────────────────────────
-    // Initiative leads submit removal requests for members.
+    // Initiative leads submit removal requests for members — create
+    // requires the caller to actually be a lead of that initiative
+    // (otherwise any signed-in member could spam removal requests
+    // targeting arbitrary users in initiatives they have no relation to).
     // Curators and impact officers review and approve/decline.
     match /removal_requests/{docId} {
       allow create: if isSignedIn()
-                    && request.resource.data.requestedByUserId == request.auth.uid;
+                    && request.resource.data.requestedByUserId == request.auth.uid
+                    && isLeadOf(request.resource.data.initiativeId);
       allow read: if isCuratorOrImpact()
                   || isOwner(resource.data.requestedByUserId);
       allow update: if isCuratorOrImpact();

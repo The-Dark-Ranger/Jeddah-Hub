@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -153,11 +153,15 @@ export default function AboutPage() {
   const [loadingShapers, setLoadingShapers]   = useState(true);
 
   useEffect(() => {
+    const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
+    // Public page — scope the users query to roles actually displayed here
+    // (excludes pending/no-role accounts) instead of downloading the whole
+    // collection, and use a server-side count instead of downloading every
+    // initiative doc just to show a number.
     Promise.all([
-      getDocs(collection(db, 'users')),
-      getDocs(collection(db, 'initiatives')),
-    ]).then(([usersSnap, initSnap]) => {
-      const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
+      getDocs(query(collection(db, 'users'), where('role', 'in', ['shaper', 'alumni', ...curatorRoles]))),
+      getCountFromServer(collection(db, 'initiatives')),
+    ]).then(([usersSnap, initCount]) => {
       const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
 
       const toShaper = (u: any): LiveShaper => ({
@@ -200,7 +204,7 @@ export default function AboutPage() {
       setShapers(live);
       setAlumni(liveAlumni);
       setCurators(curs);
-      setInitiativeCount(initSnap.size);
+      setInitiativeCount(initCount.data().count);
       setLoadingShapers(false);
     }).catch(() => setLoadingShapers(false));
   }, []);

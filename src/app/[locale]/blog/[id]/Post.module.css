@@ -320,7 +320,7 @@
 .commentTime {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .commentContent {

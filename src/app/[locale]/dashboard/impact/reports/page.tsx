@@ -13,14 +13,23 @@ export default function ImpactReports() {
   const canManage = normRole === 'curator' || normRole === 'vice_curator' || normRole === 'impact_officer';
   const [initiativeId, setInitiativeId] = useState('');
   const [metrics, setMetrics]           = useState('');
+  const [saving, setSaving]             = useState(false);
 
   const handleSave = async () => {
-    if (!initiativeId || !metrics) return;
-    await addDoc(collection(db, 'impact_reports'), {
-      initiativeId, metrics, createdAt: new Date().toISOString(),
-    });
-    setInitiativeId(''); setMetrics('');
-    alert(t('reportSaved'));
+    if (!initiativeId || !metrics || saving) return;
+    setSaving(true);
+    try {
+      await addDoc(collection(db, 'impact_reports'), {
+        initiativeId, metrics, createdAt: new Date().toISOString(),
+      });
+      setInitiativeId(''); setMetrics('');
+      alert(t('reportSaved'));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!canManage) {
@@ -38,9 +47,9 @@ export default function ImpactReports() {
         <textarea value={metrics} onChange={e => setMetrics(e.target.value)}
           placeholder={t('metricsPlaceholder')}
           style={{ display:'block', width:'100%', padding:'0.5rem', margin:'1rem 0', height:'100px' }} />
-        <button onClick={handleSave}
-          style={{ padding:'0.5rem 1rem', background:'var(--primary-blue)', color:'white', borderRadius:'4px' }}>
-          {t('saveReport')}
+        <button onClick={handleSave} disabled={saving}
+          style={{ padding:'0.5rem 1rem', background:'var(--primary-blue)', color:'white', borderRadius:'4px', opacity: saving ? 0.7 : 1 }}>
+          {saving ? t('savingDots') : t('saveReport')}
         </button>
       </div>
       <div className="glass-panel" style={{ padding: '2rem', marginTop: '2rem' }}>

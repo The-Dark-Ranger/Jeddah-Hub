@@ -63,15 +63,24 @@ service cloud.firestore {
     }
 
     // ── initiatives ───────────────────────────────────────────
-    // Public can read. Curators can create/delete. Curators and initiative
-    // leads (UIDs in the `leads` array) can update content.
+    // Public can read. Curators can create/delete. Curators can update
+    // anything; initiative leads (UIDs in the `leads` array) can only edit
+    // their own initiative's content fields — not membership, status,
+    // or the `leads` array itself (which would let a lead self-promote
+    // arbitrary co-leads or remove others via a raw write).
     match /initiatives/{docId} {
       allow read: if true;
       allow create, delete: if isCurator();
       allow update: if isCurator()
                     || (isSignedIn()
                         && 'leads' in resource.data
-                        && request.auth.uid in resource.data.leads);
+                        && request.auth.uid in resource.data.leads
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly([
+                               'title', 'description', 'category', 'startDate', 'endDate',
+                               'imageUrl', 'images', 'stat', 'problem', 'objective',
+                               'impact', 'impactAreas', 'color',
+                             ]));
     }
 
     // ── join_requests ─────────────────────────────────────────
@@ -135,8 +144,11 @@ service cloud.firestore {
 
     // ── role_assignments ──────────────────────────────────────
     // Curators create/delete. Assigned user can read and delete their own.
+    // Impact officers can also read — impact/projects handleRestore looks up
+    // joined curators/vice_curators here to notify them, and that flow runs
+    // for impact officers too.
     match /role_assignments/{docId} {
-      allow read:   if isOwner(resource.data.uid) || isCurator();
+      allow read:   if isOwner(resource.data.uid) || isCuratorOrImpact();
       allow create: if isCurator();
       allow delete: if isCurator() || isOwner(resource.data.uid);
     }

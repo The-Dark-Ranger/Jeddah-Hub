@@ -86,11 +86,13 @@ html {
   /* Stop iOS inflating text when a phone is rotated to landscape. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Sole horizontal clip — see the note on body below for why this can't
+     also live on body. */
+  overflow-x: hidden;
 }
 
 html, body {
   max-width: 100vw;
-  overflow-x: hidden;
   background-color: var(--background);
   color: var(--text-main);
   /* Smooth theme transitions */
@@ -98,6 +100,17 @@ html, body {
 }
 
 body {
+  /* Deliberately no overflow-x here, even though html has it. Per the CSS
+     Overflow spec, pairing a non-visible overflow-x with a visible (i.e.
+     unset) overflow-y on the SAME element computes the visible axis to
+     `auto` too — and that upgrade happens regardless of whether the
+     visible value is explicit or just the default, so it can't be
+     escaped by writing `overflow-y: visible` here. The only way to keep
+     body from becoming its own independent vertical scroll container is
+     to leave overflow-x unset on it entirely. With only html scrolling,
+     position:sticky on anything inside body resolves against the same
+     element the page actually scrolls, instead of anchoring to a second,
+     never-moving scroll box and silently failing to stick. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Grey flash on tap looks broken next to the custom active states. */

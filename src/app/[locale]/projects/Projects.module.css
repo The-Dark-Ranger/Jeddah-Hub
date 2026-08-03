@@ -79,9 +79,9 @@
 .filters { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 3rem; }
 
 .searchWrap { position: relative; max-width: 420px; }
-.searchIcon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.searchIcon { position: absolute; inset-inline-start: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .searchInput {
-  width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; border-radius: 10px;
+  width: 100%; padding: 0.75rem 1rem; padding-inline-start: 2.75rem; border-radius: 10px;
   border: 1px solid var(--border-color); background: var(--card-bg);
   color: var(--text-main); font-size: 0.95rem; outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;

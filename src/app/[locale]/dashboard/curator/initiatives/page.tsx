@@ -399,13 +399,23 @@ export default function ManageInitiatives() {
 
   const handleArchive = async (id: string) => {
     if (!confirm(t('archiveInitiativeConfirm'))) return;
-    await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const handleRestore = async (id: string) => {
-    await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
-    fetchAll();
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   /* ── Team helpers ── */
@@ -417,80 +427,111 @@ export default function ManageInitiatives() {
   const handleAssign = async (initiativeId: string) => {
     if (!assignUser) return;
     setAssigning(true);
-    const role = assignRole.trim() || 'Member';
-    const isLead = role.toLowerCase().includes('lead');
-    await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: arrayUnion({ userId: assignUser, role }),
-      ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
-    });
-    setAssignUser(''); setAssignRole('');
-    setAssigning(false);
-    fetchAll();
+    try {
+      const role = assignRole.trim() || 'Member';
+      const isLead = role.toLowerCase().includes('lead');
+      await updateDoc(doc(db, 'initiatives', initiativeId), {
+        members: arrayUnion({ userId: assignUser, role }),
+        ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
+      });
+      setAssignUser(''); setAssignRole('');
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const handleRemoveMember = async (initiativeId: string, userId: string) => {
     if (!confirm(t('confirmRemoveMember'))) return;
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
-    const wasLead = (init.members as any[] || []).some(
-      (m: any) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
-    );
-    const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
-    await updateDoc(doc(db, 'initiatives', initiativeId), {
-      members: updated,
-      ...(wasLead ? { leads: arrayRemove(userId) } : {}),
-    });
-    fetchAll();
+    try {
+      const wasLead = (init.members as any[] || []).some(
+        (m: any) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+      );
+      const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
+      await updateDoc(doc(db, 'initiatives', initiativeId), {
+        members: updated,
+        ...(wasLead ? { leads: arrayRemove(userId) } : {}),
+      });
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Leave request handlers */
   const handleApproveLeave = async (req: any) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
-    if (init) {
-      const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
-      if (memberObj) {
-        await updateDoc(doc(db, 'initiatives', req.initiativeId), { members: arrayRemove(memberObj) });
+    try {
+      if (init) {
+        const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
+        if (memberObj) {
+          await updateDoc(doc(db, 'initiatives', req.initiativeId), { members: arrayRemove(memberObj) });
+        }
       }
+      await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
+      setLeaveRequests(prev => prev.filter(r => r.id !== req.id));
+      setInitiatives(prev => prev.map(i =>
+        i.id === req.initiativeId
+          ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
+          : i
+      ));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
     }
-    await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
-    setLeaveRequests(prev => prev.filter(r => r.id !== req.id));
-    setInitiatives(prev => prev.map(i =>
-      i.id === req.initiativeId
-        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
-        : i
-    ));
   };
 
   const handleDeclineLeave = async (reqId: string) => {
-    await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
-    setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
+      setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   /* Removal request handlers */
   const handleApproveRemoval = async (req: any) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
-    if (init) {
-      const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.targetUserId);
-      const wasLead = memberObj && typeof memberObj.role === 'string' && memberObj.role.toLowerCase().includes('lead');
-      if (memberObj) {
-        await updateDoc(doc(db, 'initiatives', req.initiativeId), {
-          members: arrayRemove(memberObj),
-          ...(wasLead ? { leads: arrayRemove(req.targetUserId) } : {}),
-        });
+    try {
+      if (init) {
+        const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.targetUserId);
+        const wasLead = memberObj && typeof memberObj.role === 'string' && memberObj.role.toLowerCase().includes('lead');
+        if (memberObj) {
+          await updateDoc(doc(db, 'initiatives', req.initiativeId), {
+            members: arrayRemove(memberObj),
+            ...(wasLead ? { leads: arrayRemove(req.targetUserId) } : {}),
+          });
+        }
       }
+      await updateDoc(doc(db, 'removal_requests', req.id), { status: 'approved' });
+      setRemovalRequests(prev => prev.filter(r => r.id !== req.id));
+      setInitiatives(prev => prev.map(i =>
+        i.id === req.initiativeId
+          ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.targetUserId) }
+          : i
+      ));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
     }
-    await updateDoc(doc(db, 'removal_requests', req.id), { status: 'approved' });
-    setRemovalRequests(prev => prev.filter(r => r.id !== req.id));
-    setInitiatives(prev => prev.map(i =>
-      i.id === req.initiativeId
-        ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.targetUserId) }
-        : i
-    ));
   };
 
   const handleDeclineRemoval = async (reqId: string) => {
-    await updateDoc(doc(db, 'removal_requests', reqId), { status: 'declined' });
-    setRemovalRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      await updateDoc(doc(db, 'removal_requests', reqId), { status: 'declined' });
+      setRemovalRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const getUserLabel = (userId: string) => {

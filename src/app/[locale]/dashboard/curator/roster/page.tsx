@@ -25,22 +25,27 @@ export default function ManageRoster() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [initSnap, usersSnap, reqSnap] = await Promise.all([
-      getDocs(collection(db, 'initiatives')),
-      getDocs(collection(db, 'users')),
-      getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
-    ]);
-    const inits: any[] = initSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const reqs         = reqSnap.docs.map(d => {
-      const data = d.data();
-      const init = inits.find((i: any) => i.id === data.initiativeId);
-      return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId };
-    });
-    setInitiatives(inits);
-    setUsers(usrs);
-    setJoinRequests(reqs);
-    setLoading(false);
+    try {
+      const [initSnap, usersSnap, reqSnap] = await Promise.all([
+        getDocs(collection(db, 'initiatives')),
+        getDocs(collection(db, 'users')),
+        getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
+      ]);
+      const inits: any[] = initSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const reqs         = reqSnap.docs.map(d => {
+        const data = d.data();
+        const init = inits.find((i: any) => i.id === data.initiativeId);
+        return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId };
+      });
+      setInitiatives(inits);
+      setUsers(usrs);
+      setJoinRequests(reqs);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -63,30 +68,45 @@ export default function ManageRoster() {
   };
 
   const handleAcceptJoinRequest = async (req: any) => {
-    await updateDoc(doc(db, 'initiatives', req.initiativeId), {
-      members: arrayUnion({ userId: req.userId, role: 'Member' }),
-    });
-    await deleteDoc(doc(db, 'join_requests', req.id));
-    setJoinRequests(prev => prev.filter(r => r.id !== req.id));
-    setInitiatives(prev => prev.map(i =>
-      i.id === req.initiativeId
-        ? { ...i, members: [...(i.members || []), { userId: req.userId, role: 'Member' }] }
-        : i
-    ));
+    try {
+      await updateDoc(doc(db, 'initiatives', req.initiativeId), {
+        members: arrayUnion({ userId: req.userId, role: 'Member' }),
+      });
+      await deleteDoc(doc(db, 'join_requests', req.id));
+      setJoinRequests(prev => prev.filter(r => r.id !== req.id));
+      setInitiatives(prev => prev.map(i =>
+        i.id === req.initiativeId
+          ? { ...i, members: [...(i.members || []), { userId: req.userId, role: 'Member' }] }
+          : i
+      ));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const handleRejectJoinRequest = async (reqId: string) => {
-    await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
-    setJoinRequests(prev => prev.filter(r => r.id !== reqId));
+    try {
+      await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
+      setJoinRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const handleRemoveMember = async (initiativeId: string, userId: string) => {
     if (!confirm(t('confirmRemoveMember'))) return;
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
-    const updated = (init.members || []).filter((m: any) => m.userId !== userId);
-    await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
-    fetchData();
+    try {
+      const updated = (init.members || []).filter((m: any) => m.userId !== userId);
+      await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
   };
 
   const getUserLabel = (userId: string) => {

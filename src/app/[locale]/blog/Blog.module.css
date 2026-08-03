@@ -78,7 +78,7 @@
 
 .searchIcon {
   position: absolute;
-  left: 1rem;
+  inset-inline-start: 1rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
@@ -86,7 +86,8 @@
 
 .searchInput {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  padding: 0.75rem 1rem;
+  padding-inline-start: 2.75rem;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--card-bg);

@@ -38,9 +38,13 @@ export default function ExportEmails() {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(emails.join('\n'));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(emails.join('\n'));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (!isCurator) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLocale, useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
@@ -24,10 +24,14 @@ export default function HomeShapers() {
   const [loaded, setLoaded]   = useState(false);
 
   useEffect(() => {
-    getDocs(collection(db, 'users')).then(snap => {
+    // Public homepage — scope the query to shaper-family roles and cap the
+    // download instead of pulling every user document (which includes
+    // email addresses) to every anonymous visitor.
+    const q = query(collection(db, 'users'), where('role', 'in', SHAPER_ROLES), limit(30));
+    getDocs(q).then(snap => {
       const list = snap.docs
         .map(d => ({ uid: d.id, ...d.data() } as any))
-        .filter((u: any) => SHAPER_ROLES.includes(u.role) && u.displayName)
+        .filter((u: any) => u.displayName)
         .map((u: any): Shaper => ({
           uid:           u.uid,
           displayName:   u.displayName,

@@ -95,16 +95,22 @@ export default function BlogPostPage() {
     e.preventDefault();
     if (!user || !commentText.trim() || posting) return;
     setPosting(true);
-    await addDoc(collection(db, 'blog_comments'), {
-      blogId: id,
-      authorId: user.uid,
-      authorName: user.displayName || user.email || 'Shaper',
-      authorRole: user.role,
-      content: commentText.trim(),
-      createdAt: new Date().toISOString(),
-    });
-    setCommentText('');
-    setPosting(false);
+    try {
+      await addDoc(collection(db, 'blog_comments'), {
+        blogId: id,
+        authorId: user.uid,
+        authorName: user.displayName || user.email || 'Shaper',
+        authorRole: user.role,
+        content: commentText.trim(),
+        createdAt: new Date().toISOString(),
+      });
+      setCommentText('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to post comment.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   if (loading) return (
@@ -159,7 +165,7 @@ export default function BlogPostPage() {
 
           {/* Body */}
           <div className={styles.articleBody}>
-            {post.content.split('\n').map((para: string, i: number) =>
+            {(post.content || '').split('\n').map((para: string, i: number) =>
               para.trim() ? <p key={i}>{para}</p> : <br key={i} />
             )}
           </div>

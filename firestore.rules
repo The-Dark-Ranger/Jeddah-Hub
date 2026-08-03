@@ -41,12 +41,24 @@ service cloud.firestore {
 
     // ── users ─────────────────────────────────────────────────
     // Public can read (for About/shapers pages).
-    // Users write only their own doc.
-    // Curators can write any user doc (role assignment).
+    // Users write only their own doc, but may never self-assign a
+    // privileged role — only an existing curator can grant
+    // curator/vice_curator/impact_officer. This is the only place
+    // `role` is ever safe to trust: without this guard any signed-in
+    // user could call updateDoc(users/{ownUid}, {role:'curator'})
+    // directly via the SDK and grant themselves admin access, since
+    // every isCurator()/isImpactOfficer() check in this file reads
+    // straight from this field.
     match /users/{uid} {
       allow read: if true;
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid) || isCurator();
+      allow create: if isOwner(uid)
+                    && (!('role' in request.resource.data)
+                        || request.resource.data.role == null
+                        || request.resource.data.role in ['shaper', 'alumni']);
+      allow update: if isCurator()
+                    || (isOwner(uid)
+                        && (request.resource.data.role == resource.data.role
+                            || request.resource.data.role in ['shaper', 'alumni']));
       allow delete: if isCurator();
     }
 
@@ -84,11 +96,19 @@ service cloud.firestore {
                        isCuratorOrImpact()
                        || request.auth.uid == resource.data.authorId
                      ));
-      allow create: if isAnyMember();
+      // authorId must be the writer's own uid (no impersonation), and only
+      // curators/impact officers may create a post already in 'published' —
+      // everyone else's direct writes are capped at draft/pending_review
+      // regardless of what the client UI offers, since that's a
+      // client-only signal with nothing server-side to verify it.
+      allow create: if isAnyMember()
+                    && request.resource.data.authorId == request.auth.uid
+                    && (isCuratorOrImpact()
+                        || request.resource.data.status in ['draft', 'pending_review']);
       allow update: if isCuratorOrImpact()
                     || (isSignedIn()
                         && request.auth.uid == resource.data.authorId
-                        && resource.data.status in ['draft', 'pending'])
+                        && resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
                     // likedBy/visitorLikes fields on a published post — needed because
                     // guest likes are written with no Firebase Auth session at all.

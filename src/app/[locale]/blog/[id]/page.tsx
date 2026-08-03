@@ -50,10 +50,15 @@ export default function BlogPostPage() {
   // Fetch post
   useEffect(() => {
     const fetchPost = async () => {
-      const ref = doc(db, 'blogs', id);
-      const snap = await getDoc(ref);
-      if (snap.exists()) setPost({ id: snap.id, ...snap.data() });
-      setLoading(false);
+      try {
+        const ref = doc(db, 'blogs', id);
+        const snap = await getDoc(ref);
+        if (snap.exists()) setPost({ id: snap.id, ...snap.data() });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchPost();
   }, [id]);

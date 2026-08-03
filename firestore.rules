@@ -48,26 +48,55 @@ service cloud.firestore {
              && request.auth.uid in get(/databases/$(database)/documents/initiatives/$(initiativeId)).data.leads;
     }
 
+    // Does the given role_assignments doc belong to the caller? These docs
+    // never carry a `uid` field (the invitee doesn't have an account yet
+    // when a curator creates one), so ownership is decided by matching the
+    // caller's own verified auth email against the doc's `email` field.
+    function isAssignee(data) {
+      return isSignedIn() && request.auth.token.email != null
+             && request.auth.token.email.lower() == data.email;
+    }
+
+    // A curator-created role_assignments doc keyed by the caller's own
+    // verified auth email (see role_assignments below — assignments are
+    // created with the lowercased email as the doc ID specifically so
+    // this can look them up directly). Lets a freshly-invited user apply
+    // ANY pre-assigned role — including curator/vice_curator/impact_officer
+    // — to their own account on first login, without opening up
+    // self-escalation: the only way a role_assignments doc can exist at
+    // all is isCurator() creating one (see below), so this just lets the
+    // invitee redeem a grant a curator already made, not invent one.
+    function preassignedRole() {
+      return (isSignedIn() && request.auth.token.email != null
+              && exists(/databases/$(database)/documents/role_assignments/$(request.auth.token.email.lower())))
+             ? get(/databases/$(database)/documents/role_assignments/$(request.auth.token.email.lower())).data.role
+             : null;
+    }
+
     // ── users ─────────────────────────────────────────────────
     // Public can read (for About/shapers pages).
     // Users write only their own doc, but may never self-assign a
-    // privileged role — only an existing curator can grant
-    // curator/vice_curator/impact_officer. This is the only place
-    // `role` is ever safe to trust: without this guard any signed-in
-    // user could call updateDoc(users/{ownUid}, {role:'curator'})
-    // directly via the SDK and grant themselves admin access, since
-    // every isCurator()/isImpactOfficer() check in this file reads
-    // straight from this field.
+    // privileged role out of thin air — only an existing curator can
+    // grant curator/vice_curator/impact_officer, UNLESS the value being
+    // written exactly matches a role a curator already pre-assigned to
+    // this account's own email via role_assignments (preassignedRole()).
+    // Without either guard, any signed-in user could call
+    // updateDoc(users/{ownUid}, {role:'curator'}) directly via the SDK
+    // and grant themselves admin access, since every
+    // isCurator()/isImpactOfficer() check in this file reads straight
+    // from this field.
     match /users/{uid} {
       allow read: if true;
       allow create: if isOwner(uid)
                     && (!('role' in request.resource.data)
                         || request.resource.data.role == null
-                        || request.resource.data.role in ['shaper', 'alumni']);
+                        || request.resource.data.role in ['shaper', 'alumni']
+                        || request.resource.data.role == preassignedRole());
       allow update: if isCurator()
                     || (isOwner(uid)
                         && (request.resource.data.role == resource.data.role
-                            || request.resource.data.role in ['shaper', 'alumni']));
+                            || request.resource.data.role in ['shaper', 'alumni']
+                            || request.resource.data.role == preassignedRole()));
       allow delete: if isCurator();
     }
 
@@ -77,10 +106,15 @@ service cloud.firestore {
     // tool for managing projects — create, archive/restore, assign
     // members — so they need the same access curators have here; hard
     // delete stays curator-only since the impact officer UI never
-    // exposes it). Initiative leads (UIDs in the `leads` array) can only
-    // edit their own initiative's content fields — not membership,
-    // status, or the `leads` array itself (which would let a lead
-    // self-promote arbitrary co-leads or remove others via a raw write).
+    // exposes it). Initiative leads (UIDs in the `leads` array) can edit
+    // their own initiative's content fields and its `members` array
+    // (accepting join requests, removing members — the shaper/initiatives
+    // dashboard's lead tools need this) — but never `status` or the
+    // `leads` array itself, which would let a lead self-promote arbitrary
+    // co-leads or remove others via a raw write. Note `members[].role` is
+    // a display-only string (e.g. "Lead" badge text); actual lead
+    // privilege is only ever granted through the separate `leads` field,
+    // so a lead editing that text doesn't grant themselves anything new.
     match /initiatives/{docId} {
       allow read: if true;
       allow create: if isCuratorOrImpact();
@@ -93,20 +127,27 @@ service cloud.firestore {
                              .hasOnly([
                                'title', 'description', 'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
-                               'impact', 'impactAreas', 'color',
+                               'impact', 'impactAreas', 'color', 'members',
                              ]));
     }
 
     // ── join_requests ─────────────────────────────────────────
     // Shapers create requests for themselves.
-    // Curators, impact officers, and the initiative lead can read + update.
+    // Curators, impact officers, and that specific initiative's leads can
+    // read/update/delete — update is scoped to only the `status` field so
+    // a lead can't rewrite anything else on the request doc.
     match /join_requests/{docId} {
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid;
       allow read:   if isOwner(resource.data.userId)
-                    || isCuratorOrImpact();
-      allow update: if isCuratorOrImpact();
-      allow delete: if isOwner(resource.data.userId) || isCuratorOrImpact();
+                    || isCuratorOrImpact()
+                    || isLeadOf(resource.data.initiativeId);
+      allow update: if isCuratorOrImpact()
+                    || (isLeadOf(resource.data.initiativeId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if isOwner(resource.data.userId)
+                    || isCuratorOrImpact()
+                    || isLeadOf(resource.data.initiativeId);
     }
 
     // ── blogs ─────────────────────────────────────────────────
@@ -150,21 +191,28 @@ service cloud.firestore {
     }
 
     // ── impact_reports ────────────────────────────────────────
-    // Public can read. Impact officers and curators can write.
+    // Public can read. Curator/vice_curator only — the impact/reports
+    // dashboard page is no longer part of the impact officer's tools
+    // (see dashboard/layout.tsx), so this matches that UI-level
+    // restriction instead of leaving it enforceable only cosmetically.
     match /impact_reports/{docId} {
       allow read: if true;
-      allow create, update, delete: if isCuratorOrImpact();
+      allow create, update, delete: if isCurator();
     }
 
     // ── role_assignments ──────────────────────────────────────
-    // Curators create/delete. Assigned user can read and delete their own.
-    // Impact officers can also read — impact/projects handleRestore looks up
-    // joined curators/vice_curators here to notify them, and that flow runs
-    // for impact officers too.
+    // Curators create/delete. Ownership is by email match (isAssignee()
+    // above) since these docs never carry a `uid` field. The assignee
+    // needs read access to their own pending assignment so the client can
+    // discover what role to self-apply on first login (src/lib/auth.ts,
+    // lookupRoleAssignment) — without it that lookup silently returns
+    // nothing and no role, not even shaper/alumni, is ever applied.
+    // Deliberately no `update` rule: marking an assignment "joined" for a
+    // curator-facing notification is intentionally not supported.
     match /role_assignments/{docId} {
-      allow read:   if isOwner(resource.data.uid) || isCuratorOrImpact();
+      allow read:   if isAssignee(resource.data) || isCuratorOrImpact();
       allow create: if isCurator();
-      allow delete: if isCurator() || isOwner(resource.data.uid);
+      allow delete: if isCurator() || isAssignee(resource.data);
     }
 
     // ── contact_messages ──────────────────────────────────────

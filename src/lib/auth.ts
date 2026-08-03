@@ -1,8 +1,8 @@
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, getDocs, addDoc, limit
+  doc, getDoc, setDoc,
+  collection, query, where, getDocs, limit
 } from 'firebase/firestore';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
@@ -20,22 +20,26 @@ export interface UserProfile {
   instagram?: string;
 }
 
-interface RoleResult { role: UserRole; docId: string | null; }
+interface RoleResult { role: UserRole; }
 
 async function bootstrapFirstAdmin(email: string): Promise<RoleResult> {
   try {
     const snap = await getDocs(query(collection(db, 'role_assignments'), limit(1)));
     if (snap.empty) {
-      const ref = await addDoc(collection(db, 'role_assignments'), {
-        email: email.toLowerCase().trim(),
+      // Keyed by the lowercased email (not an auto-id) so the Firestore
+      // rules' preassignedRole() can look this doc up directly by path
+      // when the bootstrapped user applies their own curator role below.
+      const normalizedEmail = email.toLowerCase().trim();
+      await setDoc(doc(db, 'role_assignments', normalizedEmail), {
+        email: normalizedEmail,
         role: 'curator',
         createdAt: new Date().toISOString(),
         addedBy: 'system-bootstrap',
       });
-      return { role: 'curator', docId: ref.id };
+      return { role: 'curator' };
     }
   } catch { /* ignore */ }
-  return { role: null, docId: null };
+  return { role: null };
 }
 
 async function lookupRoleAssignment(email: string): Promise<RoleResult> {
@@ -47,30 +51,14 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
     const snap = await getDocs(q);
     if (!snap.empty) {
       const data = snap.docs[0].data();
-      // Skip already-joined records — they exist only for curator notification
-      if (data.status === 'joined') return { role: null, docId: null };
       return {
         role: ((data.role as string)?.toLowerCase().replace(/\s+/g, '_') as UserRole) || null,
-        docId: snap.docs[0].id,
       };
     }
   } catch (error) {
     console.error('Error checking role_assignments:', error);
   }
-  return { role: null, docId: null };
-}
-
-async function applyAndClearAssignment(docRef: ReturnType<typeof doc>, role: UserRole, docId: string | null) {
-  await setDoc(docRef, { role }, { merge: true });
-  if (docId) {
-    // Mark as joined instead of deleting — curator sees the notification and acknowledges it
-    try {
-      await updateDoc(doc(db, 'role_assignments', docId), {
-        status: 'joined',
-        joinedAt: new Date().toISOString(),
-      });
-    } catch { /* ignore */ }
-  }
+  return { role: null };
 }
 
 export async function getUserProfile(uid: string, email?: string | null): Promise<UserProfile | null> {
@@ -88,7 +76,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
         if (!result.role) result = await bootstrapFirstAdmin(target);
         if (result.role) {
           role = result.role;
-          await applyAndClearAssignment(docRef, role, result.docId);
+          await setDoc(docRef, { role }, { merge: true });
         }
       }
 
@@ -107,14 +95,6 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
       if (!result.role) result = await bootstrapFirstAdmin(email);
       const profile: UserProfile = { uid, email, role: result.role, displayName: null };
       await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
-      if (result.role && result.docId) {
-        try {
-          await updateDoc(doc(db, 'role_assignments', result.docId), {
-            status: 'joined',
-            joinedAt: new Date().toISOString(),
-          });
-        } catch { /* ignore */ }
-      }
       return profile;
     }
   } catch (error) {

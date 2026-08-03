@@ -243,7 +243,7 @@ export default function AboutPage() {
       <div className={styles.statsBar}>
         <div className={styles.statItem}>
           <span className={styles.statNum}>
-            {loadingShapers ? '...' : shapers.length > 0 ? shapers.length : '37'}
+            {loadingShapers ? '...' : shapers.length}
           </span>
           <span className={styles.statLabel}>{t('shapers')}</span>
         </div>

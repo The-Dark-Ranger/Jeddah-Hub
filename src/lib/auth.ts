@@ -2,7 +2,7 @@ import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, getDocs, limit
+  collection, query, where, getDocs, addDoc, limit
 } from 'firebase/firestore';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
@@ -26,17 +26,13 @@ async function bootstrapFirstAdmin(email: string): Promise<RoleResult> {
   try {
     const snap = await getDocs(query(collection(db, 'role_assignments'), limit(1)));
     if (snap.empty) {
-      // Keyed by the lowercased email (not an auto-id) so the Firestore
-      // rules' preassignedRole() can look this doc up directly by path
-      // when the bootstrapped user applies their own curator role below.
-      const normalizedEmail = email.toLowerCase().trim();
-      await setDoc(doc(db, 'role_assignments', normalizedEmail), {
-        email: normalizedEmail,
+      const ref = await addDoc(collection(db, 'role_assignments'), {
+        email: email.toLowerCase().trim(),
         role: 'curator',
         createdAt: new Date().toISOString(),
         addedBy: 'system-bootstrap',
       });
-      return { role: 'curator', docId: normalizedEmail };
+      return { role: 'curator', docId: ref.id };
     }
   } catch { /* ignore */ }
   return { role: null, docId: null };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, setDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -97,7 +97,10 @@ export default function MembersPage() {
     }
     setSaving(true); setError('');
     try {
-      await addDoc(collection(db, 'role_assignments'), {
+      // Keyed by the lowercased email (not an auto-id) so the Firestore
+      // rules' preassignedRole() can look this doc up directly by path
+      // when this person applies their own pre-assigned role on first login.
+      await setDoc(doc(db, 'role_assignments', emailLower), {
         email: emailLower,
         displayName: name.trim() || null,
         role,

@@ -15,7 +15,17 @@ interface Shaper {
   photoURL?: string;
 }
 
-const SHAPER_ROLES = ['shaper', 'alumni', 'curator', 'vice_curator', 'impact_officer'];
+// Firestore 'in' matching is exact-string, so this has to enumerate every
+// casing/spacing variant the app has ever written to `role` (Firestore
+// rules' isCurator()/isImpactOfficer() already tolerate both
+// "vice_curator"/"vice curator" and "impact_officer"/"impact officer") —
+// otherwise a vice curator or impact officer stored in one of those
+// variants would be silently excluded from this query.
+const SHAPER_ROLES = [
+  'shaper', 'alumni', 'curator',
+  'vice_curator', 'vice curator',
+  'impact_officer', 'impact officer',
+];
 
 export default function HomeShapers() {
   const t      = useTranslations('HomePage');

@@ -153,6 +153,7 @@ export default function ActivitiesPage() {
       fetchAll();
     } catch (err) {
       console.error('Failed to toggle activity:', err);
+      alert(t('saveFailed'));
     }
   }
 
@@ -163,6 +164,7 @@ export default function ActivitiesPage() {
       fetchAll();
     } catch (err) {
       console.error('Failed to delete activity:', err);
+      alert(t('saveFailed'));
     }
   }
 

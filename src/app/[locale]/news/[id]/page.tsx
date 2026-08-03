@@ -96,24 +96,27 @@ export default function NewsPostPage() {
     setLiking(true);
     const ref = doc(db, 'blogs', id);
 
-    if (user) {
-      if (liked) {
-        await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
-        setPost((p: any) => ({ ...p, likedBy: (p.likedBy ?? []).filter((u: string) => u !== user.uid) }));
-      } else {
-        await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
-        setPost((p: any) => ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
+    try {
+      if (user) {
+        if (liked) {
+          await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
+          setPost((p: any) => ({ ...p, likedBy: (p.likedBy ?? []).filter((u: string) => u !== user.uid) }));
+        } else {
+          await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
+          setPost((p: any) => ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
+        }
+      } else if (visitorId) {
+        if (liked) {
+          await updateDoc(ref, { visitorLikes: arrayRemove(visitorId) });
+          setPost((p: any) => ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter((v: string) => v !== visitorId) }));
+        } else {
+          await updateDoc(ref, { visitorLikes: arrayUnion(visitorId) });
+          setPost((p: any) => ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId] }));
+        }
       }
-    } else if (visitorId) {
-      if (liked) {
-        await updateDoc(ref, { visitorLikes: arrayRemove(visitorId) });
-        setPost((p: any) => ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter((v: string) => v !== visitorId) }));
-      } else {
-        await updateDoc(ref, { visitorLikes: arrayUnion(visitorId) });
-        setPost((p: any) => ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId] }));
-      }
+    } finally {
+      setLiking(false);
     }
-    setLiking(false);
   };
 
   /* ── Post comment ── */
@@ -133,16 +136,23 @@ export default function NewsPostPage() {
     };
     setComments(prev => [...prev, optimistic]);
     setPosting(true);
-    const ref = await addDoc(collection(db, 'blog_comments'), {
-      blogId: id,
-      authorId:   user.uid,
-      authorName: user.displayName || user.email || t('globalShaper'),
-      authorRole: (user as any).role,
-      content:    text,
-      createdAt:  new Date().toISOString(),
-    });
-    setComments(prev => prev.map(c => c.id === optimistic.id ? { ...c, id: ref.id } : c));
-    setPosting(false);
+    try {
+      const ref = await addDoc(collection(db, 'blog_comments'), {
+        blogId: id,
+        authorId:   user.uid,
+        authorName: user.displayName || user.email || t('globalShaper'),
+        authorRole: (user as any).role,
+        content:    text,
+        createdAt:  new Date().toISOString(),
+      });
+      setComments(prev => prev.map(c => c.id === optimistic.id ? { ...c, id: ref.id } : c));
+    } catch (err) {
+      console.error(err);
+      setComments(prev => prev.filter(c => c.id !== optimistic.id));
+      alert('Failed to post comment.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   /* ── Delete comment ── */
@@ -198,7 +208,7 @@ export default function NewsPostPage() {
             <div className={styles.articleDate}>{formatDate(post.createdAt, locale)}</div>
           </div>
           <div className={styles.articleBody}>
-            {post.content.split('\n').map((para: string, i: number) =>
+            {(post.content || '').split('\n').map((para: string, i: number) =>
               para.trim() ? <p key={i}>{para}</p> : <br key={i} />
             )}
           </div>

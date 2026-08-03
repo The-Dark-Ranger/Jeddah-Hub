@@ -104,14 +104,16 @@
 .curatorName { font-size: 1.08rem; font-weight: 700; color: var(--text-main); }
 .curatorRole { font-size: .72rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: .09em; }
 .curatorBio  { font-size: .85rem; color: var(--text-muted); line-height: 1.65; margin-top: .25rem; }
-.curatorLinkedIn {
-  display: inline-flex; align-items: center; gap: .35rem;
-  font-size: .78rem; font-weight: 600; color: var(--primary-blue);
-  margin-top: .5rem; padding: .6rem 1rem; min-height: 44px; border-radius: 20px;
+.curatorSocials { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: .5rem; }
+.curatorIconLink {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  color: var(--primary-blue);
   background: var(--primary-blue-glow);
-  transition: all .2s ease;
+  border: 1px solid transparent;
+  transition: all .18s ease;
 }
-.curatorLinkedIn:hover { background: var(--primary-blue); color: #fff; }
+.curatorIconLink:hover { border-color: var(--primary-blue); background: var(--primary-blue); color: #fff; }
 
 /* ── Shapers grid ── */
 .shapersList {

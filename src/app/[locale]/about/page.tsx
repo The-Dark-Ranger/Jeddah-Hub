@@ -110,9 +110,9 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
 
 function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; index: number; roleLabel: string }) {
   const gradient = avatarGradient(curator.uid, index);
-  const tc     = useTranslations('Common');
   const locale = useLocale();
   const name   = locale === 'ar' && curator.displayNameAr ? curator.displayNameAr : curator.displayName;
+  const hasSocials = curator.linkedin || curator.twitter || curator.instagram;
   return (
     <div className={styles.curatorCard}>
       <div className={styles.curatorAvatarWrap}>
@@ -129,11 +129,27 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
         <div className={styles.curatorName}>{name}</div>
         <div className={styles.curatorRole}>{roleLabel}</div>
         {curator.bio && <p className={styles.curatorBio}>{curator.bio}</p>}
-        {curator.linkedin && (
-          <a href={curator.linkedin} target="_blank" rel="noopener noreferrer" className={styles.curatorLinkedIn}>
-            <LinkedInIcon />
-            {tc('linkedIn')}
-          </a>
+        {hasSocials && (
+          <div className={styles.curatorSocials}>
+            {curator.linkedin && (
+              <a href={curator.linkedin} target="_blank" rel="noopener noreferrer"
+                className={styles.curatorIconLink} aria-label="LinkedIn">
+                <LinkedInIcon />
+              </a>
+            )}
+            {curator.twitter && (
+              <a href={curator.twitter} target="_blank" rel="noopener noreferrer"
+                className={styles.curatorIconLink} aria-label="X / Twitter">
+                <TwitterIcon />
+              </a>
+            )}
+            {curator.instagram && (
+              <a href={curator.instagram} target="_blank" rel="noopener noreferrer"
+                className={styles.curatorIconLink} aria-label="Instagram">
+                <InstagramIcon />
+              </a>
+            )}
+          </div>
         )}
       </div>
     </div>

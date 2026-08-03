@@ -250,15 +250,16 @@ export default function ImpactProjects() {
   /* Notify all curators and vice curators about an archive/restore action */
   const notifyCurators = async (type: 'archive_request' | 'restore_request', initiativeId: string, initiativeTitle: string, message: string) => {
     try {
-      const roleSnap = await getDocs(
-        query(collection(db, 'role_assignments'), where('status', '==', 'joined')),
+      // Query actual curator accounts directly rather than role_assignments'
+      // status=='joined' flag — that transition requires an update Firestore
+      // rule for role_assignments that this app deliberately doesn't grant,
+      // so it never fires and that query would always return zero curators.
+      const usersSnap = await getDocs(
+        query(collection(db, 'users'), where('role', 'in', ['curator', 'vice_curator', 'vice curator'])),
       );
-      const curators = roleSnap.docs
+      const curators = usersSnap.docs
         .map(d => d.data())
-        .filter(d => {
-          const r = d.role?.toLowerCase().replace(/\s+/g, '_');
-          return r === 'curator' || r === 'vice_curator';
-        });
+        .filter(d => d.email);
 
       await Promise.all(curators.map(c =>
         addDoc(collection(db, 'notifications'), {

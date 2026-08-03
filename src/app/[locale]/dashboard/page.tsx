@@ -13,7 +13,7 @@ import styles from './DashboardHome.module.css';
 
 interface Stats {
   initiatives: number; activeInitiatives: number;
-  blogs: number; subscribers: number; reports: number;
+  blogs: number; subscribers: number;
   myProjects: number; unreadMessages: number;
 }
 
@@ -29,7 +29,7 @@ export default function DashboardHome() {
   const t = useTranslations('Dashboard');
   const [stats, setStats] = useState<Stats>({
     initiatives: 0, activeInitiatives: 0, blogs: 0,
-    subscribers: 0, reports: 0, myProjects: 0, unreadMessages: 0,
+    subscribers: 0, myProjects: 0, unreadMessages: 0,
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -44,7 +44,7 @@ export default function DashboardHome() {
 
     const next: Stats = {
       initiatives: 0, activeInitiatives: 0, blogs: 0,
-      subscribers: 0, reports: 0, myProjects: 0, unreadMessages: 0,
+      subscribers: 0, myProjects: 0, unreadMessages: 0,
     };
 
     /* Each stat is isolated: a collection the current role may not read must
@@ -86,10 +86,6 @@ export default function DashboardHome() {
           ? collection(db, 'blogs')
           : query(collection(db, 'blogs'), where('status', '==', 'published'));
         next.blogs = (await getCountFromServer(target)).data().count;
-      }),
-
-      safe(async () => {
-        next.reports = (await getCountFromServer(collection(db, 'impact_reports'))).data().count;
       }),
 
       // Curator-only collections — never queried by other roles, so they no
@@ -192,10 +188,6 @@ export default function DashboardHome() {
             </svg>} />
         </>)}
         {isImpact && (<>
-          <StatCard label={t('statImpactReports')} value={stats.reports} colorVar="blue"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>} />
           <StatCard label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -264,10 +256,6 @@ export default function DashboardHome() {
             <ActionCard title={t('dashProjectsCardTitle')} desc={t('dashProjectsCardDesc')} href="/dashboard/impact/projects" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>} />
-            <ActionCard title={t('actionNewReport')} desc={t('actionNewReportDesc')} href="/dashboard/impact/reports" router={router}
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
               </svg>} />
             <ActionCard title={t('actionWriteBlog')} desc={t('dashImpactWriteBlogDesc')} href="/dashboard/impact/blogs" router={router}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

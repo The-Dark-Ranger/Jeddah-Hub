@@ -49,6 +49,9 @@ export default function NewsPostPage() {
     getDoc(doc(db, 'blogs', id)).then(snap => {
       if (snap.exists()) setPost({ id: snap.id, ...snap.data() });
       setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
     });
   }, [id]);
 

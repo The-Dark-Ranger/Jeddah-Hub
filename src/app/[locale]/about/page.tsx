@@ -153,22 +153,36 @@ export default function AboutPage() {
   const [loadingShapers, setLoadingShapers]   = useState(true);
 
   useEffect(() => {
-    const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
+    // Firestore 'in' matching is exact-string, so this has to enumerate
+    // every casing/spacing variant the app has ever written to `role`
+    // (Firestore rules' isCurator()/isImpactOfficer() already tolerate
+    // both "vice_curator"/"vice curator" and "impact_officer"/"impact
+    // officer") — otherwise a vice curator or impact officer whose role
+    // happens to be stored in one of those variants would be silently
+    // excluded from this query before it ever reaches the client.
+    const roleVariants = [
+      'shaper', 'alumni', 'curator',
+      'vice_curator', 'vice curator',
+      'impact_officer', 'impact officer',
+    ];
     // Public page — scope the users query to roles actually displayed here
     // (excludes pending/no-role accounts) instead of downloading the whole
     // collection, and use a server-side count instead of downloading every
     // initiative doc just to show a number.
     Promise.all([
-      getDocs(query(collection(db, 'users'), where('role', 'in', ['shaper', 'alumni', ...curatorRoles]))),
+      getDocs(query(collection(db, 'users'), where('role', 'in', roleVariants))),
       getCountFromServer(collection(db, 'initiatives')),
     ]).then(([usersSnap, initCount]) => {
       const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
+      // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
+      // all match the same downstream role checks.
+      const normRole = (r: any) => (typeof r === 'string' ? r.toLowerCase().replace(/\s+/g, '_') : '');
 
       const toShaper = (u: any): LiveShaper => ({
         uid:           u.uid,
         displayName:   u.displayName,
         displayNameAr: u.displayNameAr || '',
-        role:          u.role,
+        role:          normRole(u.role),
         bio:           u.bio          || '',
         linkedin:      u.linkedin     || '',
         twitter:       u.twitter      || '',
@@ -177,20 +191,21 @@ export default function AboutPage() {
       });
 
       const live = all
-        .filter((u: any) => u.role === 'shaper' && u.displayName)
+        .filter((u: any) => normRole(u.role) === 'shaper' && u.displayName)
         .map(toShaper);
 
       const liveAlumni = all
-        .filter((u: any) => u.role === 'alumni' && u.displayName)
+        .filter((u: any) => normRole(u.role) === 'alumni' && u.displayName)
         .map(toShaper);
 
+      const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
       const curs = all
-        .filter((u: any) => curatorRoles.includes(u.role) && u.displayName)
+        .filter((u: any) => curatorRoles.includes(normRole(u.role)) && u.displayName)
         .map((u: any): LiveCurator => ({
           uid:           u.uid,
           displayName:   u.displayName,
           displayNameAr: u.displayNameAr || '',
-          role:          u.role,
+          role:          normRole(u.role),
           bio:           u.bio         || '',
           linkedin:      u.linkedin    || '',
           twitter:       u.twitter     || '',

@@ -247,28 +247,8 @@ export default function ImpactProjects() {
     }
   };
 
-  const handleArchive = async (id: string) => {
-    if (!confirm(t('archiveInitiativeConfirm'))) return;
-    try {
-      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    const init = initiatives.find(i => i.id === id);
-    try {
-      await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-      return;
-    }
-
-    /* Notify all curators and vice curators */
+  /* Notify all curators and vice curators about an archive/restore action */
+  const notifyCurators = async (type: 'archive_request' | 'restore_request', initiativeId: string, initiativeTitle: string, message: string) => {
     try {
       const roleSnap = await getDocs(
         query(collection(db, 'role_assignments'), where('status', '==', 'joined')),
@@ -282,18 +262,57 @@ export default function ImpactProjects() {
 
       await Promise.all(curators.map(c =>
         addDoc(collection(db, 'notifications'), {
-          type: 'restore_request',
-          initiativeId: id,
-          initiativeTitle: init?.title || id,
+          type,
+          initiativeId,
+          initiativeTitle,
           fromUserId: user?.uid,
           fromUserName: user?.displayName || user?.email || 'Impact Officer',
           toEmail: c.email,
-          message: `${user?.displayName || 'Impact Officer'} restored the project "${init?.title}" from archive.`,
+          message,
           read: false,
           createdAt: new Date().toISOString(),
         }),
       ));
     } catch { /* notifications optional */ }
+  };
+
+  const handleArchive = async (id: string) => {
+    if (!confirm(t('archiveInitiativeConfirm'))) return;
+    const init = initiatives.find(i => i.id === id);
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+      return;
+    }
+
+    await notifyCurators(
+      'archive_request',
+      id,
+      init?.title || id,
+      `${user?.displayName || 'Impact Officer'} archived the project "${init?.title}".`,
+    );
+
+    await fetchAll();
+  };
+
+  const handleRestore = async (id: string) => {
+    const init = initiatives.find(i => i.id === id);
+    try {
+      await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+      return;
+    }
+
+    await notifyCurators(
+      'restore_request',
+      id,
+      init?.title || id,
+      `${user?.displayName || 'Impact Officer'} restored the project "${init?.title}" from archive.`,
+    );
 
     await fetchAll();
   };
@@ -540,7 +559,7 @@ export default function ImpactProjects() {
                         <rect x="1" y="3" width="22" height="5"/>
                         <line x1="10" y1="12" x2="14" y2="12"/>
                       </svg>
-                      {t('archiveLabel')}
+                      {t('archiveLabel')} · {t('notifyCurator')}
                     </button>
                   ) : (
                     <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>

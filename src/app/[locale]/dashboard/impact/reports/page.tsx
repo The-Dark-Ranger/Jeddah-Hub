@@ -10,7 +10,9 @@ export default function ImpactReports() {
   const t = useTranslations('Dashboard');
   const { user } = useAuth();
   const normRole = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
-  const canManage = normRole === 'curator' || normRole === 'vice_curator' || normRole === 'impact_officer';
+  // Impact Reports is no longer part of the impact officer's dashboard —
+  // curator/vice_curator only.
+  const canManage = normRole === 'curator' || normRole === 'vice_curator';
   const [initiativeId, setInitiativeId] = useState('');
   const [metrics, setMetrics]           = useState('');
   const [saving, setSaving]             = useState(false);

@@ -57,6 +57,16 @@
   flex-direction: column;
   gap: 1.5rem;
   transition: background-color 0.3s ease;
+  /* Desktop: pin the sidebar (nav + Sign Out) in place below the sticky
+     navbar as .mainContent scrolls, instead of it scrolling away with the
+     page. 68px matches the navbar's fixed height (Navbar.module.css). If
+     a role's nav list is ever taller than the viewport, it scrolls inside
+     itself rather than pushing Sign Out off-screen. */
+  position: sticky;
+  top: 68px;
+  align-self: flex-start;
+  max-height: calc(100vh - 68px);
+  overflow-y: auto;
 }
 
 /* User Card */
@@ -123,6 +133,17 @@
   gap: 0.25rem;
 }
 
+/* A bare <ul> lays its <li>s out in normal block flow, i.e. always stacked
+   vertically regardless of any flex-direction set on ancestors — the
+   mobile row layout below needs the list itself to be the flex container. */
+.navList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .navGroupTitle {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -156,22 +177,21 @@
   font-weight: 600;
 }
 
-/* Logout */
-.logoutSidebarBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 0.75rem;
-  border-radius: 10px;
+/* Sign out — rendered as the last item in every role's nav list (see
+   layout.tsx) rather than a separate button below it, so it's found in the
+   same place as everything else instead of being a one-off at the bottom.
+   Composed with .navLink for identical sizing/spacing/touch target; only
+   the color is overridden to keep it recognizable as the exit action. */
+.signOutLink {
+  width: 100%;
   color: var(--danger);
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: background 0.2s ease;
-  margin-top: auto;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: calc(0.65rem + 0.4rem);
 }
-
-.logoutSidebarBtn:hover {
+.signOutLink:hover {
   background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
 }
 
 /* Main Content */
@@ -197,7 +217,12 @@
     gap: 0.75rem;
     background: rgba(255,255,255,0.6);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    /* Own sticky top bar, not the desktop pinned-column behavior above —
+       reset the properties that only make sense for that. */
     position: sticky; top: 0; z-index: 100;
+    align-self: stretch;
+    max-height: none;
+    overflow-y: visible;
   }
   [data-theme="dark"] .sidebar {
     background: rgba(10,15,30,0.72);
@@ -213,6 +238,13 @@
     gap: 0.4rem;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    /* A flex item's default min-width is auto, i.e. "never shrink below my
+       content's natural size" — which silently defeats overflow-x:auto by
+       letting content grow the container instead of overflowing it. This
+       has to be reset at every level between here and the actual content
+       (.navGroup, .navList below) or the scroll never engages no matter
+       how much text is wider than the sidebar. */
+    min-width: 0;
   }
   .nav::-webkit-scrollbar { display: none; }
 
@@ -220,11 +252,23 @@
     flex-direction: row;
     gap: 0.25rem;
     flex-shrink: 0;
+    min-width: 0;
   }
 
   .navGroupTitle {
     display: none;
   }
+
+  /* The actual fix for a horizontally scrolling mobile nav: without this,
+     .navList's default (see base rule) is a vertical column, so every link
+     — plus Sign Out — stacked on top of each other above the page content,
+     regardless of .nav/.navGroup's own row direction above. */
+  .navList {
+    flex-direction: row;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+  .navList li { flex-shrink: 0; }
 
   .navLink {
     white-space: nowrap;
@@ -233,11 +277,13 @@
     border-radius: 8px;
   }
 
-  .logoutSidebarBtn {
+  /* Reset the desktop separator styling — a top border and extra top
+     padding read as a stray line in a horizontal strip of pills, where
+     Sign Out is just another item rather than the last row in a column. */
+  .signOutLink {
     margin-top: 0;
-    flex-shrink: 0;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.78rem;
+    border-top: none;
+    padding-top: 0.45rem;
   }
 
   .mainContent {

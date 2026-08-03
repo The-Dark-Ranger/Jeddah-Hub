@@ -38,6 +38,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const active = (href: string) =>
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
 
+  // Rendered as the last item of every role's nav list, right alongside the
+  // rest of the management links, rather than as a separate button
+  // disconnected from the nav — one place to look for it regardless of role.
+  const signOutItem = (
+    <li>
+      <button onClick={handleLogout} className={styles.navLink + ' ' + styles.signOutLink}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        {t('signOut')}
+      </button>
+    </li>
+  );
+
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
@@ -59,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isCurator && (
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('management')}</span>
-              <ul>
+              <ul className={styles.navList}>
                 <li><Link href="/dashboard/curator/members" className={styles.navLink + (active('/dashboard/curator/members') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1"/>
@@ -114,6 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('myProfile')}
                 </Link></li>
+                {signOutItem}
               </ul>
             </div>
           )}
@@ -122,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isImpact && (
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('impact')}</span>
-              <ul>
+              <ul className={styles.navList}>
                 <li><Link href="/dashboard/impact/projects" className={styles.navLink + (active('/dashboard/impact/projects') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -150,6 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('myProfile')}
                 </Link></li>
+                {signOutItem}
               </ul>
             </div>
           )}
@@ -158,7 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isShaper && (
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('myHub')}</span>
-              <ul>
+              <ul className={styles.navList}>
                 <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -178,6 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('writeBlog')}
                 </Link></li>
+                {signOutItem}
               </ul>
             </div>
           )}
@@ -185,7 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!isCurator && !isImpact && !isShaper && (
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('myHub')}</span>
-              <ul>
+              <ul className={styles.navList}>
                 <li><Link href="/dashboard/shaper/blogs" className={styles.navLink + (active('/dashboard/shaper/blogs') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -199,19 +218,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('myProfile')}
                 </Link></li>
+                {signOutItem}
               </ul>
             </div>
           )}
         </nav>
-
-        <button onClick={handleLogout} className={styles.logoutSidebarBtn}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          {t('signOut')}
-        </button>
       </aside>
 
       <main className={styles.mainContent}>{children}</main>

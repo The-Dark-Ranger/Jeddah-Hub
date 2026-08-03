@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './Exports.module.css';
 
 export default function ExportEmails() {
   const t = useTranslations('Dashboard');
+  const { user } = useAuth();
+  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [emails, setEmails]   = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied]   = useState(false);
@@ -38,6 +42,10 @@ export default function ExportEmails() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (!isCurator) {
+    return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
+  }
 
   return (
     <div className={styles.page}>

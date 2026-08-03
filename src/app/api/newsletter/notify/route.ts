@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/serverAuth';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
@@ -12,20 +13,46 @@ interface NewsPost {
   createdAt: string;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function POST(req: NextRequest) {
-  const { subscribers, post, relatedPosts } = await req.json() as {
+  const caller = await requireRole(req, ['curator', 'vice_curator', 'impact_officer']);
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { subscribers, post: rawPost, relatedPosts: rawRelatedPosts } = await req.json() as {
     subscribers: string[];
     post: NewsPost;
     relatedPosts?: NewsPost[];
   };
 
-  if (!subscribers?.length || !post) {
+  if (!subscribers?.length || !rawPost) {
     return NextResponse.json({ error: 'subscribers and post required' }, { status: 400 });
   }
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });
   }
+
+  const post: NewsPost = {
+    ...rawPost,
+    title: escapeHtml(rawPost.title),
+    excerpt: rawPost.excerpt ? escapeHtml(rawPost.excerpt) : rawPost.excerpt,
+    authorName: rawPost.authorName ? escapeHtml(rawPost.authorName) : rawPost.authorName,
+    tags: rawPost.tags?.map(escapeHtml),
+  };
+  const relatedPosts = rawRelatedPosts?.map(rp => ({
+    ...rp,
+    title: escapeHtml(rp.title),
+    excerpt: rp.excerpt ? escapeHtml(rp.excerpt) : rp.excerpt,
+    tags: rp.tags?.map(escapeHtml),
+  }));
 
   const postUrl = `https://jeddahhub.com/news/${post.id}`;
   const tag = post.tags?.[0] || 'Hub Update';

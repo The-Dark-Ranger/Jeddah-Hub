@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Members.module.css';
@@ -58,9 +58,14 @@ export default function MembersPage() {
 
   const fetchAssignments = useCallback(async () => {
     setLoading(true);
-    const snap = await getDocs(query(collection(db, 'role_assignments'), orderBy('createdAt', 'desc')));
-    setAssignments(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment)));
-    setLoading(false);
+    try {
+      const snap = await getDocs(query(collection(db, 'role_assignments'), orderBy('createdAt', 'desc')));
+      setAssignments(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const fetchKnownUsers = async () => {
@@ -91,18 +96,24 @@ export default function MembersPage() {
       return;
     }
     setSaving(true); setError('');
-    await addDoc(collection(db, 'role_assignments'), {
-      email: emailLower,
-      displayName: name.trim() || null,
-      role,
-      note: note.trim(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      addedBy: user?.email,
-    });
-    setEmail(''); setName(''); setNote(''); setRole('shaper');
-    setSaving(false);
-    fetchAssignments();
+    try {
+      await addDoc(collection(db, 'role_assignments'), {
+        email: emailLower,
+        displayName: name.trim() || null,
+        role,
+        note: note.trim(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        addedBy: user?.email,
+      });
+      setEmail(''); setName(''); setNote(''); setRole('shaper');
+      await fetchAssignments();
+    } catch (err) {
+      console.error(err);
+      setError(t('saveFailed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -119,9 +130,13 @@ export default function MembersPage() {
   const handleSendInvite = async (a: RoleAssignment) => {
     setInviteState(s => ({ ...s, [a.id]: 'sending' }));
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch('/api/invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({ email: a.email, displayName: a.displayName, role: a.role }),
       });
       setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));

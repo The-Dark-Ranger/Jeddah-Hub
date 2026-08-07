@@ -1,9 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL, LOCALES } from '@/lib/seo';
 
-/** Public, indexable routes. Dashboard, login, and legacy /blog (superseded
- *  by /news, never linked) are intentionally excluded — see robots.ts for
- *  the matching disallow rules. */
+/** Public, indexable routes. Dashboard and login are intentionally excluded
+ *  — see robots.ts for the matching disallow rules. */
 const ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
   { path: '',                 changeFrequency: 'weekly',  priority: 1.0 },
   { path: '/about',           changeFrequency: 'monthly', priority: 0.8 },

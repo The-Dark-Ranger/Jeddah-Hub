@@ -4,14 +4,24 @@ import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(req: NextRequest) {
   const { email, recaptchaToken } = await req.json();
-  if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
-
-  if (process.env.RECAPTCHA_SECRET_KEY) {
-    const passed = await verifyRecaptchaToken(recaptchaToken);
-    if (!passed) return NextResponse.json({ error: 'reCAPTCHA verification failed' }, { status: 400 });
+  if (!email || typeof email !== 'string' || !EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
+
+  // Fail closed (matches /api/verify-recaptcha): a misconfigured/missing
+  // secret must reject the request, not silently skip verification — this
+  // is a public, unauthenticated route with no other abuse control, so a
+  // skipped check would turn it into an open relay for arbitrary email.
+  if (!process.env.RECAPTCHA_SECRET_KEY) {
+    console.warn('[newsletter/welcome] RECAPTCHA_SECRET_KEY not configured — rejecting request');
+    return NextResponse.json({ error: 'reCAPTCHA not configured' }, { status: 503 });
+  }
+  const passed = await verifyRecaptchaToken(recaptchaToken);
+  if (!passed) return NextResponse.json({ error: 'reCAPTCHA verification failed' }, { status: 400 });
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });

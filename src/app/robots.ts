@@ -10,8 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         '/*/dashboard',
         '/*/login',
         '/api/',
-        // Legacy duplicate of /news, never linked from anywhere in the site.
-        '/*/blog',
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,

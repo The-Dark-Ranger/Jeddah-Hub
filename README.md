@@ -1,6 +1,6 @@
 # Jeddah Hub
 
-Website for the Jeddah Hub — a local chapter of the World Economic Forum's
+Website for the Jeddah Hub - a local chapter of the World Economic Forum's
 Global Shapers Community. Built with Next.js (App Router) and Firebase.
 
 Bilingual (English/Arabic, RTL-aware) with a public site (about, projects,

@@ -12,9 +12,17 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // to verify against a live Firebase project from this sandbox risks
 // silently breaking login; the meaningful hardening here is object-src
 // 'none' and frame-ancestors 'none' (clickjacking), not a narrow allowlist.
+// React's dev-mode-only debugging (HMR, component stack reconstruction)
+// calls eval() and gets hard-blocked without 'unsafe-eval' — confirmed by
+// running the dev server against this CSP, which crashed every page with
+// a "eval() is not supported" console error overlay. React never calls
+// eval() in a production build, so this is scoped to dev only rather than
+// loosening the policy actually served to real visitors.
+const isDev = process.env.NODE_ENV !== 'production';
+
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com",
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://www.google.com https://www.gstatic.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",

@@ -5,16 +5,18 @@ import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getRecaptchaToken } from '@/lib/recaptcha';
+import { isValidEmail } from '@/lib/validateEmail';
 import styles from './Contact.module.css';
 import WaveDivider from '@/components/WaveDivider';
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(formData.email)) { setStatus('invalid-email'); return; }
     setStatus('loading');
     try {
       const token = await getRecaptchaToken('contact');
@@ -134,6 +136,10 @@ export default function ContactPage() {
                   ) : null}
                   {status === 'loading' ? '' : t('submit')}
                 </button>
+
+                {status === 'invalid-email' && (
+                  <p className={styles.errorMsg}>{t('invalidEmail')}</p>
+                )}
 
                 {status === 'error' && (
                   <p className={styles.errorMsg}>{t('error')}</p>

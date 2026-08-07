@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
 import { escapeHtml } from '@/lib/escapeHtml';
+import { isValidEmail } from '@/lib/validateEmail';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { email, displayName, role } = await req.json();
-  if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
+  if (!isValidEmail(email)) return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
             <h2 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#0f172a;">You're invited, ${firstName}!</h2>
             <p style="margin:0 0 20px;font-size:16px;line-height:1.75;color:#475569;">
               The Jeddah Hub curator has added you as a <strong>${roleName}</strong> in the
-              <strong>Global Shapers Community — Jeddah Hub</strong>. Your account is ready and waiting.
+              <strong>Global Shapers Community, Jeddah Hub</strong>. Your account is ready and waiting.
             </p>
             <p style="margin:0 0 28px;font-size:16px;line-height:1.75;color:#475569;">
               Log in to access your dashboard, connect with fellow shapers, and start making an impact in Jeddah.

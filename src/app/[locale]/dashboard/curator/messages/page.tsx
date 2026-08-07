@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useLocale, useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
+import { isValidEmail } from '@/lib/validateEmail';
 import styles from './Messages.module.css';
 
 interface ContactMessage {
@@ -119,7 +120,7 @@ export default function MessagesPage() {
   };
 
   const handleSend = async () => {
-    if (!composeTo) return;
+    if (!isValidEmail(composeTo)) { alert(t('invalidEmail')); return; }
     setSending(true);
     try {
       const mailUrl = `mailto:${composeTo}?subject=${encodeURIComponent(composeSubj)}&body=${encodeURIComponent(composeBody)}`;

@@ -34,10 +34,10 @@ export default function HomeShapers() {
   const [loaded, setLoaded]   = useState(false);
 
   useEffect(() => {
-    // Public homepage — scope the query to shaper-family roles and cap the
-    // download instead of pulling every user document (which includes
-    // email addresses) to every anonymous visitor.
-    const q = query(collection(db, 'users'), where('role', 'in', SHAPER_ROLES), limit(30));
+    // Public homepage — reads the public_profiles mirror (no email field,
+    // see firestore.rules) rather than the private `users` collection, and
+    // scopes to shaper-family roles with a capped download.
+    const q = query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30));
     getDocs(q).then(snap => {
       const list = snap.docs
         .map(d => ({ uid: d.id, ...d.data() } as any))

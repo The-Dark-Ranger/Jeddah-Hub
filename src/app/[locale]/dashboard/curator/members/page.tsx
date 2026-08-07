@@ -254,7 +254,7 @@ export default function MembersPage() {
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Full Name <span className={styles.optional}>(optional)</span></label>
+            <label className={styles.label}>{t('fullNameLabel')} <span className={styles.optional}>{t('optional')}</span></label>
             <input
               className={styles.input}
               type="text"

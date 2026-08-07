@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/auth';
 import styles from './BlogManager.module.css';
@@ -20,20 +21,22 @@ interface BlogPost {
   likedBy?: string[];
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  published:      { label: 'Published', color: '#10b981' },
-  draft:          { label: 'Draft',     color: '#94a3b8' },
-  pending_review: { label: 'Pending',   color: '#f59e0b' },
-};
-
-function timeAgo(iso: string) {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days < 1) return 'Today';
-  if (days === 1) return 'Yesterday';
-  return days + ' days ago';
-}
-
 export default function BlogManager({ user }: { user: UserProfile }) {
+  const t = useTranslations('BlogManager');
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    published:      { label: t('statusPublished'), color: '#10b981' },
+    draft:          { label: t('statusDraft'),      color: '#94a3b8' },
+    pending_review: { label: t('statusPending'),    color: '#f59e0b' },
+  };
+
+  const timeAgo = (iso: string) => {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days < 1) return t('today');
+    if (days === 1) return t('yesterday');
+    return t('daysAgo', { n: days });
+  };
+
   const normRole   = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const isCurator  = normRole === 'curator' || normRole === 'vice_curator';
   const isImpact   = normRole === 'impact_officer';
@@ -111,20 +114,20 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       await fetchPosts();
     } catch (err) {
       console.error(err);
-      alert('Failed to save post.');
+      alert(t('saveFailed'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this post? This cannot be undone.')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     try {
       await deleteDoc(doc(db, 'blogs', id));
       setPosts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error(err);
-      alert('Failed to delete post.');
+      alert(t('deleteFailed'));
     }
   };
 
@@ -134,7 +137,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
     } catch (err) {
       console.error(err);
-      alert('Failed to update post status.');
+      alert(t('statusUpdateFailed'));
     }
   };
 
@@ -147,42 +150,42 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         <div className={styles.formHeader}>
           <button className={styles.backBtn} onClick={() => { setView('list'); resetForm(); }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Back
+            {t('back')}
           </button>
-          <h2>{view === 'edit' ? 'Edit Post' : 'New Post'}</h2>
+          <h2>{view === 'edit' ? t('editPostTitle') : t('newPostTitle')}</h2>
         </div>
         <form onSubmit={handleSave} className={styles.form}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Title *</label>
-            <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder="Give your post a compelling title..." required />
+            <label className={styles.label}>{t('titleLabel')}</label>
+            <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Content *</label>
-            <textarea className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder="Write your post here..." rows={14} required />
+            <label className={styles.label}>{t('contentLabel')}</label>
+            <textarea className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Excerpt <span className={styles.labelHint}>(auto-generated if empty)</span></label>
-              <textarea className={styles.textarea} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Short summary..." rows={3} />
+              <label className={styles.label}>{t('excerptLabel')} <span className={styles.labelHint}>{t('excerptHint')}</span></label>
+              <textarea className={styles.textarea} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder={t('excerptPlaceholder')} rows={3} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Tags <span className={styles.labelHint}>(comma-separated)</span></label>
-              <input className={styles.input} value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="Education, Sustainability" />
-              <label className={styles.label} style={{ marginTop: '1.25rem' }}>Status</label>
+              <label className={styles.label}>{t('tagsLabel')} <span className={styles.labelHint}>{t('tagsHint')}</span></label>
+              <input className={styles.input} value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder={t('tagsPlaceholder')} />
+              <label className={styles.label} style={{ marginTop: '1.25rem' }}>{t('statusLabel')}</label>
               <select className={styles.select} value={status} onChange={e => setStatus(e.target.value as BlogPost['status'])}>
-                {canPublishDirectly && <option value="published">Published</option>}
-                <option value="draft">Draft</option>
-                {!canPublishDirectly && <option value="pending_review">Submit for Review</option>}
+                {canPublishDirectly && <option value="published">{t('statusPublished')}</option>}
+                <option value="draft">{t('statusDraft')}</option>
+                {!canPublishDirectly && <option value="pending_review">{t('statusSubmitForReview')}</option>}
               </select>
               {!canPublishDirectly && (
-                <p className={styles.statusNote}>Posts submitted for review will be published by a Curator.</p>
+                <p className={styles.statusNote}>{t('statusNote')}</p>
               )}
             </div>
           </div>
           <div className={styles.formActions}>
-            <button type="button" className={styles.cancelBtn} onClick={() => { setView('list'); resetForm(); }}>Cancel</button>
+            <button type="button" className={styles.cancelBtn} onClick={() => { setView('list'); resetForm(); }}>{t('cancel')}</button>
             <button type="submit" className={styles.saveBtn} disabled={saving}>
-              {saving ? 'Saving...' : view === 'edit' ? 'Save Changes' : 'Publish Post'}
+              {saving ? t('saving') : view === 'edit' ? t('saveChanges') : t('publishPost')}
             </button>
           </div>
         </form>
@@ -195,21 +198,21 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h2 className={styles.pageTitle}>Blog Portal</h2>
+          <h2 className={styles.pageTitle}>{t('pageTitle')}</h2>
           <p className={styles.pageSubtitle}>
-            {canSeeAll ? 'Manage and moderate all community posts.' : 'Write and manage your posts.'}
+            {canSeeAll ? t('subtitleAll') : t('subtitleOwn')}
           </p>
         </div>
         <button className={styles.newBtn} onClick={() => { resetForm(); setView('write'); }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Post
+          {t('newPostBtn')}
         </button>
       </div>
 
       <div className={styles.filterBar}>
         {['all', 'published', 'pending_review', 'draft'].map(f => (
           <button key={f} className={styles.filterBtn + (filter === f ? ' ' + styles.filterBtnActive : '')} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'All' : STATUS_LABELS[f]?.label ?? f}
+            {f === 'all' ? t('filterAll') : STATUS_LABELS[f]?.label ?? f}
             <span className={styles.filterCount}>
               {f === 'all' ? posts.length : posts.filter(p => p.status === f).length}
             </span>
@@ -222,16 +225,23 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>✍️</div>
-          <p>No posts here yet.</p>
+          <p>{t('emptyText')}</p>
           <button className={styles.newBtn} style={{ marginTop: '1rem' }} onClick={() => { resetForm(); setView('write'); }}>
-            Write your first post
+            {t('writeFirstPost')}
           </button>
         </div>
       ) : (
         <div className={styles.postList}>
           {filtered.map(post => {
             const si = STATUS_LABELS[post.status] ?? { label: post.status, color: '#94a3b8' };
-            const canEdit = canSeeAll || post.authorId === user.uid;
+            const isOwn = post.authorId === user.uid;
+            // Own posts can only be edited while still unpublished — once a
+            // curator/impact officer publishes it, firestore.rules rejects
+            // further author-side edits (the update rule requires
+            // resource.data.status in ['draft','pending_review']), so
+            // offering Edit here would just lead to a failed-save alert.
+            const canEdit = canSeeAll || (isOwn && post.status !== 'published');
+            const canDelete = canSeeAll || isOwn;
             return (
               <div key={post.id} className={styles.postItem}>
                 <div className={styles.postMain}>
@@ -247,21 +257,21 @@ export default function BlogManager({ user }: { user: UserProfile }) {
                     </div>
                   )}
                   {canSeeAll && (
-                    <div className={styles.postAuthorLine}>By: <strong>{post.authorName}</strong> · {post.authorRole?.replace('_', ' ')}</div>
+                    <div className={styles.postAuthorLine}>{t('byAuthor')} <strong>{post.authorName}</strong> · {post.authorRole?.replace('_', ' ')}</div>
                   )}
                 </div>
                 <div className={styles.postActions}>
                   {canSeeAll && post.status === 'pending_review' && (
                     <>
-                      <button className={styles.approveBtn} onClick={() => handleStatusChange(post.id, 'published')}>Publish</button>
-                      <button className={styles.rejectBtn} onClick={() => handleStatusChange(post.id, 'draft')}>Reject</button>
+                      <button className={styles.approveBtn} onClick={() => handleStatusChange(post.id, 'published')}>{t('publishBtn')}</button>
+                      <button className={styles.rejectBtn} onClick={() => handleStatusChange(post.id, 'draft')}>{t('rejectBtn')}</button>
                     </>
                   )}
                   {canSeeAll && post.status === 'published' && (
-                    <button className={styles.draftBtn} onClick={() => handleStatusChange(post.id, 'draft')}>Unpublish</button>
+                    <button className={styles.draftBtn} onClick={() => handleStatusChange(post.id, 'draft')}>{t('unpublishBtn')}</button>
                   )}
-                  {canEdit && <button className={styles.editBtn} onClick={() => openEdit(post)}>Edit</button>}
-                  {canEdit && <button className={styles.deleteBtn} onClick={() => handleDelete(post.id)}>Delete</button>}
+                  {canEdit && <button className={styles.editBtn} onClick={() => openEdit(post)}>{t('editBtn')}</button>}
+                  {canDelete && <button className={styles.deleteBtn} onClick={() => handleDelete(post.id)}>{t('deleteBtn')}</button>}
                 </div>
               </div>
             );

@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
-import { CATEGORY_COLORS } from '@/lib/placeholderProjects';
+import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -80,12 +80,12 @@ export default function HomeFeaturedInitiatives() {
 
   if (items.length === 0) return (
     <div className={styles.projectsGrid}>
-      {([1, 2, 3] as const).map(n => (
-        <Link key={n} href={`/projects/p${n}`} className={styles.projectCard}>
-          <div className={styles.projectBanner} style={{ background: PROJECT_GRADIENTS[n - 1] }} />
+      {PLACEHOLDER_PROJECTS.slice(0, 3).map((p, i) => (
+        <Link key={p.id} href={`/projects/${p.id}`} className={styles.projectCard}>
+          <div className={styles.projectBanner} style={{ background: PROJECT_GRADIENTS[i] }} />
           <div className={styles.projectInfo}>
-            <h3 className={styles.projectTitle}>{t(`featuredProjects.project${n}.title` as Parameters<typeof t>[0])}</h3>
-            <p className={styles.projectDesc}>{t(`featuredProjects.project${n}.description` as Parameters<typeof t>[0])}</p>
+            <h3 className={styles.projectTitle}>{p.title}</h3>
+            <p className={styles.projectDesc}>{p.description}</p>
             <span className={styles.projectBadge}>{t('active')}</span>
           </div>
         </Link>

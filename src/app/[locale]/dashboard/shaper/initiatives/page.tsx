@@ -218,9 +218,11 @@ export default function JoinInitiatives() {
           : []);
         setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
 
-        // Only fetch the specific users needed to resolve display names —
-        // led initiatives' members plus incoming join-request applicants —
-        // instead of downloading the entire users collection.
+        // Only fetch the specific profiles needed to resolve display names
+        // — led initiatives' members plus incoming join-request applicants
+        // — from the public_profiles mirror (no email field, see
+        // firestore.rules) instead of downloading the entire private users
+        // collection just for a name label.
         const ledInits = inits.filter(i => leadIds.includes(i.id));
         const memberIds = ledInits.flatMap(i =>
           (i.members || []).map((m: any) => (typeof m === 'string' ? m : m.userId)).filter(Boolean)
@@ -231,7 +233,7 @@ export default function JoinInitiatives() {
           const chunks: string[][] = [];
           for (let i = 0; i < neededIds.length; i += 30) chunks.push(neededIds.slice(i, i + 30));
           const userSnaps = await Promise.all(
-            chunks.map(chunk => getDocs(query(collection(db, 'users'), where(documentId(), 'in', chunk))).catch(() => null))
+            chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))).catch(() => null))
           );
           setUsers(userSnaps.filter(Boolean).flatMap(s => s!.docs.map(d => ({ id: d.id, ...d.data() } as any))));
         } else {
@@ -296,7 +298,7 @@ export default function JoinInitiatives() {
 
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
-    return u?.displayName || u?.email || userId;
+    return u?.displayName || userId;
   };
 
   const toggleMemberPanel = (id: string) => {

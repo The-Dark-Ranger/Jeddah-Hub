@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
+import { isRateLimited, clientIp } from '@/lib/rateLimit';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
@@ -7,6 +8,14 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.c
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  // This route sends a real outbound email per request — a token-farmed or
+  // replayed recaptcha pass shouldn't translate into unbounded email volume
+  // to arbitrary addresses. Best-effort, single-instance limiter — see
+  // src/lib/rateLimit.ts for its limits.
+  if (isRateLimited(`newsletter-welcome:${clientIp(req)}`, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const { email, recaptchaToken } = await req.json();
   if (!email || typeof email !== 'string' || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
@@ -72,7 +72,7 @@ export default function MyProfile() {
     setSaving(true);
     setSaved(false);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      const publicFields = {
         displayName:   form.displayName.trim(),
         displayNameAr: form.displayNameAr.trim(),
         photoURL:      form.photoURL.trim(),
@@ -80,7 +80,11 @@ export default function MyProfile() {
         linkedin:      form.linkedin.trim(),
         twitter:       form.twitter.trim(),
         instagram:     form.instagram.trim(),
-      });
+      };
+      await updateDoc(doc(db, 'users', user.uid), publicFields);
+      // Mirror to public_profiles (never email) so About/homepage reflect
+      // the edit immediately instead of waiting for next sign-in.
+      await setDoc(doc(db, 'public_profiles', user.uid), publicFields, { merge: true }).catch(() => {});
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
     } catch (err) {

@@ -182,12 +182,12 @@ export default function AboutPage() {
       'vice_curator', 'vice curator',
       'impact_officer', 'impact officer',
     ];
-    // Public page — scope the users query to roles actually displayed here
-    // (excludes pending/no-role accounts) instead of downloading the whole
-    // collection, and use a server-side count instead of downloading every
-    // initiative doc just to show a number.
+    // Public page — reads the public_profiles mirror (no email field, see
+    // firestore.rules) rather than the private `users` collection, scoped
+    // to roles actually displayed here, and uses a server-side count
+    // instead of downloading every initiative doc just to show a number.
     Promise.all([
-      getDocs(query(collection(db, 'users'), where('role', 'in', roleVariants))),
+      getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
       getCountFromServer(collection(db, 'initiatives')),
     ]).then(([usersSnap, initCount]) => {
       const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));

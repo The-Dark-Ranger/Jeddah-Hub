@@ -165,6 +165,7 @@ export default function AboutPage() {
   const [shapers, setShapers]                 = useState<LiveShaper[]>([]);
   const [alumni, setAlumni]                   = useState<LiveShaper[]>([]);
   const [curators, setCurators]               = useState<LiveCurator[]>([]);
+  const [shaperStatCount, setShaperStatCount] = useState(0);
   const [initiativeCount, setInitiativeCount] = useState<number | null>(null);
   const [loadingShapers, setLoadingShapers]   = useState(true);
 
@@ -235,6 +236,7 @@ export default function AboutPage() {
       setShapers(live);
       setAlumni(liveAlumni);
       setCurators(curs);
+      setShaperStatCount(live.length + curs.length);
       setInitiativeCount(initCount.data().count);
       setLoadingShapers(false);
     }).catch(() => setLoadingShapers(false));
@@ -259,7 +261,7 @@ export default function AboutPage() {
       <div className={styles.statsBar}>
         <div className={styles.statItem}>
           <span className={styles.statNum}>
-            {loadingShapers ? '...' : shapers.length}
+            {loadingShapers ? '...' : shaperStatCount}
           </span>
           <span className={styles.statLabel}>{t('shapers')}</span>
         </div>

@@ -26,6 +26,10 @@ yarn-error.log*
 # Vercel
 .vercel
 
+# Firebase service account / admin SDK credentials — must never be committed
+*serviceaccount*.json
+*firebase-adminsdk*.json
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

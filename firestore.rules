@@ -170,9 +170,16 @@ service cloud.firestore {
                     && (isCuratorOrImpact()
                         || request.resource.data.status in ['draft', 'pending_review']);
       allow update: if isCuratorOrImpact()
+                    // Authors may only edit their own still-unpublished post, and only
+                    // into another unpublished status — otherwise a self-write could flip
+                    // status straight to 'published' (bypassing curator review) or hijack
+                    // authorId, neither of which the precondition on resource.data alone
+                    // would catch since that only looks at the doc's state *before* the write.
                     || (isSignedIn()
                         && request.auth.uid == resource.data.authorId
-                        && resource.data.status in ['draft', 'pending_review'])
+                        && resource.data.status in ['draft', 'pending_review']
+                        && request.resource.data.authorId == resource.data.authorId
+                        && request.resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
                     // likedBy/visitorLikes fields on a published post — needed because
                     // guest likes are written with no Firebase Auth session at all.

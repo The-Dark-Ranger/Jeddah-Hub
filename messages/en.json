@@ -43,6 +43,7 @@
     "retreatVenuesTitle": "Retreat Venues",
     "retreatCta": "Explore the Retreat",
     "newsletterError": "Failed to subscribe. Please try again.",
+    "newsletterInvalidEmail": "Please enter a valid email address.",
     "stayTunedTitle": "Stay Tuned",
     "stayTunedDesc": "Something exciting is being planned for our community. Check back soon for the latest from Jeddah Hub.",
     "activityHighlightsLabel": "Highlights",
@@ -73,13 +74,13 @@
     "statsBenefited": "Benefited",
     "statsPartners": "Partners",
     "missionGlobalTitle": "Community-Led Solutions",
-    "missionGlobalBody": "We start with the people closest to a problem — listening first, then building projects shaped by the community's own priorities, not assumptions made from the outside.",
+    "missionGlobalBody": "We start with the people closest to a problem, listening first, then building projects shaped by the community's own priorities, not assumptions made from the outside.",
     "missionLocalTitle": "Collaboration Over Competition",
     "missionLocalBody": "We partner across government, business, and civil society, because durable change comes from shared ownership, not any one group acting alone.",
     "missionYouthTitle": "Built to Last",
-    "missionYouthBody": "We measure success in the years after a project launches, not just its opening day — initiatives designed to outlast any single Shaper's involvement.",
+    "missionYouthBody": "We measure success in the years after a project launches, not just its opening day. Initiatives are designed to outlast any single Shaper's involvement.",
     "missionDialogueTitle": "Everyone Has a Role",
-    "missionDialogueBody": "Whether you lead an initiative, join one, or simply show up — every level of involvement moves the Hub's work forward.",
+    "missionDialogueBody": "Whether you lead an initiative, join one, or simply show up, every level of involvement moves the Hub's work forward.",
     "wefCities": "Cities",
     "wefShapers": "Shapers",
     "wefYears": "Years",
@@ -195,7 +196,7 @@
       {
         "num": "04",
         "title": "Welcome",
-        "body": "Successful applicants join as Guest Shapers — a structured probation period. After completing the evaluation, they advance to full Shaper membership with all its rights and responsibilities."
+        "body": "Successful applicants join as Guest Shapers: a structured probation period. After completing the evaluation, they advance to full Shaper membership with all its rights and responsibilities."
       }
     ],
     "statShapers": "Members",
@@ -233,6 +234,7 @@
     "namePlaceholder": "Your full name",
     "email": "Email Address",
     "emailPlaceholder": "your@email.com",
+    "invalidEmail": "Please enter a valid email address.",
     "subject": "Subject",
     "subjectGeneral": "General Inquiry",
     "subjectPartnership": "Partnership",
@@ -453,12 +455,12 @@
     "orPasteUrl": "…or paste an image URL",
     "uploadedLabel": "Uploaded",
     "linkedLabel": "Linked",
-    "uploadPhotosHint": "Pick images from your device — they are resized automatically.",
+    "uploadPhotosHint": "Pick images from your device. They are resized automatically.",
     "uploadFailed": "That image could not be processed. Please try another.",
     "uploadNotAnImage": "That file is not an image.",
     "uploadDecodeFailed": "This browser cannot read that image format. Try a JPG or PNG.",
     "uploadTooLarge": "Not enough photo space left. Remove a photo and try again.",
-    "uploadBudgetSkipped": "{count, plural, one {# photo was skipped — no space left.} other {# photos were skipped — no space left.}}",
+    "uploadBudgetSkipped": "{count, plural, one {# photo was skipped: no space left.} other {# photos were skipped: no space left.}}",
     "profileActiveProjects": "Active Projects",
     "noActiveProjects": "You are not a member of any active initiative yet.",
     "joinInitiativesTitle": "Join Initiatives",
@@ -516,6 +518,7 @@
     "accessRestricted": "Access restricted to Curators.",
     "confirmRemove": "Remove this role assignment?",
     "emailAlreadyAssigned": "This email already has a role assignment.",
+    "invalidEmail": "Please enter a valid email address.",
     "statusPending": "Pending Login",
     "statusJoined": "Joined",
     "acknowledge": "Acknowledge",
@@ -663,7 +666,7 @@
     "activityCtaUrlLabel": "CTA Button URL",
     "activityCtaUrlPh": "https://...",
     "activityHighlightsLabel": "Highlights",
-    "activityHighlightsPh": "Name,Tag — one per line\ne.g. Al-Balad,Heritage District",
+    "activityHighlightsPh": "Name,Tag: one per line\ne.g. Al-Balad,Heritage District",
     "activityActiveLabel": "Show on homepage",
     "saveActivity": "Save Activity",
     "createActivity": "Create Activity",
@@ -711,7 +714,7 @@
       },
       {
         "heading": "Become a Shaper Applications",
-        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.com. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form — it is governed by the World Economic Forum's own privacy practices, not this policy."
+        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.com. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form. It is governed by the World Economic Forum's own privacy practices, not this policy."
       },
       {
         "heading": "How We Use Your Information",
@@ -743,7 +746,7 @@
       },
       {
         "heading": "Data Security",
-        "body": "We use industry-standard measures — including encrypted connections and access controls provided by our infrastructure providers — to protect the information we hold. No method of transmission or storage is completely secure, but we work to protect your information appropriately."
+        "body": "We use industry-standard measures, including encrypted connections and access controls provided by our infrastructure providers, to protect the information we hold. No method of transmission or storage is completely secure, but we work to protect your information appropriately."
       },
       {
         "heading": "International Data Transfers",
@@ -775,7 +778,7 @@
       },
       {
         "heading": "Acceptable Use",
-        "body": "You agree not to misuse the site — including attempting to access data that is not yours, disrupting the site's normal operation, or using automated tools to scrape or overload it."
+        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, or using automated tools to scrape or overload it."
       },
       {
         "heading": "Third-Party Links",

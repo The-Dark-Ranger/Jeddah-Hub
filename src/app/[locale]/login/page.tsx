@@ -54,7 +54,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const code = err.code || '';
-      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-email') {
         setError(t('errorInvalid'));
       } else {
         setError(t('errorGeneral'));

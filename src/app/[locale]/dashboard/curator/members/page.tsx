@@ -5,6 +5,7 @@ import { collection, getDocs, setDoc, deleteDoc, doc, query, orderBy } from 'fir
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
+import { isValidEmail } from '@/lib/validateEmail';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -91,6 +92,10 @@ export default function MembersPage() {
     e.preventDefault();
     if (!email.trim()) return;
     const emailLower = email.toLowerCase().trim();
+    if (!isValidEmail(emailLower)) {
+      setError(t('invalidEmail'));
+      return;
+    }
     if (assignments.some(a => a.email === emailLower)) {
       setError(t('emailAlreadyAssigned'));
       return;

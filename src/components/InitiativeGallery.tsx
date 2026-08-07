@@ -133,7 +133,7 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
           <img
             key={current}
             src={current}
-            alt={`${title} — ${safeIx + 1}`}
+            alt={`${title}, photo ${safeIx + 1}`}
             className={styles.stageImg}
             loading="eager"
             fetchPriority="high"
@@ -196,7 +196,7 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
           >
-            <img key={current} src={current} alt={`${title} — ${safeIx + 1}`} className={styles.lightboxImg} />
+            <img key={current} src={current} alt={`${title}, photo ${safeIx + 1}`} className={styles.lightboxImg} />
             {arrows('lightbox')}
           </div>
 

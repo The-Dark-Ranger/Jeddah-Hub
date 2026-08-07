@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
+import { isValidEmail } from '@/lib/validateEmail';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   // This route sends a real outbound email per request — a token-farmed or
@@ -17,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { email, recaptchaToken } = await req.json();
-  if (!email || typeof email !== 'string' || !EMAIL_RE.test(email)) {
+  if (!isValidEmail(email)) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 

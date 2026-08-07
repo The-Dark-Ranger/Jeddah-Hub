@@ -31,7 +31,10 @@ export default function ManageRoster() {
         getDocs(collection(db, 'users')),
         getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
       ]);
-      const inits: any[] = initSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Hub Activities (dashboard/curator/activities) are stored as
+      // initiatives docs tagged type:'hub_activity' — exclude them so they
+      // don't show up as rosterable/team-having initiatives here.
+      const inits: any[] = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() }));
       const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const reqs         = reqSnap.docs.map(d => {
         const data = d.data();

@@ -155,7 +155,11 @@ export default function ImpactProjects() {
         getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc'))),
         getDocs(collection(db, 'users')),
       ]);
-      setInitiatives(initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)));
+      // Hub Activities (dashboard/curator/activities) are stored as
+      // initiatives docs tagged type:'hub_activity' — exclude them, same as
+      // the curator Initiatives page, so they don't appear in this list/
+      // count or become editable through the initiative form here.
+      setInitiatives(initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative)));
       setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord)));
     } catch { /* Firestore not configured */ }
     setLoading(false);

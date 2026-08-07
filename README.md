@@ -11,8 +11,7 @@ news, blog, impact reports) and a role-gated dashboard for the Shapers and to ma
 - [Next.js](https://nextjs.org) (App Router) + React + TypeScript
 - [next-intl](https://next-intl.dev) for i18n (`en`/`ar`)
 - Firebase Auth + Firestore (client SDK) — Firestore Security Rules
-  (`firestore.rules`) are the authorization boundary; see that file for the
-  full role model (shaper / alumni / curator / vice curator / impact
+  (`firestore.rules`) are the authorization boundary.
   officer)
 - CSS Modules
 

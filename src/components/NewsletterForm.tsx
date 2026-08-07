@@ -30,6 +30,16 @@ export default function NewsletterForm() {
 
     setStatus('loading');
     try {
+      // Check the domain can actually receive mail before writing/showing
+      // success — a regex alone accepts syntactically-valid gibberish like
+      // someone@dfgdf.com.
+      const check = await fetch('/api/validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
+      if (!check.ok) { setStatus('invalid-email'); return; }
+
       await addDoc(collection(db, 'newsletter_subscribers'), {
         email: email.toLowerCase().trim(),
         subscribedAt: new Date().toISOString(),

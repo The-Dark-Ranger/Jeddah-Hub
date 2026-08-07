@@ -189,7 +189,12 @@ export default function AboutPage() {
     Promise.all([
       getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
       getCountFromServer(collection(db, 'initiatives')),
-    ]).then(([usersSnap, initCount]) => {
+      // Hub Activities (dashboard/curator/activities) are stored as
+      // initiatives docs tagged type:'hub_activity' — they aren't real
+      // initiatives, so subtract them from the total instead of counting
+      // them here.
+      getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
+    ]).then(([usersSnap, initCount, activityCount]) => {
       const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
       // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
       // all match the same downstream role checks.
@@ -237,7 +242,7 @@ export default function AboutPage() {
       setAlumni(liveAlumni);
       setCurators(curs);
       setShaperStatCount(live.length + curs.length);
-      setInitiativeCount(initCount.data().count);
+      setInitiativeCount(initCount.data().count - activityCount.data().count);
       setLoadingShapers(false);
     }).catch(() => setLoadingShapers(false));
   }, []);

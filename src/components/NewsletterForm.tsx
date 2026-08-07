@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getRecaptchaToken } from '@/lib/recaptcha';
+import { isValidEmail } from '@/lib/validateEmail';
 import styles from './NewsletterForm.module.css';
 
 /** How long the confirmation stays up before the form resets itself, so a
@@ -15,7 +16,7 @@ const SUCCESS_RESET_MS = 6000;
 export default function NewsletterForm() {
   const t = useTranslations('HomePage');
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
 
   useEffect(() => {
     if (status !== 'success') return;
@@ -25,7 +26,7 @@ export default function NewsletterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!isValidEmail(email)) { setStatus('invalid-email'); return; }
 
     setStatus('loading');
     try {
@@ -78,6 +79,7 @@ export default function NewsletterForm() {
           </div>
         </div>
       )}
+      {status === 'invalid-email' && <p className={styles.errorMessage}>{t('newsletterInvalidEmail')}</p>}
       {status === 'error' && <p className={styles.errorMessage}>{t('newsletterError')}</p>}
     </div>
   );

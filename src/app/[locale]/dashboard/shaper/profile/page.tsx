@@ -54,6 +54,9 @@ export default function MyProfile() {
       const joined: {id: string; title: string}[] = [];
       snap.docs.forEach(d => {
         const data = d.data();
+        // Hub Activities are stored as initiatives docs tagged
+        // type:'hub_activity' — never a real "My Initiatives" entry.
+        if (data.type) return;
         if (data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) {
           joined.push({ id: d.id, title: data.title || d.id });
         }

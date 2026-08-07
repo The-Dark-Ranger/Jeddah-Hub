@@ -178,7 +178,11 @@ export default function JoinInitiatives() {
         getDocs(query(collection(db, 'join_requests'), where('userId', '==', user.uid))),
       ]);
 
-      const inits = initSnap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+      // Hub Activities (dashboard/curator/activities) are stored as
+      // initiatives docs tagged type:'hub_activity' — defensively excluded
+      // in case one is ever also marked status:'active', so it can't leak
+      // into a shaper's browsable/joinable initiatives list.
+      const inits = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative));
       const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
       setInitiatives(inits);

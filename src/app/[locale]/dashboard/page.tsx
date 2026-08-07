@@ -55,6 +55,14 @@ export default function DashboardHome() {
 
     await Promise.all([
       safe(async () => {
+        // Hub Activities (dashboard/curator/activities) are stored as
+        // initiatives docs tagged type:'hub_activity' — excluded from every
+        // count/list below the same way HomeFeaturedInitiatives, /projects,
+        // and the curator Initiatives page already do.
+        const activityCount = (await getCountFromServer(
+          query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')),
+        )).data().count;
+
         if (isShaper) {
           // Shapers need per-document membership, so the active initiatives are
           // downloaded once and every count derived from that one snapshot.
@@ -62,20 +70,23 @@ export default function DashboardHome() {
             getCountFromServer(collection(db, 'initiatives')),
             getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
           ]);
-          next.initiatives       = total.data().count;
-          next.activeInitiatives = activeSnap.size;
-          activeSnap.docs.forEach(d => {
+          const activeDocs = activeSnap.docs.filter(d => !(d.data() as any).type);
+          next.initiatives       = total.data().count - activityCount;
+          next.activeInitiatives = activeDocs.length;
+          activeDocs.forEach(d => {
             const data = d.data();
             if (user && data.members?.some((m: any) => m.userId === user.uid)) next.myProjects++;
           });
         } else {
           // Nobody else needs the documents — count them server-side instead.
-          const [total, active] = await Promise.all([
+          const [total, active, activeActivityCount] = await Promise.all([
             getCountFromServer(collection(db, 'initiatives')),
             getCountFromServer(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
+            getCountFromServer(query(collection(db, 'initiatives'),
+              where('type', '==', 'hub_activity'), where('status', '==', 'active'))),
           ]);
-          next.initiatives       = total.data().count;
-          next.activeInitiatives = active.data().count;
+          next.initiatives       = total.data().count - activityCount;
+          next.activeInitiatives = active.data().count - activeActivityCount.data().count;
         }
       }),
 

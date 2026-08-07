@@ -55,14 +55,16 @@ export default function InitiativePage() {
           setInitiative(data);
 
           // Only fetch the specific member docs needed to resolve display
-          // names, in chunks of 30 (Firestore 'in' query limit), instead of
-          // downloading the entire users collection for every project view.
+          // names, in chunks of 30 (Firestore 'in' query limit), from the
+          // public_profiles mirror (no email field, see firestore.rules) —
+          // this is a public page, so the private `users` collection isn't
+          // readable here anyway.
           const memberIds = Array.from(new Set((data.members || []).map(m => m.userId).filter(Boolean)));
           if (memberIds.length > 0) {
             const chunks: string[][] = [];
             for (let i = 0; i < memberIds.length; i += 30) chunks.push(memberIds.slice(i, i + 30));
             const snaps = await Promise.all(
-              chunks.map(chunk => getDocs(query(collection(db, 'users'), where(documentId(), 'in', chunk))))
+              chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))))
             );
             setUsers(snaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord))));
           }

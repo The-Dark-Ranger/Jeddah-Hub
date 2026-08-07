@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
+import { escapeHtml } from '@/lib/escapeHtml';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
@@ -19,8 +20,8 @@ export async function POST(req: NextRequest) {
     curator: 'Curator', vice_curator: 'Vice Curator',
     impact_officer: 'Impact Officer', shaper: 'Shaper', alumni: 'Alumni',
   };
-  const roleName = roleLabel[role] ?? role ?? 'Shaper';
-  const firstName = displayName?.split(' ')[0] || 'there';
+  const roleName = escapeHtml(roleLabel[role] ?? role ?? 'Shaper');
+  const firstName = escapeHtml(displayName?.split(' ')[0] || 'there');
   const loginUrl = 'https://jeddahhub.com/login';
 
   const html = `

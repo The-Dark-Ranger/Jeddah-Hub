@@ -74,7 +74,11 @@ service cloud.firestore {
     }
 
     // ── users ─────────────────────────────────────────────────
-    // Public can read (for About/shapers pages).
+    // Private — contains `email`, which must never be bulk-readable. Only
+    // the owner or a curator/impact officer may read a given user's full
+    // doc; public-facing pages (About/shapers, homepage, project member
+    // lists) instead read the public_profiles mirror below, which never
+    // has an email field. See public_profiles for why this split exists.
     // Users write only their own doc, but may never self-assign a
     // privileged role out of thin air — only an existing curator can
     // grant curator/vice_curator/impact_officer, UNLESS the value being
@@ -84,9 +88,11 @@ service cloud.firestore {
     // updateDoc(users/{ownUid}, {role:'curator'}) directly via the SDK
     // and grant themselves admin access, since every
     // isCurator()/isImpactOfficer() check in this file reads straight
-    // from this field.
+    // from this field. Note this read restriction does NOT break those
+    // checks — get()/exists() in rules always succeed server-side
+    // regardless of the caller's read permission on the target doc.
     match /users/{uid} {
-      allow read: if true;
+      allow read: if isOwner(uid) || isCuratorOrImpact();
       allow create: if isOwner(uid)
                     && (!('role' in request.resource.data)
                         || request.resource.data.role == null
@@ -98,6 +104,21 @@ service cloud.firestore {
                             || request.resource.data.role in ['shaper', 'alumni']
                             || request.resource.data.role == preassignedRole()));
       allow delete: if isCurator();
+    }
+
+    // ── public_profiles ───────────────────────────────────────
+    // A deliberately narrow mirror of users/{uid}, kept in sync by the app
+    // (src/lib/auth.ts, shaper/profile page) whenever the owner's public
+    // fields change. Publicly readable by design (About/shapers pages,
+    // homepage, project member lists) — hasOnly() below is the actual
+    // security boundary: `email` is structurally never a legal key here,
+    // so even a compromised client can't smuggle it in via a direct write.
+    match /public_profiles/{uid} {
+      allow read: if true;
+      allow write: if (isOwner(uid) || isCurator())
+                   && request.resource.data.keys().hasOnly(
+                        ['displayName', 'displayNameAr', 'photoURL', 'bio',
+                         'linkedin', 'twitter', 'instagram', 'role']);
     }
 
     // ── initiatives ───────────────────────────────────────────
@@ -223,9 +244,18 @@ service cloud.firestore {
     }
 
     // ── contact_messages ──────────────────────────────────────
-    // Anyone can submit. Only curators can read + manage.
+    // Anyone can submit (the reCAPTCHA check on the contact form is
+    // client-side only — Firestore rules can't verify a token — so this
+    // caps what a direct SDK write can contain instead: no extra/spoofed
+    // fields like a pre-set `read:true`, and bounded string sizes so the
+    // form can't be used to write arbitrarily large documents). Only
+    // curators can read + manage.
     match /contact_messages/{docId} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'subject', 'message', 'submittedAt', 'read'])
+                    && request.resource.data.read == false
+                    && request.resource.data.name is string    && request.resource.data.name.size()    <= 200
+                    && request.resource.data.subject is string && request.resource.data.subject.size() <= 300
+                    && request.resource.data.message is string && request.resource.data.message.size() <= 5000;
       allow read, update, delete: if isCurator();
     }
 
@@ -250,9 +280,15 @@ service cloud.firestore {
 
     // ── notifications ─────────────────────────────────────────
     // Signed-in users can create. Only curators can read and update.
+    // Field-capped to the exact shape dashboard/impact/projects writes, so
+    // a raw SDK call can't smuggle extra fields into what a curator later
+    // reads and trusts.
     match /notifications/{docId} {
       allow read, update: if isCurator();
-      allow create: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.keys().hasOnly(
+                         ['type', 'initiativeId', 'initiativeTitle', 'fromUserId',
+                          'fromUserName', 'toEmail', 'message', 'read', 'createdAt']);
     }
 
     // ── leave_requests ─────────────────────────────────────────

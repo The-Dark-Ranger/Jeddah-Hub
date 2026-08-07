@@ -19,6 +19,15 @@ export default function ContactPage() {
     if (!isValidEmail(formData.email)) { setStatus('invalid-email'); return; }
     setStatus('loading');
     try {
+      // Check the domain can actually receive mail — a curator replies to
+      // this address later, so a fake domain would just bounce silently.
+      const emailCheck = await fetch('/api/validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
+      if (!emailCheck.ok) { setStatus('invalid-email'); return; }
+
       const token = await getRecaptchaToken('contact');
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
+import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
 
   const { email, recaptchaToken } = await req.json();
   if (!isValidEmail(email)) {
+    return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  }
+  // Defense in depth: the client is expected to pre-check via
+  // /api/validate-email before ever reaching this route, but that's a
+  // client-side gate a direct call can skip — so check again here, right
+  // before actually sending anything.
+  if (!(await hasDeliverableDomainWithTimeout(email))) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 

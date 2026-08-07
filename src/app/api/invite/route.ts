@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
 import { escapeHtml } from '@/lib/escapeHtml';
 import { isValidEmail } from '@/lib/validateEmail';
+import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
 
   const { email, displayName, role } = await req.json();
   if (!isValidEmail(email)) return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  if (!(await hasDeliverableDomainWithTimeout(email))) {
+    return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  }
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });

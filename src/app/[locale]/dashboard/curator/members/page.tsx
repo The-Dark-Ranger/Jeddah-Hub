@@ -102,6 +102,19 @@ export default function MembersPage() {
     }
     setSaving(true); setError('');
     try {
+      // Check the domain can actually receive mail before creating a
+      // pending assignment for it — a regex alone accepts gibberish like
+      // someone@dfgdf.com, and the invite email would just bounce.
+      const check = await fetch('/api/validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailLower }),
+      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
+      if (!check.ok) {
+        setError(t('invalidEmail'));
+        setSaving(false);
+        return;
+      }
       // Keyed by the lowercased email (not an auto-id) so the Firestore
       // rules' preassignedRole() can look this doc up directly by path
       // when this person applies their own pre-assigned role on first login.

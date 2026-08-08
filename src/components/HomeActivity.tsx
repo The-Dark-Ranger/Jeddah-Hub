@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import WaveDivider from './WaveDivider';
 
@@ -82,21 +83,26 @@ export default function HomeActivity() {
                   )}
                 </div>
               )}
-              {activity.ctaText && activity.ctaUrl && (
-                <a
-                  href={activity.ctaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.retreatBtn}
-                  style={activity.color ? { background: activity.color, borderColor: activity.color } : undefined}
-                >
-                  {activity.ctaText}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </a>
-              )}
+              <div className={styles.retreatBtnRow}>
+                {activity.ctaText && activity.ctaUrl && (
+                  <a
+                    href={activity.ctaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.retreatBtn}
+                    style={activity.color ? { background: activity.color, borderColor: activity.color } : undefined}
+                  >
+                    {activity.ctaText}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                      <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                )}
+                <Link href={`/activities/${activity.id}`} className={styles.retreatBtnSecondary}>
+                  {t('viewActivityDetails')}
+                </Link>
+              </div>
             </div>
 
             {hasHighlights && (

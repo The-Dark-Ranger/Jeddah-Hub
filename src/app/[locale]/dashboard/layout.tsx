@@ -130,6 +130,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('myProfile')}
                 </Link></li>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {t('profileActiveProjects')}
+                </Link></li>
                 {signOutItem}
               </ul>
             </div>
@@ -159,6 +165,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('myProfile')}
                 </Link></li>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {t('profileActiveProjects')}
+                </Link></li>
                 {signOutItem}
               </ul>
             </div>
@@ -174,6 +186,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
+                </Link></li>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {t('profileActiveProjects')}
                 </Link></li>
                 <li><Link href="/dashboard/shaper/initiatives" className={styles.navLink + (active('/dashboard/shaper/initiatives') ? ' ' + styles.navLinkActive : '')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -209,6 +227,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
+                </Link></li>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {t('profileActiveProjects')}
                 </Link></li>
                 {signOutItem}
               </ul>

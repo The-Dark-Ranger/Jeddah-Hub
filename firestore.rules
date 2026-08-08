@@ -280,6 +280,23 @@ service cloud.firestore {
       allow read, update, delete: if isCurator();
     }
 
+    // ── activity_responses ───────────────────────────────────
+    // Hub Activities' custom-form submissions. Public create (activities
+    // are open community events, not member-only, matching
+    // contact_messages' precedent for unauthenticated public submissions)
+    // — `answers` can't be validated more granularly than "is a map" since
+    // each activity's question set is curator-defined and dynamic, unlike
+    // contact_messages' fixed fields. Reads are curator/impact-officer
+    // only so individual respondents' answers are never publicly listable,
+    // only the activity doc itself (which never contains responses) is.
+    match /activity_responses/{docId} {
+      allow create: if request.resource.data.keys().hasOnly(['activityId', 'answers', 'submittedAt', 'submitterName', 'submitterEmail'])
+                    && request.resource.data.activityId is string
+                    && request.resource.data.answers is map
+                    && request.resource.data.submittedAt is string;
+      allow read, delete: if isCuratorOrImpact();
+    }
+
     // ── blog_likes ────────────────────────────────────────────
     // Any signed-in user can like/unlike. Public can read counts.
     match /blog_likes/{docId} {

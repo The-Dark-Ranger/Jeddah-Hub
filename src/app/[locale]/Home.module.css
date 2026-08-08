@@ -73,6 +73,14 @@
 .retreatMetaDot { width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35); }
 .retreatBtn { display:inline-flex;align-items:center;gap:.5rem;background:#fff;color:#0f172a;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.92rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
 .retreatBtn:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25); }
+.retreatBtnRow { display:flex; gap:.75rem; flex-wrap:wrap; }
+.retreatBtnSecondary {
+  display:inline-flex; align-items:center; gap:.5rem;
+  background:rgba(255,255,255,.08); color:#fff; border:1.5px solid rgba(255,255,255,.35);
+  padding:.85rem 1.75rem; border-radius:8px; font-weight:700; font-size:.92rem;
+  transition:all .2s ease;
+}
+.retreatBtnSecondary:hover { background:rgba(255,255,255,.16); transform:translateY(-2px); }
 .retreatVenues { background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.75rem; }
 .retreatVenuesTitle { font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);font-weight:600;margin-bottom:1rem; }
 .retreatVenuesGrid  { display:grid;grid-template-columns:1fr 1fr;gap:.6rem; }

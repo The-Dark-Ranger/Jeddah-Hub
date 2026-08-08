@@ -1,0 +1,52 @@
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.pageHeader { margin-bottom: 0.25rem; }
+.pageTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+.pageSubtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+.empty {
+  padding: 3rem 1rem; text-align: center;
+  color: var(--text-muted); font-size: 0.92rem;
+  background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  border-radius: 16px; overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px var(--primary-blue-glow);
+  border-color: var(--primary-blue);
+}
+
+.cardBanner {
+  height: 100px; display: flex; align-items: center; justify-content: center;
+  background: var(--background-alt) center/cover no-repeat;
+  color: var(--primary-blue);
+}
+
+.cardBody { padding: 1.1rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+.categoryPill {
+  align-self: flex-start;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.2rem 0.6rem; border-radius: 20px;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+}
+
+.cardTitle { font-size: 1.02rem; font-weight: 700; color: var(--text-main); }
+.cardStat { font-size: 0.85rem; color: var(--text-muted); }
+
+.viewLink {
+  margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.82rem; font-weight: 600; color: var(--primary-blue);
+}

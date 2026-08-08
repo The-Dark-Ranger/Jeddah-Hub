@@ -94,6 +94,29 @@
 .textarea:focus { outline:none;border-color:var(--primary-blue); }
 .checkRow { display:flex;align-items:center;gap:.6rem;font-size:.875rem;color:var(--text-primary);cursor:pointer; }
 
+/* ── Custom form builder ── */
+.customFormSection { border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.customFormHint { font-size: .78rem; color: var(--text-muted); margin: 0; }
+.questionList { display: flex; flex-direction: column; gap: .85rem; }
+.questionRow {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .75rem; border: 1px solid var(--border-color); border-radius: 9px;
+  background: var(--background-alt);
+}
+.questionRowTop { display: grid; grid-template-columns: 1.2rem 2fr 1fr auto; gap: .5rem; align-items: center; }
+@media (max-width: 520px) { .questionRowTop { grid-template-columns: 1fr; } }
+.questionNum { font-size: .8rem; font-weight: 700; color: var(--text-muted); }
+
+/* ── Responses table ── */
+.responsesTableWrap { overflow-x: auto; }
+.responsesTable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.responsesTable th, .responsesTable td {
+  padding: .5rem .75rem; text-align: start; border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+.responsesTable th { color: var(--text-muted); font-weight: 700; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; }
+.responsesTable td { color: var(--text-primary); }
+
 /* ── Footer buttons ── */
 .cancelBtn { padding:.5rem 1rem;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:.875rem;cursor:pointer; }
 .saveBtn   { padding:.5rem 1.2rem;border-radius:7px;border:none;background:var(--primary-blue);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s; }

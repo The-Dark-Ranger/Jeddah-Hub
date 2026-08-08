@@ -1,0 +1,86 @@
+.page { min-height: 100vh; }
+
+.notFound {
+  min-height: 60vh; display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: 1.1rem;
+}
+
+/* ── Hero ── */
+.hero {
+  position: relative; text-align: center; padding: 6rem 1.25rem 7rem;
+  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
+  overflow: hidden; color: #fff;
+}
+.heroWave { position: absolute; bottom: -1px; left: 0; right: 0; z-index: 1; pointer-events: none; }
+.heroContent { position: relative; z-index: 1; max-width: 700px; margin-inline: auto; }
+.eyebrow {
+  font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255,255,255,.6); margin-bottom: 1rem;
+}
+.title { font-size: clamp(2rem,4vw,3rem); font-weight: 800; color: #fff; margin-bottom: .75rem; letter-spacing: -.02em; }
+.subtitle { font-size: 1.15rem; font-weight: 600; color: rgba(255,255,255,.85); margin-bottom: .75rem; }
+.description { font-size: 1rem; line-height: 1.75; color: rgba(255,255,255,.75); max-width: 600px; margin-inline: auto 1.25rem; }
+.meta {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  font-size: .92rem; color: rgba(255,255,255,.8); margin-top: 1rem;
+}
+.metaDot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.5); }
+.ctaBtn {
+  display: inline-block; margin-top: 1.75rem;
+  background: var(--primary-blue); color: #fff; padding: .85rem 2rem; border-radius: 30px;
+  font-weight: 600; font-size: .95rem; border: 2px solid transparent;
+}
+
+/* ── Sections ── */
+.section    { padding: 4rem 1.25rem; }
+.sectionAlt { padding: 4rem 1.25rem; background: var(--background-alt); }
+.container  { max-width: 1000px; margin-inline: auto; }
+.containerNarrow { max-width: 620px; margin-inline: auto; }
+
+/* ── Highlights ── */
+.highlightsGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1rem; }
+.highlightCard {
+  background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  border-radius: 14px; padding: 1.25rem; text-align: center;
+}
+.highlightName { font-weight: 700; color: var(--text-main); margin-bottom: .3rem; }
+.highlightTag { font-size: .82rem; color: var(--text-muted); }
+
+/* ── Form ── */
+.form {
+  background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  border-radius: 18px; padding: 2rem; display: flex; flex-direction: column; gap: 1.1rem;
+}
+.formTitle { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin-bottom: .25rem; }
+.formRow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 480px) { .formRow { grid-template-columns: 1fr; } }
+.field { display: flex; flex-direction: column; gap: .4rem; }
+.label { font-size: .85rem; font-weight: 600; color: var(--text-main); }
+.input {
+  padding: .7rem .95rem; border-radius: 9px; border: 1px solid var(--border-color);
+  background: var(--input-bg, var(--card-bg)); color: var(--text-main); font-size: .92rem;
+}
+.input:focus { outline: none; border-color: var(--primary-blue); }
+.textarea {
+  padding: .7rem .95rem; border-radius: 9px; border: 1px solid var(--border-color);
+  background: var(--input-bg, var(--card-bg)); color: var(--text-main); font-size: .92rem;
+  resize: vertical; font-family: inherit;
+}
+.textarea:focus { outline: none; border-color: var(--primary-blue); }
+.checkRow { display: flex; align-items: center; gap: .6rem; font-size: .92rem; color: var(--text-main); cursor: pointer; }
+.errorMsg { color: var(--danger); font-size: .88rem; }
+.submitBtn {
+  padding: .85rem 1.5rem; border-radius: 10px; border: none;
+  background: var(--primary-blue); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer;
+  transition: transform .15s ease;
+}
+.submitBtn:hover:not(:disabled) { transform: translateY(-1px); }
+.submitBtn:disabled { opacity: .6; cursor: not-allowed; }
+
+.successBox {
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: .6rem;
+  color: var(--text-main); padding: 2rem;
+}
+.successBox svg { color: #059669; }
+.successBox h2 { font-size: 1.3rem; font-weight: 700; }
+.successBox p { color: var(--text-muted); font-size: .95rem; }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
@@ -25,7 +25,6 @@ export default function MyProfile() {
   const t = useTranslations('Dashboard');
 
   const [form, setForm]                   = useState<ProfileForm>(empty);
-  const [myProjects, setMyProjects] = useState<{id: string; title: string}[]>([]);
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [loaded, setLoaded]               = useState(false);
@@ -48,21 +47,6 @@ export default function MyProfile() {
       }
       setLoaded(true);
     });
-
-    // Filter server-side so archived initiatives are never downloaded.
-    getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))).then(snap => {
-      const joined: {id: string; title: string}[] = [];
-      snap.docs.forEach(d => {
-        const data = d.data();
-        // Hub Activities are stored as initiatives docs tagged
-        // type:'hub_activity' — never a real "My Initiatives" entry.
-        if (data.type) return;
-        if (data.members?.some((m: any) => m === user.uid || m?.userId === user.uid)) {
-          joined.push({ id: d.id, title: data.title || d.id });
-        }
-      });
-      setMyProjects(joined);
-    }).catch(() => setMyProjects([]));
   }, [user]);
 
   const set = (k: keyof ProfileForm) =>
@@ -177,27 +161,6 @@ export default function MyProfile() {
           </svg>
           {t('socialsHint')}
         </p>
-      </div>
-
-      {/* Active projects */}
-      <div className={styles.card}>
-        <p className={styles.cardTitle}>{t('profileActiveProjects')}</p>
-        {myProjects.length === 0 ? (
-          <p className={styles.countLabel} style={{ textAlign: 'center', padding: '0.5rem 0' }}>
-            {t('noActiveProjects')}
-          </p>
-        ) : (
-          <ul className={styles.projectList}>
-            {myProjects.map(p => (
-              <li key={p.id} className={styles.projectItem}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                {p.title}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
       {/* Save button */}

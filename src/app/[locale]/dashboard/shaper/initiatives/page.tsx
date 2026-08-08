@@ -20,6 +20,7 @@ interface Initiative {
   impactAreas?: string[]; color?: string;
 }
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
+interface InitiativeProposal { id: string; title: string; status: 'pending' | 'approved' | 'declined'; }
 
 const CATEGORIES = [
   'Environment', 'Education', 'Health', 'Technology',
@@ -165,8 +166,19 @@ export default function JoinInitiatives() {
   const [leadForm, setLeadForm]         = useState<FormShape>(emptyForm);
   const [leadSaving, setLeadSaving]     = useState(false);
 
+  /* Propose-new-initiative modal — same form, writes a pending request
+   * instead of updating an existing initiative directly. */
+  const [proposeOpen, setProposeOpen]     = useState(false);
+  const [proposeForm, setProposeForm]     = useState<FormShape>(emptyForm);
+  const [proposeSaving, setProposeSaving] = useState(false);
+  const [myProposals, setMyProposals]     = useState<InitiativeProposal[]>([]);
+
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
     setLeadForm(f => ({ ...f, [key]: value }));
+  }, []);
+
+  const handleProposeFormChange = useCallback((key: keyof FormShape, value: string) => {
+    setProposeForm(f => ({ ...f, [key]: value }));
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -256,6 +268,14 @@ export default function JoinInitiatives() {
         where('status', '==', 'pending'),
       ));
       setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+
+      /* Fetch this user's own proposed-initiative requests, any status,
+       * so they can see pending/approved/declined outcomes. */
+      const proposalsSnap = await getDocs(query(
+        collection(db, 'initiative_requests'),
+        where('proposedBy', '==', user.uid),
+      )).catch(() => null);
+      setMyProposals(proposalsSnap ? proposalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as InitiativeProposal)) : []);
 
       /* Fetch incoming leave requests for initiatives where user is a lead */
       if (leadIds.length > 0) {
@@ -513,6 +533,30 @@ export default function JoinInitiatives() {
 
   const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyForm); };
 
+  const openPropose  = () => { setProposeForm(emptyForm); setProposeOpen(true); };
+  const closePropose = () => { setProposeOpen(false); setProposeForm(emptyForm); };
+
+  const handleProposeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !proposeForm.title) return;
+    setProposeSaving(true);
+    try {
+      const docRef = await addDoc(collection(db, 'initiative_requests'), {
+        ...formToDoc(proposeForm),
+        proposedBy: user.uid,
+        proposedByName: user.displayName || user.email || 'Shaper',
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setMyProposals(prev => [...prev, { id: docRef.id, title: proposeForm.title, status: 'pending' }]);
+      closePropose();
+    } catch (err: any) {
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } finally {
+      setProposeSaving(false);
+    }
+  };
+
   const handleLeadSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadEditInit || !leadForm.title) return;
@@ -539,9 +583,71 @@ export default function JoinInitiatives() {
 
   return (
     <div className={styles.page}>
-      <div>
+      <div className={styles.pageHeaderRow}>
         <h2 className={styles.pageTitle}>{t('joinInitiativesTitle')}</h2>
+        <button className={styles.proposeBtn} onClick={openPropose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          {t('proposeInitiativeBtn')}
+        </button>
       </div>
+
+      {/* My proposed initiatives — pending curator review */}
+      {myProposals.length > 0 && (
+        <div className={styles.incomingSection}>
+          <h3 className={styles.sectionTitle}>{t('myProposals')}</h3>
+          <div className={styles.requestList}>
+            {myProposals.map(p => (
+              <div key={p.id} className={styles.incomingRow}>
+                <div className={styles.incomingInfo}>
+                  <span className={styles.incomingUser}>{p.title}</span>
+                </div>
+                <span
+                  className={styles.statusPill}
+                  style={{
+                    color: p.status === 'approved' ? '#059669' : p.status === 'declined' ? 'var(--danger)' : '#f59e0b',
+                  }}
+                >
+                  {p.status === 'approved' ? t('proposalApproved') : p.status === 'declined' ? t('proposalDeclined') : t('proposalPending')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Propose new initiative modal — same form as the lead-edit modal,
+       * but writes a pending request instead of updating an initiative. */}
+      {proposeOpen && (
+        <ModalPortal>
+        <div
+          className={styles.modalOverlay}
+          onClick={e => { if (e.target === e.currentTarget) closePropose(); }}
+        >
+          <form className={styles.modal} onSubmit={handleProposeSubmit}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>{t('proposeInitiativeTitle')}</h3>
+              <button type="button" className={styles.modalClose} onClick={closePropose} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.proposeHint}>{t('proposeInitiativeHint')}</p>
+              <LeadFormFields form={proposeForm} onChange={handleProposeFormChange} />
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.modalCancelBtn} onClick={closePropose}>{t('cancel')}</button>
+              <button type="submit" className={styles.modalSubmitBtn} disabled={proposeSaving || !proposeForm.title}>
+                {proposeSaving ? t('submittingDots') : t('submitProposalBtn')}
+              </button>
+            </div>
+          </form>
+        </div>
+        </ModalPortal>
+      )}
 
       {/* Lead edit modal — full curator-equivalent form */}
       {leadEditInit && (

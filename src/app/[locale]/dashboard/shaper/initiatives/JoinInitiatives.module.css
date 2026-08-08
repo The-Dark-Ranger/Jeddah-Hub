@@ -2,6 +2,31 @@
 
 .pageTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
 
+.pageHeaderRow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+
+.proposeBtn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.65rem 1.25rem; border-radius: 10px;
+  background: var(--primary-blue); color: white;
+  font-weight: 600; font-size: 0.88rem; border: none; cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.proposeBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
+
+.proposeHint {
+  font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;
+  margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);
+}
+
+.statusPill {
+  font-size: 0.78rem; font-weight: 700; text-transform: capitalize;
+  padding: 0.3rem 0.7rem; border-radius: 20px; background: var(--background-alt);
+  flex-shrink: 0;
+}
+
 .loading { display: flex; justify-content: center; padding: 4rem; }
 .spinner {
   width: 32px; height: 32px; border-radius: 50%;

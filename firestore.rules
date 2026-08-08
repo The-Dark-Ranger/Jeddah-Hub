@@ -171,6 +171,27 @@ service cloud.firestore {
                     || isLeadOf(resource.data.initiativeId);
     }
 
+    // ── initiative_requests ──────────────────────────────────
+    // Any member can propose a new initiative for curator/impact-officer
+    // review — same shape as join_requests/leave_requests above. Proposer
+    // can only create as themselves and must start pending (no self-
+    // approval); update is curator/impact-officer-only and field-capped to
+    // just the review outcome, since only the curator side ever performs
+    // an approve/decline — the proposal's own content is never edited in
+    // place. Approval creates a real initiatives doc separately (governed
+    // by the initiatives rules above, not this collection).
+    match /initiative_requests/{docId} {
+      allow create: if isAnyMember()
+                    && request.resource.data.proposedBy == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow read:   if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+      allow update: if isCuratorOrImpact()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt']);
+      allow delete: if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+    }
+
     // ── blogs ─────────────────────────────────────────────────
     // Published posts are publicly readable.
     // Any authenticated member can create (status will be 'draft' or 'pending').

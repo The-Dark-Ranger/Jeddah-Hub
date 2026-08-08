@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  collection, getDocs, updateDoc, doc, arrayUnion, deleteDoc, query, where
+  collection, getDocs, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc, query, where
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -57,9 +57,19 @@ export default function ManageRoster() {
     if (!selectedInit || !selectedUser) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'initiatives', selectedInit), {
-        members: arrayUnion({ userId: selectedUser, role: tempRole.trim() || 'Member' }),
-      });
+      const role = tempRole.trim() || 'Member';
+      // The `leads` array (not this display role text) is what
+      // firestore.rules actually checks to grant a member edit rights on
+      // their own initiative — writing role text alone without also
+      // updating `leads` here is exactly what leaves a "Lead"-badged
+      // member unable to save their own edits (permission-denied).
+      const payload: Record<string, unknown> = {
+        members: arrayUnion({ userId: selectedUser, role }),
+      };
+      if (role.toLowerCase().includes('lead')) {
+        payload.leads = arrayUnion(selectedUser);
+      }
+      await updateDoc(doc(db, 'initiatives', selectedInit), payload);
       setTempRole('');
       await fetchData();
     } catch (err) {
@@ -103,8 +113,33 @@ export default function ManageRoster() {
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
     try {
+      const removed = (init.members || []).find((m: any) => m.userId === userId);
       const updated = (init.members || []).filter((m: any) => m.userId !== userId);
-      await updateDoc(doc(db, 'initiatives', initiativeId), { members: updated });
+      const payload: Record<string, unknown> = { members: updated };
+      // Keep `leads` in sync in the other direction too — a removed lead
+      // should lose write access, not keep a stale entry in the array
+      // firestore.rules actually checks.
+      if (removed?.role?.toLowerCase().includes('lead')) {
+        payload.leads = arrayRemove(userId);
+      }
+      await updateDoc(doc(db, 'initiatives', initiativeId), payload);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  /** True when a member's role text implies "lead" but their uid was never
+   *  actually added to the initiative's `leads` array — the exact drift
+   *  that causes a "Lead"-badged member to hit permission-denied trying to
+   *  save their own initiative. */
+  const isDriftedLead = (init: any, m: any) =>
+    (m.role || '').toLowerCase().includes('lead') && !(init.leads || []).includes(m.userId);
+
+  const handleFixLeadAccess = async (initiativeId: string, userId: string) => {
+    try {
+      await updateDoc(doc(db, 'initiatives', initiativeId), { leads: arrayUnion(userId) });
       await fetchData();
     } catch (err) {
       console.error(err);
@@ -246,7 +281,16 @@ export default function ManageRoster() {
                             <td>
                               <span className={styles.rolePill}>{m.role || 'Member'}</span>
                             </td>
-                            <td>
+                            <td style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                              {isDriftedLead(init, m) && (
+                                <button
+                                  className={styles.assignBtn}
+                                  title={t('fixLeadAccessHint')}
+                                  onClick={() => handleFixLeadAccess(init.id, m.userId)}
+                                >
+                                  {t('fixLeadAccess')}
+                                </button>
+                              )}
                               <button
                                 className={styles.removeBtn}
                                 onClick={() => handleRemoveMember(init.id, m.userId)}

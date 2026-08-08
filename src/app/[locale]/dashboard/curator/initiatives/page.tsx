@@ -220,6 +220,7 @@ export default function ManageInitiatives() {
   const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [removalRequests, setRemovalRequests] = useState<any[]>([]);
+  const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [seeding, setSeeding]   = useState(false);
@@ -277,6 +278,12 @@ export default function ManageInitiatives() {
           return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
         }));
       } catch { setRemovalRequests([]); }
+
+      // Proposed initiatives from shapers (non-critical, catch separately)
+      try {
+        const proposalSnap = await getDocs(query(collection(db, 'initiative_requests'), where('status', '==', 'pending')));
+        setProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch { setProposals([]); }
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
@@ -351,7 +358,12 @@ export default function ManageInitiatives() {
     setSaving(true);
     try {
       await addDoc(collection(db, 'initiatives'), {
-        ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
+        // leads starts empty (not omitted) so firestore.rules' lead-update
+        // branch — which requires 'leads' in resource.data — has something
+        // to check against from the moment the doc exists, rather than
+        // failing outright on a brand-new initiative before anyone's
+        // assigned as lead yet.
+        ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(),
       });
       closeModal();
       fetchAll();
@@ -386,7 +398,7 @@ export default function ManageInitiatives() {
         const d = new Date(now);
         d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
         await addDoc(collection(db, 'initiatives'), {
-          ...init, members: [], images: [], createdAt: d.toISOString(),
+          ...init, members: [], leads: [], images: [], createdAt: d.toISOString(),
         });
       }
       await fetchAll();
@@ -471,7 +483,14 @@ export default function ManageInitiatives() {
       if (init) {
         const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
         if (memberObj) {
-          await updateDoc(doc(db, 'initiatives', req.initiativeId), { members: arrayRemove(memberObj) });
+          const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
+          // A departing lead must also lose their `leads` entry — that's
+          // the array firestore.rules actually checks, so leaving it
+          // behind would grant a former member permanent write access.
+          if ((memberObj.role || '').toLowerCase().includes('lead')) {
+            payload.leads = arrayRemove(req.userId);
+          }
+          await updateDoc(doc(db, 'initiatives', req.initiativeId), payload);
         }
       }
       await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
@@ -491,6 +510,44 @@ export default function ManageInitiatives() {
     try {
       await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
       setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  /* Proposed-initiative handlers */
+  const handleApproveProposal = async (proposal: any) => {
+    try {
+      const { id, proposedBy, proposedByName, status, requestedAt, ...fields } = proposal;
+      // The proposer automatically becomes the new initiative's lead —
+      // they're the one who wants to run it, and this is what actually
+      // lets them edit it afterward (leads is the array firestore.rules
+      // checks, not the members[].role display text).
+      await addDoc(collection(db, 'initiatives'), {
+        ...fields,
+        status: 'active',
+        members: [{ userId: proposedBy, role: 'Lead' }],
+        leads: [proposedBy],
+        createdAt: new Date().toISOString(),
+      });
+      await updateDoc(doc(db, 'initiative_requests', proposal.id), {
+        status: 'approved', reviewedAt: new Date().toISOString(),
+      });
+      setProposals(prev => prev.filter(p => p.id !== proposal.id));
+      await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  const handleDeclineProposal = async (proposalId: string) => {
+    try {
+      await updateDoc(doc(db, 'initiative_requests', proposalId), {
+        status: 'declined', reviewedAt: new Date().toISOString(),
+      });
+      setProposals(prev => prev.filter(p => p.id !== proposalId));
     } catch (err) {
       console.error(err);
       alert(t('saveFailed'));
@@ -639,6 +696,33 @@ export default function ManageInitiatives() {
           </button>
         ))}
       </div>
+
+      {/* ── Proposed Initiatives (from shapers) ── */}
+      {proposals.length > 0 && (
+        <div className={styles.leaveSection}>
+          <h3 className={styles.leaveSectionTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            {t('proposedInitiatives')}
+            <span className={styles.leaveBadge}>{proposals.length}</span>
+          </h3>
+          <div className={styles.leaveList}>
+            {proposals.map(p => (
+              <div key={p.id} className={styles.leaveRow}>
+                <div className={styles.leaveInfo}>
+                  <span className={styles.leaveName}>{p.title}</span>
+                  <span className={styles.leaveMeta}>{t('proposedBy')} <strong>{p.proposedByName}</strong></span>
+                </div>
+                <div className={styles.leaveActions}>
+                  <button className={styles.approveLeaveBtn} onClick={() => handleApproveProposal(p)}>{t('approveProposal')}</button>
+                  <button className={styles.declineLeaveBtn} onClick={() => handleDeclineProposal(p.id)}>{t('declineProposal')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Leave Requests ── */}
       {leaveRequests.length > 0 && (

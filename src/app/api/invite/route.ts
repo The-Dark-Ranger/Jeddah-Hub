@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   };
   const roleName = escapeHtml(roleLabel[role] ?? role ?? 'Shaper');
   const firstName = escapeHtml(displayName?.split(' ')[0] || 'there');
-  const loginUrl = 'https://jeddahhub.com/login';
+  const loginUrl = 'https://jeddahhub.org/login';
 
   const html = `
 <!DOCTYPE html>
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;">
             <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">
-              Questions? Reach us at <a href="https://jeddahhub.com/contact" style="color:#0f5a9f;text-decoration:none;">jeddahhub.com/contact</a>
+              Questions? Reach us at <a href="https://jeddahhub.org/contact" style="color:#0f5a9f;text-decoration:none;">jeddahhub.org/contact</a>
             </p>
             <p style="margin:0;font-size:13px;color:#cbd5e1;">
               © ${new Date().getFullYear()} Global Shapers Community, Jeddah Hub · Jeddah, Saudi Arabia

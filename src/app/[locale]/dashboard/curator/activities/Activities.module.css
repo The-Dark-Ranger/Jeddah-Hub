@@ -4,6 +4,40 @@
 .title  { font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 .25rem; }
 .subtitle { font-size:.9rem;color:var(--text-muted);margin:0; }
 
+/* ── Lead-proposed activities awaiting review ── */
+.proposalsSection {
+  background:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;
+  padding:1rem 1.25rem;
+}
+.proposalsTitle {
+  display:flex;align-items:center;gap:.45rem;
+  font-size:.9rem;font-weight:700;color:var(--text-primary);margin:0 0 .75rem;
+}
+.proposalsBadge {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;height:20px;padding:0 .4rem;border-radius:10px;
+  background:var(--primary-blue);color:#fff;font-size:.72rem;font-weight:700;
+}
+.proposalsList { display:flex;flex-direction:column;gap:.5rem; }
+.proposalRow {
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;
+  padding:.6rem .8rem;border-radius:9px;background:var(--background-alt);
+}
+.proposalInfo { display:flex;flex-direction:column;gap:.15rem;min-width:0; }
+.proposalName { font-size:.86rem;font-weight:600;color:var(--text-primary); }
+.proposalMeta { font-size:.78rem;color:var(--text-muted); }
+.proposalActions { display:flex;gap:.4rem;flex-shrink:0; }
+.approveProposalBtn {
+  padding:.32rem .75rem;border-radius:7px;border:none;font-size:.78rem;font-weight:600;
+  background:rgba(16,185,129,.12);color:#059669;cursor:pointer;transition:background .18s;
+}
+.approveProposalBtn:hover { background:rgba(16,185,129,.22); }
+.declineProposalBtn {
+  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:.78rem;font-weight:600;
+  background:transparent;color:var(--text-muted);cursor:pointer;transition:all .18s;
+}
+.declineProposalBtn:hover { border-color:var(--danger);color:var(--danger); }
+
 /* ── Active/Archived/All filter tabs ── */
 .archiveTabs { display:flex;flex-wrap:wrap;gap:.5rem; }
 .archiveTab {

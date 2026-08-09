@@ -123,6 +123,9 @@ export default function ActivitiesPage() {
   const [responses, setResponses] = useState<ActivityResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
 
+  /* Lead-proposed activities/workshops awaiting review */
+  const [activityProposals, setActivityProposals] = useState<any[]>([]);
+
   const role = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canEdit = role === 'curator' || role === 'vice_curator';
 
@@ -156,6 +159,15 @@ export default function ActivitiesPage() {
       setActivities([]);
     } finally {
       setLoading(false);
+    }
+
+    // Non-critical — a lead's proposal fetch failing shouldn't blank the
+    // main activities list above it.
+    try {
+      const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
+      setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch {
+      setActivityProposals([]);
     }
   }
 
@@ -314,6 +326,37 @@ export default function ActivitiesPage() {
     }
   }
 
+  async function handleApproveActivityProposal(req: any) {
+    try {
+      const { id: _id, proposedBy: _pb, proposedByName: _pbn, status: _s, requestedAt: _ra, ...fields } = req;
+      await addDoc(collection(db, 'initiatives'), {
+        eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
+        ...fields,
+        type: 'hub_activity',
+        active: true,
+        highlights: [],
+        customForm: emptyCustomForm(),
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, 'activity_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
+      setActivityProposals(prev => prev.filter(p => p.id !== req.id));
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to approve activity proposal:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
+  async function handleDeclineActivityProposal(reqId: string) {
+    try {
+      await updateDoc(doc(db, 'activity_requests', reqId), { status: 'declined', reviewedAt: new Date().toISOString() });
+      setActivityProposals(prev => prev.filter(p => p.id !== reqId));
+    } catch (err) {
+      console.error('Failed to decline activity proposal:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleDelete(a: Activity) {
     if (!confirm(t('deleteActivityConfirm'))) return;
     try {
@@ -378,6 +421,35 @@ export default function ActivitiesPage() {
           {t('newActivityBtn')}
         </button>
       </div>
+
+      {activityProposals.length > 0 && (
+        <div className={styles.proposalsSection}>
+          <h3 className={styles.proposalsTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {t('activityProposals')}
+            <span className={styles.proposalsBadge}>{activityProposals.length}</span>
+          </h3>
+          <div className={styles.proposalsList}>
+            {activityProposals.map(req => (
+              <div key={req.id} className={styles.proposalRow}>
+                <div className={styles.proposalInfo}>
+                  <span className={styles.proposalName}>{req.title}</span>
+                  <span className={styles.proposalMeta}>
+                    {req.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
+                    {req.proposedByName && <> · {t('by')} {req.proposedByName}</>}
+                  </span>
+                </div>
+                <div className={styles.proposalActions}>
+                  <button className={styles.approveProposalBtn} onClick={() => handleApproveActivityProposal(req)}>{t('approveProposal')}</button>
+                  <button className={styles.declineProposalBtn} onClick={() => handleDeclineActivityProposal(req.id)}>{t('declineProposal')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {activities.length > 0 && (
         <div className={styles.archiveTabs}>

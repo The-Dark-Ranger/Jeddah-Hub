@@ -193,6 +193,24 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
     }
 
+    // ── activity_requests ──────────────────────────────────────
+    // Same shape as initiative_requests, for a lead proposing a Hub
+    // Activity/workshop instead of a whole new initiative — curator or
+    // vice_curator/impact_officer review turns an approved one into a
+    // real initiatives doc tagged type:'hub_activity' (governed by the
+    // initiatives rules above, not this collection).
+    match /activity_requests/{docId} {
+      allow create: if isAnyMember()
+                    && request.resource.data.proposedBy == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow read:   if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+      allow update: if isCuratorOrImpact()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt']);
+      allow delete: if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+    }
+
     // ── blogs ─────────────────────────────────────────────────
     // Published posts are publicly readable.
     // Any authenticated member can create (status will be 'draft' or 'pending').

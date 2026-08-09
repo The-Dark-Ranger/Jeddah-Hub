@@ -62,7 +62,7 @@
 
 .removeBtn {
   position: absolute; top: 5px; inset-inline-end: 5px;
-  width: 22px; height: 22px; border-radius: 6px;
+  width: 22px; height: 22px; min-width: 22px; min-height: 22px; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.6); color: white;
   border: none; cursor: pointer; transition: background 0.15s ease;

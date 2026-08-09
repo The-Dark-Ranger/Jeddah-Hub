@@ -30,7 +30,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container + ' ' + styles.retreatFadeIn}>
       <div
         className={styles.retreatInner}
         style={!hasHighlights ? { gridTemplateColumns: '1fr' } : undefined}
@@ -137,7 +137,7 @@ export default function HomeActivity() {
 
       {activities.length > 0 ? (
         <>
-          <ActivityCard activity={activities[index]} t={t} />
+          <ActivityCard key={activities[index].id} activity={activities[index]} t={t} />
 
           {activities.length > 1 && (
             <div className={styles.container}>

@@ -49,7 +49,7 @@
   top: 50%; transform: translateY(-50%);
   background: rgba(0,0,0,0.42);
   border: none; border-radius: 50%;
-  width: 32px; height: 32px;
+  width: 32px; height: 32px; min-width: 32px; min-height: 32px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; cursor: pointer;
   transition: background 0.2s ease;
@@ -65,8 +65,10 @@
   display: flex; justify-content: center; gap: 0.35rem;
   z-index: 2;
 }
+/* Resist globals.css's `button { min-height: 44px }` touch-target rule,
+   which otherwise stretches this into a tall pill on phones. */
 .sliderDot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 6px; height: 6px; min-width: 6px; min-height: 6px; border-radius: 50%;
   background: rgba(255,255,255,0.45);
   cursor: pointer; transition: background 0.2s ease;
 }

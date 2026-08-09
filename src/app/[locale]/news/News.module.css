@@ -62,6 +62,7 @@
 .cardMeta { display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: auto; }
 .cardAuthor { display: flex; align-items: center; gap: .6rem; }
 .cardAvatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-blue); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cardAvatarImg { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .cardAuthorName { font-size: .82rem; font-weight: 600; color: var(--text-main); }
 .cardAuthorRole { font-size: .72rem; color: var(--text-muted); text-transform: capitalize; }
 .cardDate { font-size: .78rem; color: var(--text-muted); }

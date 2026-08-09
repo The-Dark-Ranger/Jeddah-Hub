@@ -102,7 +102,7 @@
 }
 
 .modalClose {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-muted); background: transparent;
   border: 1px solid var(--border-color); cursor: pointer;

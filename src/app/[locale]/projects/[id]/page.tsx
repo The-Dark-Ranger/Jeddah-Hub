@@ -85,6 +85,8 @@ export default function InitiativePage() {
     return (locale === 'ar' && u.displayNameAr) ? u.displayNameAr : (u.displayName || null);
   };
 
+  const getUserPhoto = (userId: string) => users.find(u => u.id === userId)?.photoURL || null;
+
   if (loading) return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
 
   if (!initiative) return (
@@ -263,11 +265,16 @@ export default function InitiativePage() {
               <div className={styles.teamGrid}>
                 {initiative.members.map((m, i) => {
                   const name = getUserName(m.userId) ?? m.userId;
+                  const photo = getUserPhoto(m.userId);
                   return (
                     <div key={m.userId + i} className={styles.teamCard}>
-                      <div className={styles.teamAvatar} style={{ background: heroColor + '22', color: heroColor }}>
-                        {name.charAt(0).toUpperCase()}
-                      </div>
+                      {photo ? (
+                        <img className={styles.teamAvatarImg} src={photo} alt="" />
+                      ) : (
+                        <div className={styles.teamAvatar} style={{ background: heroColor + '22', color: heroColor }}>
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className={styles.teamInfo}>
                         <span className={styles.teamName}>{name}</span>
                         {m.role && <span className={styles.teamRole}>{m.role}</span>}

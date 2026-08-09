@@ -29,6 +29,7 @@ export default function NewsPostPage() {
   const [loading, setLoading]         = useState(true);
   const [liking, setLiking]           = useState(false);
   const [visitorId, setVisitorId]     = useState<string | null>(null);
+  const [authorPhoto, setAuthorPhoto] = useState<string | null>(null);
 
   /* Generate / load persistent guest ID for visitor likes */
   useEffect(() => {
@@ -47,7 +48,18 @@ export default function NewsPostPage() {
 
   useEffect(() => {
     getDoc(doc(db, 'blogs', id)).then(snap => {
-      if (snap.exists()) setPost({ id: snap.id, ...snap.data() });
+      if (snap.exists()) {
+        const data = { id: snap.id, ...snap.data() } as any;
+        setPost(data);
+        // Real profile photo instead of the initials fallback, when the
+        // author has one set — same public mirror the projects/about pages
+        // already read from (no email field, safe to read publicly).
+        if (data.authorId) {
+          getDoc(doc(db, 'public_profiles', data.authorId))
+            .then(pSnap => setAuthorPhoto(pSnap.exists() ? (pSnap.data() as any).photoURL || null : null))
+            .catch(() => {});
+        }
+      }
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -110,9 +122,13 @@ export default function NewsPostPage() {
           <h1 className={styles.articleTitle}>{post.title}</h1>
           <div className={styles.articleMeta}>
             <div className={styles.authorCard}>
-              <div className={styles.authorAvatar}>
-                {(post.authorName || t('globalShaper'))[0].toUpperCase()}
-              </div>
+              {authorPhoto ? (
+                <img className={styles.authorAvatarImg} src={authorPhoto} alt="" />
+              ) : (
+                <div className={styles.authorAvatar}>
+                  {(post.authorName || t('globalShaper'))[0].toUpperCase()}
+                </div>
+              )}
               <div>
                 <div className={styles.authorName}>{post.authorName || t('globalShaper')}</div>
                 <div className={styles.authorRole}>

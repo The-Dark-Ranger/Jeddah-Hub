@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
@@ -52,6 +52,7 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('');
+  const [authorPhotos, setAuthorPhotos] = useState<Record<string, string>>({});
 
   const allTags = Array.from(new Set(posts.flatMap(p => p.tags ?? []))).slice(0, 10);
 
@@ -78,6 +79,24 @@ export default function NewsPage() {
         }
         setPosts(data);
         setFiltered(data);
+
+        // Match each post's initials avatar to its author's real profile
+        // photo where one exists, in chunks of 30 (Firestore 'in' limit),
+        // from the public mirror (no email field, safe to read publicly).
+        const authorIds = Array.from(new Set(data.map(p => p.authorId).filter(Boolean)));
+        if (authorIds.length > 0) {
+          const chunks: string[][] = [];
+          for (let i = 0; i < authorIds.length; i += 30) chunks.push(authorIds.slice(i, i + 30));
+          const snaps = await Promise.all(
+            chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))))
+          );
+          const photos: Record<string, string> = {};
+          snaps.forEach(s => s.docs.forEach(d => {
+            const url = (d.data() as any).photoURL;
+            if (url) photos[d.id] = url;
+          }));
+          setAuthorPhotos(photos);
+        }
       } catch {
         /* Firestore unavailable — leave empty list, stop spinner */
       } finally {
@@ -147,9 +166,13 @@ export default function NewsPage() {
                 <p className={styles.cardExcerpt}>{getExcerpt(post)}</p>
                 <div className={styles.cardMeta}>
                   <div className={styles.cardAuthor}>
-                    <div className={styles.cardAvatar}>
-                      {(post.authorName || 'S')[0].toUpperCase()}
-                    </div>
+                    {authorPhotos[post.authorId] ? (
+                      <img className={styles.cardAvatarImg} src={authorPhotos[post.authorId]} alt="" />
+                    ) : (
+                      <div className={styles.cardAvatar}>
+                        {(post.authorName || 'S')[0].toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <div className={styles.cardAuthorName}>{post.authorName || t('defaultAuthor')}</div>
                       <div className={styles.cardAuthorRole}>{post.authorRole?.replace('_', ' ')}</div>

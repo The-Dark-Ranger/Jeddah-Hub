@@ -96,6 +96,14 @@
   justify-content: center;
 }
 
+.authorAvatarImg {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .authorName {
   font-size: 0.95rem;
   font-weight: 700;

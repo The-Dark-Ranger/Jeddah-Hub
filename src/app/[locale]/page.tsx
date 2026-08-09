@@ -6,9 +6,7 @@ import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
-import LiveStat from '@/components/LiveStat';
 import { SITE_URL } from '@/lib/seo';
-import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 
 const ORGANIZATION_JSON_LD = {
   '@context': 'https://schema.org',
@@ -65,11 +63,11 @@ export default function HomePage() {
             <Link href="/projects" className={styles.secondaryButton}>{t('exploreProjects')}</Link>
           </div>
           <div className={styles.heroStats + ' ' + styles.fadeInUp + ' ' + styles.delay3}>
-            <div className={styles.heroStat}><span><LiveStat kind="shapers" fallback="120+" /></span> {t('metrics.shapers')}</div>
+            <div className={styles.heroStat}><span>120+</span> {t('metrics.shapers')}</div>
             <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}><span><LiveStat kind="initiatives" fallback="50+" /></span> {t('metrics.projects')}</div>
+            <div className={styles.heroStat}><span>50+</span> {t('metrics.projects')}</div>
             <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}><span>{COMMUNITY_BENEFITED_STAT}</span> {t('benefited')}</div>
+            <div className={styles.heroStat}><span>120K+</span> {t('benefited')}</div>
           </div>
         </div>
         <WaveDivider fill="var(--background)" className={styles.heroWave} />
@@ -105,9 +103,9 @@ export default function HomePage() {
           </div>
           <div className={styles.impactGrid}>
             {[
-              { num: <>{COMMUNITY_BENEFITED_STAT}</>, label: t('benefited') },
-              { num: <LiveStat kind="initiatives" fallback="50+" />, label: t('metrics.projects') },
-              { num: <>{COMMUNITY_PARTNERS_STAT}</>, label: t('metrics.partners') },
+              { num: '120K+', label: t('benefited') },
+              { num: '50+',   label: t('metrics.projects') },
+              { num: '40+',   label: t('metrics.partners') },
             ].map(({ num, label }) => (
               <div key={label} className={styles.impactCard}>
                 <div className={styles.impactNumber}>{num}</div>

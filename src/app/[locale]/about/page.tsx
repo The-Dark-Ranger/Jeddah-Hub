@@ -62,10 +62,17 @@ const EmailIcon = () => (
   </svg>
 );
 
+// Long enough that a 3-line clamp at the card's font/width would visibly
+// cut it off — short of that, there's nothing to expand.
+const BIO_CLAMP_THRESHOLD = 140;
+
 function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
   const gradient = avatarGradient(shaper.uid, index);
   const locale   = useLocale();
+  const t        = useTranslations('AboutPage');
   const name     = locale === 'ar' && shaper.displayNameAr ? shaper.displayNameAr : shaper.displayName;
+  const [expanded, setExpanded] = useState(false);
+  const isLong = (shaper.bio?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
@@ -103,7 +110,18 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
           </div>
         </div>
       </div>
-      {shaper.bio && <p className={styles.shaperBio}>{shaper.bio}</p>}
+      {shaper.bio && (
+        <>
+          <p className={styles.shaperBio + (isLong && !expanded ? ' ' + styles.shaperBioClamped : '')}>
+            {shaper.bio}
+          </p>
+          {isLong && (
+            <button type="button" className={styles.shaperBioToggle} onClick={() => setExpanded(v => !v)}>
+              {expanded ? t('readLessBio') : t('readMoreBio')}
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }

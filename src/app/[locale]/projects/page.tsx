@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '@/lib/placeholderProjects';
-
-const CATEGORY_KEYS = ['all', 'education', 'sustainability', 'wellbeing', 'economy', 'community'] as const;
 
 interface Project extends PlaceholderProject {}
 
@@ -19,6 +17,9 @@ function ProjectCard({ project, archived, t, index = 0 }: {
   t: ReturnType<typeof useTranslations>;
   index?: number;
 }) {
+  const locale = useLocale();
+  const title = locale === 'ar' && project.titleAr ? project.titleAr : project.title;
+  const description = locale === 'ar' && project.descriptionAr ? project.descriptionAr : project.description;
   const accentColor = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
   const isActive = !archived;
   // Lead with the cover image, then the gallery. Deduped so a curator who also
@@ -44,7 +45,7 @@ function ProjectCard({ project, archived, t, index = 0 }: {
     >
       {imgs.length > 0 && (
         <div className={styles.cardSlider}>
-          <img src={imgs[imgIdx]} alt={project.title} className={styles.cardSliderImg} loading="lazy" />
+          <img src={imgs[imgIdx]} alt={title} className={styles.cardSliderImg} loading="lazy" />
           {imgs.length > 1 && (
             <>
               <button className={styles.sliderPrev} onClick={prevImg} aria-label="Previous image">
@@ -79,8 +80,8 @@ function ProjectCard({ project, archived, t, index = 0 }: {
             {isActive ? t('active') : t('completed')}
           </span>
         </div>
-        <h3 className={styles.cardTitle}>{project.title}</h3>
-        <p className={styles.cardDesc}>{project.description}</p>
+        <h3 className={styles.cardTitle}>{title}</h3>
+        <p className={styles.cardDesc}>{description}</p>
         {project.stat && (
           <div className={styles.cardStat}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -121,7 +122,7 @@ export default function ProjectsPage() {
   const tc = useTranslations('Categories');
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [activeCategoryKey, setActiveCategoryKey] = useState<typeof CATEGORY_KEYS[number]>('all');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch]         = useState('');
 
   useEffect(() => {
@@ -140,12 +141,16 @@ export default function ProjectsPage() {
     fetchProjects();
   }, []);
 
+  // Built from whatever categories actually exist on fetched initiatives,
+  // rather than a hardcoded/translated list — a curator picking any
+  // category (including a custom "Other" one) always gets a matching,
+  // clickable tab instead of silently having no way to filter to it.
+  const categoryTabs = Array.from(
+    new Set(projects.map(p => p.category?.trim()).filter((c): c is string => !!c))
+  ).sort((a, b) => a.localeCompare(b));
+
   const filtered = projects.filter(p => {
-    const cat = p.category?.toLowerCase() ?? '';
-    const matchCat = activeCategoryKey === 'all'
-      || cat === activeCategoryKey
-      || (activeCategoryKey === 'wellbeing' && cat === 'health')
-      || (activeCategoryKey === 'sustainability' && cat === 'environment');
+    const matchCat = activeCategory === 'all' || p.category?.trim() === activeCategory;
     const matchSearch = !search ||
       p.title?.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase());
@@ -181,13 +186,19 @@ export default function ProjectsPage() {
             />
           </div>
           <div className={styles.categoryTabs}>
-            {CATEGORY_KEYS.map(key => (
+            <button
+              className={styles.catBtn + (activeCategory === 'all' ? ' ' + styles.catBtnActive : '')}
+              onClick={() => setActiveCategory('all')}
+            >
+              {tc('all')}
+            </button>
+            {categoryTabs.map(cat => (
               <button
-                key={key}
-                className={styles.catBtn + (activeCategoryKey === key ? ' ' + styles.catBtnActive : '')}
-                onClick={() => setActiveCategoryKey(key)}
+                key={cat}
+                className={styles.catBtn + (activeCategory === cat ? ' ' + styles.catBtnActive : '')}
+                onClick={() => setActiveCategory(cat)}
               >
-                {tc(key)}
+                {cat}
               </button>
             ))}
           </div>

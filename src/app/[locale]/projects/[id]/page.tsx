@@ -13,7 +13,9 @@ import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects
 interface Initiative {
   id: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   category?: string;
   status?: string;
   stat?: string;
@@ -24,6 +26,7 @@ interface Initiative {
   imageUrl?: string;
   images?: string[];
   members?: { userId: string; role?: string }[];
+  leads?: string[];
   createdAt?: string;
   startDate?: string;
   endDate?: string;
@@ -97,6 +100,8 @@ export default function InitiativePage() {
   );
 
   const isActive = !initiative.status || initiative.status === 'active';
+  const title = locale === 'ar' && initiative.titleAr ? initiative.titleAr : initiative.title;
+  const description = locale === 'ar' && initiative.descriptionAr ? initiative.descriptionAr : initiative.description;
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
   const heroColor = initiative.color || categoryColor;
   /* Cover image first, then the gallery photos, deduped — so the curator's
@@ -133,8 +138,8 @@ export default function InitiativePage() {
               </span>
             )}
           </div>
-          <h1 className={styles.heroTitle}>{initiative.title}</h1>
-          <p className={styles.heroDescription}>{initiative.description}</p>
+          <h1 className={styles.heroTitle}>{title}</h1>
+          <p className={styles.heroDescription}>{description}</p>
 
           <div className={styles.heroMeta}>
             {initiative.stat && (
@@ -263,7 +268,13 @@ export default function InitiativePage() {
             <section className={styles.teamSection}>
               <h3 className={styles.impactAreasTitle}>{t('teamMembers')}</h3>
               <div className={styles.teamGrid}>
-                {initiative.members.map((m, i) => {
+                {[...initiative.members]
+                  .sort((a, b) => {
+                    const aLead = initiative.leads?.includes(a.userId) ? 0 : 1;
+                    const bLead = initiative.leads?.includes(b.userId) ? 0 : 1;
+                    return aLead - bLead;
+                  })
+                  .map((m, i) => {
                   const name = getUserName(m.userId) ?? m.userId;
                   const photo = getUserPhoto(m.userId);
                   return (

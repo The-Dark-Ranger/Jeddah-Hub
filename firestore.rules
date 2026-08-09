@@ -146,7 +146,8 @@ service cloud.firestore {
                         && request.auth.uid in resource.data.leads
                         && request.resource.data.diff(resource.data).affectedKeys()
                              .hasOnly([
-                               'title', 'description', 'category', 'startDate', 'endDate',
+                               'title', 'titleAr', 'description', 'descriptionAr',
+                               'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
                                'impact', 'impactAreas', 'color', 'members',
                              ]));

@@ -15,6 +15,7 @@ interface Stats {
   initiatives: number; activeInitiatives: number;
   blogs: number; subscribers: number;
   myProjects: number; unreadMessages: number;
+  activityResponses: number;
 }
 
 interface Notification {
@@ -29,7 +30,7 @@ export default function DashboardHome() {
   const t = useTranslations('Dashboard');
   const [stats, setStats] = useState<Stats>({
     initiatives: 0, activeInitiatives: 0, blogs: 0,
-    subscribers: 0, myProjects: 0, unreadMessages: 0,
+    subscribers: 0, myProjects: 0, unreadMessages: 0, activityResponses: 0,
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -44,7 +45,7 @@ export default function DashboardHome() {
 
     const next: Stats = {
       initiatives: 0, activeInitiatives: 0, blogs: 0,
-      subscribers: 0, myProjects: 0, unreadMessages: 0,
+      subscribers: 0, myProjects: 0, unreadMessages: 0, activityResponses: 0,
     };
 
     /* Each stat is isolated: a collection the current role may not read must
@@ -109,6 +110,9 @@ export default function DashboardHome() {
           next.unreadMessages = (await getCountFromServer(
             query(collection(db, 'contact_messages'), where('read', '==', false)),
           )).data().count;
+        }),
+        safe(async () => {
+          next.activityResponses = (await getCountFromServer(collection(db, 'activity_responses'))).data().count;
         }),
         safe(async () => {
           // The panel renders at most 10, so only fetch 10.
@@ -197,6 +201,11 @@ export default function DashboardHome() {
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>} />
+          <StatCard label={t('statActivityResponses')} value={stats.activityResponses} colorVar={stats.activityResponses > 0 ? 'warning' : 'muted'}
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>} />
         </>)}
         {isImpact && (<>
           <StatCard label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
@@ -262,6 +271,13 @@ export default function DashboardHome() {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>} />
+            <ActionCard title={`${t('dashActivitiesCardTitle')}${stats.activityResponses > 0 ? ` (${stats.activityResponses})` : ''}`}
+              desc={t('dashActivitiesCardDesc')} href="/dashboard/curator/activities" router={router}
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>}
+              accent={stats.activityResponses > 0} />
           </>)}
           {isImpact && (<>
             <ActionCard title={t('dashProjectsCardTitle')} desc={t('dashProjectsCardDesc')} href="/dashboard/impact/projects" router={router}

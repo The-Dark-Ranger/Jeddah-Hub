@@ -64,6 +64,8 @@
 .editBtn:hover { background:var(--card-bg); }
 .responsesBtn { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--primary-blue);background:transparent;color:var(--primary-blue);font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s,color .18s; }
 .responsesBtn:hover { background:var(--primary-blue);color:#fff; }
+.responsesBtnHasNew { background:var(--primary-blue);color:#fff; }
+.responsesBtnHasNew:hover { opacity:.9; }
 .toggleBtn { padding:.35rem .8rem;border-radius:6px;border:none;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s; }
 .toggleOn  { background:rgba(16,185,129,.12);color:#059669; }
 .toggleOn:hover  { background:rgba(16,185,129,.22); }
@@ -162,6 +164,7 @@
   color: var(--text-primary); font-size: .85rem;
 }
 .optionInput:focus { outline: none; border-color: var(--primary-blue); }
+.optionsWarning { font-size: .78rem; color: var(--danger); margin: 0 0 .3rem; }
 .optionRemoveBtn {
   flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 6px;
   border: none; background: transparent; color: var(--text-muted);

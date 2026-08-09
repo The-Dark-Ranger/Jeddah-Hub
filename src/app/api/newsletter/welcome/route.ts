@@ -5,7 +5,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
 
 export async function POST(req: NextRequest) {
   // This route sends a real outbound email per request — a token-farmed or
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
               <tr>
                 <td align="center">
-                  <a href="https://jeddahhub.com" style="display:inline-block;background:#0f5a9f;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:10px;">
+                  <a href="https://jeddahhub.org" style="display:inline-block;background:#0f5a9f;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:10px;">
                     Visit Jeddah Hub →
                   </a>
                 </td>
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;">
             <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">
-              You're receiving this because you subscribed at <a href="https://jeddahhub.com" style="color:#0f5a9f;text-decoration:none;">jeddahhub.com</a>.
+              You're receiving this because you subscribed at <a href="https://jeddahhub.org" style="color:#0f5a9f;text-decoration:none;">jeddahhub.org</a>.
             </p>
             <p style="margin:0;font-size:13px;color:#cbd5e1;">
               © ${new Date().getFullYear()} Global Shapers Community, Jeddah Hub · Jeddah, Saudi Arabia

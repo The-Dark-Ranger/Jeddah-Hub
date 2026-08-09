@@ -2,7 +2,7 @@
  *  transactional emails (welcome, invite, newsletter notify), so this is
  *  the single place other SEO code (sitemap, robots, per-page canonical
  *  URLs) should read it from instead of repeating the literal string. */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://jeddahhub.com';
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://jeddahhub.org';
 
 export const LOCALES = ['en', 'ar'] as const;
 

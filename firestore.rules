@@ -289,12 +289,18 @@ service cloud.firestore {
     // contact_messages' fixed fields. Reads are curator/impact-officer
     // only so individual respondents' answers are never publicly listable,
     // only the activity doc itself (which never contains responses) is.
+    // `read` starts false (contact_messages' pattern) and update is capped
+    // to just that field, so opening the "View Responses" modal can mark
+    // them seen without a curator write being able to touch anything else.
     match /activity_responses/{docId} {
-      allow create: if request.resource.data.keys().hasOnly(['activityId', 'answers', 'submittedAt', 'submitterName', 'submitterEmail'])
+      allow create: if request.resource.data.keys().hasOnly(['activityId', 'answers', 'submittedAt', 'submitterName', 'submitterEmail', 'read'])
                     && request.resource.data.activityId is string
                     && request.resource.data.answers is map
-                    && request.resource.data.submittedAt is string;
+                    && request.resource.data.submittedAt is string
+                    && request.resource.data.read == false;
       allow read, delete: if isCuratorOrImpact();
+      allow update: if isCuratorOrImpact()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
     }
 
     // ── blog_likes ────────────────────────────────────────────

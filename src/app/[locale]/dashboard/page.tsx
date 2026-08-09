@@ -112,7 +112,9 @@ export default function DashboardHome() {
           )).data().count;
         }),
         safe(async () => {
-          next.activityResponses = (await getCountFromServer(collection(db, 'activity_responses'))).data().count;
+          next.activityResponses = (await getCountFromServer(
+            query(collection(db, 'activity_responses'), where('read', '==', false)),
+          )).data().count;
         }),
         safe(async () => {
           // The panel renders at most 10, so only fetch 10.

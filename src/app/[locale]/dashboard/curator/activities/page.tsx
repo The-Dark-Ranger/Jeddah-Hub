@@ -52,6 +52,7 @@ interface ActivityResponse {
   submittedAt: string;
   submitterName?: string;
   submitterEmail?: string;
+  read?: boolean;
 }
 
 const emptyCustomForm = (): CustomForm => ({ enabled: false, questions: [] });
@@ -138,11 +139,13 @@ export default function ActivitiesPage() {
         });
       setActivities(sorted);
 
-      // So curators can see at a glance which activities have new responses
-      // to check, without opening each "View Responses" modal individually.
+      // So curators can see at a glance which activities have new (unread)
+      // responses to check, without opening each "View Responses" modal —
+      // and so the badge actually clears once they've been viewed.
       const withForms = sorted.filter(a => a.customForm?.enabled);
       const counts = await Promise.all(withForms.map(a =>
-        getCountFromServer(query(collection(db, 'activity_responses'), where('activityId', '==', a.id)))
+        getCountFromServer(query(collection(db, 'activity_responses'),
+          where('activityId', '==', a.id), where('read', '==', false)))
           .then(snap => [a.id, snap.data().count] as const)
           .catch(() => [a.id, 0] as const)
       ));
@@ -312,7 +315,17 @@ export default function ActivitiesPage() {
     setLoadingResponses(true);
     try {
       const snap = await getDocs(query(collection(db, 'activity_responses'), where('activityId', '==', a.id)));
-      setResponses(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityResponse, 'id'>) })));
+      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityResponse, 'id'>) }));
+      setResponses(docs);
+
+      // Viewing the modal is what "checking" a response means — clear its
+      // unread badge here rather than requiring a separate action.
+      const unread = docs.filter(r => r.read === false);
+      if (unread.length > 0) {
+        Promise.all(unread.map(r => updateDoc(doc(db, 'activity_responses', r.id), { read: true })))
+          .catch(err => console.error('Failed to mark responses read:', err));
+        setResponseCounts(c => ({ ...c, [a.id]: 0 }));
+      }
     } catch (err) {
       console.error('Failed to load responses:', err);
       setResponses([]);

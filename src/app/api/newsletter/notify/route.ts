@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/serverAuth';
 import { escapeHtml } from '@/lib/escapeHtml';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.com>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
 
 interface NewsPost {
   id: string;
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     tags: rp.tags?.map(escapeHtml),
   }));
 
-  const postUrl = `https://jeddahhub.com/news/${post.id}`;
+  const postUrl = `https://jeddahhub.org/news/${post.id}`;
   const tag = post.tags?.[0] || 'Hub Update';
 
   const relatedHtml = relatedPosts && relatedPosts.length > 0
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           <td style="padding:16px 20px;${i > 0 ? 'border-top:1px solid #e2e8f0;' : ''}">
             <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f5a9f;">${rp.tags?.[0] || 'Hub Update'}</p>
             <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#0f172a;line-height:1.4;">
-              <a href="https://jeddahhub.com/news/${rp.id}" style="color:#0f172a;text-decoration:none;">${rp.title}</a>
+              <a href="https://jeddahhub.org/news/${rp.id}" style="color:#0f172a;text-decoration:none;">${rp.title}</a>
             </p>
             <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">${(rp.excerpt || '').slice(0, 120)}${(rp.excerpt || '').length > 120 ? '…' : ''}</p>
           </td>
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="padding:24px 48px 32px;">
             <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;line-height:1.6;">
-              You're receiving this because you subscribed at <a href="https://jeddahhub.com" style="color:#0f5a9f;text-decoration:none;">jeddahhub.com</a>.
+              You're receiving this because you subscribed at <a href="https://jeddahhub.org" style="color:#0f5a9f;text-decoration:none;">jeddahhub.org</a>.
             </p>
             <p style="margin:0;font-size:13px;color:#cbd5e1;">
               © ${new Date().getFullYear()} Global Shapers Community, Jeddah Hub · Jeddah, Saudi Arabia

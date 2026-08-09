@@ -31,6 +31,7 @@ interface Activity {
   highlights?: Highlight[];
   color?: string;
   type?: string;
+  kind?: 'activity' | 'workshop';
   customForm?: { enabled: boolean; questions: CustomFormQuestion[] };
 }
 
@@ -79,9 +80,13 @@ export default function ActivityPage() {
       if (submitterEmail.trim()) payload.submitterEmail = submitterEmail.trim();
       await addDoc(collection(db, 'activity_responses'), payload);
       setSubmitted(true);
-    } catch (err) {
-      console.error(err);
-      setError(t('submitFailed'));
+    } catch (err: any) {
+      console.error('Activity response submit failed:', err?.code || err);
+      // permission-denied here almost always means the Firestore rules
+      // this collection needs haven't been deployed yet (a config/ops gap,
+      // not something the visitor can fix by retrying) — say so plainly
+      // instead of a generic message that reads like a transient failure.
+      setError(err?.code === 'permission-denied' ? t('submitFailedPermission') : t('submitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -106,7 +111,12 @@ export default function ActivityPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          {activity.eyebrow && <p className={styles.eyebrow}>{activity.eyebrow}</p>}
+          <div className={styles.badgeRow}>
+            <span className={styles.kindBadge + ' ' + (activity.kind === 'workshop' ? styles.kindWorkshop : '')}>
+              {activity.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
+            </span>
+            {activity.eyebrow && <p className={styles.eyebrow}>{activity.eyebrow}</p>}
+          </div>
           <h1 className={styles.title}>{activity.title}</h1>
           {activity.subtitle && <p className={styles.subtitle}>{activity.subtitle}</p>}
           {activity.description && <p className={styles.description}>{activity.description}</p>}

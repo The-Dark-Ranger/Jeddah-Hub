@@ -13,9 +13,16 @@
 }
 .heroWave { position: absolute; bottom: -1px; left: 0; right: 0; z-index: 1; pointer-events: none; }
 .heroContent { position: relative; z-index: 1; max-width: 700px; margin-inline: auto; }
+.badgeRow { display: flex; align-items: center; justify-content: center; gap: .6rem; margin-bottom: .75rem; flex-wrap: wrap; }
+.kindBadge {
+  font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: .2rem .65rem; border-radius: 20px;
+  background: rgba(255,255,255,.16); color: #fff;
+}
+.kindWorkshop { background: rgba(167,139,250,.3); color: #ddd6fe; }
 .eyebrow {
   font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-  color: rgba(255,255,255,.6); margin-bottom: 1rem;
+  color: rgba(255,255,255,.6); margin-bottom: 0;
 }
 .title { font-size: clamp(2rem,4vw,3rem); font-weight: 800; color: #fff; margin-bottom: .75rem; letter-spacing: -.02em; }
 .subtitle { font-size: 1.15rem; font-weight: 600; color: rgba(255,255,255,.85); margin-bottom: .75rem; }

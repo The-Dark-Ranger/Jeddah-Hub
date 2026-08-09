@@ -50,3 +50,31 @@
   margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem;
   font-size: 0.82rem; font-weight: 600; color: var(--primary-blue);
 }
+
+/* ── Led project card — same shell as .card, but not itself a link since
+   it hosts multiple distinct actions (manage vs. view on the public site). ── */
+.leadCard {
+  display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--primary-blue);
+  border-radius: 16px; overflow: hidden;
+}
+
+.leadingBadge {
+  align-self: flex-start;
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0.18rem 0.55rem; border-radius: 20px;
+  background: var(--primary-blue); color: #fff;
+}
+
+.leadActions {
+  margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+
+.viewSiteLink {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.7rem; border-radius: 8px;
+  border: 1px solid var(--border-color); background: transparent;
+  color: var(--text-main); font-size: 0.78rem; font-weight: 600;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.viewSiteLink:hover { border-color: var(--primary-blue); color: var(--primary-blue); }

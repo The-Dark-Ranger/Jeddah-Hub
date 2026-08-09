@@ -64,7 +64,14 @@
 /* ── Retreat ── */
 .retreatSection { padding:0;background:linear-gradient(135deg,#0f172a,#0f3460);color:#fff; }
 .retreatInner   { max-width:1200px;margin-inline:auto;display:grid;grid-template-columns:1fr 1fr;gap:4.5rem;align-items:center;padding:4rem 1.5rem; }
-.retreatEyebrow { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:.75rem; }
+.retreatBadgeRow { display:flex; align-items:center; gap:.6rem; margin-bottom:.6rem; flex-wrap:wrap; }
+.retreatKindBadge {
+  font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  padding:.2rem .6rem; border-radius:20px;
+  background:rgba(255,255,255,.14); color:#fff;
+}
+.retreatKindWorkshop { background:rgba(167,139,250,.25); color:#c4b5fd; }
+.retreatEyebrow { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:0; }
 .retreatTitle   { font-size:clamp(1.9rem,3.5vw,3rem);font-weight:800;line-height:1.1;color:#fff;margin-bottom:.3rem; }
 .retreatSubtitle{ font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;margin-bottom:1.4rem; }
 .retreatDesc    { font-size:.97rem;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:1.75rem; }
@@ -88,6 +95,27 @@
 .retreatVenueCard:hover { background:rgba(255,255,255,.1); }
 .retreatVenueName   { font-size:.83rem;font-weight:600;color:#fff; }
 .retreatVenueTag    { font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.15rem; }
+
+/* ── Activity slider controls — only rendered when there's more than one
+   active Hub Activity/Workshop to page through. ── */
+.retreatSlider {
+  display:flex; align-items:center; justify-content:center; gap:1.25rem;
+  padding-bottom:3rem;
+}
+.retreatSliderArrow {
+  flex-shrink:0; width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.25);
+  color:#fff; cursor:pointer; transition:background .18s ease, border-color .18s ease;
+}
+.retreatSliderArrow:hover { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.45); }
+.retreatSliderDots { display:flex; align-items:center; gap:.5rem; }
+.retreatSliderDot {
+  width:8px; height:8px; border-radius:50%; padding:0; border:none;
+  background:rgba(255,255,255,.25); cursor:pointer; transition:background .18s ease, transform .18s ease;
+}
+.retreatSliderDot:hover { background:rgba(255,255,255,.5); }
+.retreatSliderDotActive { background:#fff; transform:scale(1.3); }
 
 /* ── Stay Tuned state ── */
 .stayTunedInner { max-width:600px;margin-inline:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 1.5rem;gap:1.25rem; }

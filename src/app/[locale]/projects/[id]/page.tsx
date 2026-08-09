@@ -44,9 +44,10 @@ interface UserRecord {
 
 export default function InitiativePage() {
   const { id: rawId } = useParams() as { id: string };
-  // URLs read as "the-initiative-name-<docId>" (see src/lib/slug.ts) so the
-  // address bar shows the project's name instead of an opaque Firestore
-  // ID — but a plain doc-ID link (old bookmarks/shares) still round-trips.
+  // URLs read as "the-initiative-name--<docId>" (see src/lib/slug.ts) so
+  // the address bar shows the project's name instead of an opaque
+  // Firestore ID — but a plain doc-ID link (old bookmarks/shares) still
+  // round-trips.
   const id     = extractDocId(rawId);
   const t      = useTranslations('ProjectsPage');
   const locale = useLocale();

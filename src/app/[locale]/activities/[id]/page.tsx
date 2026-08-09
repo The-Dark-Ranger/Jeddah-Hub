@@ -63,7 +63,13 @@ export default function ActivityPage() {
     e.preventDefault();
     if (activity === 'loading' || !activity) return;
     const questions = activity.customForm?.questions || [];
-    const missing = questions.find(q => q.required && !answers[q.id]?.trim());
+    const missing = questions.find(q => {
+      if (!q.required) return false;
+      // A select question with no real options can never be answered —
+      // never let it block submission even if marked required.
+      if (q.type === 'select' && (q.options || []).filter(o => o.trim()).length === 0) return false;
+      return !answers[q.id]?.trim();
+    });
     if (missing) {
       setError(t('missingRequired', { field: missing.label }));
       return;
@@ -192,12 +198,15 @@ export default function ActivityPage() {
                     {q.type === 'textarea' && (
                       <textarea className={styles.textarea} rows={3} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required} />
                     )}
-                    {q.type === 'select' && (
-                      <select className={styles.input} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required}>
-                        <option value="">{t('selectPrompt')}</option>
-                        {(q.options || []).map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    )}
+                    {q.type === 'select' && (() => {
+                      const opts = (q.options || []).filter(o => o.trim());
+                      return (
+                        <select className={styles.input} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required && opts.length > 0} disabled={opts.length === 0}>
+                          <option value="">{opts.length === 0 ? t('selectNoOptions') : t('selectPrompt')}</option>
+                          {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      );
+                    })()}
                     {q.type === 'checkbox' && (
                       <label className={styles.checkRow}>
                         <input

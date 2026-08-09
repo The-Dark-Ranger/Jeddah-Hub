@@ -480,6 +480,7 @@
     "profileRole": "Role",
     "saveFailed": "Could not save.",
     "uploadCover": "Upload cover photo",
+    "dropHere": "Drop to upload",
     "addPhotos": "Add photos",
     "uploadingPhotos": "Compressing…",
     "removePhoto": "Remove photo",

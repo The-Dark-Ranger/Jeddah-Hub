@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
+import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -296,9 +297,9 @@ export default function AboutPage() {
           <span className={styles.statLabel}>{t('statsInitiatives')}</span>
         </div>
         <div className={styles.statDivider} />
-        <div className={styles.statItem}><span className={styles.statNum}>100K+</span><span className={styles.statLabel}>{t('statsBenefited')}</span></div>
+        <div className={styles.statItem}><span className={styles.statNum}>{COMMUNITY_BENEFITED_STAT}</span><span className={styles.statLabel}>{t('statsBenefited')}</span></div>
         <div className={styles.statDivider} />
-        <div className={styles.statItem}><span className={styles.statNum}>30+</span><span className={styles.statLabel}>{t('statsPartners')}</span></div>
+        <div className={styles.statItem}><span className={styles.statNum}>{COMMUNITY_PARTNERS_STAT}</span><span className={styles.statLabel}>{t('statsPartners')}</span></div>
       </div>
 
       {/* Mission */}

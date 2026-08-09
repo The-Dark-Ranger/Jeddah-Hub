@@ -367,5 +367,21 @@ service cloud.firestore {
       allow update: if isCuratorOrImpact();
       allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
     }
+
+    // ── member_add_requests ──────────────────────────────────────
+    // Mirror of removal_requests: an initiative lead can invite someone
+    // who hasn't already submitted their own join_request, but — same as
+    // removal — can't unilaterally add them; a curator/impact officer
+    // reviews and approves/declines before the target actually lands in
+    // the initiative's `members` array.
+    match /member_add_requests/{docId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.requestedByUserId == request.auth.uid
+                    && isLeadOf(request.resource.data.initiativeId);
+      allow read: if isCuratorOrImpact()
+                  || isOwner(resource.data.requestedByUserId);
+      allow update: if isCuratorOrImpact();
+      allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
+    }
   }
 }

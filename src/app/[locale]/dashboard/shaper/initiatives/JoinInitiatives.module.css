@@ -357,3 +357,25 @@
   cursor: pointer; transition: all 0.15s ease;
 }
 .cancelRemovalBtn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Add-member request row and trigger */
+.addMemberBtn {
+  align-self: flex-start; margin-top: 0.25rem;
+  padding: 0.32rem 0.7rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  border: 1px dashed var(--border-color); color: var(--primary-blue);
+  background: transparent; cursor: pointer; transition: all 0.15s ease;
+}
+.addMemberBtn:hover { border-color: var(--primary-blue); background: var(--primary-blue-glow); }
+.addMemberRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+.addMemberSelect {
+  flex: 1; min-width: 160px; padding: 0.4rem 0.6rem; border-radius: 7px;
+  border: 1px solid var(--border-color); background: var(--input-bg, var(--card-bg));
+  color: var(--text-main); font-size: 0.82rem;
+}
+.addMemberSubmitBtn {
+  padding: 0.32rem 0.75rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  border: none; color: #fff; background: var(--primary-blue);
+  cursor: pointer; transition: opacity 0.15s ease; flex-shrink: 0;
+}
+.addMemberSubmitBtn:hover:not(:disabled) { opacity: 0.9; }
+.addMemberSubmitBtn:disabled { opacity: 0.5; cursor: not-allowed; }

@@ -25,6 +25,8 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
 
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
+  const [coverDrag, setCoverDrag]     = useState(false);
+  const [galleryDrag, setGalleryDrag] = useState(false);
 
   const photoList = photos.split('\n').map(s => s.trim()).filter(Boolean);
 
@@ -91,6 +93,10 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
 
   const label = (value: string) => isDataUri(value) ? t('uploadedLabel') : t('linkedLabel');
 
+  // Shared no-op-the-browser-default drag handlers — without preventDefault
+  // on dragover, the browser refuses to fire drop at all.
+  const stopDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+
   return (
     <div className={styles.wrap}>
 
@@ -98,36 +104,43 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
       <div className={styles.section}>
         <label className={styles.label}>{t('fieldCoverImage')}</label>
 
-        {coverUrl ? (
-          <div className={styles.coverPreview}>
-            <img src={coverUrl} alt="" className={styles.coverImg} loading="lazy" />
-            <span className={styles.originTag}>{label(coverUrl)}</span>
+        <div
+          className={styles.dropZone + (coverDrag ? ' ' + styles.dropZoneActive : '')}
+          onDragOver={e => { stopDrag(e); setCoverDrag(true); }}
+          onDragLeave={() => setCoverDrag(false)}
+          onDrop={e => { stopDrag(e); setCoverDrag(false); void handleCover(e.dataTransfer.files); }}
+        >
+          {coverUrl ? (
+            <div className={styles.coverPreview}>
+              <img src={coverUrl} alt="" className={styles.coverImg} loading="lazy" />
+              <span className={styles.originTag}>{label(coverUrl)}</span>
+              <button
+                type="button"
+                className={styles.removeBtn}
+                onClick={() => onChange('imageUrl', '')}
+                aria-label={t('removePhoto')}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
-              className={styles.removeBtn}
-              onClick={() => onChange('imageUrl', '')}
-              aria-label={t('removePhoto')}
+              className={styles.dropBtn}
+              onClick={() => coverInput.current?.click()}
+              disabled={busy}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
               </svg>
+              {coverDrag ? t('dropHere') : t('uploadCover')}
             </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={styles.dropBtn}
-            onClick={() => coverInput.current?.click()}
-            disabled={busy}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            {t('uploadCover')}
-          </button>
-        )}
+          )}
+        </div>
 
         <input
           ref={coverInput}
@@ -153,37 +166,44 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
           <span className={styles.hint}>{t('uploadPhotosHint')}</span>
         </label>
 
-        {photoList.length > 0 && (
-          <div className={styles.grid}>
-            {photoList.map((src, i) => (
-              <div key={i} className={styles.thumb}>
-                <img src={src} alt="" className={styles.thumbImg} loading="lazy" />
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  onClick={() => removePhoto(i)}
-                  aria-label={t('removePhoto')}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          className={styles.addBtn}
-          onClick={() => galleryInput.current?.click()}
-          disabled={busy}
+        <div
+          className={styles.dropZone + (galleryDrag ? ' ' + styles.dropZoneActive : '')}
+          onDragOver={e => { stopDrag(e); setGalleryDrag(true); }}
+          onDragLeave={() => setGalleryDrag(false)}
+          onDrop={e => { stopDrag(e); setGalleryDrag(false); void handleGallery(e.dataTransfer.files); }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {busy ? t('uploadingPhotos') : t('addPhotos')}
-        </button>
+          {photoList.length > 0 && (
+            <div className={styles.grid}>
+              {photoList.map((src, i) => (
+                <div key={i} className={styles.thumb}>
+                  <img src={src} alt="" className={styles.thumbImg} loading="lazy" />
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    onClick={() => removePhoto(i)}
+                    aria-label={t('removePhoto')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={styles.addBtn}
+            onClick={() => galleryInput.current?.click()}
+            disabled={busy}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            {busy ? t('uploadingPhotos') : galleryDrag ? t('dropHere') : t('addPhotos')}
+          </button>
+        </div>
 
         <input
           ref={galleryInput}

@@ -20,6 +20,17 @@ interface Initiative {
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
 interface InitiativeProposal { id: string; title: string; status: 'pending' | 'approved' | 'declined'; }
 
+type ActivityKind = 'activity' | 'workshop';
+interface ActivityProposalForm {
+  title: string; kind: ActivityKind; eyebrow: string; subtitle: string;
+  description: string; date: string; location: string; ctaText: string; ctaUrl: string;
+}
+const emptyActivityProposal: ActivityProposalForm = {
+  title: '', kind: 'activity', eyebrow: '', subtitle: '',
+  description: '', date: '', location: '', ctaText: '', ctaUrl: '',
+};
+interface ActivityProposal { id: string; title: string; status: 'pending' | 'approved' | 'declined'; }
+
 export default function JoinInitiatives() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
@@ -45,6 +56,14 @@ export default function JoinInitiatives() {
   const handleProposeFormChange = useCallback((key: keyof InitiativeFormShape, value: string) => {
     setProposeForm(f => ({ ...f, [key]: value }));
   }, []);
+
+  /* Propose-an-activity/workshop modal — reviewed by the curatorship
+   * before it becomes a real, publicly listed Hub Activity, same as
+   * proposing a whole new initiative above. */
+  const [proposeActivityOpen, setProposeActivityOpen]     = useState(false);
+  const [activityForm, setActivityForm]                   = useState<ActivityProposalForm>(emptyActivityProposal);
+  const [activitySaving, setActivitySaving]                = useState(false);
+  const [myActivityProposals, setMyActivityProposals]      = useState<ActivityProposal[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -88,6 +107,13 @@ export default function JoinInitiatives() {
         where('proposedBy', '==', user.uid),
       )).catch(() => null);
       setMyProposals(proposalsSnap ? proposalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as InitiativeProposal)) : []);
+
+      /* Same, for this user's own proposed Hub Activities/workshops. */
+      const activityProposalsSnap = await getDocs(query(
+        collection(db, 'activity_requests'),
+        where('proposedBy', '==', user.uid),
+      )).catch(() => null);
+      setMyActivityProposals(activityProposalsSnap ? activityProposalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityProposal)) : []);
     } catch {
       /* Firestore not configured or permission error — show empty state */
     } finally {
@@ -190,6 +216,33 @@ export default function JoinInitiatives() {
   const openPropose  = () => { setProposeForm(emptyInitiativeForm); setProposeOpen(true); };
   const closePropose = () => { setProposeOpen(false); setProposeForm(emptyInitiativeForm); };
 
+  const openProposeActivity  = () => { setActivityForm(emptyActivityProposal); setProposeActivityOpen(true); };
+  const closeProposeActivity = () => { setProposeActivityOpen(false); setActivityForm(emptyActivityProposal); };
+  const setActivityField = (key: keyof ActivityProposalForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setActivityForm(f => ({ ...f, [key]: e.target.value }));
+
+  const handleProposeActivitySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !activityForm.title.trim()) return;
+    setActivitySaving(true);
+    try {
+      const docRef = await addDoc(collection(db, 'activity_requests'), {
+        ...activityForm,
+        proposedBy: user.uid,
+        proposedByName: user.displayName || user.email || 'Shaper',
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setMyActivityProposals(prev => [...prev, { id: docRef.id, title: activityForm.title, status: 'pending' }]);
+      closeProposeActivity();
+    } catch (err: any) {
+      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } finally {
+      setActivitySaving(false);
+    }
+  };
+
   const handleProposeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !proposeForm.title) return;
@@ -219,12 +272,20 @@ export default function JoinInitiatives() {
     <div className={styles.page}>
       <div className={styles.pageHeaderRow}>
         <h2 className={styles.pageTitle}>{t('joinInitiativesTitle')}</h2>
-        <button className={styles.proposeBtn} onClick={openPropose}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {t('proposeInitiativeBtn')}
-        </button>
+        <div className={styles.proposeBtnRow}>
+          <button className={styles.proposeBtn} onClick={openPropose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            {t('proposeInitiativeBtn')}
+          </button>
+          <button className={styles.proposeBtn} onClick={openProposeActivity}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            {t('proposeActivityBtn')}
+          </button>
+        </div>
       </div>
 
       {/* My proposed initiatives — pending curator review */}
@@ -249,6 +310,103 @@ export default function JoinInitiatives() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* My proposed activities/workshops — pending curator review */}
+      {myActivityProposals.length > 0 && (
+        <div className={styles.incomingSection}>
+          <h3 className={styles.sectionTitle}>{t('myActivityProposals')}</h3>
+          <div className={styles.requestList}>
+            {myActivityProposals.map(p => (
+              <div key={p.id} className={styles.incomingRow}>
+                <div className={styles.incomingInfo}>
+                  <span className={styles.incomingUser}>{p.title}</span>
+                </div>
+                <span
+                  className={styles.statusPill}
+                  style={{
+                    color: p.status === 'approved' ? '#059669' : p.status === 'declined' ? 'var(--danger)' : '#f59e0b',
+                  }}
+                >
+                  {p.status === 'approved' ? t('proposalApproved') : p.status === 'declined' ? t('proposalDeclined') : t('proposalPending')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Propose an activity/workshop modal */}
+      {proposeActivityOpen && (
+        <ModalPortal>
+        <div
+          className={styles.modalOverlay}
+          onClick={e => { if (e.target === e.currentTarget) closeProposeActivity(); }}
+        >
+          <form className={styles.modal} onSubmit={handleProposeActivitySubmit}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>{t('proposeActivityTitle')}</h3>
+              <button type="button" className={styles.modalClose} onClick={closeProposeActivity} aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.proposeHint}>{t('proposeActivityHint')}</p>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityTitleLabel')} *</label>
+                <input className={styles.input} value={activityForm.title} onChange={setActivityField('title')} placeholder={t('activityTitlePh')} required />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityKindLabel')}</label>
+                <select className={styles.input} value={activityForm.kind} onChange={setActivityField('kind')}>
+                  <option value="activity">{t('kindActivity')}</option>
+                  <option value="workshop">{t('kindWorkshop')}</option>
+                </select>
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activitySubtitleLabel')}</label>
+                <input className={styles.input} value={activityForm.subtitle} onChange={setActivityField('subtitle')} placeholder={t('activitySubtitlePh')} />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityDescLabel')}</label>
+                <textarea className={styles.textarea} rows={3} value={activityForm.description} onChange={setActivityField('description')} placeholder={t('activityDescPh')} />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityDateLabel')}</label>
+                <input className={styles.input} value={activityForm.date} onChange={setActivityField('date')} placeholder={t('activityDatePh')} />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityLocationLabel')}</label>
+                <input className={styles.input} value={activityForm.location} onChange={setActivityField('location')} placeholder={t('activityLocationPh')} />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityCtaTextLabel')}</label>
+                <input className={styles.input} value={activityForm.ctaText} onChange={setActivityField('ctaText')} placeholder={t('activityCtaTextPh')} />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.label}>{t('activityCtaUrlLabel')}</label>
+                <input className={styles.input} type="url" value={activityForm.ctaUrl} onChange={setActivityField('ctaUrl')} placeholder={t('activityCtaUrlPh')} />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.modalCancelBtn} onClick={closeProposeActivity}>{t('cancel')}</button>
+              <button type="submit" className={styles.modalSubmitBtn} disabled={activitySaving || !activityForm.title.trim()}>
+                {activitySaving ? t('submittingDots') : t('submitProposalBtn')}
+              </button>
+            </div>
+          </form>
+        </div>
+        </ModalPortal>
       )}
 
       {/* Propose new initiative modal */}

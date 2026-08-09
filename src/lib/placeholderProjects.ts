@@ -1,7 +1,9 @@
 export interface PlaceholderProject {
   id: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   category?: string;
   status?: string;
   stat?: string;

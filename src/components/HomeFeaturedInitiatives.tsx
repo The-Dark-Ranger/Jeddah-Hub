@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects';
+import { projectSlugUrl } from '@/lib/slug';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -81,7 +82,7 @@ export default function HomeFeaturedInitiatives() {
   if (items.length === 0) return (
     <div className={styles.projectsGrid}>
       {PLACEHOLDER_PROJECTS.slice(0, 3).map((p, i) => (
-        <Link key={p.id} href={`/projects/${p.id}`} className={styles.projectCard}>
+        <Link key={p.id} href={`/projects/${projectSlugUrl(p.id, p.title)}`} className={styles.projectCard}>
           <div className={styles.projectBanner} style={{ background: PROJECT_GRADIENTS[i] }} />
           <div className={styles.projectInfo}>
             <h3 className={styles.projectTitle}>{p.title}</h3>
@@ -99,7 +100,7 @@ export default function HomeFeaturedInitiatives() {
         const bg = cardGradient(init, PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length]);
         const hasImage = !!init.images?.[0];
         return (
-          <Link key={init.id} href={`/projects/${init.id}`} className={styles.projectCard}>
+          <Link key={init.id} href={`/projects/${projectSlugUrl(init.id, init.title)}`} className={styles.projectCard}>
             <div
               className={styles.projectBanner}
               style={hasImage

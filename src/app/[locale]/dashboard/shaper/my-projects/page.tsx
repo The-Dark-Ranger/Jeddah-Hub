@@ -14,6 +14,7 @@ import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import { projectSlugUrl } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
 
@@ -49,6 +50,13 @@ export default function MyProjects() {
   const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
   const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<any[]>([]);
   const [pendingRemovals, setPendingRemovals] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
+  const [pendingAdds, setPendingAdds] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
+  /* Candidate shapers a lead can pick from to request adding — sourced from
+   * public_profiles (leads can't read the private `users` collection, only
+   * curators/impact officers can) rather than a per-member lookup. */
+  const [directory, setDirectory] = useState<{ id: string; displayName?: string }[]>([]);
+  const [addPickerOpenId, setAddPickerOpenId] = useState<string | null>(null);
+  const [addPickerTarget, setAddPickerTarget] = useState('');
 
   /* Lead edit modal */
   const [leadEditInit, setLeadEditInit] = useState<Project | null>(null);
@@ -78,11 +86,15 @@ export default function MyProjects() {
       setLeadIds(leads);
 
       if (leads.length > 0) {
-        const [joinSnap, leaveSnap, removalSnap] = await Promise.all([
+        const [joinSnap, leaveSnap, removalSnap, addSnap, directorySnap] = await Promise.all([
           getDocs(query(collection(db, 'join_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending'))).catch(() => null),
           getDocs(query(collection(db, 'leave_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending'))).catch(() => null),
           getDocs(query(collection(db, 'removal_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending'))).catch(() => null),
+          getDocs(query(collection(db, 'member_add_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending'))).catch(() => null),
+          getDocs(query(collection(db, 'public_profiles'), where('role', 'in', ['shaper', 'alumni']))).catch(() => null),
         ]);
+        setPendingAdds(addSnap ? addSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
+        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
 
         setIncomingRequests(joinSnap
           ? joinSnap.docs.map(d => {
@@ -116,6 +128,8 @@ export default function MyProjects() {
         setIncomingRequests([]);
         setIncomingLeaveRequests([]);
         setPendingRemovals([]);
+        setPendingAdds([]);
+        setDirectory([]);
         setUsers([]);
       }
     } catch {
@@ -245,6 +259,46 @@ export default function MyProjects() {
     }
   };
 
+  // Adding a member is request+approve, same as removal — a lead can't
+  // unilaterally add someone who never asked to join (that's what
+  // join_requests + handleAcceptRequest above already covers); this is for
+  // a lead-initiated invite of someone specific, reviewed by the
+  // curatorship before it actually lands on the initiative's roster.
+  const handleRequestAddMember = async (init: Project, targetId: string) => {
+    if (!user || !targetId) return;
+    const targetName = directory.find(d => d.id === targetId)?.displayName || targetId;
+    try {
+      const ref = await addDoc(collection(db, 'member_add_requests'), {
+        initiativeId: init.id,
+        initiativeTitle: init.title,
+        targetUserId: targetId,
+        targetUserName: targetName,
+        requestedByUserId: user.uid,
+        requestedByName: user.displayName || user.email,
+        status: 'pending',
+        requestedAt: new Date().toISOString(),
+      });
+      setPendingAdds(prev => [...prev, { id: ref.id, targetUserId: targetId, initiativeId: init.id }]);
+      setAddPickerOpenId(null);
+      setAddPickerTarget('');
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  const handleCancelAddRequest = async (reqId: string) => {
+    const removed = pendingAdds.find(r => r.id === reqId);
+    setPendingAdds(prev => prev.filter(r => r.id !== reqId));
+    try {
+      await deleteDoc(doc(db, 'member_add_requests', reqId));
+    } catch (err) {
+      console.error(err);
+      if (removed) setPendingAdds(prev => [...prev, removed]);
+      alert(t('saveFailed'));
+    }
+  };
+
   if (!user || !loaded) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</div>;
 
   return (
@@ -340,7 +394,7 @@ export default function MyProjects() {
             if (!isLead) {
               // Plain member — unchanged from the original simple clickable card.
               return (
-                <Link key={p.id} href={`/projects/${p.id}`} className={styles.card}>
+                <Link key={p.id} href={`/projects/${projectSlugUrl(p.id, p.title)}`} className={styles.card}>
                   <div className={styles.cardBanner} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}>
                     {!p.imageUrl && (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -397,7 +451,7 @@ export default function MyProjects() {
                     >
                       {t('downloadReport')}
                     </button>
-                    <Link href={`/projects/${p.id}`} className={styles.viewSiteLink}>
+                    <Link href={`/projects/${projectSlugUrl(p.id, p.title)}`} className={styles.viewSiteLink}>
                       {t('viewOnSite')}
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -430,6 +484,47 @@ export default function MyProjects() {
                             </div>
                           );
                         })
+                      )}
+
+                      {pendingAdds.filter(r => r.initiativeId === p.id).map(r => (
+                        <div key={r.id} className={jiStyles.memberPanelItem}>
+                          <div className={jiStyles.memberPanelInfo}>
+                            <span className={jiStyles.memberPanelName}>{directory.find(d => d.id === r.targetUserId)?.displayName || r.targetUserId}</span>
+                          </div>
+                          <div className={jiStyles.memberPanelActions}>
+                            <span className={jiStyles.removalPendingBadge}>{t('addMemberPending')}</span>
+                            <button className={jiStyles.cancelRemovalBtn} onClick={() => handleCancelAddRequest(r.id)}>{t('cancelRemoval')}</button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {addPickerOpenId === p.id ? (
+                        <div className={jiStyles.addMemberRow}>
+                          <select
+                            className={jiStyles.addMemberSelect}
+                            value={addPickerTarget}
+                            onChange={e => setAddPickerTarget(e.target.value)}
+                          >
+                            <option value="">{t('selectShaperPrompt')}</option>
+                            {directory
+                              .filter(d => !(p.members || []).some((m: any) => (m.userId || m) === d.id))
+                              .map(d => <option key={d.id} value={d.id}>{d.displayName || d.id}</option>)}
+                          </select>
+                          <button
+                            className={jiStyles.addMemberSubmitBtn}
+                            disabled={!addPickerTarget}
+                            onClick={() => handleRequestAddMember(p, addPickerTarget)}
+                          >
+                            {t('sendRequest')}
+                          </button>
+                          <button className={jiStyles.cancelRemovalBtn} onClick={() => { setAddPickerOpenId(null); setAddPickerTarget(''); }}>
+                            {t('cancel')}
+                          </button>
+                        </div>
+                      ) : (
+                        <button className={jiStyles.addMemberBtn} onClick={() => setAddPickerOpenId(p.id)}>
+                          + {t('requestAddMember')}
+                        </button>
                       )}
                     </div>
                   )}

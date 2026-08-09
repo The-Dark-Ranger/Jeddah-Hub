@@ -1,6 +1,8 @@
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
+import LiveStat from '@/components/LiveStat';
+import { COMMUNITY_BENEFITED_STAT } from '@/lib/siteStats';
 import styles from './BecomeShaper.module.css';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -106,9 +108,9 @@ export default function BecomeAShaperPage() {
 
       {/* Stats row below wave */}
       <div className={styles.heroChips}>
-        <div className={styles.heroChip}><strong>32</strong><span>{t('statShapers')}</span></div>
-        <div className={styles.heroChip}><strong>50+</strong><span>{t('statInitiatives')}</span></div>
-        <div className={styles.heroChip}><strong>120K+</strong><span>{t('statBenefited')}</span></div>
+        <div className={styles.heroChip}><strong><LiveStat kind="shapers" fallback="120+" /></strong><span>{t('statShapers')}</span></div>
+        <div className={styles.heroChip}><strong><LiveStat kind="initiatives" fallback="50+" /></strong><span>{t('statInitiatives')}</span></div>
+        <div className={styles.heroChip}><strong>{COMMUNITY_BENEFITED_STAT}</strong><span>{t('statBenefited')}</span></div>
       </div>
 
       {/* Jeddah stripe divider */}

@@ -8,8 +8,19 @@ export const CATEGORIES = [
   'Arts & Culture', 'Economic Empowerment', 'Community', 'Wellbeing', 'Economy', 'Other',
 ];
 
+/** Snaps free-text "Other" category input onto an existing canonical
+ *  category (case-insensitively) so e.g. typing "economy" doesn't create a
+ *  near-duplicate tab alongside the real "Economy" category — only text
+ *  that doesn't match anything becomes a genuinely new category. */
+function normalizeCategory(raw: string): string {
+  const trimmed = raw.trim();
+  const match = CATEGORIES.find(c => c !== 'Other' && c.toLowerCase() === trimmed.toLowerCase());
+  return match || trimmed;
+}
+
 export const emptyInitiativeForm = {
-  title: '', description: '', category: '', startDate: '', endDate: '',
+  title: '', titleAr: '', description: '', descriptionAr: '',
+  category: '', categoryOther: '', startDate: '', endDate: '',
   imageUrl: '', images: '', stat: '', problem: '', objective: '', impact: '',
   impactAreas: '', color: '',
 };
@@ -19,8 +30,10 @@ export type InitiativeFormShape = typeof emptyInitiativeForm;
 export function initiativeFormToDoc(f: InitiativeFormShape) {
   return {
     title:       f.title,
+    titleAr:     f.titleAr || null,
     description: f.description,
-    category:    f.category,
+    descriptionAr: f.descriptionAr || null,
+    category:    f.category === 'Other' ? normalizeCategory(f.categoryOther) : f.category,
     startDate:   f.startDate,
     endDate:     f.endDate,
     imageUrl:    f.imageUrl,
@@ -37,14 +50,22 @@ export function initiativeFormToDoc(f: InitiativeFormShape) {
 /** Reverses initiativeFormToDoc() for pre-filling the form from an existing
  *  initiative doc — used by every "edit" entry point (curator, lead). */
 export function initiativeToForm(init: {
-  title: string; description?: string; category?: string; startDate?: string; endDate?: string;
+  title: string; titleAr?: string; description?: string; descriptionAr?: string;
+  category?: string; startDate?: string; endDate?: string;
   imageUrl?: string; images?: string[]; stat?: string; problem?: string; objective?: string;
   impact?: string; impactAreas?: string[]; color?: string;
 }): InitiativeFormShape {
+  // A saved category that isn't one of the preset options only ever got
+  // there via the "Other" free-text box — re-select "Other" and restore
+  // what was typed, instead of silently falling back to no selection.
+  const isPreset = !init.category || CATEGORIES.includes(init.category);
   return {
     title:       init.title,
+    titleAr:     init.titleAr      || '',
     description: init.description  || '',
-    category:    init.category    || '',
+    descriptionAr: init.descriptionAr || '',
+    category:      isPreset ? (init.category || '') : 'Other',
+    categoryOther: isPreset ? '' : (init.category || ''),
     startDate:   init.startDate   || '',
     endDate:     init.endDate     || '',
     imageUrl:    init.imageUrl    || '',
@@ -78,9 +99,18 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
 
   return (
     <>
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldTitle')} *</label>
-        <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+      <div className={styles.editRow}>
+        <div className={styles.formField}>
+          <label className={styles.label}>{t('fieldTitle')} *</label>
+          <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.label}>
+            {t('fieldTitleAr')}
+            <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
+          </label>
+          <input className={styles.input} dir="rtl" value={form.titleAr} onChange={mk('titleAr')} placeholder={t('phInitiativeNameAr')} />
+        </div>
       </div>
 
       <div className={styles.editRow3}>
@@ -90,6 +120,15 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
             <option value="">{t('categorySelectPrompt')}</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+          {form.category === 'Other' && (
+            <input
+              className={styles.input}
+              style={{ marginTop: '.5rem' }}
+              value={form.categoryOther}
+              onChange={mk('categoryOther')}
+              placeholder={t('phCategoryOther')}
+            />
+          )}
         </div>
         <div className={styles.formField}>
           <label className={styles.label}>{t('fieldStartDate')}</label>
@@ -109,6 +148,14 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
       <div className={styles.formField}>
         <label className={styles.label}>{t('fieldDescription')} *</label>
         <textarea className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
+      </div>
+
+      <div className={styles.formField}>
+        <label className={styles.label}>
+          {t('fieldDescriptionAr')}
+          <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
+        </label>
+        <textarea className={styles.textarea} dir="rtl" value={form.descriptionAr} onChange={mk('descriptionAr')} placeholder={t('phDescriptionAr')} rows={2} />
       </div>
 
       <div className={styles.formField}>

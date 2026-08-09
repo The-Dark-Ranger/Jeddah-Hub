@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
+import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -62,10 +63,17 @@ const EmailIcon = () => (
   </svg>
 );
 
+// Long enough that a 3-line clamp at the card's font/width would visibly
+// cut it off — short of that, there's nothing to expand.
+const BIO_CLAMP_THRESHOLD = 140;
+
 function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
   const gradient = avatarGradient(shaper.uid, index);
   const locale   = useLocale();
+  const t        = useTranslations('AboutPage');
   const name     = locale === 'ar' && shaper.displayNameAr ? shaper.displayNameAr : shaper.displayName;
+  const [expanded, setExpanded] = useState(false);
+  const isLong = (shaper.bio?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
@@ -103,7 +111,18 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
           </div>
         </div>
       </div>
-      {shaper.bio && <p className={styles.shaperBio}>{shaper.bio}</p>}
+      {shaper.bio && (
+        <>
+          <p className={styles.shaperBio + (isLong && !expanded ? ' ' + styles.shaperBioClamped : '')}>
+            {shaper.bio}
+          </p>
+          {isLong && (
+            <button type="button" className={styles.shaperBioToggle} onClick={() => setExpanded(v => !v)}>
+              {expanded ? t('readLessBio') : t('readMoreBio')}
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -278,9 +297,9 @@ export default function AboutPage() {
           <span className={styles.statLabel}>{t('statsInitiatives')}</span>
         </div>
         <div className={styles.statDivider} />
-        <div className={styles.statItem}><span className={styles.statNum}>100K+</span><span className={styles.statLabel}>{t('statsBenefited')}</span></div>
+        <div className={styles.statItem}><span className={styles.statNum}>{COMMUNITY_BENEFITED_STAT}</span><span className={styles.statLabel}>{t('statsBenefited')}</span></div>
         <div className={styles.statDivider} />
-        <div className={styles.statItem}><span className={styles.statNum}>30+</span><span className={styles.statLabel}>{t('statsPartners')}</span></div>
+        <div className={styles.statItem}><span className={styles.statNum}>{COMMUNITY_PARTNERS_STAT}</span><span className={styles.statLabel}>{t('statsPartners')}</span></div>
       </div>
 
       {/* Mission */}

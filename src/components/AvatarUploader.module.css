@@ -1,6 +1,13 @@
 .wrap { display: flex; flex-direction: column; gap: 0.75rem; }
 
-.row { display: flex; align-items: center; gap: 1rem; }
+.row {
+  display: flex; align-items: center; gap: 1rem;
+  border-radius: 12px; transition: outline-color 0.15s ease;
+}
+.rowDragOver {
+  outline: 2px dashed var(--primary-blue); outline-offset: 4px;
+  background: var(--primary-blue-glow);
+}
 
 .avatar {
   width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;

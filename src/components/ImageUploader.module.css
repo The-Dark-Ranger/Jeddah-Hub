@@ -2,6 +2,13 @@
 
 .section { display: flex; flex-direction: column; gap: 0.5rem; }
 
+.dropZone { border-radius: 10px; transition: outline-color 0.15s ease; }
+.dropZoneActive {
+  outline: 2px dashed var(--primary-blue);
+  outline-offset: 3px;
+  background: var(--primary-blue-glow);
+}
+
 .label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
 .hint {
   font-weight: 400; color: var(--text-muted);

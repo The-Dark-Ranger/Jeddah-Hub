@@ -118,6 +118,7 @@ export default function ManageInitiatives() {
   const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [removalRequests, setRemovalRequests] = useState<any[]>([]);
+  const [addRequests, setAddRequests] = useState<any[]>([]);
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
@@ -176,6 +177,16 @@ export default function ManageInitiatives() {
           return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
         }));
       } catch { setRemovalRequests([]); }
+
+      // Member-add requests (non-critical, catch separately)
+      try {
+        const addSnap = await getDocs(query(collection(db, 'member_add_requests'), where('status', '==', 'pending')));
+        setAddRequests(addSnap.docs.map(d => {
+          const data = d.data();
+          const init = inits.find(i => i.id === data.initiativeId);
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+        }));
+      } catch { setAddRequests([]); }
 
       // Proposed initiatives from shapers (non-critical, catch separately)
       try {
@@ -463,6 +474,35 @@ export default function ManageInitiatives() {
     }
   };
 
+  /* Member-add request handlers */
+  const handleApproveAddMember = async (req: any) => {
+    try {
+      await updateDoc(doc(db, 'initiatives', req.initiativeId), {
+        members: arrayUnion({ userId: req.targetUserId, role: 'Member' }),
+      });
+      await updateDoc(doc(db, 'member_add_requests', req.id), { status: 'approved' });
+      setAddRequests(prev => prev.filter(r => r.id !== req.id));
+      setInitiatives(prev => prev.map(i =>
+        i.id === req.initiativeId
+          ? { ...i, members: [...(i.members as any[] || []), { userId: req.targetUserId, role: 'Member' }] }
+          : i
+      ));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  const handleDeclineAddMember = async (reqId: string) => {
+    try {
+      await updateDoc(doc(db, 'member_add_requests', reqId), { status: 'declined' });
+      setAddRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
     return u?.displayName || u?.email || userId;
@@ -650,6 +690,38 @@ export default function ManageInitiatives() {
                 <div className={styles.removalActions}>
                   <button className={styles.approveRemovalBtn} onClick={() => handleApproveRemoval(req)}>{t('approveRemoval')}</button>
                   <button className={styles.declineRemovalBtn} onClick={() => handleDeclineRemoval(req.id)}>{t('declineRemoval')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Member-Add Requests ── */}
+      {addRequests.length > 0 && (
+        <div className={styles.removalSection}>
+          <h3 className={styles.removalSectionTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="8.5" cy="7" r="4"/>
+              <path d="M20 8v6M23 11h-6"/>
+              <path d="M2 21v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2"/>
+            </svg>
+            {t('addMemberRequests')}
+            <span className={styles.removalBadge}>{addRequests.length}</span>
+          </h3>
+          <div className={styles.removalList}>
+            {addRequests.map(req => (
+              <div key={req.id} className={styles.removalRow}>
+                <div className={styles.removalInfo}>
+                  <span className={styles.removalName}>{req.targetUserName || req.targetUserId}</span>
+                  <span className={styles.removalMeta}>
+                    {t('requestedToAdd')} <strong>{req.initiativeTitle}</strong>
+                    {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
+                  </span>
+                </div>
+                <div className={styles.removalActions}>
+                  <button className={styles.approveRemovalBtn} onClick={() => handleApproveAddMember(req)}>{t('approveAdd')}</button>
+                  <button className={styles.declineRemovalBtn} onClick={() => handleDeclineAddMember(req.id)}>{t('declineAdd')}</button>
                 </div>
               </div>
             ))}

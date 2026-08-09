@@ -120,6 +120,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  /* Grid items stretch to the tallest card in their row by default —
+     override so each card is only as tall as its own content, since
+     shapers with a short/no bio shouldn't get padded out to match a
+     neighbor with a long one. */
+  align-items: start;
 }
 
 .shaperCard {
@@ -171,8 +176,16 @@
 
 .shaperBio {
   font-size: .82rem; color: var(--text-muted); line-height: 1.6;
+}
+.shaperBioClamped {
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
+.shaperBioToggle {
+  align-self: flex-start;
+  font-size: .78rem; font-weight: 600; color: var(--primary-blue);
+  padding: 0; margin-top: -.3rem;
+}
+.shaperBioToggle:hover { text-decoration: underline; }
 
 /* ── WEF section ── */
 .wefSection { display: grid; grid-template-columns: 1fr auto; gap: 4rem; align-items: center; }

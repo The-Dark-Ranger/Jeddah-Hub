@@ -21,6 +21,8 @@ export default function AvatarUploader({ value, onChange }: Props) {
   const [busy, setBusy]     = useState(false);
   const [error, setError]   = useState('');
   const [broken, setBroken] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const stopDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
 
   const handleFile = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -43,7 +45,12 @@ export default function AvatarUploader({ value, onChange }: Props) {
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.row}>
+      <div
+        className={styles.row + (dragOver ? ' ' + styles.rowDragOver : '')}
+        onDragOver={e => { stopDrag(e); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { stopDrag(e); setDragOver(false); void handleFile(e.dataTransfer.files); }}
+      >
         <div className={styles.avatar}>
           {value && !broken ? (
             <img src={value} alt="" className={styles.avatarImg} onError={() => setBroken(true)} loading="lazy" />
@@ -67,7 +74,7 @@ export default function AvatarUploader({ value, onChange }: Props) {
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            {busy ? t('uploadingPhotos') : value ? t('changePhoto') : t('uploadPhoto')}
+            {busy ? t('uploadingPhotos') : dragOver ? t('dropHere') : value ? t('changePhoto') : t('uploadPhoto')}
           </button>
 
           {value && (

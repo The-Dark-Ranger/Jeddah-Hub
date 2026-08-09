@@ -146,7 +146,8 @@ service cloud.firestore {
                         && request.auth.uid in resource.data.leads
                         && request.resource.data.diff(resource.data).affectedKeys()
                              .hasOnly([
-                               'title', 'description', 'category', 'startDate', 'endDate',
+                               'title', 'titleAr', 'description', 'descriptionAr',
+                               'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
                                'impact', 'impactAreas', 'color', 'members',
                              ]));
@@ -181,6 +182,24 @@ service cloud.firestore {
     // place. Approval creates a real initiatives doc separately (governed
     // by the initiatives rules above, not this collection).
     match /initiative_requests/{docId} {
+      allow create: if isAnyMember()
+                    && request.resource.data.proposedBy == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow read:   if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+      allow update: if isCuratorOrImpact()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt']);
+      allow delete: if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+    }
+
+    // ── activity_requests ──────────────────────────────────────
+    // Same shape as initiative_requests, for a lead proposing a Hub
+    // Activity/workshop instead of a whole new initiative — curator or
+    // vice_curator/impact_officer review turns an approved one into a
+    // real initiatives doc tagged type:'hub_activity' (governed by the
+    // initiatives rules above, not this collection).
+    match /activity_requests/{docId} {
       allow create: if isAnyMember()
                     && request.resource.data.proposedBy == request.auth.uid
                     && request.resource.data.status == 'pending';
@@ -358,6 +377,22 @@ service cloud.firestore {
     // targeting arbitrary users in initiatives they have no relation to).
     // Curators and impact officers review and approve/decline.
     match /removal_requests/{docId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.requestedByUserId == request.auth.uid
+                    && isLeadOf(request.resource.data.initiativeId);
+      allow read: if isCuratorOrImpact()
+                  || isOwner(resource.data.requestedByUserId);
+      allow update: if isCuratorOrImpact();
+      allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
+    }
+
+    // ── member_add_requests ──────────────────────────────────────
+    // Mirror of removal_requests: an initiative lead can invite someone
+    // who hasn't already submitted their own join_request, but — same as
+    // removal — can't unilaterally add them; a curator/impact officer
+    // reviews and approves/declines before the target actually lands in
+    // the initiative's `members` array.
+    match /member_add_requests/{docId} {
       allow create: if isSignedIn()
                     && request.resource.data.requestedByUserId == request.auth.uid
                     && isLeadOf(request.resource.data.initiativeId);

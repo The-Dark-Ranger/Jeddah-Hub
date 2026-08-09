@@ -40,6 +40,7 @@ interface Activity {
   ctaUrl: string;
   highlights: Highlight[];
   active: boolean;
+  archived?: boolean;
   kind?: ActivityKind;
   customForm?: CustomForm;
   createdAt?: any;
@@ -110,6 +111,7 @@ export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -120,6 +122,9 @@ export default function ActivitiesPage() {
   const [responsesFor, setResponsesFor] = useState<Activity | null>(null);
   const [responses, setResponses] = useState<ActivityResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
+
+  /* Lead-proposed activities/workshops awaiting review */
+  const [activityProposals, setActivityProposals] = useState<any[]>([]);
 
   const role = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canEdit = role === 'curator' || role === 'vice_curator';
@@ -154,6 +159,15 @@ export default function ActivitiesPage() {
       setActivities([]);
     } finally {
       setLoading(false);
+    }
+
+    // Non-critical — a lead's proposal fetch failing shouldn't blank the
+    // main activities list above it.
+    try {
+      const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
+      setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch {
+      setActivityProposals([]);
     }
   }
 
@@ -299,6 +313,50 @@ export default function ActivitiesPage() {
     }
   }
 
+  // Archived is a separate axis from active/hidden — a past retreat can be
+  // both "hidden" (not shown on the homepage) and "archived" (tucked out of
+  // the default admin list) without those two states fighting each other.
+  async function handleToggleArchive(a: Activity) {
+    try {
+      await updateDoc(doc(db, 'initiatives', a.id), { archived: !a.archived });
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to toggle archive:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
+  async function handleApproveActivityProposal(req: any) {
+    try {
+      const { id: _id, proposedBy: _pb, proposedByName: _pbn, status: _s, requestedAt: _ra, ...fields } = req;
+      await addDoc(collection(db, 'initiatives'), {
+        eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
+        ...fields,
+        type: 'hub_activity',
+        active: true,
+        highlights: [],
+        customForm: emptyCustomForm(),
+        createdAt: serverTimestamp(),
+      });
+      await updateDoc(doc(db, 'activity_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
+      setActivityProposals(prev => prev.filter(p => p.id !== req.id));
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to approve activity proposal:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
+  async function handleDeclineActivityProposal(reqId: string) {
+    try {
+      await updateDoc(doc(db, 'activity_requests', reqId), { status: 'declined', reviewedAt: new Date().toISOString() });
+      setActivityProposals(prev => prev.filter(p => p.id !== reqId));
+    } catch (err) {
+      console.error('Failed to decline activity proposal:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleDelete(a: Activity) {
     if (!confirm(t('deleteActivityConfirm'))) return;
     try {
@@ -364,6 +422,49 @@ export default function ActivitiesPage() {
         </button>
       </div>
 
+      {activityProposals.length > 0 && (
+        <div className={styles.proposalsSection}>
+          <h3 className={styles.proposalsTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {t('activityProposals')}
+            <span className={styles.proposalsBadge}>{activityProposals.length}</span>
+          </h3>
+          <div className={styles.proposalsList}>
+            {activityProposals.map(req => (
+              <div key={req.id} className={styles.proposalRow}>
+                <div className={styles.proposalInfo}>
+                  <span className={styles.proposalName}>{req.title}</span>
+                  <span className={styles.proposalMeta}>
+                    {req.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
+                    {req.proposedByName && <> · {t('by')} {req.proposedByName}</>}
+                  </span>
+                </div>
+                <div className={styles.proposalActions}>
+                  <button className={styles.approveProposalBtn} onClick={() => handleApproveActivityProposal(req)}>{t('approveProposal')}</button>
+                  <button className={styles.declineProposalBtn} onClick={() => handleDeclineActivityProposal(req.id)}>{t('declineProposal')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activities.length > 0 && (
+        <div className={styles.archiveTabs}>
+          {(['active', 'archived', 'all'] as const).map(f => (
+            <button
+              key={f}
+              className={styles.archiveTab + (archiveFilter === f ? ' ' + styles.archiveTabActive : '')}
+              onClick={() => setArchiveFilter(f)}
+            >
+              {f === 'active' ? t('filterActive') : f === 'archived' ? t('filterArchived') : t('filterAll')}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <p className={styles.empty}>{t('loading')}</p>
       ) : activities.length === 0 ? (
@@ -377,9 +478,15 @@ export default function ActivitiesPage() {
             {t('prefillRetreat')}
           </button>
         </div>
+      ) : activities.filter(a =>
+          archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived
+        ).length === 0 ? (
+        <p className={styles.empty}>{t('noArchivedActivities')}</p>
       ) : (
         <div className={styles.list}>
-          {activities.map(a => (
+          {activities
+            .filter(a => archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived)
+            .map(a => (
             <div key={a.id} className={styles.card + (a.active ? ' ' + styles.cardActive : '')}>
               <div className={styles.cardTop}>
                 <div className={styles.cardInfo}>
@@ -398,6 +505,7 @@ export default function ActivitiesPage() {
                 <span className={styles.badge + ' ' + (a.active ? styles.badgeActive : styles.badgeInactive)}>
                   {a.active ? t('activityActive') : t('activityInactive')}
                 </span>
+                {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
               </div>
               {a.description && <p className={styles.cardDesc}>{a.description}</p>}
               <div className={styles.cardActions}>
@@ -417,6 +525,9 @@ export default function ActivitiesPage() {
                   onClick={() => handleToggleActive(a)}
                 >
                   {a.active ? t('setHidden') : t('setActive')}
+                </button>
+                <button className={styles.toggleBtn + ' ' + styles.toggleOff} onClick={() => handleToggleArchive(a)}>
+                  {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
                 </button>
                 <button className={styles.deleteBtn} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>
               </div>

@@ -162,6 +162,7 @@
     "yourEmail": "Your Email",
     "yourEmailPh": "you@example.com",
     "selectPrompt": "Select an option",
+    "selectNoOptions": "No options available yet",
     "yes": "Yes",
     "missingRequired": "Please answer: {field}",
     "submitFailed": "Failed to submit. Please try again.",
@@ -441,11 +442,14 @@
     "actionPostBlog": "Post Blog",
     "actionPostBlogDesc": "Share your story",
     "statUnreadMessages": "Unread Messages",
+    "statActivityResponses": "Activity Responses",
     "dashInitiativesCardTitle": "Initiatives",
     "dashInitiativesCardDesc": "Create, edit & archive projects",
     "dashRosterCardDesc": "Assign members to initiatives",
     "dashMessagesCardTitle": "Messages",
     "dashMessagesCardDesc": "View & reply to contact messages",
+    "dashActivitiesCardTitle": "Hub Activities",
+    "dashActivitiesCardDesc": "Manage activities & check form responses",
     "dashRoleAssignmentsCardDesc": "Manage member roles",
     "dashProjectsCardTitle": "Projects",
     "dashProjectsCardDesc": "Manage projects & assign shapers",
@@ -717,6 +721,7 @@
     "optionPlaceholder": "Option",
     "addOption": "Add option",
     "removeOption": "Remove option",
+    "activityQuestionNoOptionsWarning": "Add at least one option, or visitors won't be able to choose anything in this dropdown.",
     "activityQuestionRequired": "Required",
     "qTypeText": "Short answer",
     "qTypeTextarea": "Long answer",
@@ -725,6 +730,7 @@
     "addQuestion": "Add Question",
     "removeQuestion": "Remove",
     "viewResponses": "View Responses",
+    "viewResponsesCount": "View Responses ({n})",
     "responsesFor": "Responses for",
     "noResponsesYet": "No responses yet.",
     "submittedAtCol": "Submitted",
@@ -770,20 +776,20 @@
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",
     "subtitle": "How Jeddah Hub collects, uses, and protects your information.",
-    "lastUpdated": "Last updated: August 2, 2026",
-    "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy explains what information we collect through jeddahhub.com, why we collect it, and the choices you have.",
+    "lastUpdated": "Last updated: August 9, 2026",
+    "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy explains what information we collect through jeddahhub.org, why we collect it, and the choices you have.",
     "sections": [
       {
         "heading": "Information We Collect",
-        "body": "Newsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post using an anonymous, randomly generated identifier that is not linked to your real identity."
+        "body": "Newsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nHub Activity and workshop registrations: when you register for a Hub Activity or workshop, we store your answers to the registration form, along with your name and email address if you choose to provide them, so organizers can plan the event and follow up with you.\n\nInitiative and impact content: initiative pages, impact reports, and blog posts published through the site may include names, photos, and project details submitted by Shapers and curators.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post using an anonymous, randomly generated identifier that is not linked to your real identity."
       },
       {
         "heading": "Become a Shaper Applications",
-        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.com. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form. It is governed by the World Economic Forum's own privacy practices, not this policy."
+        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.org. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form. It is governed by the World Economic Forum's own privacy practices, not this policy."
       },
       {
         "heading": "How We Use Your Information",
-        "body": "We use the information above to send the newsletter you subscribed to, respond to messages sent through the contact form, and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
+        "body": "We use the information above to send the newsletter you subscribed to, respond to messages sent through the contact form, organize Hub Activities and workshops you register for, publish initiative and impact content you or your curators submit, and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
       },
       {
         "heading": "Cookies and Similar Technologies",
@@ -799,7 +805,7 @@
       },
       {
         "heading": "Data Retention",
-        "body": "We keep newsletter and contact form data for as long as needed to serve their purpose, or until you ask us to remove it."
+        "body": "We keep newsletter, contact form, and activity registration data for as long as needed to serve their purpose, or until you ask us to remove it."
       },
       {
         "heading": "Your Choices and Rights",
@@ -818,6 +824,10 @@
         "body": "Jeddah Hub is based in Jeddah, Saudi Arabia. Because we use global infrastructure providers, your information may be processed in other countries. We take steps to ensure it continues to receive an appropriate level of protection wherever it is processed."
       },
       {
+        "heading": "Intellectual Property",
+        "body": "The Jeddah Hub name, logo, and the design, graphics, and text of this site belong to Jeddah Hub or its licensors, except for content submitted by Shapers and curators (such as blog posts, initiative pages, and impact reports) and third-party marks such as the Global Shapers Community and World Economic Forum names. This policy governs how we handle personal information; it does not grant any rights to reuse or copy the site's content, which are addressed in our Terms of Use."
+      },
+      {
         "heading": "Changes to This Policy",
         "body": "We may update this policy from time to time to reflect changes to the site or our practices. The date at the top of this page shows when it was last revised. Continued use of the site after an update means you accept the revised policy."
       },
@@ -830,20 +840,16 @@
   "TermsOfUsePage": {
     "title": "Terms of Use",
     "subtitle": "The rules for using the Jeddah Hub website.",
-    "lastUpdated": "Last updated: August 2, 2026",
-    "intro": "These terms govern your use of jeddahhub.com, operated by Jeddah Hub, a Global Shapers Community hub and an initiative of the World Economic Forum. By using this site, you agree to these terms.",
+    "lastUpdated": "Last updated: August 9, 2026",
+    "intro": "These terms govern your use of jeddahhub.org, operated by Jeddah Hub, a Global Shapers Community hub and an initiative of the World Economic Forum. By using this site, you agree to these terms.",
     "sections": [
       {
         "heading": "Eligibility to Become a Shaper",
         "body": "Membership as a Global Shaper is a separate process, administered by the World Economic Forum through its own application platform, and is generally open to driven young people between 18 and 27 years old. Applying does not guarantee acceptance, and eligibility criteria are set by the World Economic Forum, not by these terms."
       },
       {
-        "heading": "Content You Submit",
-        "body": "If you publish a blog post or comment on this site, you confirm you have the right to share it, and you grant Jeddah Hub a non-exclusive right to display it on this site. You keep ownership of what you write. We may remove content that violates these terms or that we determine is inappropriate, at our discretion.\n\nDo not submit content that is unlawful, defamatory, harassing, or that infringes someone else's rights."
-      },
-      {
         "heading": "Acceptable Use",
-        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, or using automated tools to scrape or overload it."
+        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, submitting false or misleading information through a Hub Activity or workshop registration form, or using automated tools to scrape or overload it."
       },
       {
         "heading": "Third-Party Links",
@@ -851,7 +857,7 @@
       },
       {
         "heading": "Intellectual Property",
-        "body": "The Jeddah Hub name, logo, and the design and text of this site (excluding content you submit and excluding third-party marks such as the Global Shapers Community and World Economic Forum names) belong to Jeddah Hub or its licensors and may not be used without permission."
+        "body": "The Jeddah Hub name, logo, and the design, graphics, and text of this site belong to Jeddah Hub or its licensors and may not be copied or used without permission, with two exceptions: third-party marks such as the Global Shapers Community and World Economic Forum names, and content you submit yourself.\n\nIf you publish a blog post, comment, or Hub Activity registration response on this site, you confirm you have the right to share it and grant Jeddah Hub a non-exclusive right to display it here. You keep ownership of what you submit. Do not submit content that is unlawful, defamatory, harassing, or that infringes someone else's rights, and we may remove any content that violates these terms, at our discretion."
       },
       {
         "heading": "Disclaimers",

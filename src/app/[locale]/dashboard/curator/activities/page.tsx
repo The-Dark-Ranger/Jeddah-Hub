@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc,
-  query, serverTimestamp, where,
+  query, serverTimestamp, where, getCountFromServer,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -107,6 +107,7 @@ export default function ActivitiesPage() {
   const t = useTranslations('Dashboard');
 
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
@@ -136,6 +137,16 @@ export default function ActivitiesPage() {
           return tb - ta;
         });
       setActivities(sorted);
+
+      // So curators can see at a glance which activities have new responses
+      // to check, without opening each "View Responses" modal individually.
+      const withForms = sorted.filter(a => a.customForm?.enabled);
+      const counts = await Promise.all(withForms.map(a =>
+        getCountFromServer(query(collection(db, 'activity_responses'), where('activityId', '==', a.id)))
+          .then(snap => [a.id, snap.data().count] as const)
+          .catch(() => [a.id, 0] as const)
+      ));
+      setResponseCounts(Object.fromEntries(counts));
     } catch {
       setActivities([]);
     } finally {
@@ -379,7 +390,14 @@ export default function ActivitiesPage() {
               <div className={styles.cardActions}>
                 <button className={styles.editBtn} onClick={() => openEdit(a)}>{t('editActivity')}</button>
                 {a.customForm?.enabled && (
-                  <button className={styles.responsesBtn} onClick={() => openResponses(a)}>{t('viewResponses')}</button>
+                  <button
+                    className={styles.responsesBtn + (responseCounts[a.id] > 0 ? ' ' + styles.responsesBtnHasNew : '')}
+                    onClick={() => openResponses(a)}
+                  >
+                    {responseCounts[a.id] > 0
+                      ? t('viewResponsesCount', { n: responseCounts[a.id] })
+                      : t('viewResponses')}
+                  </button>
                 )}
                 <button
                   className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
@@ -526,6 +544,9 @@ export default function ActivitiesPage() {
 
                         {q.type === 'select' && (
                           <div className={styles.optionsList}>
+                            {(q.options || []).filter(o => o.trim()).length === 0 && (
+                              <p className={styles.optionsWarning}>{t('activityQuestionNoOptionsWarning')}</p>
+                            )}
                             {(q.options || []).map((opt, idx) => (
                               <div key={idx} className={styles.optionRow}>
                                 <span className={styles.optionBullet} aria-hidden="true" />

@@ -35,6 +35,8 @@
 
 .formField { display: flex; flex-direction: column; gap: 0.4rem; }
 .label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
+.charCount { font-size: 0.75rem; color: var(--text-muted); text-align: end; margin-top: 0.25rem; }
+.charCountNearLimit { color: var(--warning, #f59e0b); }
 .hint { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
 
 .input {

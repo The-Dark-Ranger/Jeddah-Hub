@@ -20,6 +20,10 @@ interface ProfileForm {
 
 const empty: ProfileForm = { displayName: '', displayNameAr: '', photoURL: '', bio: '', linkedin: '', twitter: '', instagram: '' };
 
+// Long enough for a real bio, short enough that shaper/curator cards
+// across the site (About page, homepage) stay a reasonable, consistent size.
+const BIO_MAX_LENGTH = 300;
+
 export default function MyProfile() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
@@ -133,7 +137,17 @@ export default function MyProfile() {
           </div>
           <div className={styles.formField}>
             <label className={styles.label}>{t('bioLabel')}</label>
-            <textarea className={styles.textarea} value={form.bio} onChange={set('bio')} placeholder={t('phBio')} rows={3} />
+            <textarea
+              className={styles.textarea}
+              value={form.bio}
+              onChange={set('bio')}
+              placeholder={t('phBio')}
+              rows={3}
+              maxLength={BIO_MAX_LENGTH}
+            />
+            <p className={styles.charCount + (form.bio.length >= BIO_MAX_LENGTH ? ' ' + styles.charCountNearLimit : '')}>
+              {form.bio.length}/{BIO_MAX_LENGTH}
+            </p>
           </div>
         </div>
       </div>

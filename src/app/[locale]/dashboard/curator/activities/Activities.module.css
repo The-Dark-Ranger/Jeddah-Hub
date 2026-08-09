@@ -4,6 +4,17 @@
 .title  { font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 .25rem; }
 .subtitle { font-size:.9rem;color:var(--text-muted);margin:0; }
 
+/* ── Active/Archived/All filter tabs ── */
+.archiveTabs { display:flex;flex-wrap:wrap;gap:.5rem; }
+.archiveTab {
+  padding:.45rem .9rem;border-radius:8px;
+  border:1px solid var(--border-color);background:var(--card-bg);
+  color:var(--text-muted);font-size:.83rem;font-weight:500;
+  cursor:pointer;transition:all .18s ease;
+}
+.archiveTab:hover { border-color:var(--primary-blue);color:var(--primary-blue); }
+.archiveTabActive { background:var(--primary-blue);color:#fff;border-color:var(--primary-blue); }
+
 /* ── New activity button ── */
 .newBtn {
   display:flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;
@@ -57,6 +68,7 @@
 .badge        { flex-shrink:0;font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;letter-spacing:.04em; }
 .badgeActive   { background:rgba(16,185,129,.12);color:#059669; }
 .badgeInactive { background:rgba(107,114,128,.1);color:var(--text-muted); }
+.badgeArchived { background:rgba(107,114,128,.1);color:var(--text-muted); }
 
 /* ── Card actions ── */
 .cardActions { display:flex;gap:.5rem;flex-wrap:wrap; }

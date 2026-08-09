@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiative.module.css';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
+import { extractDocId, projectSlugUrl } from '@/lib/slug';
 
 interface Initiative {
   id: string;
@@ -42,9 +43,14 @@ interface UserRecord {
 }
 
 export default function InitiativePage() {
-  const { id } = useParams() as { id: string };
+  const { id: rawId } = useParams() as { id: string };
+  // URLs read as "the-initiative-name-<docId>" (see src/lib/slug.ts) so the
+  // address bar shows the project's name instead of an opaque Firestore
+  // ID — but a plain doc-ID link (old bookmarks/shares) still round-trips.
+  const id     = extractDocId(rawId);
   const t      = useTranslations('ProjectsPage');
   const locale = useLocale();
+  const router = useRouter();
   const [initiative, setInitiative] = useState<Initiative | null>(null);
   const [users, setUsers]           = useState<UserRecord[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -56,6 +62,12 @@ export default function InitiativePage() {
         if (snap.exists()) {
           const data = { id: snap.id, ...snap.data() } as Initiative;
           setInitiative(data);
+
+          // Canonicalize a bare-doc-ID link (old bookmark/share, or a
+          // title that changed after the link was shared) to the current
+          // name-bearing URL, without adding a history entry.
+          const canonical = projectSlugUrl(data.id, data.title);
+          if (rawId !== canonical) router.replace(`/projects/${canonical}`);
 
           // Only fetch the specific member docs needed to resolve display
           // names, in chunks of 30 (Firestore 'in' query limit), from the

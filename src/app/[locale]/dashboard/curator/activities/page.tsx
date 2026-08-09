@@ -40,6 +40,7 @@ interface Activity {
   ctaUrl: string;
   highlights: Highlight[];
   active: boolean;
+  archived?: boolean;
   kind?: ActivityKind;
   customForm?: CustomForm;
   createdAt?: any;
@@ -110,6 +111,7 @@ export default function ActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -299,6 +301,19 @@ export default function ActivitiesPage() {
     }
   }
 
+  // Archived is a separate axis from active/hidden — a past retreat can be
+  // both "hidden" (not shown on the homepage) and "archived" (tucked out of
+  // the default admin list) without those two states fighting each other.
+  async function handleToggleArchive(a: Activity) {
+    try {
+      await updateDoc(doc(db, 'initiatives', a.id), { archived: !a.archived });
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to toggle archive:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleDelete(a: Activity) {
     if (!confirm(t('deleteActivityConfirm'))) return;
     try {
@@ -364,6 +379,20 @@ export default function ActivitiesPage() {
         </button>
       </div>
 
+      {activities.length > 0 && (
+        <div className={styles.archiveTabs}>
+          {(['active', 'archived', 'all'] as const).map(f => (
+            <button
+              key={f}
+              className={styles.archiveTab + (archiveFilter === f ? ' ' + styles.archiveTabActive : '')}
+              onClick={() => setArchiveFilter(f)}
+            >
+              {f === 'active' ? t('filterActive') : f === 'archived' ? t('filterArchived') : t('filterAll')}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <p className={styles.empty}>{t('loading')}</p>
       ) : activities.length === 0 ? (
@@ -377,9 +406,15 @@ export default function ActivitiesPage() {
             {t('prefillRetreat')}
           </button>
         </div>
+      ) : activities.filter(a =>
+          archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived
+        ).length === 0 ? (
+        <p className={styles.empty}>{t('noArchivedActivities')}</p>
       ) : (
         <div className={styles.list}>
-          {activities.map(a => (
+          {activities
+            .filter(a => archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived)
+            .map(a => (
             <div key={a.id} className={styles.card + (a.active ? ' ' + styles.cardActive : '')}>
               <div className={styles.cardTop}>
                 <div className={styles.cardInfo}>
@@ -398,6 +433,7 @@ export default function ActivitiesPage() {
                 <span className={styles.badge + ' ' + (a.active ? styles.badgeActive : styles.badgeInactive)}>
                   {a.active ? t('activityActive') : t('activityInactive')}
                 </span>
+                {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
               </div>
               {a.description && <p className={styles.cardDesc}>{a.description}</p>}
               <div className={styles.cardActions}>
@@ -417,6 +453,9 @@ export default function ActivitiesPage() {
                   onClick={() => handleToggleActive(a)}
                 >
                   {a.active ? t('setHidden') : t('setActive')}
+                </button>
+                <button className={styles.toggleBtn + ' ' + styles.toggleOff} onClick={() => handleToggleArchive(a)}>
+                  {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
                 </button>
                 <button className={styles.deleteBtn} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>
               </div>

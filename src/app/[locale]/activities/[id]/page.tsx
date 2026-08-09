@@ -81,6 +81,7 @@ export default function ActivityPage() {
         activityId: activity.id,
         answers,
         submittedAt: new Date().toISOString(),
+        read: false,
       };
       if (submitterName.trim())  payload.submitterName  = submitterName.trim();
       if (submitterEmail.trim()) payload.submitterEmail = submitterEmail.trim();

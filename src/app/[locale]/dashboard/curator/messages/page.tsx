@@ -271,7 +271,7 @@ export default function MessagesPage() {
       {/* Compose / Reply modal */}
       {composeOpen && (
         <ModalPortal>
-        <div className={styles.overlay} onClick={() => setComposeOpen(false)}>
+        <div className={styles.overlay} onClick={() => { if (confirm(t('confirmDiscardChanges'))) setComposeOpen(false); }}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>{replyingId ? t('replyModalTitle') : t('newMessageModalTitle')}</h3>

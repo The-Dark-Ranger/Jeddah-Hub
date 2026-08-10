@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
+import { uniqueInitiativeSlug } from '@/lib/slug';
 import styles from './Activities.module.css';
 
 interface Highlight { name: string; tag: string; }
@@ -286,7 +287,8 @@ export default function ActivitiesPage() {
     if (!form.title.trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, highlights: parseHighlights(highlightsText), type: 'hub_activity' };
+      const slug = await uniqueInitiativeSlug(form.title, editing?.id);
+      const payload = { ...form, highlights: parseHighlights(highlightsText), type: 'hub_activity', slug };
       if (editing) {
         await updateDoc(doc(db, 'initiatives', editing.id), { ...payload, updatedAt: serverTimestamp() });
       } else {
@@ -329,6 +331,7 @@ export default function ActivitiesPage() {
   async function handleApproveActivityProposal(req: any) {
     try {
       const { id: _id, proposedBy: _pb, proposedByName: _pbn, status: _s, requestedAt: _ra, ...fields } = req;
+      const slug = await uniqueInitiativeSlug(fields.title || '');
       await addDoc(collection(db, 'initiatives'), {
         eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
         ...fields,
@@ -337,6 +340,7 @@ export default function ActivitiesPage() {
         highlights: [],
         customForm: emptyCustomForm(),
         createdAt: serverTimestamp(),
+        slug,
       });
       await updateDoc(doc(db, 'activity_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
       setActivityProposals(prev => prev.filter(p => p.id !== req.id));
@@ -538,7 +542,7 @@ export default function ActivitiesPage() {
 
       {modalOpen && (
         <ModalPortal>
-        <div className={styles.overlay} onClick={() => setModalOpen(false)}>
+        <div className={styles.overlay} onClick={() => { if (confirm(t('confirmDiscardChanges'))) setModalOpen(false); }}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{editing ? t('editActivity') : t('createActivity')}</h2>

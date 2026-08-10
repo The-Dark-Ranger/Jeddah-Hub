@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import WaveDivider from './WaveDivider';
+import { slugify } from '@/lib/slug';
 
 interface Highlight { name: string; tag: string; }
 
@@ -24,6 +25,7 @@ interface Activity {
   active?: boolean;
   color?: string;
   kind?: 'activity' | 'workshop';
+  slug?: string;
 }
 
 function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeof useTranslations> }) {
@@ -80,7 +82,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
                 </svg>
               </a>
             )}
-            <Link href={`/activities/${activity.id}`} className={styles.retreatBtnSecondary}>
+            <Link href={`/activities/${activity.slug || slugify(activity.title)}`} className={styles.retreatBtnSecondary}>
               {t('viewActivityDetails')}
             </Link>
           </div>

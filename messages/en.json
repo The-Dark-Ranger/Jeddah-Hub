@@ -803,12 +803,12 @@
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",
     "subtitle": "How Jeddah Hub collects, uses, and protects your information.",
-    "lastUpdated": "Last updated: August 9, 2026",
+    "lastUpdated": "Last updated: August 10, 2026",
     "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy explains what information we collect through jeddahhub.org, why we collect it, and the choices you have.",
     "sections": [
       {
         "heading": "Information We Collect",
-        "body": "Newsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nHub Activity and workshop registrations: when you register for a Hub Activity or workshop, we store your answers to the registration form, along with your name and email address if you choose to provide them, so organizers can plan the event and follow up with you.\n\nInitiative and impact content: initiative pages, impact reports, and blog posts published through the site may include names, photos, and project details submitted by Shapers and curators.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post using an anonymous, randomly generated identifier that is not linked to your real identity."
+        "body": "Member accounts: when you sign in as a Shaper, Alumni, curator, vice curator, or impact officer, we store your account email (via Firebase Authentication) along with the display name, optional Arabic display name, profile photo, short bio, and social media links you choose to add on your profile. This information is shown on public pages such as Who We Are and initiative team lists for members with an assigned role.\n\nNewsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nHub Activity and workshop registrations: when you register for a Hub Activity or workshop, we store your answers to the registration form, along with your name and email address if you choose to provide them, so organizers can plan the event and follow up with you.\n\nInitiative and impact content: initiative pages, impact reports, and blog posts published through the site may include names, photos, and project details submitted by Shapers and curators.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post using an anonymous, randomly generated identifier that is not linked to your real identity."
       },
       {
         "heading": "Become a Shaper Applications",
@@ -816,7 +816,7 @@
       },
       {
         "heading": "How We Use Your Information",
-        "body": "We use the information above to send the newsletter you subscribed to, respond to messages sent through the contact form, organize Hub Activities and workshops you register for, and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
+        "body": "We use the information above to send the newsletter you subscribed to, respond to messages sent through the contact form, organize Hub Activities and workshops you register for, display member profiles and published content on public pages, and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
       },
       {
         "heading": "Cookies and Similar Technologies",
@@ -832,11 +832,11 @@
       },
       {
         "heading": "Data Retention",
-        "body": "We keep newsletter, contact form, and activity registration data for as long as needed to serve their purpose, or until you ask us to remove it."
+        "body": "We keep newsletter, contact form, and activity registration data for as long as needed to serve their purpose, or until you ask us to remove it. Profile information is kept while your account remains active and is removed if your account is deleted."
       },
       {
         "heading": "Your Choices and Rights",
-        "body": "To unsubscribe from the newsletter or request that we delete personal information we hold about you, contact us using the details below and we will act on your request promptly."
+        "body": "If you have a member account, you can update or remove most of your own profile information (display name, photo, bio, social links) at any time from your dashboard. To unsubscribe from the newsletter, delete your account, or request that we delete other personal information we hold about you, contact us using the details below and we will act on your request promptly."
       },
       {
         "heading": "Children's Privacy",
@@ -867,7 +867,7 @@
   "TermsOfUsePage": {
     "title": "Terms of Use",
     "subtitle": "The rules for using the Jeddah Hub website.",
-    "lastUpdated": "Last updated: August 9, 2026",
+    "lastUpdated": "Last updated: August 10, 2026",
     "intro": "These terms govern your use of jeddahhub.org, operated by Jeddah Hub, a Global Shapers Community hub and an initiative of the World Economic Forum. By using this site, you agree to these terms.",
     "sections": [
       {
@@ -875,8 +875,12 @@
         "body": "Membership as a Global Shaper is a separate process, administered by the World Economic Forum through its own application platform, and is generally open to driven young people between 18 and 27 years old. Applying does not guarantee acceptance, and eligibility criteria are set by the World Economic Forum, not by these terms."
       },
       {
+        "heading": "Member Accounts and Roles",
+        "body": "Members sign in with the account set up during onboarding and are assigned a role — Shaper, Alumni, Curator, Vice Curator, or Impact Officer — that determines what they can do on the site, such as leading an initiative, reviewing membership and event requests, or managing published content. Curators and vice curators may assign or revoke roles. You're responsible for keeping your account secure and for the accuracy of the profile information, initiative content, and event registrations you submit."
+      },
+      {
         "heading": "Acceptable Use",
-        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, submitting false or misleading information through a Hub Activity or workshop registration form, or using automated tools to scrape or overload it."
+        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, submitting false or misleading information through a Hub Activity or workshop registration form, submitting membership or event requests in bad faith or under a false identity, or using automated tools to scrape or overload it."
       },
       {
         "heading": "Third-Party Links",

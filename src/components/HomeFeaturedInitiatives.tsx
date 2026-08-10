@@ -20,15 +20,21 @@ interface Initiative {
   title: string;
   description: string;
   category?: string;
+  imageUrl?: string;
   images?: string[];
   stat?: string;
   color?: string;
   slug?: string;
 }
 
+function cardImage(init: Initiative): string | undefined {
+  return init.imageUrl || init.images?.[0];
+}
+
 function cardGradient(init: Initiative, fallback: string): string {
-  if (init.images?.[0]) {
-    return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),url(${init.images[0]})`;
+  const img = cardImage(init);
+  if (img) {
+    return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),url(${img})`;
   }
   if (init.color) {
     return `linear-gradient(135deg,${init.color}ee,${init.color}99)`;
@@ -99,7 +105,7 @@ export default function HomeFeaturedInitiatives() {
     <div className={styles.projectsGrid}>
       {items.map((init, i) => {
         const bg = cardGradient(init, PROJECT_GRADIENTS[i % PROJECT_GRADIENTS.length]);
-        const hasImage = !!init.images?.[0];
+        const hasImage = !!cardImage(init);
         return (
           <Link key={init.id} href={`/projects/${init.slug || slugify(init.title)}`} className={styles.projectCard}>
             <div

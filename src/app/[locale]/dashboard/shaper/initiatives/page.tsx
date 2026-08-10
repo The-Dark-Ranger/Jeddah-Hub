@@ -341,7 +341,7 @@ export default function JoinInitiatives() {
         <ModalPortal>
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget) closeProposeActivity(); }}
+          onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeProposeActivity(); }}
         >
           <form className={styles.modal} onSubmit={handleProposeActivitySubmit}>
             <div className={styles.modalHeader}>
@@ -414,7 +414,7 @@ export default function JoinInitiatives() {
         <ModalPortal>
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget) closePropose(); }}
+          onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closePropose(); }}
         >
           <form className={styles.modal} onSubmit={handleProposeSubmit}>
             <div className={styles.modalHeader}>

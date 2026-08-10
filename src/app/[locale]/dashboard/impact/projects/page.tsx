@@ -404,7 +404,7 @@ export default function ImpactProjects() {
       {/* Modal */}
       {modalMode !== null && (
         <ModalPortal>
-        <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+        <div className={styles.modalOverlay} onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeModal(); }}>
           <form className={styles.modal} onSubmit={isCreate ? handleCreate : handleSaveEdit}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>

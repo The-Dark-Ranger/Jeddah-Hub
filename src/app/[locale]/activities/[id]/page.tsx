@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
 import WaveDivider from '@/components/WaveDivider';
+import { slugify } from '@/lib/slug';
 import styles from './Activity.module.css';
 
 interface Highlight { name: string; tag: string; }
@@ -33,11 +35,13 @@ interface Activity {
   type?: string;
   kind?: 'activity' | 'workshop';
   customForm?: { enabled: boolean; questions: CustomFormQuestion[] };
+  slug?: string;
 }
 
 export default function ActivityPage() {
-  const { id } = useParams() as { id: string };
+  const { id: rawId } = useParams() as { id: string };
   const t = useTranslations('ActivityPage');
+  const router = useRouter();
 
   const [activity, setActivity] = useState<Activity | null | 'loading'>('loading');
   const [answers, setAnswers]   = useState<Record<string, string>>({});
@@ -48,14 +52,48 @@ export default function ActivityPage() {
   const [error, setError]           = useState('');
 
   useEffect(() => {
-    getDoc(doc(db, 'initiatives', id)).then(snap => {
-      if (snap.exists() && (snap.data() as any).type === 'hub_activity') {
-        setActivity({ id: snap.id, ...(snap.data() as Omit<Activity, 'id'>) });
-      } else {
+    const load = async () => {
+      try {
+        let data: Activity | null = null;
+
+        // Fast path: a matching `slug` field, scoped to Hub Activities.
+        const slugSnap = await getDocs(query(
+          collection(db, 'initiatives'), where('slug', '==', rawId), where('type', '==', 'hub_activity'),
+        ));
+        if (!slugSnap.empty) {
+          const d = slugSnap.docs[0];
+          data = { id: d.id, ...(d.data() as Omit<Activity, 'id'>) };
+        }
+
+        // Fallback: activities saved before the `slug` field existed —
+        // match by computing the slug from the title on the fly.
+        if (!data) {
+          const allSnap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
+          const match = allSnap.docs.find(d => slugify((d.data() as any).title || '') === rawId);
+          if (match) data = { id: match.id, ...(match.data() as Omit<Activity, 'id'>) };
+        }
+
+        // Legacy: a bare doc-ID link from before this page had slugs at all.
+        if (!data) {
+          const legacySnap = await getDoc(doc(db, 'initiatives', rawId));
+          if (legacySnap.exists() && (legacySnap.data() as any).type === 'hub_activity') {
+            data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Activity, 'id'>) };
+          }
+        }
+
+        if (data) {
+          setActivity(data);
+          const canonical = data.slug || slugify(data.title);
+          if (rawId !== canonical) router.replace(`/activities/${canonical}`);
+        } else {
+          setActivity(null);
+        }
+      } catch {
         setActivity(null);
       }
-    }).catch(() => setActivity(null));
-  }, [id]);
+    };
+    load();
+  }, [rawId]);
 
   const setAnswer = (qid: string, value: string) => setAnswers(a => ({ ...a, [qid]: value }));
 
@@ -209,14 +247,28 @@ export default function ActivityPage() {
                       );
                     })()}
                     {q.type === 'checkbox' && (
-                      <label className={styles.checkRow}>
-                        <input
-                          type="checkbox"
-                          checked={answers[q.id] === 'yes'}
-                          onChange={e => setAnswer(q.id, e.target.checked ? 'yes' : 'no')}
-                        />
-                        {t('yes')}
-                      </label>
+                      <div className={styles.yesNoRow}>
+                        <label className={styles.checkRow}>
+                          <input
+                            type="radio"
+                            name={`q-${q.id}`}
+                            checked={answers[q.id] === 'yes'}
+                            onChange={() => setAnswer(q.id, 'yes')}
+                            required={q.required}
+                          />
+                          {t('yes')}
+                        </label>
+                        <label className={styles.checkRow}>
+                          <input
+                            type="radio"
+                            name={`q-${q.id}`}
+                            checked={answers[q.id] === 'no'}
+                            onChange={() => setAnswer(q.id, 'no')}
+                            required={q.required}
+                          />
+                          {t('no')}
+                        </label>
+                      </div>
                     )}
                   </div>
                 ))}

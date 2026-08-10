@@ -1,5 +1,7 @@
-/** Turns a title into a URL-safe slug, kept short enough that the combined
- *  "slug-docId" URL stays reasonable. Non-Latin/Arabic characters (emoji,
+import { collection, getDocs, query } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+/** Turns a title into a URL-safe slug. Non-Latin/Arabic characters (emoji,
  *  punctuation) collapse to hyphens rather than being dropped silently. */
 export function slugify(text: string): string {
   return text
@@ -10,28 +12,27 @@ export function slugify(text: string): string {
     .slice(0, 60);
 }
 
-/** Builds the "readable" project URL segment — the initiative's name
- *  followed by its real doc ID, e.g. "serene--BODjADl9SEAPOVMe". The ID
- *  suffix is what actually gets looked up (see extractDocId); the slug is
- *  just there so the URL reads as the project's name instead of a bare
- *  opaque ID. Always built from the English title so the same URL works
- *  regardless of which language it was shared from.
+/** Computes a Firestore-unique slug for an initiative's title, called at
+ *  create/edit time so it can be persisted as the doc's `slug` field —
+ *  that's what lets /projects/{slug} resolve via a direct, cheap query
+ *  instead of scanning every initiative to find a title match.
  *
- *  Uses a double hyphen as the separator, NOT a single one: real Firestore
- *  auto-IDs never contain a hyphen, but the hand-written placeholder
- *  project IDs in src/lib/placeholderProjects.ts do (e.g. "tech-j-shore"),
- *  and slugify() never produces consecutive hyphens — so "--" is the only
- *  boundary that survives every ID shape this app actually uses. */
-export function projectSlugUrl(id: string, title: string): string {
-  const slug = slugify(title || '');
-  return slug ? `${slug}--${id}` : id;
-}
-
-/** Reverses projectSlugUrl() — the doc ID is whatever comes after the LAST
- *  "--". A bare doc ID with no "--" (an old bookmarked link, a title that
- *  produced an empty slug, or a placeholder ID visited directly) round-trips
- *  unchanged. */
-export function extractDocId(param: string): string {
-  const idx = param.lastIndexOf('--');
-  return idx === -1 ? param : param.slice(idx + 2);
+ *  Deterministic for an unchanged title: pass the doc's own id as
+ *  `excludeId` on an edit so it doesn't collide with itself and keeps the
+ *  same slug run after run. On a genuine collision with a DIFFERENT
+ *  initiative, appends "-2", "-3", etc. */
+export async function uniqueInitiativeSlug(title: string, excludeId?: string): Promise<string> {
+  const base = slugify(title) || 'initiative';
+  // The whole collection is small (a few dozen docs at most) — fetching it
+  // all and comparing client-side is simpler and less fragile than a
+  // Firestore prefix-range query, and this only runs on create/edit saves,
+  // not on every page view.
+  const snap = await getDocs(query(collection(db, 'initiatives')));
+  const taken = new Set(
+    snap.docs.filter(d => d.id !== excludeId).map(d => (d.data() as any).slug).filter(Boolean)
+  );
+  if (!taken.has(base)) return base;
+  let i = 2;
+  while (taken.has(`${base}-${i}`)) i++;
+  return `${base}-${i}`;
 }

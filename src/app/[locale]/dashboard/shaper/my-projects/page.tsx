@@ -361,7 +361,7 @@ export default function MyProjects() {
       {/* Lead edit modal */}
       {leadEditInit && (
         <ModalPortal>
-        <div className={jiStyles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) closeLeadEdit(); }}>
+        <div className={jiStyles.modalOverlay} onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeLeadEdit(); }}>
           <form className={jiStyles.modal} onSubmit={handleLeadSave}>
             <div className={jiStyles.modalHeader}>
               <h3 className={jiStyles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>

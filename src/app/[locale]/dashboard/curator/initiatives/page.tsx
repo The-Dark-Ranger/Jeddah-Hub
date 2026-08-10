@@ -555,7 +555,7 @@ export default function ManageInitiatives() {
         <ModalPortal>
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
+          onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeModal(); }}
         >
           <form
             className={styles.modal}

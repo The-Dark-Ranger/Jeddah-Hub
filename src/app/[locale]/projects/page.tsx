@@ -8,9 +8,9 @@ import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '@/lib/placeholderProjects';
-import { projectSlugUrl } from '@/lib/slug';
+import { slugify } from '@/lib/slug';
 
-interface Project extends PlaceholderProject {}
+interface Project extends PlaceholderProject { slug?: string; }
 
 function ProjectCard({ project, archived, t, index = 0 }: {
   project: Project;
@@ -40,7 +40,7 @@ function ProjectCard({ project, archived, t, index = 0 }: {
 
   return (
     <Link
-      href={'/projects/' + projectSlugUrl(project.id, project.title)}
+      href={'/projects/' + (project.slug || slugify(project.title))}
       className={styles.card + (archived ? ' ' + styles.cardArchived : '')}
       style={{ '--card-index': index } as React.CSSProperties}
     >

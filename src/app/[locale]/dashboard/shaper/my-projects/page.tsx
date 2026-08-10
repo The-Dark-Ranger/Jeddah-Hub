@@ -14,7 +14,7 @@ import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
-import { projectSlugUrl } from '@/lib/slug';
+import { slugify, uniqueInitiativeSlug } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
 
@@ -34,6 +34,7 @@ interface Project {
   endDate?: string;
   color?: string;
   members?: any[];
+  slug?: string;
 }
 
 export default function MyProjects() {
@@ -163,7 +164,8 @@ export default function MyProjects() {
     if (!leadEditInit || !leadForm.title) return;
     setLeadSaving(true);
     try {
-      const updated = initiativeFormToDoc(leadForm);
+      const slug = await uniqueInitiativeSlug(leadForm.title, leadEditInit.id);
+      const updated = { ...initiativeFormToDoc(leadForm), slug };
       await updateDoc(doc(db, 'initiatives', leadEditInit.id), updated);
       setProjects(prev => prev.map(p => p.id === leadEditInit.id ? { ...p, ...updated, color: updated.color ?? undefined } : p));
       closeLeadEdit();
@@ -394,7 +396,7 @@ export default function MyProjects() {
             if (!isLead) {
               // Plain member — unchanged from the original simple clickable card.
               return (
-                <Link key={p.id} href={`/projects/${projectSlugUrl(p.id, p.title)}`} className={styles.card}>
+                <Link key={p.id} href={`/projects/${p.slug || slugify(p.title)}`} className={styles.card}>
                   <div className={styles.cardBanner} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}>
                     {!p.imageUrl && (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -451,7 +453,7 @@ export default function MyProjects() {
                     >
                       {t('downloadReport')}
                     </button>
-                    <Link href={`/projects/${projectSlugUrl(p.id, p.title)}`} className={styles.viewSiteLink}>
+                    <Link href={`/projects/${p.slug || slugify(p.title)}`} className={styles.viewSiteLink}>
                       {t('viewOnSite')}
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>

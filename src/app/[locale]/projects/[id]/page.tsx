@@ -9,7 +9,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiative.module.css';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
-import { extractDocId, projectSlugUrl } from '@/lib/slug';
+import { slugify } from '@/lib/slug';
 
 interface Initiative {
   id: string;
@@ -32,6 +32,7 @@ interface Initiative {
   startDate?: string;
   endDate?: string;
   color?: string;
+  slug?: string;
 }
 
 interface UserRecord {
@@ -44,11 +45,12 @@ interface UserRecord {
 
 export default function InitiativePage() {
   const { id: rawId } = useParams() as { id: string };
-  // URLs read as "the-initiative-name--<docId>" (see src/lib/slug.ts) so
-  // the address bar shows the project's name instead of an opaque
-  // Firestore ID — but a plain doc-ID link (old bookmarks/shares) still
-  // round-trips.
-  const id     = extractDocId(rawId);
+  // URLs read as "the-initiative-name" (see src/lib/slug.ts) — just the
+  // name, no ID. Resolved by querying for a matching `slug` field first;
+  // older initiatives saved before that field existed are found by
+  // computing the same slug from their title on the fly, and even older
+  // "name--docId" or bare-doc-ID links (from before this page had slugs
+  // at all) still resolve and get redirected to the clean URL.
   const t      = useTranslations('ProjectsPage');
   const locale = useLocale();
   const router = useRouter();
@@ -59,15 +61,39 @@ export default function InitiativePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const snap = await getDoc(doc(db, 'initiatives', id));
-        if (snap.exists()) {
-          const data = { id: snap.id, ...snap.data() } as Initiative;
+        let data: Initiative | null = null;
+
+        const slugSnap = await getDocs(query(collection(db, 'initiatives'), where('slug', '==', rawId)));
+        if (!slugSnap.empty) {
+          const d = slugSnap.docs[0];
+          data = { id: d.id, ...(d.data() as Omit<Initiative, 'id'>) };
+        }
+
+        if (!data) {
+          // Hub Activities live in this same collection (tagged
+          // type:'hub_activity') but have their own /activities/[id] page —
+          // excluded here the same defensive way every other public list
+          // does (absence of `type`, not a query filter, since Firestore's
+          // `!=` would also exclude every real initiative that predates
+          // the field existing at all).
+          const allSnap = await getDocs(collection(db, 'initiatives'));
+          const match = allSnap.docs.find(d => {
+            const docData = d.data() as any;
+            return !docData.type && slugify(docData.title || '') === rawId;
+          });
+          if (match) data = { id: match.id, ...(match.data() as Omit<Initiative, 'id'>) };
+        }
+
+        if (!data) {
+          const legacyId = rawId.includes('--') ? rawId.slice(rawId.lastIndexOf('--') + 2) : rawId;
+          const legacySnap = await getDoc(doc(db, 'initiatives', legacyId));
+          if (legacySnap.exists()) data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Initiative, 'id'>) };
+        }
+
+        if (data) {
           setInitiative(data);
 
-          // Canonicalize a bare-doc-ID link (old bookmark/share, or a
-          // title that changed after the link was shared) to the current
-          // name-bearing URL, without adding a history entry.
-          const canonical = projectSlugUrl(data.id, data.title);
+          const canonical = data.slug || slugify(data.title);
           if (rawId !== canonical) router.replace(`/projects/${canonical}`);
 
           // Only fetch the specific member docs needed to resolve display
@@ -85,15 +111,15 @@ export default function InitiativePage() {
             setUsers(snaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord))));
           }
         } else {
-          setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === id) as Initiative ?? null);
+          setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === rawId) as Initiative ?? null);
         }
       } catch {
-        setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === id) as Initiative ?? null);
+        setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === rawId) as Initiative ?? null);
       }
       setLoading(false);
     };
     load();
-  }, [id]);
+  }, [rawId]);
 
   const getUserName = (userId: string) => {
     const u = users.find(u => u.id === userId);

@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import { uniqueInitiativeSlug } from '@/lib/slug';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
   emptyInitiativeForm as emptyForm, initiativeFormToDoc as formToDoc, initiativeToForm,
@@ -240,13 +241,14 @@ export default function ManageInitiatives() {
     if (!form.title) return;
     setSaving(true);
     try {
+      const slug = await uniqueInitiativeSlug(form.title);
       await addDoc(collection(db, 'initiatives'), {
         // leads starts empty (not omitted) so firestore.rules' lead-update
         // branch — which requires 'leads' in resource.data — has something
         // to check against from the moment the doc exists, rather than
         // failing outright on a brand-new initiative before anyone's
         // assigned as lead yet.
-        ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(),
+        ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(), slug,
       });
       closeModal();
       fetchAll();
@@ -262,7 +264,8 @@ export default function ManageInitiatives() {
     if (!editingId || !form.title) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
+      const slug = await uniqueInitiativeSlug(form.title, editingId);
+      await updateDoc(doc(db, 'initiatives', editingId), { ...formToDoc(form), slug });
       closeModal();
       fetchAll();
     } catch (err: any) {
@@ -403,6 +406,7 @@ export default function ManageInitiatives() {
   const handleApproveProposal = async (proposal: any) => {
     try {
       const { id, proposedBy, proposedByName, status, requestedAt, ...fields } = proposal;
+      const slug = await uniqueInitiativeSlug(fields.title || '');
       // The proposer automatically becomes the new initiative's lead —
       // they're the one who wants to run it, and this is what actually
       // lets them edit it afterward (leads is the array firestore.rules
@@ -413,6 +417,7 @@ export default function ManageInitiatives() {
         members: [{ userId: proposedBy, role: 'Lead' }],
         leads: [proposedBy],
         createdAt: new Date().toISOString(),
+        slug,
       });
       await updateDoc(doc(db, 'initiative_requests', proposal.id), {
         status: 'approved', reviewedAt: new Date().toISOString(),

@@ -149,7 +149,7 @@ service cloud.firestore {
                                'title', 'titleAr', 'description', 'descriptionAr',
                                'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
-                               'impact', 'impactAreas', 'color', 'members',
+                               'impact', 'impactAreas', 'color', 'members', 'slug',
                              ]));
     }
 

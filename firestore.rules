@@ -113,12 +113,23 @@ service cloud.firestore {
     // homepage, project member lists) — hasOnly() below is the actual
     // security boundary: `email` is structurally never a legal key here,
     // so even a compromised client can't smuggle it in via a direct write.
+    // `role` is display-only text on this doc (real privilege only ever
+    // comes from users/{uid}.role), but it's also what the public "Who We
+    // Are" page's curator/shaper listings query directly — so an owner's
+    // self-write still can't set it to anything other than what's already
+    // there or what their real, protected users/{uid}.role says, closing
+    // off a self-promotion-for-display attack even though it grants no
+    // actual access.
     match /public_profiles/{uid} {
       allow read: if true;
       allow write: if (isOwner(uid) || isCurator())
                    && request.resource.data.keys().hasOnly(
                         ['displayName', 'displayNameAr', 'photoURL', 'bio',
-                         'linkedin', 'twitter', 'instagram', 'role']);
+                         'linkedin', 'twitter', 'instagram', 'role'])
+                   && (isCurator()
+                       || !('role' in request.resource.data)
+                       || (resource != null && request.resource.data.role == resource.data.role)
+                       || request.resource.data.role == userRole());
     }
 
     // ── initiatives ───────────────────────────────────────────
@@ -160,7 +171,8 @@ service cloud.firestore {
     // a lead can't rewrite anything else on the request doc.
     match /join_requests/{docId} {
       allow create: if isSignedIn()
-                    && request.resource.data.userId == request.auth.uid;
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['initiativeId', 'userId', 'userEmail', 'userName', 'status', 'requestedAt']);
       allow read:   if isOwner(resource.data.userId)
                     || isCuratorOrImpact()
                     || isLeadOf(resource.data.initiativeId);
@@ -184,7 +196,11 @@ service cloud.firestore {
     match /initiative_requests/{docId} {
       allow create: if isAnyMember()
                     && request.resource.data.proposedBy == request.auth.uid
-                    && request.resource.data.status == 'pending';
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.keys().hasOnly(
+                         ['title', 'titleAr', 'description', 'descriptionAr', 'category', 'startDate', 'endDate',
+                          'imageUrl', 'images', 'stat', 'problem', 'objective', 'impact', 'impactAreas', 'color',
+                          'proposedBy', 'proposedByName', 'status', 'requestedAt']);
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
       allow update: if isCuratorOrImpact()
@@ -202,7 +218,10 @@ service cloud.firestore {
     match /activity_requests/{docId} {
       allow create: if isAnyMember()
                     && request.resource.data.proposedBy == request.auth.uid
-                    && request.resource.data.status == 'pending';
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.keys().hasOnly(
+                         ['title', 'kind', 'eyebrow', 'subtitle', 'description', 'date', 'location',
+                          'ctaText', 'ctaUrl', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
       allow update: if isCuratorOrImpact()
@@ -252,9 +271,14 @@ service cloud.firestore {
     }
 
     // ── newsletter_subscribers ────────────────────────────────
-    // Anyone can subscribe. Only curators can read the list.
+    // Anyone can subscribe (src/components/NewsletterForm.tsx). Field-capped
+    // and size-bounded for the same reason as contact_messages — a direct
+    // SDK write shouldn't be able to smuggle extra fields or oversized
+    // strings past the client form. Only curators can read the list.
     match /newsletter_subscribers/{docId} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasOnly(['email', 'subscribedAt'])
+                    && request.resource.data.email is string && request.resource.data.email.size() <= 200
+                    && request.resource.data.subscribedAt is string;
       allow read, update, delete: if isCurator();
     }
 
@@ -314,8 +338,10 @@ service cloud.firestore {
     match /activity_responses/{docId} {
       allow create: if request.resource.data.keys().hasOnly(['activityId', 'answers', 'submittedAt', 'submitterName', 'submitterEmail', 'read'])
                     && request.resource.data.activityId is string
-                    && request.resource.data.answers is map
+                    && request.resource.data.answers is map && request.resource.data.answers.size() <= 50
                     && request.resource.data.submittedAt is string
+                    && (!('submitterName' in request.resource.data)  || (request.resource.data.submitterName  is string && request.resource.data.submitterName.size()  <= 200))
+                    && (!('submitterEmail' in request.resource.data) || (request.resource.data.submitterEmail is string && request.resource.data.submitterEmail.size() <= 200))
                     && request.resource.data.read == false;
       allow read, delete: if isCuratorOrImpact();
       allow update: if isCuratorOrImpact()
@@ -334,9 +360,18 @@ service cloud.firestore {
     // authorId must match the writer's own uid, or anyone could post a
     // comment impersonating another member (e.g. a curator) via a raw
     // SDK call. Authors and curators can delete.
+    // NOTE: this collection has no live writer in the app yet (no comment
+    // UI has shipped) — the shape below is a forward-compatible best guess
+    // (postId to scope a comment to its post, content as the comment text)
+    // rather than a match against real production traffic; revisit the
+    // field list here once a real comment form lands.
     match /blog_comments/{docId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['authorId', 'authorName', 'postId', 'content', 'createdAt'])
+                    && request.resource.data.postId is string
+                    && request.resource.data.content is string && request.resource.data.content.size() <= 3000;
       allow delete: if isSignedIn()
                     && (request.auth.uid == resource.data.authorId || isCurator());
     }
@@ -360,7 +395,8 @@ service cloud.firestore {
     // manage it — update is scoped to only the `status` field so a lead
     // can't rewrite anything else on the request doc.
     match /leave_requests/{docId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['initiativeId', 'initiativeTitle', 'userId', 'userEmail', 'userName', 'status', 'requestedAt']);
       allow read: if isOwner(resource.data.userId)
                   || isCuratorOrImpact()
                   || isLeadOf(resource.data.initiativeId);
@@ -379,7 +415,8 @@ service cloud.firestore {
     match /removal_requests/{docId} {
       allow create: if isSignedIn()
                     && request.resource.data.requestedByUserId == request.auth.uid
-                    && isLeadOf(request.resource.data.initiativeId);
+                    && isLeadOf(request.resource.data.initiativeId)
+                    && request.resource.data.keys().hasOnly(['initiativeId', 'initiativeTitle', 'targetUserId', 'targetUserName', 'requestedByUserId', 'requestedByName', 'status', 'requestedAt']);
       allow read: if isCuratorOrImpact()
                   || isOwner(resource.data.requestedByUserId);
       allow update: if isCuratorOrImpact();
@@ -395,7 +432,8 @@ service cloud.firestore {
     match /member_add_requests/{docId} {
       allow create: if isSignedIn()
                     && request.resource.data.requestedByUserId == request.auth.uid
-                    && isLeadOf(request.resource.data.initiativeId);
+                    && isLeadOf(request.resource.data.initiativeId)
+                    && request.resource.data.keys().hasOnly(['initiativeId', 'initiativeTitle', 'targetUserId', 'targetUserName', 'requestedByUserId', 'requestedByName', 'status', 'requestedAt']);
       allow read: if isCuratorOrImpact()
                   || isOwner(resource.data.requestedByUserId);
       allow update: if isCuratorOrImpact();

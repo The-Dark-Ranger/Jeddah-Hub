@@ -11,6 +11,7 @@
 
 .page { min-height:100vh; }
 .container { max-width:1100px;margin-inline:auto;padding:0 1.5rem; }
+.containerNarrow { max-width:760px;margin-inline:auto;padding:0 1.5rem; }
 
 /* Hero */
 .hero {
@@ -130,6 +131,30 @@
 .stepTitle { font-size:1.05rem;font-weight:700;color:var(--text-main);margin-bottom:.55rem; }
 .stepBody  { font-size:.88rem;color:var(--text-muted);line-height:1.7; }
 
+/* FAQ */
+.faqHeader { text-align:center;margin-bottom:2.5rem; }
+.faqList { display:flex;flex-direction:column;gap:.9rem; }
+.faqItem {
+  background:var(--card-bg-solid);
+  border:1px solid var(--border-color);
+  border-radius:12px;
+  padding:0 1.5rem;
+  transition:box-shadow .2s ease, border-color .2s ease;
+}
+.faqItem[open] { border-color:var(--primary-blue); box-shadow:0 6px 20px var(--primary-blue-glow); }
+.faqQuestion {
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1.25rem 0;
+  font-size:.98rem;font-weight:700;color:var(--text-main);
+  cursor:pointer;list-style:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.faqQuestion::-webkit-details-marker { display:none; }
+.faqQuestion::marker { content:""; }
+.faqChevron { flex-shrink:0;color:var(--primary-blue);transition:transform .2s ease; }
+.faqItem[open] .faqChevron { transform:rotate(180deg); }
+.faqAnswer { font-size:.9rem;color:var(--text-muted);line-height:1.75;margin:0 0 1.4rem; }
+
 /* CTA */
 .ctaSection { padding:6rem 1.5rem;background:var(--background-alt); }
 .cta { text-align:center;max-width:580px;margin-inline:auto; }
@@ -243,4 +268,5 @@
   .section, .sectionAlt, .ctaSection { padding: 3rem 0.75rem; }
   .container { padding: 0 0.75rem; }
   .criteriaCard, .stepCard, .valueCard, .quoteCard { padding: 1.25rem; }
+  .faqItem { padding: 0 1rem; }
 }

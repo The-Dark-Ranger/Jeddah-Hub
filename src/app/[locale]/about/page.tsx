@@ -206,11 +206,13 @@ export default function AboutPage() {
     // to roles actually displayed here, and uses a server-side count
     // instead of downloading every initiative doc just to show a number.
     // db can be undefined if Firebase failed to initialize (missing env
-    // vars) — collection()/query() throw synchronously in that case, before
-    // any of this ever returns a rejected promise for .catch() to handle,
-    // so the whole thing needs its own try/catch to keep the page rendering.
-    try {
-      Promise.all([
+    // vars) — collection()/query() throw synchronously in that case. Building
+    // the queries inside this initial .then() turns that throw into a normal
+    // promise rejection, so the .catch() below handles it the same way it
+    // already handles a getDocs()/getCountFromServer() failure, keeping the
+    // page rendering.
+    Promise.resolve()
+      .then(() => Promise.all([
         getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
         getCountFromServer(collection(db, 'initiatives')),
         // Hub Activities (dashboard/curator/activities) are stored as
@@ -218,7 +220,8 @@ export default function AboutPage() {
         // initiatives, so subtract them from the total instead of counting
         // them here.
         getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
-      ]).then(([usersSnap, initCount, activityCount]) => {
+      ]))
+      .then(([usersSnap, initCount, activityCount]) => {
         const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
         // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
         // all match the same downstream role checks.
@@ -268,10 +271,8 @@ export default function AboutPage() {
         setShaperStatCount(live.length + curs.length);
         setInitiativeCount(initCount.data().count - activityCount.data().count);
         setLoadingShapers(false);
-      }).catch(() => setLoadingShapers(false));
-    } catch {
-      setLoadingShapers(false);
-    }
+      })
+      .catch(() => setLoadingShapers(false));
   }, []);
 
   return (

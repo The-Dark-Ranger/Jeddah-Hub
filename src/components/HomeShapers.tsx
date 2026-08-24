@@ -38,12 +38,13 @@ export default function HomeShapers() {
     // see firestore.rules) rather than the private `users` collection, and
     // scopes to shaper-family roles with a capped download.
     // db can be undefined if Firebase failed to initialize (missing env
-    // vars) — collection()/query() throw synchronously in that case, before
-    // getDocs() ever returns a rejected promise for .catch() to handle, so
-    // this needs its own try/catch to keep the homepage rendering.
-    try {
-      const q = query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30));
-      getDocs(q).then(snap => {
+    // vars) — collection()/query() throw synchronously in that case. Building
+    // the query inside this initial .then() turns that throw into a normal
+    // promise rejection, so the .catch() below handles it the same way it
+    // already handles a getDocs() failure, keeping the homepage rendering.
+    Promise.resolve()
+      .then(() => getDocs(query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30))))
+      .then(snap => {
         const list = snap.docs
           .map(d => ({ uid: d.id, ...d.data() } as any))
           .filter((u: any) => u.displayName)
@@ -57,9 +58,6 @@ export default function HomeShapers() {
         setShapers(list.slice(0, 10));
         setLoaded(true);
       }).catch(() => setLoaded(true));
-    } catch {
-      setLoaded(true);
-    }
   }, []);
 
   if (!loaded) return (

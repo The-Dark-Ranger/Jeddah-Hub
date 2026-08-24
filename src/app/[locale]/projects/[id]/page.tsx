@@ -63,19 +63,23 @@ export default function InitiativePage() {
       try {
         let data: Initiative | null = null;
 
+        // Hub Activities live in this same collection (tagged
+        // type:'hub_activity') but have their own /activities/[id] page —
+        // excluded from every lookup below the same defensive way the
+        // public listing does (absence of `type`, not a query filter,
+        // since Firestore's `!=` would also exclude every real initiative
+        // that predates the field existing at all). Without this guard, an
+        // activity whose slug/title happens to be requested here would
+        // render as an initiative, showing its description under
+        // "Objective" since activities have no problem/objective/impact
+        // fields of their own.
         const slugSnap = await getDocs(query(collection(db, 'initiatives'), where('slug', '==', rawId)));
         if (!slugSnap.empty) {
-          const d = slugSnap.docs[0];
-          data = { id: d.id, ...(d.data() as Omit<Initiative, 'id'>) };
+          const d = slugSnap.docs.find(d => !(d.data() as any).type);
+          if (d) data = { id: d.id, ...(d.data() as Omit<Initiative, 'id'>) };
         }
 
         if (!data) {
-          // Hub Activities live in this same collection (tagged
-          // type:'hub_activity') but have their own /activities/[id] page —
-          // excluded here the same defensive way every other public list
-          // does (absence of `type`, not a query filter, since Firestore's
-          // `!=` would also exclude every real initiative that predates
-          // the field existing at all).
           const allSnap = await getDocs(collection(db, 'initiatives'));
           const match = allSnap.docs.find(d => {
             const docData = d.data() as any;
@@ -87,7 +91,9 @@ export default function InitiativePage() {
         if (!data) {
           const legacyId = rawId.includes('--') ? rawId.slice(rawId.lastIndexOf('--') + 2) : rawId;
           const legacySnap = await getDoc(doc(db, 'initiatives', legacyId));
-          if (legacySnap.exists()) data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Initiative, 'id'>) };
+          if (legacySnap.exists() && !(legacySnap.data() as any).type) {
+            data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Initiative, 'id'>) };
+          }
         }
 
         if (data) {

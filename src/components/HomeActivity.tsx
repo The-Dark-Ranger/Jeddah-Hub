@@ -112,20 +112,28 @@ export default function HomeActivity() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const q = query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'));
-    getDocs(q)
-      .then(snap => {
-        const all = snap.docs
-          .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
-          .filter(a => a.active === true)
-          .sort((a, b) => {
-            const ta = (a as any).createdAt?.toMillis?.() ?? 0;
-            const tb = (b as any).createdAt?.toMillis?.() ?? 0;
-            return tb - ta;
-          });
-        setActivities(all);
-      })
-      .catch(() => setActivities([]));
+    // db can be undefined if Firebase failed to initialize (missing env
+    // vars) — collection()/query() throw synchronously in that case, before
+    // getDocs() ever returns a rejected promise for .catch() to handle, so
+    // this needs its own try/catch to keep the homepage rendering.
+    try {
+      const q = query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'));
+      getDocs(q)
+        .then(snap => {
+          const all = snap.docs
+            .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
+            .filter(a => a.active === true)
+            .sort((a, b) => {
+              const ta = (a as any).createdAt?.toMillis?.() ?? 0;
+              const tb = (b as any).createdAt?.toMillis?.() ?? 0;
+              return tb - ta;
+            });
+          setActivities(all);
+        })
+        .catch(() => setActivities([]));
+    } catch {
+      setActivities([]);
+    }
   }, []);
 
   if (activities === 'loading') return null;

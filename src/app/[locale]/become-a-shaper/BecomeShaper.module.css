@@ -139,21 +139,42 @@
   border:1px solid var(--border-color);
   border-radius:12px;
   padding:0 1.5rem;
-  transition:box-shadow .2s ease, border-color .2s ease;
+  transition:box-shadow .25s ease, border-color .25s ease;
 }
-.faqItem[open] { border-color:var(--primary-blue); box-shadow:0 6px 20px var(--primary-blue-glow); }
+.faqItemOpen { border-color:var(--primary-blue); box-shadow:0 6px 20px var(--primary-blue-glow); }
 .faqQuestion {
   display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  width:100%;
   padding:1.25rem 0;
+  background:none;border:none;
+  font:inherit;text-align:start;
   font-size:.98rem;font-weight:700;color:var(--text-main);
-  cursor:pointer;list-style:none;
+  cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
-.faqQuestion::-webkit-details-marker { display:none; }
-.faqQuestion::marker { content:""; }
-.faqChevron { flex-shrink:0;color:var(--primary-blue);transition:transform .2s ease; }
-.faqItem[open] .faqChevron { transform:rotate(180deg); }
-.faqAnswer { font-size:.9rem;color:var(--text-muted);line-height:1.75;margin:0 0 1.4rem; }
+.faqChevron { flex-shrink:0;color:var(--primary-blue);transition:transform .3s ease; }
+.faqItemOpen .faqChevron { transform:rotate(180deg); }
+
+/* Smooth open/close via the grid-rows trick: animating a track from 0fr to
+   1fr transitions the actual content height (auto -> anything isn't
+   animatable in CSS), with no JS measuring and no fixed max-height guess
+   that would clip longer answers or leave a jump on shorter ones.
+   The padding that gives the answer its bottom gap has to live on
+   .faqAnswerInner (the grid item) rather than the paragraph itself — a
+   grid item's stretched box still reserves room for its own padding even
+   when its track is sized to 0fr, so the row never fully closes unless
+   the padding sits one level deeper, inside the clipped child. */
+.faqAnswerWrap {
+  display:grid;
+  grid-template-rows:0fr;
+  transition:grid-template-rows .3s ease;
+}
+.faqItemOpen .faqAnswerWrap { grid-template-rows:1fr; }
+.faqAnswerInner { overflow:hidden; }
+.faqAnswer {
+  font-size:.9rem;color:var(--text-muted);line-height:1.75;
+  margin:0;padding-bottom:1.4rem;
+}
 
 /* CTA */
 .ctaSection { padding:6rem 1.5rem;background:var(--background-alt); }

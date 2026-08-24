@@ -74,6 +74,16 @@ export default function BecomeAShaperPage() {
     { text: t('quote3'), author: t('quote3Author'), role: t('quote3Role') },
   ];
 
+  // FAQ -- add/remove entries here. To add one: add faqNQ/faqNA keys to
+  // both message files, then push a new object to this array.
+  const faqs = [
+    { q: t('faq1Q'), a: t('faq1A') },
+    { q: t('faq2Q'), a: t('faq2A') },
+    { q: t('faq3Q'), a: t('faq3A') },
+    { q: t('faq4Q'), a: t('faq4A') },
+    { q: t('faq5Q'), a: t('faq5A') },
+  ];
+
   return (
     <main className={styles.page}>
 
@@ -202,6 +212,29 @@ export default function BecomeAShaperPage() {
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className={styles.section}>
+        <div className={styles.containerNarrow}>
+          <div className={styles.faqHeader}>
+            <p className={styles.eyebrow}>{t('faqTitle')}</p>
+            <h2 className={styles.sectionTitle}>{t('faqSubtitle')}</h2>
+          </div>
+          <div className={styles.faqList}>
+            {faqs.map((faq, i) => (
+              <details key={i} className={styles.faqItem}>
+                <summary className={styles.faqQuestion}>
+                  {faq.q}
+                  <svg className={styles.faqChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </summary>
+                <p className={styles.faqAnswer}>{faq.a}</p>
+              </details>
             ))}
           </div>
         </div>

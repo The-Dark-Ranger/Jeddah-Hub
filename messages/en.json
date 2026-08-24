@@ -254,7 +254,19 @@
     "quote2Role": "Global Shaper",
     "quote3": "The hub gave me the tools, the network, and the encouragement to turn my ideas into real impact. Every initiative taught me something I couldn't learn in a classroom.",
     "quote3Author": "Toleen Attar",
-    "quote3Role": "Global Shaper"
+    "quote3Role": "Global Shaper",
+    "faqTitle": "FAQ",
+    "faqSubtitle": "Common questions from applicants",
+    "faq1Q": "Is there a membership fee to join?",
+    "faq1A": "No. Membership is entirely voluntary and free. The only expectation is your time and genuine commitment, roughly 10 hours a week, to the hub and its initiatives.",
+    "faq2Q": "Do I need to already live in Jeddah to apply?",
+    "faq2A": "You should be based in or closely connected to Jeddah, since most gatherings, workshops, and initiatives happen in person here. If you're relocating to the city soon, mention that in your application.",
+    "faq3Q": "What is the expected time commitment?",
+    "faq3A": "Around 10 hours a week on average, split between hub meetings, community events, and active work on at least one project or initiative. It varies by season and by what you choose to lead.",
+    "faq4Q": "How long does the application process take?",
+    "faq4A": "Applications are reviewed on a rolling basis within each cycle. After screening, shortlisted candidates are invited to an interview, and successful applicants join as Guest Shapers for a probation period before full membership.",
+    "faq5Q": "I don't have leadership experience. Can I still apply?",
+    "faq5A": "Yes. We look for genuine passion, a proactive mindset, and a willingness to contribute, not a resume. Many of our most active Shapers started with no prior leadership experience and grew into it here."
   },
   "ContactPage": {
     "title": "Get in Touch",

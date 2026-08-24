@@ -37,21 +37,29 @@ export default function HomeShapers() {
     // Public homepage — reads the public_profiles mirror (no email field,
     // see firestore.rules) rather than the private `users` collection, and
     // scopes to shaper-family roles with a capped download.
-    const q = query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30));
-    getDocs(q).then(snap => {
-      const list = snap.docs
-        .map(d => ({ uid: d.id, ...d.data() } as any))
-        .filter((u: any) => u.displayName)
-        .map((u: any): Shaper => ({
-          uid:           u.uid,
-          displayName:   u.displayName,
-          displayNameAr: u.displayNameAr || '',
-          role:          u.role,
-          photoURL:      u.photoURL || '',
-        }));
-      setShapers(list.slice(0, 10));
+    // db can be undefined if Firebase failed to initialize (missing env
+    // vars) — collection()/query() throw synchronously in that case, before
+    // getDocs() ever returns a rejected promise for .catch() to handle, so
+    // this needs its own try/catch to keep the homepage rendering.
+    try {
+      const q = query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30));
+      getDocs(q).then(snap => {
+        const list = snap.docs
+          .map(d => ({ uid: d.id, ...d.data() } as any))
+          .filter((u: any) => u.displayName)
+          .map((u: any): Shaper => ({
+            uid:           u.uid,
+            displayName:   u.displayName,
+            displayNameAr: u.displayNameAr || '',
+            role:          u.role,
+            photoURL:      u.photoURL || '',
+          }));
+        setShapers(list.slice(0, 10));
+        setLoaded(true);
+      }).catch(() => setLoaded(true));
+    } catch {
       setLoaded(true);
-    }).catch(() => setLoaded(true));
+    }
   }, []);
 
   if (!loaded) return (

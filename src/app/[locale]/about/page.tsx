@@ -205,65 +205,73 @@ export default function AboutPage() {
     // firestore.rules) rather than the private `users` collection, scoped
     // to roles actually displayed here, and uses a server-side count
     // instead of downloading every initiative doc just to show a number.
-    Promise.all([
-      getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
-      getCountFromServer(collection(db, 'initiatives')),
-      // Hub Activities (dashboard/curator/activities) are stored as
-      // initiatives docs tagged type:'hub_activity' — they aren't real
-      // initiatives, so subtract them from the total instead of counting
-      // them here.
-      getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
-    ]).then(([usersSnap, initCount, activityCount]) => {
-      const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
-      // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
-      // all match the same downstream role checks.
-      const normRole = (r: any) => (typeof r === 'string' ? r.toLowerCase().replace(/\s+/g, '_') : '');
+    // db can be undefined if Firebase failed to initialize (missing env
+    // vars) — collection()/query() throw synchronously in that case, before
+    // any of this ever returns a rejected promise for .catch() to handle,
+    // so the whole thing needs its own try/catch to keep the page rendering.
+    try {
+      Promise.all([
+        getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
+        getCountFromServer(collection(db, 'initiatives')),
+        // Hub Activities (dashboard/curator/activities) are stored as
+        // initiatives docs tagged type:'hub_activity' — they aren't real
+        // initiatives, so subtract them from the total instead of counting
+        // them here.
+        getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
+      ]).then(([usersSnap, initCount, activityCount]) => {
+        const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
+        // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
+        // all match the same downstream role checks.
+        const normRole = (r: any) => (typeof r === 'string' ? r.toLowerCase().replace(/\s+/g, '_') : '');
 
-      const toShaper = (u: any): LiveShaper => ({
-        uid:           u.uid,
-        displayName:   u.displayName,
-        displayNameAr: u.displayNameAr || '',
-        role:          normRole(u.role),
-        bio:           u.bio          || '',
-        linkedin:      u.linkedin     || '',
-        twitter:       u.twitter      || '',
-        instagram:     u.instagram    || '',
-        photoURL:      u.photoURL     || '',
-      });
-
-      const live = all
-        .filter((u: any) => normRole(u.role) === 'shaper' && u.displayName)
-        .map(toShaper);
-
-      const liveAlumni = all
-        .filter((u: any) => normRole(u.role) === 'alumni' && u.displayName)
-        .map(toShaper);
-
-      const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
-      const curs = all
-        .filter((u: any) => curatorRoles.includes(normRole(u.role)) && u.displayName)
-        .map((u: any): LiveCurator => ({
+        const toShaper = (u: any): LiveShaper => ({
           uid:           u.uid,
           displayName:   u.displayName,
           displayNameAr: u.displayNameAr || '',
           role:          normRole(u.role),
-          bio:           u.bio         || '',
-          linkedin:      u.linkedin    || '',
-          twitter:       u.twitter     || '',
-          instagram:     u.instagram   || '',
-          photoURL:      u.photoURL    || '',
-        }))
-        .sort((a: LiveCurator, b: LiveCurator) =>
-          (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99)
-        );
+          bio:           u.bio          || '',
+          linkedin:      u.linkedin     || '',
+          twitter:       u.twitter      || '',
+          instagram:     u.instagram    || '',
+          photoURL:      u.photoURL     || '',
+        });
 
-      setShapers(live);
-      setAlumni(liveAlumni);
-      setCurators(curs);
-      setShaperStatCount(live.length + curs.length);
-      setInitiativeCount(initCount.data().count - activityCount.data().count);
+        const live = all
+          .filter((u: any) => normRole(u.role) === 'shaper' && u.displayName)
+          .map(toShaper);
+
+        const liveAlumni = all
+          .filter((u: any) => normRole(u.role) === 'alumni' && u.displayName)
+          .map(toShaper);
+
+        const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
+        const curs = all
+          .filter((u: any) => curatorRoles.includes(normRole(u.role)) && u.displayName)
+          .map((u: any): LiveCurator => ({
+            uid:           u.uid,
+            displayName:   u.displayName,
+            displayNameAr: u.displayNameAr || '',
+            role:          normRole(u.role),
+            bio:           u.bio         || '',
+            linkedin:      u.linkedin    || '',
+            twitter:       u.twitter     || '',
+            instagram:     u.instagram   || '',
+            photoURL:      u.photoURL    || '',
+          }))
+          .sort((a: LiveCurator, b: LiveCurator) =>
+            (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99)
+          );
+
+        setShapers(live);
+        setAlumni(liveAlumni);
+        setCurators(curs);
+        setShaperStatCount(live.length + curs.length);
+        setInitiativeCount(initCount.data().count - activityCount.data().count);
+        setLoadingShapers(false);
+      }).catch(() => setLoadingShapers(false));
+    } catch {
       setLoadingShapers(false);
-    }).catch(() => setLoadingShapers(false));
+    }
   }, []);
 
   return (

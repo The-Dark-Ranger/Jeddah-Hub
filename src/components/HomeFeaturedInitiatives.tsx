@@ -50,26 +50,34 @@ export default function HomeFeaturedInitiatives() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const activeQ = query(
-      collection(db, 'initiatives'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc'),
-      limit(3),
-    );
-    getDocs(activeQ)
-      .then(snap => {
-        const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
-        setItems(all.filter(i => !(i as any).type));
-      })
-      .catch(() =>
-        getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'), limit(3)))
-          .then(snap => {
-            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
-            setItems(all.filter(i => !(i as any).type));
-          })
-          .catch(() => {})
-      )
-      .finally(() => setLoaded(true));
+    // db can be undefined if Firebase failed to initialize (missing env
+    // vars) — collection()/query() throw synchronously in that case, before
+    // getDocs() ever returns a rejected promise for .catch() to handle, so
+    // this needs its own try/catch to keep the homepage rendering.
+    try {
+      const activeQ = query(
+        collection(db, 'initiatives'),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc'),
+        limit(3),
+      );
+      getDocs(activeQ)
+        .then(snap => {
+          const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+          setItems(all.filter(i => !(i as any).type));
+        })
+        .catch(() =>
+          getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'), limit(3)))
+            .then(snap => {
+              const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
+              setItems(all.filter(i => !(i as any).type));
+            })
+            .catch(() => {})
+        )
+        .finally(() => setLoaded(true));
+    } catch {
+      setLoaded(true);
+    }
   }, []);
 
   if (!loaded) return (

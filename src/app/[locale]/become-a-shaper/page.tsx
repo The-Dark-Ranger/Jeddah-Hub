@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 import styles from './BecomeShaper.module.css';
+import FaqAccordion from './FaqAccordion';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -224,19 +225,7 @@ export default function BecomeAShaperPage() {
             <p className={styles.eyebrow}>{t('faqTitle')}</p>
             <h2 className={styles.sectionTitle}>{t('faqSubtitle')}</h2>
           </div>
-          <div className={styles.faqList}>
-            {faqs.map((faq, i) => (
-              <details key={i} className={styles.faqItem}>
-                <summary className={styles.faqQuestion}>
-                  {faq.q}
-                  <svg className={styles.faqChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </summary>
-                <p className={styles.faqAnswer}>{faq.a}</p>
-              </details>
-            ))}
-          </div>
+          <FaqAccordion faqs={faqs} />
         </div>
       </section>
 

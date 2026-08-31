@@ -1,0 +1,89 @@
+.page { display: flex; flex-direction: column; gap: 1.5rem; max-width: 780px; }
+
+.header { display: flex; flex-direction: column; gap: .4rem; }
+.eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary-blue); }
+.title { font-size: 1.6rem; font-weight: 700; color: var(--text-main); }
+.subtitle { font-size: .92rem; color: var(--text-muted); line-height: 1.6; max-width: 640px; }
+
+/* Table of contents */
+.toc {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.tocTitle { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .85rem; }
+.tocList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: .5rem .5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.tocLink {
+  display: block;
+  font-size: .88rem;
+  color: var(--text-main);
+  padding: .3rem 0;
+  border-radius: 6px;
+  transition: color .15s ease;
+}
+.tocLink:hover { color: var(--primary-blue); }
+
+/* Document body */
+.document {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 2rem 2.25rem;
+}
+
+.introSection { padding-bottom: 1.75rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-color); }
+
+.section { scroll-margin-top: 1.5rem; }
+.section + .section { margin-top: 2.25rem; padding-top: 2.25rem; border-top: 1px solid var(--border-color); }
+
+.sectionTitle { font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; }
+
+.paragraph { font-size: .95rem; line-height: 1.8; color: var(--text-main); margin-bottom: 1rem; }
+.paragraph:last-child { margin-bottom: 0; }
+
+.itemList { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.itemList:last-child { margin-bottom: 0; }
+
+.item { display: flex; gap: .75rem; align-items: baseline; font-size: .95rem; line-height: 1.75; color: var(--text-main); }
+.itemMarker {
+  flex-shrink: 0;
+  min-width: 2.4rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  font-variant-numeric: tabular-nums;
+}
+/* Dash-bullet items (unacceptable behaviors, cancellation grounds, etc. —
+   the source document leaves these unnumbered) get a plain bullet instead
+   of a numeric marker, but stay visually aligned with numbered items. */
+.itemBullet { flex-shrink: 0; min-width: 2.4rem; color: var(--primary-blue); text-align: center; }
+
+.itemBody { flex: 1; }
+
+.subItemList { list-style: none; padding: 0; margin: .5rem 0 0; display: flex; flex-direction: column; gap: .4rem; }
+.subItem { display: flex; gap: .6rem; font-size: .9rem; line-height: 1.7; color: var(--text-muted); }
+.subItem::before { content: '–'; flex-shrink: 0; color: var(--text-muted); }
+
+.footnote {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  font-size: .82rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: pre-line;
+}
+
+@media (max-width: 640px) {
+  .document { padding: 1.5rem 1.25rem; }
+  .toc { padding: 1rem 1.25rem; }
+  .tocList { grid-template-columns: 1fr; }
+}

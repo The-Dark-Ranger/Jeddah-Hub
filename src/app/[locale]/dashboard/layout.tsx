@@ -38,6 +38,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const active = (href: string) =>
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
 
+  // Rendered second-to-last in every role's nav list, right above Sign
+  // Out — a reference document every member should be able to find
+  // regardless of role, not just the ones with management tools.
+  const charterNavItem = (
+    <li><Link href="/dashboard/shaper/charter" className={styles.navLink + (active('/dashboard/shaper/charter') ? ' ' + styles.navLinkActive : '')}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      {t('communityCharter')}
+    </Link></li>
+  );
+
   // Rendered as the last item of every role's nav list, right alongside the
   // rest of the management links, rather than as a separate button
   // disconnected from the nav — one place to look for it regardless of role.
@@ -138,6 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('exportEmails')}
                 </Link></li>
+                {charterNavItem}
                 {signOutItem}
               </ul>
             </div>
@@ -173,6 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('blogs')}
                 </Link></li>
+                {charterNavItem}
                 {signOutItem}
               </ul>
             </div>
@@ -208,6 +223,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('writeBlog')}
                 </Link></li>
+                {charterNavItem}
                 {signOutItem}
               </ul>
             </div>
@@ -236,6 +252,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('writeBlog')}
                 </Link></li>
+                {charterNavItem}
                 {signOutItem}
               </ul>
             </div>

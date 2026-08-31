@@ -424,6 +424,7 @@
     "exportEmails": "Export Emails",
     "impactReports": "Impact Reports",
     "myProfile": "My Profile",
+    "communityCharter": "Community Charter",
     "joinInitiatives": "Join Initiatives",
     "writeBlog": "Write Blog",
     "signOut": "Sign Out",
@@ -811,6 +812,12 @@
     "changePhoto": "Change photo",
     "avatarHint": "Square images work best. Larger photos are resized automatically.",
     "avatarBrokenUrl": "That image link could not be loaded."
+  },
+  "CharterPage": {
+    "eyebrow": "Global Shapers Community",
+    "title": "Community Charter",
+    "subtitle": "The founding principles, membership terms, and governance rules every Global Shapers member and hub agrees to uphold.",
+    "tableOfContents": "Jump to a section"
   },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",

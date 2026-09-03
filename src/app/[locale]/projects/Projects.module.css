@@ -30,7 +30,9 @@
 
 .headerSubtitle { font-size: 1.05rem; color: rgba(255,255,255,.75); line-height: 1.65; }
 
-/* Card image slider */
+/* Card cover image — every card gets this same block at the same height,
+   whether it has a real photo or not, so cards never differ in shape
+   depending on what content a given initiative happens to have. */
 .cardSlider {
   position: relative;
   width: 100%;
@@ -43,36 +45,7 @@
   width: 100%; height: 100%;
   object-fit: cover; display: block;
 }
-.sliderPrev,
-.sliderNext {
-  position: absolute;
-  top: 50%; transform: translateY(-50%);
-  background: rgba(0,0,0,0.42);
-  border: none; border-radius: 50%;
-  width: 32px; height: 32px; min-width: 32px; min-height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; cursor: pointer;
-  transition: background 0.2s ease;
-  z-index: 2; padding: 0;
-}
-.sliderPrev { left: 0.5rem; }
-.sliderNext { right: 0.5rem; }
-.sliderPrev:hover,
-.sliderNext:hover { background: rgba(0,0,0,0.7); }
-.sliderDots {
-  position: absolute;
-  bottom: 0.55rem; left: 0; right: 0;
-  display: flex; justify-content: center; gap: 0.35rem;
-  z-index: 2;
-}
-/* Resist globals.css's `button { min-height: 44px }` touch-target rule,
-   which otherwise stretches this into a tall pill on phones. */
-.sliderDot {
-  width: 6px; height: 6px; min-width: 6px; min-height: 6px; border-radius: 50%;
-  background: rgba(255,255,255,0.45);
-  cursor: pointer; transition: background 0.2s ease;
-}
-.sliderDotActive { background: #fff; }
+.cardImgFallback { width: 100%; height: 100%; }
 
 /* Container */
 .container { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
@@ -120,12 +93,15 @@
   font-size: 0.72rem; color: var(--text-muted);
 }
 
-/* Grid */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.75rem; align-items: start; }
+/* Grid — stretch (the default, stated explicitly) so every card in a row
+   matches the tallest one's height regardless of title/description length,
+   instead of each card sizing to only its own content. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.75rem; align-items: stretch; }
 
 /* Card */
 .card {
   display: flex; flex-direction: column;
+  height: 100%;
   background: var(--card-bg-solid); border-radius: 14px; overflow: hidden;
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
@@ -165,9 +141,15 @@
 .cardStatusArchived .statusDot { background: var(--secondary-gray); }
 .cardStatusArchived { color: var(--secondary-gray); }
 
-.cardTitle { font-size: 1.15rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+.cardTitle {
+  font-size: 1.15rem; font-weight: 700; color: var(--text-main); line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 
-.cardDesc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.65; flex: 1; }
+.cardDesc {
+  font-size: 0.9rem; color: var(--text-muted); line-height: 1.65; flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
 
 .cardStat {
   display: inline-flex; align-items: center; gap: 0.4rem;

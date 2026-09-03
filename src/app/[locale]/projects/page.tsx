@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -23,20 +23,13 @@ function ProjectCard({ project, archived, t, index = 0 }: {
   const description = locale === 'ar' && project.descriptionAr ? project.descriptionAr : project.description;
   const accentColor = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
   const isActive = !archived;
-  // Lead with the cover image, then the gallery. Deduped so a curator who also
-  // added the cover to the photo list does not get it twice.
-  const imgs = [...new Set([project.imageUrl, ...(project.images ?? [])].filter(Boolean))] as string[];
-  const [imgIdx, setImgIdx] = useState(0);
-
-  const prevImg = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setImgIdx(i => (i - 1 + imgs.length) % imgs.length);
-  }, [imgs.length]);
-
-  const nextImg = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setImgIdx(i => (i + 1) % imgs.length);
-  }, [imgs.length]);
+  // Just the cover — a multi-photo carousel on a listing-page card made
+  // every card's image block a different shape (arrows/dots on some,
+  // nothing on others) and encouraged clicking a nav arrow instead of the
+  // card itself. Full multi-photo browsing already lives on the
+  // initiative's own detail page (InitiativeGallery); this card is only
+  // ever a preview.
+  const coverImg = project.imageUrl || project.images?.[0];
 
   return (
     <Link
@@ -44,30 +37,12 @@ function ProjectCard({ project, archived, t, index = 0 }: {
       className={styles.card + (archived ? ' ' + styles.cardArchived : '')}
       style={{ '--card-index': index } as React.CSSProperties}
     >
-      {imgs.length > 0 && (
-        <div className={styles.cardSlider}>
-          <img src={imgs[imgIdx]} alt={title} className={styles.cardSliderImg} loading="lazy" />
-          {imgs.length > 1 && (
-            <>
-              <button className={styles.sliderPrev} onClick={prevImg} aria-label="Previous image">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <button className={styles.sliderNext} onClick={nextImg} aria-label="Next image">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-              <div className={styles.sliderDots}>
-                {imgs.map((_, i) => (
-                  <span
-                    key={i}
-                    className={styles.sliderDot + (i === imgIdx ? ' ' + styles.sliderDotActive : '')}
-                    onClick={e => { e.preventDefault(); setImgIdx(i); }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      <div className={styles.cardSlider}>
+        {coverImg
+          ? <img src={coverImg} alt={title} className={styles.cardSliderImg} loading="lazy" />
+          : <div className={styles.cardImgFallback} style={{ background: `linear-gradient(135deg, ${accentColor}dd, ${accentColor}88)` }} />
+        }
+      </div>
       <div className={styles.cardAccent} style={{ background: accentColor }} />
       <div className={styles.cardBody}>
         <div className={styles.cardMeta}>

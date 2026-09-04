@@ -479,17 +479,20 @@ export default function ImpactProjects() {
             return (
               <div key={init.id} className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}>
 
-                {init.imageUrl && (
-                  <div className={styles.cardImage}>
-                    <img
-                      src={init.imageUrl}
-                      alt={init.title}
-                      loading="lazy"
-                      decoding="async"
-                      onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                    />
-                  </div>
-                )}
+                <div className={styles.cardImage}>
+                  {init.imageUrl
+                    ? (
+                      <img
+                        src={init.imageUrl}
+                        alt={init.title}
+                        loading="lazy"
+                        decoding="async"
+                        onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                      />
+                    )
+                    : <div className={styles.cardImageFallback} />
+                  }
+                </div>
 
                 <div className={styles.cardBody}>
                   <div className={styles.cardTopRow}>

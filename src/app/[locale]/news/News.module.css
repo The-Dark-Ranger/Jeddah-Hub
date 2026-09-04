@@ -50,14 +50,21 @@
   background: var(--card-bg-solid); border-radius: 12px;
   border: 1px solid var(--border-color); padding: 1.5rem;
   display: flex; flex-direction: column; gap: .9rem;
+  height: 100%;
   transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
   text-decoration: none; color: inherit;
 }
 .card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.08); border-color: var(--primary-blue); }
 
 .cardCategory { font-size: .72rem; font-weight: 700; letter-spacing: .1em; color: var(--primary-blue); text-transform: uppercase; }
-.cardTitle    { font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.35; }
-.cardExcerpt  { font-size: .92rem; color: var(--text-muted); line-height: 1.65; flex: 1; }
+.cardTitle    {
+  font-size: 1.2rem; font-weight: 700; color: var(--text-main); line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cardExcerpt  {
+  font-size: .92rem; color: var(--text-muted); line-height: 1.65; flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
 
 .cardMeta { display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: auto; }
 .cardAuthor { display: flex; align-items: center; gap: .6rem; }

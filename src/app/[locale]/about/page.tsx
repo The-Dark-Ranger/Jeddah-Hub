@@ -130,8 +130,11 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
 function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; index: number; roleLabel: string }) {
   const gradient = avatarGradient(curator.uid, index);
   const locale = useLocale();
+  const t      = useTranslations('AboutPage');
   const name   = locale === 'ar' && curator.displayNameAr ? curator.displayNameAr : curator.displayName;
   const hasSocials = curator.linkedin || curator.twitter || curator.instagram;
+  const [expanded, setExpanded] = useState(false);
+  const isLong = (curator.bio?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
     <div className={styles.curatorCard}>
       <div className={styles.curatorAvatarWrap}>
@@ -147,7 +150,18 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
       <div className={styles.curatorBody}>
         <div className={styles.curatorName}>{name}</div>
         <div className={styles.curatorRole}>{roleLabel}</div>
-        {curator.bio && <p className={styles.curatorBio}>{curator.bio}</p>}
+        {curator.bio && (
+          <>
+            <p className={styles.curatorBio + (isLong && !expanded ? ' ' + styles.curatorBioClamped : '')}>
+              {curator.bio}
+            </p>
+            {isLong && (
+              <button type="button" className={styles.curatorBioToggle} onClick={() => setExpanded(v => !v)}>
+                {expanded ? t('readLessBio') : t('readMoreBio')}
+              </button>
+            )}
+          </>
+        )}
         {hasSocials && (
           <div className={styles.curatorSocials}>
             {curator.linkedin && (

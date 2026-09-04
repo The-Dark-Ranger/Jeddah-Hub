@@ -103,7 +103,10 @@
 .curatorBody { display: flex; flex-direction: column; align-items: center; gap: .3rem; width: 100%; }
 .curatorName { font-size: 1.08rem; font-weight: 700; color: var(--text-main); }
 .curatorRole { font-size: .72rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: .09em; }
-.curatorBio  { font-size: .85rem; color: var(--text-muted); line-height: 1.65; margin-top: .25rem; }
+.curatorBio  {
+  font-size: .85rem; color: var(--text-muted); line-height: 1.65; margin-top: .25rem;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
 .curatorSocials { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: .5rem; }
 .curatorIconLink {
   display: inline-flex; align-items: center; justify-content: center;
@@ -120,11 +123,14 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  /* Grid items stretch to the tallest card in their row by default —
-     override so each card is only as tall as its own content, since
-     shapers with a short/no bio shouldn't get padded out to match a
-     neighbor with a long one. */
-  align-items: start;
+  /* Stretch (the default) so every card in a row matches the tallest —
+     a shaper with a short or no bio still lines up with their neighbors
+     instead of leaving a ragged, uneven-height row. Bios past
+     BIO_CLAMP_THRESHOLD already clamp to 3 lines with a read-more
+     toggle (see page.tsx), which keeps the natural row height bounded;
+     expanding one card still grows its row's neighbors to match, same
+     as any stretched grid. */
+  align-items: stretch;
 }
 
 .shaperCard {
@@ -138,6 +144,7 @@
   display: flex;
   flex-direction: column;
   gap: .85rem;
+  height: 100%;
 }
 .shaperCard:hover {
   border-color: var(--primary-blue);

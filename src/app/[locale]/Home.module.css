@@ -145,7 +145,7 @@
 .projectBannerTag { font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:.2rem .5rem;border-radius:4px; }
 .projectInfo   { padding:1.5rem;flex:1;display:flex;flex-direction:column;gap:.65rem; }
 .projectCategory { font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--primary-blue);text-transform:uppercase; }
-.projectTitle  { font-size:1.1rem;font-weight:700;color:var(--text-main);line-height:1.3; }
+.projectTitle  { font-size:1.1rem;font-weight:700;color:var(--text-main);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
 .projectDesc   { color:var(--text-muted);line-height:1.65;font-size:.9rem;flex:1; }
 .projectBadge  { display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;background:rgba(16,185,129,.1);color:var(--success);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:auto; }
 

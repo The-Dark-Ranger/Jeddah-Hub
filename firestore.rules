@@ -230,6 +230,52 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
     }
 
+    // ── activity_change_requests ────────────────────────────────
+    // Lets an initiative's leads manage Hub Activities without being able
+    // to write to the live `initiatives` collection directly — every
+    // create/edit/archive action lands here as a pending request instead,
+    // and only a curator/vice_curator/impact_officer applying it (via the
+    // existing isCuratorOrImpact() create/update rules on `initiatives`
+    // above) makes it real. `payload` carries whatever activity fields are
+    // being proposed (the full form for a create/edit, or just e.g.
+    // {archived: true} for a one-click archive) — like
+    // activity_responses.answers, its inner keys aren't validated here
+    // since the shape is open-ended; the approval code applies an explicit
+    // field allowlist before writing it to `initiatives`, so a malicious
+    // payload can smuggle nothing past that even if a curator blindly
+    // approves.
+    //
+    // A request must name the specific initiative (`initiativeId`) that
+    // makes the requester eligible, checked the same way
+    // leave_requests/removal_requests already scope a lead's write to
+    // "an initiative they actually lead" (isLeadOf()) — for a 'create'
+    // that's just whichever led initiative the lead is proposing the
+    // activity for; for an 'update' it must additionally match the
+    // *target* activity's own recorded initiativeId, so a lead can't
+    // relabel someone else's activity as belonging to an initiative they
+    // lead just to pass the isLeadOf() check.
+    match /activity_change_requests/{docId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.proposedBy == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.changeType in ['create', 'update']
+                    && isLeadOf(request.resource.data.initiativeId)
+                    && (request.resource.data.changeType == 'create'
+                        || (request.resource.data.activityId is string
+                            && get(/databases/$(database)/documents/initiatives/$(request.resource.data.activityId)).data.initiativeId
+                               == request.resource.data.initiativeId))
+                    && request.resource.data.payload is map
+                    && request.resource.data.keys().hasOnly(
+                         ['changeType', 'activityId', 'initiativeId', 'activityTitle', 'payload',
+                          'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+      allow read:   if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
+      allow update: if isCuratorOrImpact()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt']);
+      allow delete: if isCuratorOrImpact()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid && resource.data.status == 'pending');
+    }
+
     // ── blogs ─────────────────────────────────────────────────
     // Published posts are publicly readable.
     // Any authenticated member can create (status will be 'draft' or 'pending').

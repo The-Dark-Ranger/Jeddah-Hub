@@ -749,7 +749,9 @@ export default function ManageInitiatives() {
         </div>
       ) : (
         <div className={styles.grid}>
-          {filtered.map(init => (
+          {filtered.map(init => {
+            const fallbackColor = init.color || '#0f5a9f';
+            return (
             <div
               key={init.id}
               className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}
@@ -757,17 +759,20 @@ export default function ManageInitiatives() {
               {init.color && (
                 <div className={styles.colorBar} style={{ background: init.color }} />
               )}
-              {init.imageUrl && (
-                <div className={styles.cardImage}>
-                  <img
-                    src={init.imageUrl}
-                    alt={init.title}
-                    loading="lazy"
-                    decoding="async"
-                    onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                  />
-                </div>
-              )}
+              <div className={styles.cardImage}>
+                {init.imageUrl
+                  ? (
+                    <img
+                      src={init.imageUrl}
+                      alt={init.title}
+                      loading="lazy"
+                      decoding="async"
+                      onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                    />
+                  )
+                  : <div className={styles.cardImageFallback} style={{ background: `linear-gradient(135deg, ${fallbackColor}dd, ${fallbackColor}88)` }} />
+                }
+              </div>
 
               <div className={styles.cardBody}>
                 <div className={styles.cardTopRow}>
@@ -901,7 +906,8 @@ export default function ManageInitiatives() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import { uniqueInitiativeSlug } from '@/lib/slug';
+import { pickActivityFields } from '@/lib/activityTypes';
 import styles from './Activities.module.css';
 
 interface Highlight { name: string; tag: string; }
@@ -45,6 +46,19 @@ interface Activity {
   kind?: ActivityKind;
   customForm?: CustomForm;
   createdAt?: any;
+  initiativeId?: string;
+}
+
+interface ActivityChangeRequest {
+  id: string;
+  changeType: 'create' | 'update';
+  activityId: string | null;
+  initiativeId: string;
+  activityTitle: string;
+  payload: Record<string, unknown>;
+  proposedBy: string;
+  proposedByName?: string;
+  status: 'pending' | 'approved' | 'declined';
 }
 
 interface ActivityResponse {
@@ -127,6 +141,11 @@ export default function ActivitiesPage() {
   /* Lead-proposed activities/workshops awaiting review */
   const [activityProposals, setActivityProposals] = useState<any[]>([]);
 
+  /* Lead-submitted create/edit/archive requests on existing activities —
+     see activityTypes.ts and firestore.rules' activity_change_requests
+     for why these can't just write to `initiatives` directly. */
+  const [changeRequests, setChangeRequests] = useState<ActivityChangeRequest[]>([]);
+
   const role = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
   const canEdit = role === 'curator' || role === 'vice_curator';
 
@@ -169,6 +188,13 @@ export default function ActivitiesPage() {
       setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch {
       setActivityProposals([]);
+    }
+
+    try {
+      const changeSnap = await getDocs(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending')));
+      setChangeRequests(changeSnap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) })));
+    } catch {
+      setChangeRequests([]);
     }
   }
 
@@ -361,6 +387,48 @@ export default function ActivitiesPage() {
     }
   }
 
+  // Applies an explicit field allowlist (pickActivityFields) rather than
+  // spreading req.payload wholesale — the payload's shape is only checked
+  // as "is a map" by firestore.rules (like activity_responses.answers, it's
+  // curator/lead-defined and open-ended), so this is what actually keeps a
+  // malicious payload from smuggling an unexpected field into `initiatives`
+  // even if a curator blindly clicks Approve.
+  async function handleApproveChangeRequest(req: ActivityChangeRequest) {
+    try {
+      const fields = pickActivityFields(req.payload);
+      if (req.changeType === 'create') {
+        const slug = await uniqueInitiativeSlug((fields.title as string) || req.activityTitle || '');
+        await addDoc(collection(db, 'initiatives'), {
+          eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
+          highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
+          ...fields,
+          type: 'hub_activity',
+          initiativeId: req.initiativeId,
+          createdAt: serverTimestamp(),
+          slug,
+        });
+      } else if (req.activityId) {
+        await updateDoc(doc(db, 'initiatives', req.activityId), { ...fields, updatedAt: serverTimestamp() });
+      }
+      await updateDoc(doc(db, 'activity_change_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
+      setChangeRequests(prev => prev.filter(r => r.id !== req.id));
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to approve activity change request:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
+  async function handleDeclineChangeRequest(reqId: string) {
+    try {
+      await updateDoc(doc(db, 'activity_change_requests', reqId), { status: 'declined', reviewedAt: new Date().toISOString() });
+      setChangeRequests(prev => prev.filter(r => r.id !== reqId));
+    } catch (err) {
+      console.error('Failed to decline activity change request:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleDelete(a: Activity) {
     if (!confirm(t('deleteActivityConfirm'))) return;
     try {
@@ -448,6 +516,35 @@ export default function ActivitiesPage() {
                 <div className={styles.proposalActions}>
                   <button className={styles.approveProposalBtn} onClick={() => handleApproveActivityProposal(req)}>{t('approveProposal')}</button>
                   <button className={styles.declineProposalBtn} onClick={() => handleDeclineActivityProposal(req.id)}>{t('declineProposal')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {changeRequests.length > 0 && (
+        <div className={styles.proposalsSection}>
+          <h3 className={styles.proposalsTitle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {t('activityChangeRequests')}
+            <span className={styles.proposalsBadge}>{changeRequests.length}</span>
+          </h3>
+          <div className={styles.proposalsList}>
+            {changeRequests.map(req => (
+              <div key={req.id} className={styles.proposalRow}>
+                <div className={styles.proposalInfo}>
+                  <span className={styles.proposalName}>{req.activityTitle}</span>
+                  <span className={styles.proposalMeta}>
+                    {req.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate')}
+                    {req.proposedByName && <> · {t('by')} {req.proposedByName}</>}
+                  </span>
+                </div>
+                <div className={styles.proposalActions}>
+                  <button className={styles.approveProposalBtn} onClick={() => handleApproveChangeRequest(req)}>{t('approveProposal')}</button>
+                  <button className={styles.declineProposalBtn} onClick={() => handleDeclineChangeRequest(req.id)}>{t('declineProposal')}</button>
                 </div>
               </div>
             ))}

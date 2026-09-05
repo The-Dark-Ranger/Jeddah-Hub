@@ -150,11 +150,23 @@
   flex-direction: column;
   gap: .85rem;
   height: 100%;
+  /* Cards mounting for the first time (initial page load, or newly
+     revealed by "View more") ease in instead of popping in abruptly —
+     re-rendering an already-mounted card (e.g. a bio toggle) doesn't
+     replay this since the element itself isn't recreated. */
+  animation: shaperCardIn .4s ease both;
 }
 .shaperCard:hover {
   border-color: var(--primary-blue);
   transform: translateY(-3px);
   box-shadow: 0 8px 28px var(--primary-blue-glow);
+}
+@keyframes shaperCardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shaperCard { animation: none; }
 }
 
 .shaperTop {
@@ -233,6 +245,24 @@
   text-align: center; padding: 3rem 0; color: var(--text-muted); font-size: 0.95rem;
 }
 
+/* ── View more / less ── */
+.viewMoreWrap { display: flex; justify-content: center; margin-top: 2rem; }
+.viewMoreBtn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .75rem 1.75rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 30px;
+  background: var(--card-bg-solid);
+  color: var(--primary-blue);
+  font-weight: 600; font-size: .9rem;
+  transition: all .2s ease;
+}
+.viewMoreBtn:hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+  transform: translateY(-2px);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .shapersList { grid-template-columns: repeat(2, 1fr); }
@@ -252,6 +282,8 @@
   .missionGrid{ grid-template-columns: 1fr; }
   .curatorshipGrid { grid-template-columns: 1fr; }
   .shapersList { grid-template-columns: 1fr; }
+  .viewMoreWrap { margin-top: 1.5rem; }
+  .viewMoreBtn { padding: .65rem 1.4rem; font-size: .85rem; width: 100%; justify-content: center; }
 }
 @media (max-width: 400px) {
   .hero { padding: 3rem 0.75rem 2rem; }

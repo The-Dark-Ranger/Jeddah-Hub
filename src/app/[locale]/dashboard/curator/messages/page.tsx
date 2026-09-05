@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLocale, useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import { isValidEmail } from '@/lib/validateEmail';
+import { normalizeRole } from '@/lib/role';
 import styles from './Messages.module.css';
 
 interface ContactMessage {
@@ -64,7 +65,7 @@ export default function MessagesPage() {
   const [sending, setSending]         = useState(false);
   const [replyingId, setReplyingId]   = useState<string | null>(null);
 
-  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
 
   useEffect(() => {

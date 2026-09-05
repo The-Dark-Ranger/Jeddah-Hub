@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import { normalizeRole } from '@/lib/role';
 import styles from './DashboardLayout.module.css';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  const role      = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const role      = normalizeRole(user.role);
   const isCurator = role === 'curator' || role === 'vice_curator';
   const isImpact  = role === 'impact_officer';
   const isShaper  = role === 'shaper' || role === 'alumni';

@@ -6,6 +6,7 @@ import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
+import { normalizeRole } from '@/lib/role';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -46,7 +47,7 @@ export default function MembersPage() {
   const [error, setError]   = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
 
-  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
 
   const ROLES: { value: UserRole; label: string }[] = [

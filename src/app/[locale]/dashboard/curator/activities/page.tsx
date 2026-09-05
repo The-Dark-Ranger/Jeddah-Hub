@@ -10,25 +10,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import { uniqueInitiativeSlug } from '@/lib/slug';
-import { pickActivityFields } from '@/lib/activityTypes';
+import {
+  pickActivityFields, emptyActivityForm as emptyForm, emptyCustomForm,
+  newQuestionId, parseHighlights, highlightsToText,
+} from '@/lib/activityTypes';
+import type { Highlight, CustomFormQuestion, CustomForm, ActivityKind } from '@/lib/activityTypes';
+import { normalizeRole } from '@/lib/role';
 import styles from './Activities.module.css';
-
-interface Highlight { name: string; tag: string; }
-
-interface CustomFormQuestion {
-  id: string;
-  label: string;
-  type: 'text' | 'textarea' | 'select' | 'checkbox';
-  options?: string[];
-  required: boolean;
-}
-
-interface CustomForm {
-  enabled: boolean;
-  questions: CustomFormQuestion[];
-}
-
-type ActivityKind = 'activity' | 'workshop';
 
 interface Activity {
   id: string;
@@ -71,18 +59,6 @@ interface ActivityResponse {
   read?: boolean;
 }
 
-const emptyCustomForm = (): CustomForm => ({ enabled: false, questions: [] });
-
-const emptyForm = (): Omit<Activity, 'id' | 'createdAt'> => ({
-  title: '', eyebrow: '', subtitle: '', description: '',
-  date: '', location: '', ctaText: '', ctaUrl: '',
-  highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
-});
-
-function newQuestionId() {
-  return `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-}
-
 const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
   eyebrow: 'Annual Gathering',
   title: 'Jeddah Retreat 2026',
@@ -103,21 +79,6 @@ const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
   active: true,
   kind: 'activity',
 };
-
-function parseHighlights(raw: string): Highlight[] {
-  return raw
-    .split('\n')
-    .map(l => l.trim())
-    .filter(Boolean)
-    .map(l => {
-      const [name, ...rest] = l.split(',');
-      return { name: name.trim(), tag: rest.join(',').trim() };
-    });
-}
-
-function highlightsToText(hs: Highlight[]): string {
-  return hs.map(h => `${h.name},${h.tag}`).join('\n');
-}
 
 export default function ActivitiesPage() {
   const { user } = useAuth();
@@ -146,7 +107,7 @@ export default function ActivitiesPage() {
      for why these can't just write to `initiatives` directly. */
   const [changeRequests, setChangeRequests] = useState<ActivityChangeRequest[]>([]);
 
-  const role = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const role = normalizeRole(user?.role);
   const canEdit = role === 'curator' || role === 'vice_curator';
 
   async function fetchAll() {

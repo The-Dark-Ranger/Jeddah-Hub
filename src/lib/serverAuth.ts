@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
+import { normalizeRole } from './role';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
@@ -38,7 +39,7 @@ async function getCallerRole(uid: string): Promise<string | null> {
     if (!res.ok) return null;
     const data = await res.json();
     const raw = data?.fields?.role?.stringValue;
-    return typeof raw === 'string' ? raw.toLowerCase().replace(/\s+/g, '_') : null;
+    return typeof raw === 'string' ? normalizeRole(raw) : null;
   } catch {
     return null;
   }

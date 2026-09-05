@@ -5,6 +5,7 @@ import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDo
 import { useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/auth';
+import { normalizeRole } from '@/lib/role';
 import styles from './BlogManager.module.css';
 
 interface BlogPost {
@@ -37,7 +38,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     return t('daysAgo', { n: days });
   };
 
-  const normRole   = user.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const normRole   = normalizeRole(user.role);
   const isCurator  = normRole === 'curator' || normRole === 'vice_curator';
   const isImpact   = normRole === 'impact_officer';
   // Only curators/impact officers may publish directly — matches the

@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
+import { normalizeRole } from '@/lib/role';
 import styles from './DashboardHome.module.css';
 
 interface Stats {
@@ -39,7 +40,7 @@ export default function DashboardHome() {
   }, [loading, user]);
 
   const fetchStats = async () => {
-    const role      = user?.role?.toLowerCase().replace(/\s+/g, '_');
+    const role      = normalizeRole(user?.role);
     const isCurator = role === 'curator' || role === 'vice_curator';
     const isShaper  = role === 'shaper'  || role === 'alumni';
 
@@ -147,7 +148,7 @@ export default function DashboardHome() {
     );
   }
 
-  const role      = user.role.toLowerCase().replace(/\s+/g, '_');
+  const role      = normalizeRole(user.role);
   const isCurator = role === 'curator' || role === 'vice_curator';
   const isImpact  = role === 'impact_officer';
   const isShaper  = role === 'shaper' || role === 'alumni';

@@ -5,12 +5,13 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
+import { normalizeRole } from '@/lib/role';
 import styles from './Exports.module.css';
 
 export default function ExportEmails() {
   const t = useTranslations('Dashboard');
   const { user } = useAuth();
-  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [emails, setEmails]   = useState<string[]>([]);
   const [loading, setLoading] = useState(false);

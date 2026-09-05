@@ -11,6 +11,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import ImageUploader from '@/components/ImageUploader';
 import ModalPortal from '@/components/ModalPortal';
+import { CATEGORIES } from '@/components/InitiativeFormFields';
+import { normalizeRole } from '@/lib/role';
 import styles from './Projects.module.css';
 
 interface Member { userId: string; role: string; }
@@ -35,11 +37,6 @@ interface Initiative {
 }
 
 interface UserRecord { id: string; displayName?: string; email?: string; }
-
-const CATEGORIES = [
-  'Environment', 'Education', 'Health', 'Technology',
-  'Arts & Culture', 'Economic Empowerment', 'Community', 'Wellbeing', 'Economy', 'Other',
-];
 
 const emptyForm = {
   title: '', description: '', category: '', startDate: '', endDate: '',
@@ -141,7 +138,7 @@ export default function ImpactProjects() {
   const [assignRole, setAssignRole]     = useState('');
   const [assigning, setAssigning]       = useState(false);
 
-  const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const role      = normalizeRole(user?.role);
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {

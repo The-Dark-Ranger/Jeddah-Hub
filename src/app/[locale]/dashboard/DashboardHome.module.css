@@ -251,4 +251,3 @@
   font-size: 0.78rem; font-weight: 600; color: var(--primary-blue);
   background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline;
 }
-.noNotifs { color: var(--text-muted); font-size: 0.88rem; padding: 1rem 0; }

@@ -7,12 +7,13 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
+import { normalizeRole } from '@/lib/role';
 import styles from './Roster.module.css';
 
 export default function ManageRoster() {
   const t = useTranslations('Dashboard');
   const { user } = useAuth();
-  const normRole  = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [initiatives, setInitiatives] = useState<any[]>([]);
   const [users, setUsers]             = useState<any[]>([]);

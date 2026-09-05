@@ -4,6 +4,7 @@ import {
   doc, getDoc, setDoc,
   collection, query, where, getDocs, limit
 } from 'firebase/firestore';
+import { normalizeRole } from './role';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
 
@@ -76,9 +77,7 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
     const snap = await getDocs(q);
     if (!snap.empty) {
       const data = snap.docs[0].data();
-      return {
-        role: ((data.role as string)?.toLowerCase().replace(/\s+/g, '_') as UserRole) || null,
-      };
+      return { role: (normalizeRole(data.role as string) as UserRole) || null };
     }
   } catch (error) {
     console.error('Error checking role_assignments:', error);
@@ -93,7 +92,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      let role = ((data.role as string)?.toLowerCase().replace(/\s+/g, '_') as UserRole) || null;
+      let role = (normalizeRole(data.role as string) as UserRole) || null;
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;

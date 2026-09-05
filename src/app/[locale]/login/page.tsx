@@ -8,6 +8,7 @@ import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { getRecaptchaToken } from '@/lib/recaptcha';
 import { useTheme } from '@/context/ThemeContext';
+import { normalizeRole } from '@/lib/role';
 import styles from './Login.module.css';
 
 export default function LoginPage() {
@@ -42,7 +43,7 @@ export default function LoginPage() {
       const cred    = await signInWithEmailAndPassword(auth, email, password);
       const profile = await getUserProfile(cred.user.uid);
 
-      const normRole = profile?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+      const normRole = normalizeRole(profile?.role);
       if (normRole === 'curator' || normRole === 'vice_curator') {
         router.push('/dashboard/curator/initiatives');
       } else if (normRole === 'impact_officer') {

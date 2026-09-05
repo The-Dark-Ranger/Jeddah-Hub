@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { uniqueInitiativeSlug } from '@/lib/slug';
+import { normalizeRole } from '@/lib/role';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
   emptyInitiativeForm as emptyForm, initiativeFormToDoc as formToDoc, initiativeToForm,
@@ -138,7 +139,7 @@ export default function ManageInitiatives() {
   const [assignRole, setAssignRole] = useState('');
   const [assigning, setAssigning]   = useState(false);
 
-  const role      = user?.role?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const role      = normalizeRole(user?.role);
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   /* Stable onChange for FormFields */

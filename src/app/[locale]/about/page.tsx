@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
-import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
+import { avatarGradient, initials } from '@/lib/avatarUtils';
 import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
+import { normalizeRole as normRole } from '@/lib/role';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -56,10 +57,11 @@ const InstagramIcon = () => (
   </svg>
 );
 
-const EmailIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect width="20" height="16" x="2" y="4" rx="2"/>
-    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+const ChevronDownIcon = ({ expanded }: { expanded: boolean }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+    strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .25s ease' }}>
+    <polyline points="6 9 12 15 18 9" />
   </svg>
 );
 
@@ -189,6 +191,50 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
   );
 }
 
+// Past this many cards, the grid gets a "View more" toggle instead of
+// rendering everyone at once — keeps the initial page short on both
+// mobile (where 10 cards is already several screens) and desktop.
+const VISIBLE_STEP = 10;
+
+function PeopleGrid({ people, emptyLabel }: { people: LiveShaper[]; emptyLabel: string }) {
+  const t = useTranslations('AboutPage');
+  const [expanded, setExpanded] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  if (people.length === 0) {
+    return <p className={styles.noShapers}>{emptyLabel}</p>;
+  }
+
+  const hasMore = people.length > VISIBLE_STEP;
+  const visible = expanded ? people : people.slice(0, VISIBLE_STEP);
+
+  const handleToggle = () => {
+    if (expanded) {
+      // Collapsing can leave the viewport scrolled past the now-shorter
+      // grid — bring the section back into view instead of stranding the
+      // reader on empty space below the fold.
+      gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setExpanded(v => !v);
+  };
+
+  return (
+    <>
+      <div className={styles.shapersList} ref={gridRef}>
+        {visible.map((s, i) => <LiveShaperCard key={s.uid} shaper={s} index={i} />)}
+      </div>
+      {hasMore && (
+        <div className={styles.viewMoreWrap}>
+          <button type="button" className={styles.viewMoreBtn} onClick={handleToggle}>
+            {expanded ? t('viewLess') : t('viewMore')}
+            <ChevronDownIcon expanded={expanded} />
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 const ROLE_ORDER: Record<string, number> = { curator: 0, vice_curator: 1, impact_officer: 2 };
 
 export default function AboutPage() {
@@ -237,9 +283,6 @@ export default function AboutPage() {
       ]))
       .then(([usersSnap, initCount, activityCount]) => {
         const all = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as any));
-        // Normalize once so "Vice Curator"/"vice curator"/"vice_curator" etc.
-        // all match the same downstream role checks.
-        const normRole = (r: any) => (typeof r === 'string' ? r.toLowerCase().replace(/\s+/g, '_') : '');
 
         const toShaper = (u: any): LiveShaper => ({
           uid:           u.uid,
@@ -376,14 +419,8 @@ export default function AboutPage() {
             <div className={styles.shapersLoading}>
               <div className={styles.shapersSpinner} />
             </div>
-          ) : shapers.length === 0 ? (
-            <p className={styles.noShapers}>{t('noShapers')}</p>
           ) : (
-            <div className={styles.shapersList}>
-              {shapers.map((s, i) => (
-                <LiveShaperCard key={s.uid} shaper={s} index={i} />
-              ))}
-            </div>
+            <PeopleGrid people={shapers} emptyLabel={t('noShapers')} />
           )}
         </div>
       </section>
@@ -397,12 +434,8 @@ export default function AboutPage() {
             <div className={styles.divider} />
             {loadingShapers ? (
               <div className={styles.shapersLoading}><div className={styles.shapersSpinner} /></div>
-            ) : alumni.length === 0 ? (
-              <p className={styles.noShapers}>{t('noAlumni')}</p>
             ) : (
-              <div className={styles.shapersList}>
-                {alumni.map((s, i) => <LiveShaperCard key={s.uid} shaper={s} index={i} />)}
-              </div>
+              <PeopleGrid people={alumni} emptyLabel={t('noAlumni')} />
             )}
           </div>
         </section>

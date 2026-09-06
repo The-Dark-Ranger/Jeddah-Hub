@@ -155,6 +155,10 @@ export default function InitiativePage() {
   const photos = [...new Set(
     [initiative.imageUrl, ...(initiative.images || [])].filter(Boolean),
   )] as string[];
+  /* The gallery grid below shows the extra photos, not the cover again —
+   * it's already the hero backdrop just above, so repeating it there would
+   * just be the same picture shown twice in a row. */
+  const galleryPhotos = [...new Set((initiative.images || []).filter(Boolean))] as string[];
 
   return (
     <main className={styles.page}>
@@ -280,10 +284,10 @@ export default function InitiativePage() {
           )}
         </div>
 
-        {photos.length > 0 && (
+        {galleryPhotos.length > 0 && (
           <>
             <div className={styles.divider} />
-            <InitiativeGallery photos={photos} title={initiative.title} accent={heroColor} />
+            <InitiativeGallery photos={galleryPhotos} title={initiative.title} accent={heroColor} />
           </>
         )}
 

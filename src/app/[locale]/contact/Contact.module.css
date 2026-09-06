@@ -3,6 +3,14 @@
   background: var(--background);
 }
 
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heroInner, .formCard, .sidebarCard, .responseNote { animation: none !important; }
+}
+
 /* Hero */
 .hero {
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
@@ -22,6 +30,7 @@
   text-align: center;
   position: relative;
   z-index: 1;
+  animation: fadeInUp .5s ease both;
 }
 
 .eyebrow {
@@ -67,13 +76,46 @@
   border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 2.5rem;
-  transition: border-color var(--transition-base), background-color var(--transition-base);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+  transition: border-color var(--transition-base), background-color var(--transition-base), box-shadow .25s ease;
+  animation: fadeInUp .5s ease .08s both;
+}
+
+.formCardHeader {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: 1.6rem;
+}
+
+.formCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--primary-blue-glow);
+  color: var(--primary-blue);
+}
+
+.formCardTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 1.35rem;
+}
+
+.required {
+  color: var(--primary-blue);
+  margin-inline-start: .15rem;
 }
 
 .formRow {
@@ -178,6 +220,10 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .errorMsg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
   text-align: center;
   padding: 0.85rem 1rem;
   border-radius: 10px;
@@ -186,7 +232,9 @@
   font-weight: 600;
   font-size: 0.9rem;
   border: 1px solid rgba(239,68,68,0.25);
+  animation: fadeInUp .3s ease both;
 }
+.errorMsg svg { flex-shrink: 0; }
 
 /* Success state */
 .successState {
@@ -207,6 +255,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: successPop .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes successPop {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .successIcon { animation: none; }
 }
 
 .successTitle {
@@ -246,16 +302,51 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   position: sticky;
   top: 80px;
 }
 
+.sidebarCard {
+  background: var(--card-bg-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  animation: fadeInUp .5s ease .16s both;
+}
+.sidebar .sidebarCard:nth-child(2) { animation-delay: .24s; }
+
 .sidebarTitle {
-  font-size: 1rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin: 0 0 0.9rem;
+}
+
+.socialRow {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.socialIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--primary-blue);
+  transition: all 0.2s ease;
+}
+
+.socialIcon:hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-glow);
+  transform: translateY(-2px);
 }
 
 .contactItems {
@@ -308,6 +399,7 @@
   border-radius: 10px;
   background: var(--background-alt);
   border: 1px solid var(--border-color);
+  animation: fadeInUp .5s ease .32s both;
 }
 
 .responseNote svg {

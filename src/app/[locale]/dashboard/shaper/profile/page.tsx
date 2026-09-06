@@ -13,12 +13,16 @@ interface ProfileForm {
   displayNameAr: string;
   photoURL: string;
   bio: string;
+  bioAr: string;
   linkedin: string;
   twitter: string;
   instagram: string;
 }
 
-const empty: ProfileForm = { displayName: '', displayNameAr: '', photoURL: '', bio: '', linkedin: '', twitter: '', instagram: '' };
+const empty: ProfileForm = {
+  displayName: '', displayNameAr: '', photoURL: '', bio: '', bioAr: '',
+  linkedin: '', twitter: '', instagram: '',
+};
 
 // Long enough for a real bio, short enough that shaper/curator cards
 // across the site (About page, homepage) stay a reasonable, consistent size.
@@ -44,6 +48,7 @@ export default function MyProfile() {
           displayNameAr: d.displayNameAr || '',
           photoURL:      d.photoURL      || '',
           bio:           d.bio           || '',
+          bioAr:         d.bioAr         || '',
           linkedin:      d.linkedin      || '',
           twitter:       d.twitter       || '',
           instagram:     d.instagram     || '',
@@ -68,6 +73,7 @@ export default function MyProfile() {
         displayNameAr: form.displayNameAr.trim(),
         photoURL:      form.photoURL.trim(),
         bio:           form.bio.trim(),
+        bioAr:         form.bioAr.trim(),
         linkedin:      form.linkedin.trim(),
         twitter:       form.twitter.trim(),
         instagram:     form.instagram.trim(),
@@ -148,6 +154,22 @@ export default function MyProfile() {
             <p className={styles.charCount + (form.bio.length >= BIO_MAX_LENGTH ? ' ' + styles.charCountNearLimit : '')}>
               {form.bio.length}/{BIO_MAX_LENGTH}
             </p>
+          </div>
+          <div className={styles.formField}>
+            <label className={styles.label}>{t('bioArLabel')}</label>
+            <textarea
+              className={styles.textarea}
+              value={form.bioAr}
+              onChange={set('bioAr')}
+              placeholder={t('phBioAr')}
+              rows={3}
+              maxLength={BIO_MAX_LENGTH}
+              dir="rtl"
+            />
+            <p className={styles.charCount + (form.bioAr.length >= BIO_MAX_LENGTH ? ' ' + styles.charCountNearLimit : '')}>
+              {form.bioAr.length}/{BIO_MAX_LENGTH}
+            </p>
+            <span className={styles.hint}>{t('bioArHint')}</span>
           </div>
         </div>
       </div>

@@ -124,7 +124,7 @@ service cloud.firestore {
       allow read: if true;
       allow write: if (isOwner(uid) || isCurator())
                    && request.resource.data.keys().hasOnly(
-                        ['displayName', 'displayNameAr', 'photoURL', 'bio',
+                        ['displayName', 'displayNameAr', 'photoURL', 'bio', 'bioAr',
                          'linkedin', 'twitter', 'instagram', 'role'])
                    && (isCurator()
                        || !('role' in request.resource.data)

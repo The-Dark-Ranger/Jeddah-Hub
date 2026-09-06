@@ -16,6 +16,7 @@ export interface UserProfile {
   displayNameAr?: string;
   photoURL?: string;
   bio?: string;
+  bioAr?: string;
   linkedin?: string;
   twitter?: string;
   instagram?: string;
@@ -24,7 +25,7 @@ export interface UserProfile {
 interface RoleResult { role: UserRole; }
 
 const PUBLIC_FIELDS = [
-  'displayName', 'displayNameAr', 'photoURL', 'bio', 'linkedin', 'twitter', 'instagram', 'role',
+  'displayName', 'displayNameAr', 'photoURL', 'bio', 'bioAr', 'linkedin', 'twitter', 'instagram', 'role',
 ] as const;
 
 /**
@@ -110,6 +111,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
         displayNameAr: data.displayNameAr || undefined,
         photoURL:  data.photoURL  || undefined,
         bio:       data.bio       || undefined,
+        bioAr:     data.bioAr     || undefined,
         linkedin:  data.linkedin  || undefined,
         twitter:   data.twitter   || undefined,
         instagram: data.instagram || undefined,

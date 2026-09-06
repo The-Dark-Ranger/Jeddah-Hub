@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  collection, getDocs, addDoc, updateDoc, deleteDoc, doc,
+  collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
   query, serverTimestamp, where, getCountFromServer,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -80,6 +80,48 @@ const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
   kind: 'activity',
 };
 
+/** Renders every known activity field present in a proposal/change
+ *  request so a curator or impact officer can see the full proposed
+ *  content — not just its title — before approving or declining it.
+ *  Shared between the legacy activity_requests and activity_change_requests
+ *  details modals since both carry the same underlying activity shape. */
+function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: ReturnType<typeof useTranslations> }) {
+  const row = (labelKey: Parameters<typeof t>[0], value: React.ReactNode) => (
+    <div className={styles.detailRow}>
+      <span className={styles.detailLabel}>{t(labelKey)}</span>
+      <span className={styles.detailValue}>{value}</span>
+    </div>
+  );
+
+  const highlights = fields.highlights as Highlight[] | undefined;
+  const customForm = fields.customForm as CustomForm | undefined;
+
+  return (
+    <>
+      {typeof fields.kind === 'string' && row('activityKindLabel', fields.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity'))}
+      {!!fields.eyebrow && row('activityEyebrowLabel', fields.eyebrow as string)}
+      {!!fields.subtitle && row('activitySubtitleLabel', fields.subtitle as string)}
+      {!!fields.description && row('activityDescLabel', fields.description as string)}
+      {!!fields.date && row('activityDateLabel', fields.date as string)}
+      {!!fields.location && row('activityLocationLabel', fields.location as string)}
+      {!!fields.ctaText && row('activityCtaTextLabel', fields.ctaText as string)}
+      {!!fields.ctaUrl && row('activityCtaUrlLabel', fields.ctaUrl as string)}
+      {!!highlights?.length && row('activityHighlightsLabel',
+        <ul className={styles.detailHighlightList}>
+          {highlights.map((h, i) => <li key={i}>{h.name}{h.tag ? ` — ${h.tag}` : ''}</li>)}
+        </ul>
+      )}
+      {typeof fields.active === 'boolean' && row('activityActiveLabel', fields.active ? t('yes') : t('no'))}
+      {typeof fields.archived === 'boolean' && row('filterArchived', fields.archived ? t('yes') : t('no'))}
+      {customForm && row('activityCustomFormEnable',
+        customForm.enabled
+          ? t('customFormQuestionCount', { n: customForm.questions?.length || 0 })
+          : t('no')
+      )}
+    </>
+  );
+}
+
 export default function ActivitiesPage() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
@@ -106,9 +148,20 @@ export default function ActivitiesPage() {
      see activityTypes.ts and firestore.rules' activity_change_requests
      for why these can't just write to `initiatives` directly. */
   const [changeRequests, setChangeRequests] = useState<ActivityChangeRequest[]>([]);
+  /* initiativeId -> title, resolved for whichever initiatives the pending
+     change requests reference — lets the review list and details modal
+     name the initiative instead of just its id. */
+  const [initiativeTitles, setInitiativeTitles] = useState<Record<string, string>>({});
+
+  /* Full-detail view of a single pending proposal/change request, opened
+   * from its row's "View Details" button — a curator/impact officer needs
+   * the complete proposed content (not just the title) to decide whether
+   * to approve or decline it. */
+  const [viewingLegacy, setViewingLegacy] = useState<any | null>(null);
+  const [viewingChange, setViewingChange] = useState<ActivityChangeRequest | null>(null);
 
   const role = normalizeRole(user?.role);
-  const canEdit = role === 'curator' || role === 'vice_curator';
+  const canEdit = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
 
   async function fetchAll() {
     setLoading(true);
@@ -153,7 +206,21 @@ export default function ActivitiesPage() {
 
     try {
       const changeSnap = await getDocs(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending')));
-      setChangeRequests(changeSnap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) })));
+      const reqs = changeSnap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }));
+      setChangeRequests(reqs);
+
+      // Resolve each referenced initiative's title once, so both the row
+      // list and the details modal can name it instead of showing a raw id.
+      const uniqueIds = Array.from(new Set(reqs.map(r => r.initiativeId).filter(Boolean)));
+      const titleEntries = await Promise.all(uniqueIds.map(async id => {
+        try {
+          const snap = await getDoc(doc(db, 'initiatives', id));
+          return [id, (snap.data()?.title as string) || id] as const;
+        } catch {
+          return [id, id] as const;
+        }
+      }));
+      setInitiativeTitles(Object.fromEntries(titleEntries));
     } catch {
       setChangeRequests([]);
     }
@@ -475,6 +542,7 @@ export default function ActivitiesPage() {
                   </span>
                 </div>
                 <div className={styles.proposalActions}>
+                  <button className={styles.viewProposalBtn} onClick={() => setViewingLegacy(req)}>{t('viewDetails')}</button>
                   <button className={styles.approveProposalBtn} onClick={() => handleApproveActivityProposal(req)}>{t('approveProposal')}</button>
                   <button className={styles.declineProposalBtn} onClick={() => handleDeclineActivityProposal(req.id)}>{t('declineProposal')}</button>
                 </div>
@@ -500,10 +568,12 @@ export default function ActivitiesPage() {
                   <span className={styles.proposalName}>{req.activityTitle}</span>
                   <span className={styles.proposalMeta}>
                     {req.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate')}
+                    {' · '}{t('forInitiative')} {initiativeTitles[req.initiativeId] || req.initiativeId}
                     {req.proposedByName && <> · {t('by')} {req.proposedByName}</>}
                   </span>
                 </div>
                 <div className={styles.proposalActions}>
+                  <button className={styles.viewProposalBtn} onClick={() => setViewingChange(req)}>{t('viewDetails')}</button>
                   <button className={styles.approveProposalBtn} onClick={() => handleApproveChangeRequest(req)}>{t('approveProposal')}</button>
                   <button className={styles.declineProposalBtn} onClick={() => handleDeclineChangeRequest(req.id)}>{t('declineProposal')}</button>
                 </div>
@@ -511,6 +581,78 @@ export default function ActivitiesPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {viewingLegacy && (
+        <ModalPortal>
+        <div className={styles.overlay} onClick={() => setViewingLegacy(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>{viewingLegacy.title}</h2>
+              <button className={styles.closeBtn} onClick={() => setViewingLegacy(null)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              {viewingLegacy.proposedByName && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>{t('by')}</span>
+                  <span className={styles.detailValue}>{viewingLegacy.proposedByName}</span>
+                </div>
+              )}
+              <ProposalFields fields={viewingLegacy} t={t} />
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setViewingLegacy(null)}>{t('cancel')}</button>
+              <button className={styles.declineProposalBtn} onClick={() => { handleDeclineActivityProposal(viewingLegacy.id); setViewingLegacy(null); }}>
+                {t('declineProposal')}
+              </button>
+              <button className={styles.saveBtn} onClick={() => { handleApproveActivityProposal(viewingLegacy); setViewingLegacy(null); }}>
+                {t('approveProposal')}
+              </button>
+            </div>
+          </div>
+        </div>
+        </ModalPortal>
+      )}
+
+      {viewingChange && (
+        <ModalPortal>
+        <div className={styles.overlay} onClick={() => setViewingChange(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>{viewingChange.activityTitle}</h2>
+              <button className={styles.closeBtn} onClick={() => setViewingChange(null)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>{t('changeTypeLabel')}</span>
+                <span className={styles.detailValue}>
+                  {viewingChange.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate')}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>{t('forInitiative')}</span>
+                <span className={styles.detailValue}>{initiativeTitles[viewingChange.initiativeId] || viewingChange.initiativeId}</span>
+              </div>
+              {viewingChange.proposedByName && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>{t('by')}</span>
+                  <span className={styles.detailValue}>{viewingChange.proposedByName}</span>
+                </div>
+              )}
+              <ProposalFields fields={viewingChange.payload} t={t} />
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setViewingChange(null)}>{t('cancel')}</button>
+              <button className={styles.declineProposalBtn} onClick={() => { handleDeclineChangeRequest(viewingChange.id); setViewingChange(null); }}>
+                {t('declineProposal')}
+              </button>
+              <button className={styles.saveBtn} onClick={() => { handleApproveChangeRequest(viewingChange); setViewingChange(null); }}>
+                {t('approveProposal')}
+              </button>
+            </div>
+          </div>
+        </div>
+        </ModalPortal>
       )}
 
       {activities.length > 0 && (

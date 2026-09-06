@@ -37,6 +37,21 @@
   background:transparent;color:var(--text-muted);cursor:pointer;transition:all .18s;
 }
 .declineProposalBtn:hover { border-color:var(--danger);color:var(--danger); }
+.viewProposalBtn {
+  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:.78rem;font-weight:600;
+  background:transparent;color:var(--primary-blue);cursor:pointer;transition:all .18s;
+}
+.viewProposalBtn:hover { border-color:var(--primary-blue);background:var(--primary-blue-glow); }
+
+/* ── Proposal/change request details modal ── */
+.detailRow {
+  display:flex;flex-direction:column;gap:.2rem;
+  padding:.6rem 0;border-bottom:1px solid var(--border-color);
+}
+.detailRow:last-child { border-bottom:none; }
+.detailLabel { font-size:.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em; }
+.detailValue { font-size:.9rem;color:var(--text-primary);white-space:pre-wrap;line-height:1.5; }
+.detailHighlightList { margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.2rem; }
 
 /* ── Active/Archived/All filter tabs ── */
 .archiveTabs { display:flex;flex-wrap:wrap;gap:.5rem; }

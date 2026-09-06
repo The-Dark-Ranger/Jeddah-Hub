@@ -18,6 +18,7 @@ interface LiveShaper {
   displayNameAr?: string;
   role: string;
   bio?: string;
+  bioAr?: string;
   linkedin?: string;
   twitter?: string;
   instagram?: string;
@@ -30,6 +31,7 @@ interface LiveCurator {
   displayNameAr?: string;
   role: string;
   bio?: string;
+  bioAr?: string;
   linkedin?: string;
   twitter?: string;
   instagram?: string;
@@ -74,8 +76,9 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
   const locale   = useLocale();
   const t        = useTranslations('AboutPage');
   const name     = locale === 'ar' && shaper.displayNameAr ? shaper.displayNameAr : shaper.displayName;
+  const bioText  = locale === 'ar' && shaper.bioAr ? shaper.bioAr : shaper.bio;
   const [expanded, setExpanded] = useState(false);
-  const isLong = (shaper.bio?.length ?? 0) > BIO_CLAMP_THRESHOLD;
+  const isLong = (bioText?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
     <div className={styles.shaperCard}>
       <div className={styles.shaperTop}>
@@ -113,10 +116,10 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
           </div>
         </div>
       </div>
-      {shaper.bio && (
+      {bioText && (
         <>
           <p className={styles.shaperBio + (isLong && !expanded ? ' ' + styles.shaperBioClamped : '')}>
-            {shaper.bio}
+            {bioText}
           </p>
           {isLong && (
             <button type="button" className={styles.shaperBioToggle} onClick={() => setExpanded(v => !v)}>
@@ -135,8 +138,9 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
   const t      = useTranslations('AboutPage');
   const name   = locale === 'ar' && curator.displayNameAr ? curator.displayNameAr : curator.displayName;
   const hasSocials = curator.linkedin || curator.twitter || curator.instagram;
+  const bioText = locale === 'ar' && curator.bioAr ? curator.bioAr : curator.bio;
   const [expanded, setExpanded] = useState(false);
-  const isLong = (curator.bio?.length ?? 0) > BIO_CLAMP_THRESHOLD;
+  const isLong = (bioText?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
     <div className={styles.curatorCard}>
       <div className={styles.curatorAvatarWrap}>
@@ -152,10 +156,10 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
       <div className={styles.curatorBody}>
         <div className={styles.curatorName}>{name}</div>
         <div className={styles.curatorRole}>{roleLabel}</div>
-        {curator.bio && (
+        {bioText && (
           <>
             <p className={styles.curatorBio + (isLong && !expanded ? ' ' + styles.curatorBioClamped : '')}>
-              {curator.bio}
+              {bioText}
             </p>
             {isLong && (
               <button type="button" className={styles.curatorBioToggle} onClick={() => setExpanded(v => !v)}>
@@ -290,6 +294,7 @@ export default function AboutPage() {
           displayNameAr: u.displayNameAr || '',
           role:          normRole(u.role),
           bio:           u.bio          || '',
+          bioAr:         u.bioAr        || '',
           linkedin:      u.linkedin     || '',
           twitter:       u.twitter      || '',
           instagram:     u.instagram    || '',
@@ -313,6 +318,7 @@ export default function AboutPage() {
             displayNameAr: u.displayNameAr || '',
             role:          normRole(u.role),
             bio:           u.bio         || '',
+            bioAr:         u.bioAr       || '',
             linkedin:      u.linkedin    || '',
             twitter:       u.twitter     || '',
             instagram:     u.instagram   || '',

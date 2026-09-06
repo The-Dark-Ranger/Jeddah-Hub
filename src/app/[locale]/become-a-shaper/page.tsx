@@ -72,7 +72,6 @@ export default function BecomeAShaperPage() {
   const quotes = [
     { text: t('quote1'), author: t('quote1Author'), role: t('quote1Role') },
     { text: t('quote2'), author: t('quote2Author'), role: t('quote2Role') },
-    { text: t('quote3'), author: t('quote3Author'), role: t('quote3Role') },
   ];
 
   // FAQ -- add/remove entries here. To add one: add faqNQ/faqNA keys to

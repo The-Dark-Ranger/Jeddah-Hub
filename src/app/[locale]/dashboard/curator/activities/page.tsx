@@ -369,12 +369,21 @@ export default function ActivitiesPage() {
     }
   }
 
-  // Archived is a separate axis from active/hidden — a past retreat can be
-  // both "hidden" (not shown on the homepage) and "archived" (tucked out of
-  // the default admin list) without those two states fighting each other.
+  // Archived is otherwise a separate axis from active/hidden — a past
+  // retreat can be both "hidden" (not shown on the homepage) and
+  // "archived" (tucked out of the default admin list) without those two
+  // states fighting each other. The one direction that isn't independent:
+  // archiving something that's still active also turns it inactive, so a
+  // curator can't accidentally archive-but-leave-live an activity and
+  // forget to hide it — unarchiving never re-activates it automatically,
+  // since bringing it back onto the homepage should be a deliberate step.
   async function handleToggleArchive(a: Activity) {
     try {
-      await updateDoc(doc(db, 'initiatives', a.id), { archived: !a.archived });
+      const archived = !a.archived;
+      await updateDoc(doc(db, 'initiatives', a.id), {
+        archived,
+        ...(archived && a.active ? { active: false } : {}),
+      });
       fetchAll();
     } catch (err) {
       console.error('Failed to toggle archive:', err);
@@ -954,6 +963,8 @@ export default function ActivitiesPage() {
                     <thead>
                       <tr>
                         <th>{t('submittedAtCol')}</th>
+                        <th>{t('submitterNameCol')}</th>
+                        <th>{t('submitterEmailCol')}</th>
                         {(responsesFor.customForm?.questions || []).map(q => (
                           <th key={q.id}>{q.label}</th>
                         ))}
@@ -963,6 +974,8 @@ export default function ActivitiesPage() {
                       {responses.map(r => (
                         <tr key={r.id}>
                           <td>{new Date(r.submittedAt).toLocaleString()}</td>
+                          <td>{r.submitterName || ''}</td>
+                          <td>{r.submitterEmail || ''}</td>
                           {(responsesFor.customForm?.questions || []).map(q => (
                             <td key={q.id}>{r.answers?.[q.id] ?? ''}</td>
                           ))}

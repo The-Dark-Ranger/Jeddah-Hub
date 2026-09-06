@@ -758,6 +758,8 @@
     "responsesFor": "ردود",
     "noResponsesYet": "لا توجد ردود بعد.",
     "submittedAtCol": "تاريخ الإرسال",
+    "submitterNameCol": "الاسم",
+    "submitterEmailCol": "البريد الإلكتروني",
     "downloadResponses": "تحميل الردود (.xlsx)",
     "saveActivity": "حفظ النشاط",
     "createActivity": "إنشاء نشاط",

@@ -758,6 +758,8 @@
     "responsesFor": "Responses for",
     "noResponsesYet": "No responses yet.",
     "submittedAtCol": "Submitted",
+    "submitterNameCol": "Name",
+    "submitterEmailCol": "Email",
     "downloadResponses": "Download Responses (.xlsx)",
     "saveActivity": "Save Activity",
     "createActivity": "Create Activity",

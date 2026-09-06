@@ -229,9 +229,16 @@ export default function LeadActivitiesPage() {
     }
   }
 
+  // Archiving an activity that's still active also requests it be turned
+  // inactive at the same time — same rule the curator's direct-write page
+  // applies, so a lead can't archive-but-leave-live and forget to hide it.
   async function handleRequestToggleArchive(a: Activity) {
     try {
-      await submitRequest('update', a.id, a.initiativeId!, a.title, { archived: !a.archived });
+      const archived = !a.archived;
+      await submitRequest('update', a.id, a.initiativeId!, a.title, {
+        archived,
+        ...(archived && a.active ? { active: false } : {}),
+      });
       fetchAll();
     } catch (err) {
       console.error('Failed to request activity archive toggle:', err);

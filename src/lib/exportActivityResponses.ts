@@ -9,6 +9,8 @@ interface Response {
   id: string;
   answers: Record<string, string>;
   submittedAt: string;
+  submitterName?: string;
+  submitterEmail?: string;
 }
 
 export async function downloadActivityResponses(
@@ -21,10 +23,16 @@ export async function downloadActivityResponses(
 
   ws.columns = [
     { width: 22 },
+    { width: 22 },
+    { width: 26 },
     ...questions.map(() => ({ width: 28 })),
   ];
 
-  const header = ['Submitted At', ...questions.map(q => q.label)];
+  // Name/email are surfaced even though the submission form never requires
+  // them (registrations are open to the public, no account needed) — a
+  // curator following up on a response needs a way to reach the
+  // respondent, not just read their answers.
+  const header = ['Submitted At', 'Name', 'Email', ...questions.map(q => q.label)];
   ws.addRow(header);
   ws.getRow(1).font = { bold: true };
 
@@ -34,6 +42,8 @@ export async function downloadActivityResponses(
     responses.forEach(r => {
       ws.addRow([
         new Date(r.submittedAt).toLocaleString(),
+        r.submitterName || '',
+        r.submitterEmail || '',
         ...questions.map(q => r.answers?.[q.id] ?? ''),
       ]);
     });

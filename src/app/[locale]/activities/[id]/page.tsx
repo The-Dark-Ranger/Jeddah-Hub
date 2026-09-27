@@ -137,7 +137,9 @@ export default function ActivityPage() {
     }
   };
 
-  if (activity === 'loading') return null;
+  if (activity === 'loading') {
+    return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
+  }
 
   if (!activity) {
     return (

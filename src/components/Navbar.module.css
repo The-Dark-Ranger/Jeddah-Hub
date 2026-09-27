@@ -225,9 +225,9 @@
   .navLinks { display: none; }
   .userMenu { display: none; }
 
-  .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 34px; border-radius: 8px; }
-  .iconBtn   { min-width: 34px; min-height: 34px; border-radius: 8px; }
-  .langPill { height: 34px; border-radius: 8px; }
+  .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 40px; border-radius: 8px; }
+  .iconBtn   { min-width: 40px; min-height: 40px; border-radius: 8px; }
+  .langPill { height: 40px; border-radius: 8px; }
   .langActive, .langInactive { padding: 0 .55rem; font-size: .72rem; }
   .hamburger { display: flex; }
 }

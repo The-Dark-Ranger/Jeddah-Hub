@@ -187,7 +187,7 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
             <input type="color" className={styles.colorInput} value={form.color || '#0F5A9F'} onChange={mk('color')} />
             <span className={styles.colorHex}>{form.color || t('fieldThemeColorNone')}</span>
             {form.color && (
-              <button type="button" className={styles.colorClear} onClick={() => onChange('color', '')}>×</button>
+              <button type="button" className={styles.colorClear} onClick={() => onChange('color', '')} aria-label={t('clearColor')}>×</button>
             )}
           </div>
         </div>

@@ -746,6 +746,8 @@
     "optionPlaceholder": "خيار",
     "addOption": "إضافة خيار",
     "removeOption": "إزالة الخيار",
+    "closeModal": "إغلاق",
+    "clearColor": "مسح اللون",
     "activityQuestionNoOptionsWarning": "أضف خيارًا واحدًا على الأقل، وإلا فلن يتمكن الزوار من اختيار أي شيء في هذه القائمة المنسدلة.",
     "activityQuestionRequired": "مطلوب",
     "qTypeText": "إجابة قصيرة",

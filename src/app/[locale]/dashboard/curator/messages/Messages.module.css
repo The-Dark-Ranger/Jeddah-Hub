@@ -131,11 +131,13 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 0.83rem; color: var(--primary-blue); margin-bottom: 0.85rem;
   transition: opacity 0.15s; text-decoration: none;
+  word-break: break-all;
 }
 .senderEmail:hover { opacity: 0.8; }
 .messageBody {
   font-size: 0.9rem; color: var(--text-main); line-height: 1.7;
   white-space: pre-wrap; margin-bottom: 1.25rem;
+  overflow-wrap: break-word;
 }
 
 /* Action buttons */

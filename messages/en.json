@@ -746,6 +746,8 @@
     "optionPlaceholder": "Option",
     "addOption": "Add option",
     "removeOption": "Remove option",
+    "closeModal": "Close",
+    "clearColor": "Clear color",
     "activityQuestionNoOptionsWarning": "Add at least one option, or visitors won't be able to choose anything in this dropdown.",
     "activityQuestionRequired": "Required",
     "qTypeText": "Short answer",

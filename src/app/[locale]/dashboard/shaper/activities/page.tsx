@@ -364,7 +364,7 @@ export default function LeadActivitiesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{editing ? t('editActivity') : t('proposeActivityBtn')}</h2>
-              <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => setModalOpen(false)} aria-label={t('closeModal')}>✕</button>
             </div>
 
             <div className={styles.modalBody}>

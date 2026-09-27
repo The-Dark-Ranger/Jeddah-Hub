@@ -68,7 +68,7 @@
 .memberTable tr:last-child td { border-bottom: none; }
 .memberTable tr:hover td { background: var(--background); }
 
-.memberEmail { color: var(--text-main); font-weight: 500; }
+.memberEmail { color: var(--text-main); font-weight: 500; word-break: break-all; }
 
 .rolePill {
   display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px;

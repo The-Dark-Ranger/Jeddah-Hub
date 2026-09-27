@@ -598,7 +598,7 @@ export default function ActivitiesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{viewingLegacy.title}</h2>
-              <button className={styles.closeBtn} onClick={() => setViewingLegacy(null)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => setViewingLegacy(null)} aria-label={t('closeModal')}>✕</button>
             </div>
             <div className={styles.modalBody}>
               {viewingLegacy.proposedByName && (
@@ -629,7 +629,7 @@ export default function ActivitiesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{viewingChange.activityTitle}</h2>
-              <button className={styles.closeBtn} onClick={() => setViewingChange(null)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => setViewingChange(null)} aria-label={t('closeModal')}>✕</button>
             </div>
             <div className={styles.modalBody}>
               <div className={styles.detailRow}>
@@ -755,7 +755,7 @@ export default function ActivitiesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{editing ? t('editActivity') : t('createActivity')}</h2>
-              <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => setModalOpen(false)} aria-label={t('closeModal')}>✕</button>
             </div>
 
             <div className={styles.modalBody}>
@@ -950,7 +950,7 @@ export default function ActivitiesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{t('responsesFor')}: {responsesFor.title}</h2>
-              <button className={styles.closeBtn} onClick={closeResponses}>✕</button>
+              <button className={styles.closeBtn} onClick={closeResponses} aria-label={t('closeModal')}>✕</button>
             </div>
             <div className={styles.modalBody}>
               {loadingResponses ? (

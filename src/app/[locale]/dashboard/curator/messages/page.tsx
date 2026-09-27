@@ -89,7 +89,13 @@ export default function MessagesPage() {
       try {
         await updateDoc(doc(db, 'contact_messages', msg.id), { read: true });
         setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        // Best-effort — the expand itself already succeeded, so a failed
+        // read-flag write just leaves the unread badge stale rather than
+        // blocking anything; an alert() here would be a false alarm for
+        // an action the curator didn't explicitly take.
+        console.error(err);
+      }
     }
   };
 
@@ -276,7 +282,7 @@ export default function MessagesPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>{replyingId ? t('replyModalTitle') : t('newMessageModalTitle')}</h3>
-              <button className={styles.modalClose} onClick={() => setComposeOpen(false)}>
+              <button className={styles.modalClose} onClick={() => setComposeOpen(false)} aria-label={t('closeModal')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>

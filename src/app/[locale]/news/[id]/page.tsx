@@ -91,6 +91,8 @@ export default function NewsPostPage() {
           setPost((p: any) => ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId] }));
         }
       }
+    } catch (err) {
+      console.error('Failed to update like:', err);
     } finally {
       setLiking(false);
     }

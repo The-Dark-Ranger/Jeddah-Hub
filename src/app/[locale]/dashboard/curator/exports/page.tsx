@@ -22,7 +22,10 @@ export default function ExportEmails() {
     try {
       const snap = await getDocs(collection(db, 'newsletter_subscribers'));
       setEmails(snap.docs.map(d => d.data().email).filter(Boolean));
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      alert(t('saveFailed'));
+    }
     setLoading(false);
   };
 
@@ -45,6 +48,7 @@ export default function ExportEmails() {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error(err);
+      alert(t('saveFailed'));
     }
   };
 

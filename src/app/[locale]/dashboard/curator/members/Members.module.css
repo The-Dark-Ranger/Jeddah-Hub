@@ -108,9 +108,9 @@
 .table tr:last-child td { border-bottom: none; }
 .table tr:hover td { background: var(--background-alt); }
 
-.emailCell { font-weight: 500; }
+.emailCell { font-weight: 500; word-break: break-all; }
 .memberName { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
-.memberEmail { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; }
+.memberEmail { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; word-break: break-all; }
 .noteCell { color: var(--text-muted); }
 .dateCell { color: var(--text-muted); white-space: nowrap; }
 

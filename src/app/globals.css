@@ -219,17 +219,46 @@ body.rtl {
   animation: 0.42s cubic-bezier(0.16, 1, 0.3, 1) both vt-fade-in;
 }
 
-/* -- Theme toggle: new theme grows out from the toggle button -- */
-html[data-theme-switch]::view-transition-old(root),
-html[data-theme-switch]::view-transition-old(site-header) {
+/* -- Theme toggle: new theme grows out from the toggle button --
+   Three things keep this smooth, especially on phones:
+   1. Every element's own colour transition is switched off for the swap.
+      Otherwise ~170 elements fade at different speeds underneath the
+      reveal, so the revealed area keeps shifting colour while the circle
+      grows — the visible jitter.
+   2. The navbar joins the single root snapshot instead of animating as its
+      own layer; a separately animated position:fixed bar can drift out of
+      step with the page on mobile browsers (dynamic toolbar, fixed-element
+      snapshot quirks).
+   3. One clip-path animation on one layer, composited on the GPU. */
+html[data-theme-switch],
+html[data-theme-switch] *,
+html[data-theme-switch] *::before,
+html[data-theme-switch] *::after {
+  transition: none !important;
+}
+html[data-theme-switch] [style*="site-header"] {
+  view-transition-name: none !important;
+}
+html[data-theme-switch]::view-transition-group(root) {
+  animation: none;
+}
+html[data-theme-switch]::view-transition-old(root) {
   display: block;
   animation: none;
   mix-blend-mode: normal;
 }
-html[data-theme-switch]::view-transition-new(root),
-html[data-theme-switch]::view-transition-new(site-header) {
-  animation: theme-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+html[data-theme-switch]::view-transition-new(root) {
+  animation: theme-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   mix-blend-mode: normal;
+}
+
+/* Browsers without View Transitions: one uniform crossfade of colours
+   instead of each element fading on its own timing. */
+html[data-theme-fade] *,
+html[data-theme-fade] *::before,
+html[data-theme-fade] *::after {
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease,
+              fill .3s ease, stroke .3s ease, box-shadow .3s ease !important;
 }
 @keyframes theme-reveal {
   from { clip-path: circle(0 at var(--theme-x, 100%) var(--theme-y, 0)); }

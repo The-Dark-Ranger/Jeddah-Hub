@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
+import PageTransition from '@/components/PageTransition';
 import styles from './DashboardLayout.module.css';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -14,10 +15,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const t        = useTranslations('Dashboard');
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login');
+    if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
   const handleLogout = async () => { await logout(); router.push('/'); };
+
+  // On phones the nav is a horizontal strip of pills; bring the current page's
+  // pill into view so it never sits hidden off the edge after navigating.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    nav.querySelector<HTMLElement>('[aria-current="page"]')
+      ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [pathname, loading]);
 
   if (loading) {
     return (
@@ -43,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Out — a reference document every member should be able to find
   // regardless of role, not just the ones with management tools.
   const charterNavItem = (
-    <li><Link href="/dashboard/shaper/charter" className={styles.navLink + (active('/dashboard/shaper/charter') ? ' ' + styles.navLinkActive : '')}>
+    <li><Link href="/dashboard/shaper/charter" className={styles.navLink + (active('/dashboard/shaper/charter') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/charter') ? 'page' : undefined}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -83,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav className={styles.nav}>
+        <nav className={styles.nav} ref={navRef} aria-label={t('dashboardNav')}>
 
           {/* Curator / Vice Curator — personal items first (My Profile, Active
              Projects), then role-management tools, Sign Out last. Same
@@ -92,31 +103,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('management')}</span>
               <ul className={styles.navList}>
-                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/profile') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/my-projects') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('profileActiveProjects')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/members" className={styles.navLink + (active('/dashboard/curator/members') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/members" className={styles.navLink + (active('/dashboard/curator/members') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/members') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1"/>
                   </svg>
                   {t('roleAssignments')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/initiatives" className={styles.navLink + (active('/dashboard/curator/initiatives') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/initiatives" className={styles.navLink + (active('/dashboard/curator/initiatives') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/initiatives') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('initiatives')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/roster" className={styles.navLink + (active('/dashboard/curator/roster') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/roster" className={styles.navLink + (active('/dashboard/curator/roster') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/roster') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
@@ -124,27 +135,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </svg>
                   {t('roster')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/blogs" className={styles.navLink + (active('/dashboard/curator/blogs') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/blogs" className={styles.navLink + (active('/dashboard/curator/blogs') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/blogs') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                   {t('blogs')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/messages" className={styles.navLink + (active('/dashboard/curator/messages') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/messages" className={styles.navLink + (active('/dashboard/curator/messages') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/messages') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
                   {t('messages')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/activities" className={styles.navLink + (active('/dashboard/curator/activities') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/activities" className={styles.navLink + (active('/dashboard/curator/activities') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/activities') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   {t('activitiesTitle')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/exports" className={styles.navLink + (active('/dashboard/curator/exports') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/exports" className={styles.navLink + (active('/dashboard/curator/exports') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/exports') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
@@ -163,32 +174,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('impact')}</span>
               <ul className={styles.navList}>
-                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/profile') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/my-projects') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('profileActiveProjects')}
                 </Link></li>
-                <li><Link href="/dashboard/impact/projects" className={styles.navLink + (active('/dashboard/impact/projects') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/impact/projects" className={styles.navLink + (active('/dashboard/impact/projects') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/impact/projects') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('myProjects')}
                 </Link></li>
-                <li><Link href="/dashboard/impact/blogs" className={styles.navLink + (active('/dashboard/impact/blogs') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/impact/blogs" className={styles.navLink + (active('/dashboard/impact/blogs') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/impact/blogs') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                   {t('blogs')}
                 </Link></li>
-                <li><Link href="/dashboard/curator/activities" className={styles.navLink + (active('/dashboard/curator/activities') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/curator/activities" className={styles.navLink + (active('/dashboard/curator/activities') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/curator/activities') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
@@ -205,31 +216,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('myHub')}</span>
               <ul className={styles.navList}>
-                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/profile') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/my-projects') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('profileActiveProjects')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/activities" className={styles.navLink + (active('/dashboard/shaper/activities') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/activities" className={styles.navLink + (active('/dashboard/shaper/activities') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/activities') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   {t('myActivitiesTitle')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/initiatives" className={styles.navLink + (active('/dashboard/shaper/initiatives') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/initiatives" className={styles.navLink + (active('/dashboard/shaper/initiatives') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/initiatives') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('joinInitiatives')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/blogs" className={styles.navLink + (active('/dashboard/shaper/blogs') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/blogs" className={styles.navLink + (active('/dashboard/shaper/blogs') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/blogs') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -246,19 +257,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('myHub')}</span>
               <ul className={styles.navList}>
-                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/profile" className={styles.navLink + (active('/dashboard/shaper/profile') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/profile') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   {t('myProfile')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/my-projects" className={styles.navLink + (active('/dashboard/shaper/my-projects') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/my-projects') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {t('profileActiveProjects')}
                 </Link></li>
-                <li><Link href="/dashboard/shaper/blogs" className={styles.navLink + (active('/dashboard/shaper/blogs') ? ' ' + styles.navLinkActive : '')}>
+                <li><Link href="/dashboard/shaper/blogs" className={styles.navLink + (active('/dashboard/shaper/blogs') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/blogs') ? 'page' : undefined}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -273,7 +284,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
-      <main className={styles.mainContent}>{children}</main>
+      <main className={styles.mainContent}>
+        <PageTransition scope="section">{children}</PageTransition>
+      </main>
     </div>
   );
 }

@@ -9,6 +9,11 @@ import { isValidEmail } from '@/lib/validateEmail';
 import styles from './Contact.module.css';
 import WaveDivider from '@/components/WaveDivider';
 
+// Mirrors the size caps firestore.rules enforces on contact_messages, so the
+// form stops the user at the limit instead of the write failing on submit.
+const NAME_MAX    = 200;
+const MESSAGE_MAX = 5000;
+
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
@@ -99,6 +104,8 @@ export default function ContactPage() {
                       id="name"
                       className={styles.input}
                       type="text"
+                      autoComplete="name"
+                      maxLength={NAME_MAX}
                       required
                       placeholder={t('namePlaceholder')}
                       value={formData.name}
@@ -111,6 +118,10 @@ export default function ContactPage() {
                       id="email"
                       className={styles.input}
                       type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      spellCheck={false}
+                      maxLength={200}
                       required
                       placeholder={t('emailPlaceholder')}
                       value={formData.email}
@@ -142,11 +153,20 @@ export default function ContactPage() {
                   <textarea
                     id="message"
                     className={styles.textarea}
+                    maxLength={MESSAGE_MAX}
+                    aria-describedby="message-count"
                     required
                     placeholder={t('messagePlaceholder')}
                     value={formData.message}
                     onChange={e => setFormData({ ...formData, message: e.target.value })}
                   />
+                  <span
+                    id="message-count"
+                    className={styles.charCount + (formData.message.length > MESSAGE_MAX * 0.9 ? ' ' + styles.charCountNear : '')}
+                    aria-live="polite"
+                  >
+                    {formData.message.length.toLocaleString()} / {MESSAGE_MAX.toLocaleString()}
+                  </span>
                 </div>
 
                 <button type="submit" className={styles.submitBtn} disabled={status === 'loading'}>

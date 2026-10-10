@@ -3,6 +3,7 @@ import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
+import { readJsonBody } from '@/lib/http';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
@@ -16,8 +17,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  const { email, recaptchaToken } = await req.json();
-  if (!isValidEmail(email)) {
+  const body = await readJsonBody(req);
+  const email = body?.email;
+  const recaptchaToken = body?.recaptchaToken;
+  if (typeof email !== 'string' || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
   // Defense in depth: the client is expected to pre-check via

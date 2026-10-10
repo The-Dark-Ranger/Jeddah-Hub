@@ -1,8 +1,16 @@
 /* ── Footer wrapper ── */
 .footer {
+  position: relative;
   background: var(--card-bg-solid);
   border-top: 1px solid var(--border-color);
   margin-top: auto;
+}
+/* Thin brand accent along the top edge */
+.footer::before {
+  content: '';
+  position: absolute; inset-inline: 0; top: -1px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-blue), transparent);
+  opacity: .55;
 }
 
 /* ── Main grid ── */
@@ -39,12 +47,13 @@
 .socials { display: flex; gap: .6rem; margin-top: .25rem; }
 .socialIcon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 8px;
+  width: 40px; height: 40px; border-radius: 10px;
   background: var(--background); border: 1px solid var(--border-color);
   color: var(--text-muted);
   transition: color .2s ease, border-color .2s ease, background .2s ease;
 }
-.socialIcon:hover { color: var(--primary-blue); border-color: var(--primary-blue); background: var(--primary-blue-glow); }
+.socialIcon:hover { color: var(--primary-blue); border-color: var(--primary-blue); background: var(--primary-blue-glow); transform: translateY(-2px); }
+.socialIcon { transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease; }
 
 /* ── Link columns ── */
 .col { display: flex; flex-direction: column; gap: .6rem; }
@@ -63,6 +72,20 @@
   transition: color .18s ease; width: fit-content;
 }
 .link:hover { color: var(--primary-blue); }
+.link:focus-visible, .socialIcon:focus-visible, .backToTop:focus-visible, .logoWrap:focus-visible {
+  outline: 2px solid var(--primary-blue); outline-offset: 3px; border-radius: 6px;
+}
+
+/* ── Back to top ── */
+.bottomRight { display: flex; align-items: center; gap: 1rem; }
+.backToTop {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--border-color); background: var(--card-bg-solid);
+  color: var(--text-muted);
+  transition: color .2s ease, border-color .2s ease, transform .2s ease, background .2s ease;
+}
+.backToTop:hover { color: #fff; background: var(--primary-blue); border-color: var(--primary-blue); transform: translateY(-2px); }
 
 /* ── Bottom bar ── */
 .bottomBar {
@@ -107,7 +130,9 @@
     gap: .75rem;
   }
   .description { max-width: 100%; }
-  .bottomInner { flex-direction: column; text-align: center; gap: .35rem; }
+  .bottomInner { flex-direction: column; text-align: center; gap: .6rem; padding-bottom: max(1.1rem, env(safe-area-inset-bottom)); }
+  .bottomRight { flex-direction: column; gap: .6rem; }
+  .link { min-height: 32px; display: inline-flex; align-items: center; }
 }
 
 /* Very small: single column */

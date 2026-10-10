@@ -3,6 +3,11 @@ import { requireRole } from '@/lib/serverAuth';
 import { escapeHtml } from '@/lib/escapeHtml';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
+import { readJsonBody, asString } from '@/lib/http';
+import { isRateLimited } from '@/lib/rateLimit';
+import { normalizeRole } from '@/lib/role';
+
+const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
@@ -11,8 +16,21 @@ export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { email, displayName, role } = await req.json();
-  if (!isValidEmail(email)) return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  // Even authenticated curators can only fire a bounded number of invite
+  // emails — protects the Resend quota if a session is ever misused.
+  if (isRateLimited(`invite:${caller.uid}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  const body = await readJsonBody(req);
+  const email = body?.email;
+  if (typeof email !== 'string' || !isValidEmail(email)) {
+    return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+  }
+  const displayName = asString(body?.displayName, 120);
+  // Only known roles ever reach the email subject/body.
+  const rawRole = typeof body?.role === 'string' ? normalizeRole(body.role) : '';
+  const role = KNOWN_ROLES.has(rawRole) ? rawRole : 'shaper';
   if (!(await hasDeliverableDomainWithTimeout(email))) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
@@ -25,7 +43,7 @@ export async function POST(req: NextRequest) {
     curator: 'Curator', vice_curator: 'Vice Curator',
     impact_officer: 'Impact Officer', shaper: 'Shaper', alumni: 'Alumni',
   };
-  const roleName = escapeHtml(roleLabel[role] ?? role ?? 'Shaper');
+  const roleName = escapeHtml(roleLabel[role] ?? 'Shaper');
   const firstName = escapeHtml(displayName?.split(' ')[0] || 'there');
   const loginUrl = 'https://jeddahhub.org/login';
 

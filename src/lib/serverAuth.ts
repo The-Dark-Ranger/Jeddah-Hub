@@ -28,13 +28,25 @@ async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
   }
 }
 
-/** Looks up a verified caller's stored role via the Firestore REST API (users/{uid} is publicly readable, so no admin credentials are required). */
-async function getCallerRole(uid: string): Promise<string | null> {
+/**
+ * Looks up a verified caller's stored role via the Firestore REST API.
+ *
+ * users/{uid} is NOT publicly readable (firestore.rules: isOwner(uid) ||
+ * isCuratorOrImpact()), so the read is made AS the caller by forwarding their
+ * already-verified ID token — reading your own user doc is always allowed.
+ * An unauthenticated read here gets a 403, which used to make every role
+ * check fail closed (curators could never send invite emails).
+ */
+async function getCallerRole(uid: string, idToken: string): Promise<string | null> {
   if (!PROJECT_ID) return null;
   try {
     const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}`,
-      { cache: 'no-store' }
+      `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(PROJECT_ID)}/databases/(default)/documents/users/${encodeURIComponent(uid)}`,
+      {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${idToken}` },
+        signal: AbortSignal.timeout(8000),
+      }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -48,13 +60,14 @@ async function getCallerRole(uid: string): Promise<string | null> {
 /** Verifies the request's Bearer ID token and checks the caller's stored role is one of `allowedRoles`. */
 export async function requireRole(req: NextRequest, allowedRoles: string[]): Promise<VerifiedCaller | null> {
   const authHeader = req.headers.get('authorization') || '';
-  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!idToken) return null;
+  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  // Firebase ID tokens are ~1KB; reject anything absurd before verifying.
+  if (!idToken || idToken.length > 4096) return null;
 
   const caller = await verifyIdToken(idToken);
   if (!caller) return null;
 
-  const role = await getCallerRole(caller.uid);
+  const role = await getCallerRole(caller.uid, idToken);
   if (!role || !allowedRoles.includes(role)) return null;
 
   return caller;

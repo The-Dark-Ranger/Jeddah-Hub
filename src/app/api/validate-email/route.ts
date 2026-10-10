@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
+import { readJsonBody } from '@/lib/http';
 
 export async function POST(req: NextRequest) {
   // Called from three separate public-facing forms (newsletter, contact,
@@ -12,8 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: 'rate-limited' }, { status: 429 });
   }
 
-  const { email } = await req.json();
-  if (!isValidEmail(email)) {
+  const body = await readJsonBody(req);
+  const email = body?.email;
+  if (typeof email !== 'string' || !isValidEmail(email)) {
     return NextResponse.json({ ok: false, reason: 'invalid-format' }, { status: 400 });
   }
 

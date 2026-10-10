@@ -235,3 +235,60 @@
 /* ── RTL ── */
 [dir="rtl"] .link::after  { inset-inline-start: 0; }
 [dir="rtl"] .mobileLogout { text-align: end; }
+
+/* ── Elevation once the page is scrolled ── */
+.navbarScrolled { box-shadow: 0 6px 28px rgba(15, 23, 42, 0.10); }
+[data-theme="dark"] .navbarScrolled { box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45); }
+
+/* ── Theme icon: small spin-in whenever it swaps ── */
+.themeIcon { display: inline-flex; animation: iconSpin .45s cubic-bezier(.16, 1, .3, 1); }
+@keyframes iconSpin {
+  from { opacity: 0; transform: rotate(-90deg) scale(.6); }
+  to   { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+/* ── Keyboard focus: clearly visible, but only for keyboard users ── */
+.link:focus-visible,
+.iconBtn:focus-visible,
+.langPill:focus-visible,
+.loginBtn:focus-visible,
+.dashboardBtn:focus-visible,
+.logoutBtn:focus-visible,
+.hamburger:focus-visible,
+.mobileLink:focus-visible,
+.mobilePrimaryBtn:focus-visible,
+.mobileLogout:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Drawer links cascade in when it opens ── */
+.mobileDrawerOpen .mobileLinks li {
+  animation: drawerItemIn .32s cubic-bezier(.16, 1, .3, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms + 40ms);
+}
+@keyframes drawerItemIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mobileFooter { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+
+/* ── Narrow phones: login lives in the drawer, keeping the bar uncluttered ── */
+@media (max-width: 400px) {
+  .loginBtn { display: none; }
+  .actions  { gap: .4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .themeIcon, .mobileDrawerOpen .mobileLinks li { animation: none; }
+}
+
+/* ── Skip link: invisible until focused with the keyboard ── */
+.skipLink {
+  position: fixed; top: .75rem; inset-inline-start: .75rem; z-index: 2000;
+  padding: .6rem 1rem; border-radius: 10px;
+  background: var(--primary-blue); color: #fff; font-weight: 700; font-size: .9rem;
+  transform: translateY(-160%); transition: transform .2s ease;
+}
+.skipLink:focus { transform: translateY(0); outline: 2px solid #fff; outline-offset: 2px; }

@@ -1,17 +1,42 @@
 'use client';
 
+import { ViewTransition } from 'react';
 import { usePathname } from 'next/navigation';
 
 /**
- * Replays the page-enter animation on every client-side navigation.
+ * Crossfades between routes on client-side navigation.
  *
- * The layout's wrapper element persists across route changes, so a CSS
- * animation declared on it only ever runs once — on first paint. Keying the
- * inner element by pathname remounts it per route, which restarts the
- * animation. The browser's View Transitions API only covers cross-document
- * navigation, so it does not help here.
+ * Next.js route navigations run inside a React Transition, so a keyed
+ * <ViewTransition> sees the old page exit and the new one enter and the
+ * browser animates both (the `page-out` / `page-in` classes in globals.css).
+ * Browsers without the View Transitions API swap instantly, and the
+ * `page-enter` class gives them the old CSS fade-in instead.
+ *
+ * `scope="site"` (root layout) collapses every /dashboard/* path to one key,
+ * so moving between dashboard pages doesn't remount the dashboard layout —
+ * its sidebar, auth check and loaded data stay put. The dashboard layout
+ * wraps its own content area in a `scope="section"` instance instead, so
+ * only that panel animates there.
  */
-export default function PageTransition({ children }: { children: React.ReactNode }) {
+export default function PageTransition({
+  children,
+  scope = 'site',
+}: {
+  children: React.ReactNode;
+  scope?: 'site' | 'section';
+}) {
   const pathname = usePathname();
-  return <div key={pathname} className="page-enter">{children}</div>;
+  const key = scope === 'site' ? siteKey(pathname) : pathname;
+
+  return (
+    <ViewTransition key={key} enter="page-in" exit="page-out" default="none">
+      <div className="page-enter">{children}</div>
+    </ViewTransition>
+  );
+}
+
+function siteKey(pathname: string) {
+  const segments = pathname.split('/').filter(Boolean);
+  const [locale, section] = segments;
+  return section === 'dashboard' ? `/${locale}/dashboard` : pathname;
 }

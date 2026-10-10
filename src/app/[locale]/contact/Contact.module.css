@@ -434,3 +434,22 @@
   .body { padding: 1.5rem 0.75rem 3rem; }
   .formCard { padding: 1.25rem 1rem; }
 }
+
+/* ── Message character counter ── */
+.charCount {
+  align-self: flex-end;
+  font-size: .75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  transition: color .2s ease;
+}
+.charCountNear { color: var(--warning); font-weight: 600; }
+
+/* Keyboard focus on the submit/reset buttons and contact links */
+.submitBtn:focus-visible,
+.resetBtn:focus-visible,
+.contactItem:focus-visible,
+.socialIcon:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 3px;
+}

@@ -297,3 +297,22 @@
     padding: 1rem;
   }
 }
+
+/* ── Keyboard focus ── */
+.navLink:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  /* Fade the strip's edges so it reads as scrollable rather than cut off. */
+  .nav {
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    padding-inline: 6px;
+  }
+  .navList li { scroll-snap-align: center; }
+  /* Comfortable tap targets for the pills. */
+  .navLink { min-height: 38px; }
+}

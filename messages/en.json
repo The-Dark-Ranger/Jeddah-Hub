@@ -291,7 +291,10 @@
     "logout": "Sign Out",
     "login": "Member Login",
     "toggleTheme": "Toggle theme",
-    "toggleMenu": "Toggle menu"
+    "toggleMenu": "Toggle menu",
+    "mainNav": "Main navigation",
+    "switchLanguage": "العربية — Switch to Arabic",
+    "skipToContent": "Skip to main content"
   },
   "Role": {
     "curator": "Curator",
@@ -310,7 +313,9 @@
     "partnerWithUs": "Partner With Us",
     "copyright": "Global Shapers Community, Jeddah Hub",
     "privacyPolicy": "Privacy Policy",
-    "termsOfUse": "Terms of Use"
+    "termsOfUse": "Terms of Use",
+    "legal": "Legal",
+    "backToTop": "Back to top"
   },
   "Categories": {
     "all": "All",
@@ -328,7 +333,9 @@
     "password": "Password",
     "signIn": "Sign In",
     "errorInvalid": "Invalid email or password.",
-    "errorGeneral": "Sign in failed. Please try again."
+    "errorGeneral": "Sign in failed. Please try again.",
+    "errorTooMany": "Too many attempts. Please wait a few minutes and try again.",
+    "errorNetwork": "Can't reach the server. Check your connection and try again."
   },
   "Common": {
     "linkedIn": "LinkedIn",
@@ -624,7 +631,7 @@
     "proposeInitiativeBtn": "Propose New Initiative",
     "proposeInitiativeTitle": "Propose a New Initiative",
     "proposeInitiativeHint": "Your proposal will be sent to the curatorship for review. If approved, you'll automatically become the initiative's lead.",
-    "proposeActivityBtn": "Propose an Activity/Workshop",
+    "proposeActivityBtn": "Propose Activity",
     "submitProposalBtn": "Submit Proposal",
     "submittingDots": "Submitting...",
     "myProposals": "My Proposed Initiatives",
@@ -709,7 +716,6 @@
     "myActivitiesTitle": "My Hub Activities",
     "myActivitiesSubtitle": "Propose new Hub Activities or edit ones tied to your initiative. Changes need approval from a Curator, Vice Curator, or Impact Officer before they go live.",
     "notALeadYet": "You'll be able to propose and manage Hub Activities once you're leading an initiative.",
-    "proposeActivityBtn": "Propose Activity",
     "proposeChangesBtn": "Submit for Review",
     "selectInitiativeLabel": "For which initiative?",
     "pendingActivityProposals": "Awaiting Review",
@@ -812,7 +818,8 @@
     "uploadPhoto": "Upload photo",
     "changePhoto": "Change photo",
     "avatarHint": "Square images work best. Larger photos are resized automatically.",
-    "avatarBrokenUrl": "That image link could not be loaded."
+    "avatarBrokenUrl": "That image link could not be loaded.",
+    "dashboardNav": "Dashboard navigation"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

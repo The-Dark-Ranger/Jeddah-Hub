@@ -1,23 +1,26 @@
+/* Server-rendered on every page but hidden unless the pre-paint init script
+   (SPLASH_INIT_SCRIPT) flagged this load — first visit or reload. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
   background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  animation: splashIn 0.35s ease both;
+  /* No fade-in: it must be fully opaque on the first frame, or the page
+     shows through it — only the logo inside animates in. */
 }
 
 .overlay.dismissing {
-  animation: splashOut 0.42s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: splashOut 0.38s cubic-bezier(0.4, 0, 1, 1) both;
   pointer-events: none;
 }
 
-@keyframes splashIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+:global(html[data-splash]) .overlay { display: flex; }
+
+/* Lock scrolling underneath while the splash is up. */
+:global(html[data-splash]) { overflow: hidden; }
 
 @keyframes splashOut {
   from { opacity: 1; transform: scale(1); }
@@ -109,6 +112,15 @@
   filter: drop-shadow(0 6px 20px rgba(0,0,0,.3));
   position: relative;
   z-index: 1;
+}
+
+/* Theme-matched logo, decided by CSS so it is right on the first frame. */
+.logoDark { display: none; }
+:global([data-theme="dark"]) .logoLight { display: none; }
+:global([data-theme="dark"]) .logoDark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :global(html:not([data-theme="light"])) .logoLight { display: none; }
+  :global(html:not([data-theme="light"])) .logoDark { display: block; }
 }
 
 .progressTrack {

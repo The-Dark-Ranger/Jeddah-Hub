@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useLayoutEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 type Theme = 'light' | 'dark';
@@ -42,30 +42,58 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     persistTheme(theme);
   }, [theme]);
 
+  // True while a switch animation is running. A second tap mid-animation
+  // would abort the first transition and snap — a visible jump on phones.
+  const switching = useRef(false);
+
   const toggleTheme = useCallback((e?: { clientX: number; clientY: number }) => {
+    if (switching.current) return;
     const next: Theme = theme === 'light' ? 'dark' : 'light';
     const html = document.documentElement;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (!document.startViewTransition || reduceMotion) {
+    if (reduceMotion) {
       setTheme(next);
       return;
     }
 
-    // Reveal the new theme as a circle growing from the toggle button.
-    const x = e?.clientX ?? window.innerWidth;
-    const y = e?.clientY ?? 0;
-    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    if (!document.startViewTransition) {
+      // No View Transitions: one uniform colour fade for every element.
+      switching.current = true;
+      html.setAttribute('data-theme-fade', '');
+      setTheme(next);
+      setTimeout(() => {
+        html.removeAttribute('data-theme-fade');
+        switching.current = false;
+      }, 350);
+      return;
+    }
+
+    // Reveal the new theme as a circle growing from the toggle button. A
+    // keyboard-triggered click reports (0, 0), so start from the top-end
+    // corner (where the toggle lives) instead of the top-left.
+    const w = document.documentElement.clientWidth;
+    const h = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+    const fromPointer = e && (e.clientX !== 0 || e.clientY !== 0);
+    const rtl = document.documentElement.dir === 'rtl';
+    const x = fromPointer ? e.clientX : (rtl ? 0 : w);
+    const y = fromPointer ? e.clientY : 0;
+    const radius = Math.ceil(Math.hypot(Math.max(x, w - x), Math.max(y, h - y)));
     html.style.setProperty('--theme-x', `${x}px`);
     html.style.setProperty('--theme-y', `${y}px`);
     html.style.setProperty('--theme-r', `${radius}px`);
     html.setAttribute('data-theme-switch', '');
+    switching.current = true;
 
     const vt = document.startViewTransition(() => {
       html.setAttribute('data-theme', next);
       flushSync(() => setTheme(next));
     });
-    vt.finished.finally(() => html.removeAttribute('data-theme-switch'));
+    vt.ready.catch(() => { /* skipped (e.g. tab hidden) — theme still applied */ });
+    vt.finished.finally(() => {
+      html.removeAttribute('data-theme-switch');
+      switching.current = false;
+    });
   }, [theme]);
 
   return (

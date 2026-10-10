@@ -291,7 +291,10 @@
     "logout": "تسجيل الخروج",
     "login": "دخول الأعضاء",
     "toggleTheme": "تبديل المظهر",
-    "toggleMenu": "تبديل القائمة"
+    "toggleMenu": "تبديل القائمة",
+    "mainNav": "التنقل الرئيسي",
+    "switchLanguage": "English — التبديل إلى الإنجليزية",
+    "skipToContent": "انتقل إلى المحتوى الرئيسي"
   },
   "Role": {
     "curator": "منسق",
@@ -310,7 +313,9 @@
     "partnerWithUs": "كن شريكاً",
     "copyright": "مجتمع صناع العالم، مركز جدة",
     "privacyPolicy": "سياسة الخصوصية",
-    "termsOfUse": "شروط الاستخدام"
+    "termsOfUse": "شروط الاستخدام",
+    "legal": "الشؤون القانونية",
+    "backToTop": "العودة إلى الأعلى"
   },
   "Categories": {
     "all": "الكل",
@@ -328,7 +333,9 @@
     "password": "كلمة المرور",
     "signIn": "تسجيل الدخول",
     "errorInvalid": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-    "errorGeneral": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى."
+    "errorGeneral": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+    "errorTooMany": "محاولات كثيرة جداً. يرجى الانتظار بضع دقائق ثم المحاولة مرة أخرى.",
+    "errorNetwork": "تعذّر الاتصال بالخادم. تحقق من اتصالك وحاول مرة أخرى."
   },
   "Common": {
     "linkedIn": "لينكد إن",
@@ -624,7 +631,7 @@
     "proposeInitiativeBtn": "اقترح مبادرة جديدة",
     "proposeInitiativeTitle": "اقتراح مبادرة جديدة",
     "proposeInitiativeHint": "سيُرسل اقتراحك إلى مجلس الصناع للمراجعة. عند الموافقة، ستصبح تلقائياً قائد المبادرة.",
-    "proposeActivityBtn": "اقترح نشاطاً أو ورشة عمل",
+    "proposeActivityBtn": "اقتراح نشاط",
     "submitProposalBtn": "إرسال الاقتراح",
     "submittingDots": "جارٍ الإرسال...",
     "myProposals": "مبادراتي المقترحة",
@@ -709,7 +716,6 @@
     "myActivitiesTitle": "أنشطة مركزي",
     "myActivitiesSubtitle": "اقترح أنشطة جديدة للمركز أو عدّل الأنشطة المرتبطة بمبادرتك. تحتاج التعديلات إلى موافقة من قائد أو نائب قائد أو مسؤول الأثر قبل أن تصبح فعّالة.",
     "notALeadYet": "ستتمكن من اقتراح أنشطة المركز وإدارتها عند قيادتك لإحدى المبادرات.",
-    "proposeActivityBtn": "اقتراح نشاط",
     "proposeChangesBtn": "إرسال للمراجعة",
     "selectInitiativeLabel": "لأي مبادرة؟",
     "pendingActivityProposals": "بانتظار المراجعة",
@@ -812,7 +818,8 @@
     "uploadPhoto": "رفع صورة",
     "changePhoto": "تغيير الصورة",
     "avatarHint": "الصور المربعة هي الأنسب. الصور الكبيرة يتم تصغيرها تلقائياً.",
-    "avatarBrokenUrl": "تعذر تحميل الصورة من هذا الرابط."
+    "avatarBrokenUrl": "تعذر تحميل الصورة من هذا الرابط.",
+    "dashboardNav": "تنقل لوحة التحكم"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",

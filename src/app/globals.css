@@ -30,11 +30,13 @@
   --radius-lg:          16px;
   --radius-xl:          20px;
   --transition-base:    0.25s ease;
+  color-scheme: light;
 }
 
 /* System dark preference - applies when no explicit data-theme cookie is set */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --primary-blue:       #4a9eff;
     --primary-blue-light: #6ab8ff;
     --primary-blue-glow:  rgba(74,158,255,0.1);
@@ -57,6 +59,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --primary-blue:       #4a9eff;
   --primary-blue-light: #6ab8ff;
   --primary-blue-glow:  rgba(74,158,255,0.1);
@@ -161,21 +164,76 @@ body.rtl {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* View Transitions API */
-@view-transition {
-  navigation: auto;
+/* Where the browser supports React's <ViewTransition> (view-transition-class),
+   <PageTransition> crossfades old and new pages itself, so the CSS fade-in
+   above would only double up on the incoming page. */
+@supports (view-transition-class: a) {
+  .page-enter { animation: none; }
 }
 
-::view-transition-group(root) {
+/* -- Client-side route transitions (<PageTransition>) -------- */
+::view-transition-old(.page-out) {
+  animation: 0.16s cubic-bezier(0.4, 0, 1, 1) both vt-page-out;
+}
+::view-transition-new(.page-in) {
+  animation: 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both vt-page-in;
+}
+@keyframes vt-page-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes vt-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* Clicks during a transition reach the live page instead of being swallowed
+   by the transition overlay. */
+::view-transition { pointer-events: none; }
+
+/* The navbar (view-transition-name: site-header) stays perfectly still while
+   page content moves underneath it, and is drawn above that content. */
+::view-transition-group(site-header) { animation: none; z-index: 100; }
+::view-transition-old(site-header)   { display: none; }
+::view-transition-new(site-header)   { animation: none; }
+
+/* Everything outside the page content (footer, backdrop) is identical before
+   and after an in-app navigation, so it doesn't animate at all — otherwise
+   the root fade below would make the footer jump on every click. */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+
+/* -- Full-document loads (direct visits, reloads) ------------ */
+@view-transition {
+  navigation: auto;
+  types: doc-load;
+}
+
+:root:active-view-transition-type(doc-load)::view-transition-group(root) {
   animation-duration: 0.42s;
 }
 
-::view-transition-old(root) {
+:root:active-view-transition-type(doc-load)::view-transition-old(root) {
   animation: 0.22s cubic-bezier(0.4, 0, 1, 1) both vt-fade-out;
 }
 
-::view-transition-new(root) {
+:root:active-view-transition-type(doc-load)::view-transition-new(root) {
   animation: 0.42s cubic-bezier(0.16, 1, 0.3, 1) both vt-fade-in;
+}
+
+/* -- Theme toggle: new theme grows out from the toggle button -- */
+html[data-theme-switch]::view-transition-old(root),
+html[data-theme-switch]::view-transition-old(site-header) {
+  display: block;
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-theme-switch]::view-transition-new(root),
+html[data-theme-switch]::view-transition-new(site-header) {
+  animation: theme-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--theme-x, 100%) var(--theme-y, 0)); }
+  to   { clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 100%) var(--theme-y, 0)); }
 }
 
 @keyframes vt-fade-out {
@@ -189,16 +247,25 @@ body.rtl {
 }
 
 /* Language-switch: pure cross-fade (no directional slide) */
-html[data-lang-switch] ::view-transition-group(root) {
+html[data-lang-switch]::view-transition-group(root) {
   animation-duration: 0.38s;
 }
-html[data-lang-switch] ::view-transition-old(root) {
+html[data-lang-switch]::view-transition-old(root) {
   animation: 0.38s ease both lang-fade-out;
   mix-blend-mode: normal;
 }
-html[data-lang-switch] ::view-transition-new(root) {
+html[data-lang-switch]::view-transition-new(root) {
   animation: 0.38s ease both lang-fade-in;
   mix-blend-mode: normal;
+}
+/* The navbar's text and direction change too, so it crossfades with the
+   rest of the page instead of snapping. */
+html[data-lang-switch]::view-transition-old(site-header) {
+  display: block;
+  animation: 0.38s ease both lang-fade-out;
+}
+html[data-lang-switch]::view-transition-new(site-header) {
+  animation: 0.38s ease both lang-fade-in;
 }
 @keyframes lang-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes lang-fade-in  { from { opacity: 0; } to { opacity: 1; } }
@@ -370,4 +437,18 @@ input, textarea, select {
   ::view-transition-new(*) { animation: none !important; }
 
   .page-enter { animation: none !important; }
+}
+.page-content:focus { outline: none; }
+
+/* -- Theme-specific variants (ThemeLogo, theme toggle icon) ----
+   Chosen by CSS from html[data-theme] so the correct variant is on screen
+   from the first frame, before React hydrates. The wrapper uses
+   display:contents so the child keeps its own layout. */
+.theme-light-only, .theme-dark-only { display: contents; }
+.theme-dark-only { display: none; }
+[data-theme="dark"] .theme-dark-only  { display: contents; }
+[data-theme="dark"] .theme-light-only { display: none; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .theme-dark-only  { display: contents; }
+  html:not([data-theme]) .theme-light-only { display: none; }
 }

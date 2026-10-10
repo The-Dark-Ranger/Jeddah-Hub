@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
@@ -158,13 +159,15 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('partnersSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <img
+          {/* next/image serves this as AVIF/WebP sized to the viewport
+              instead of the full 412KB PNG on every visit. */}
+          <Image
             src="/partners.png"
             alt={t('partners')}
             className={styles.partnersImage}
-            loading="lazy"
             width={1856}
             height={611}
+            sizes="(max-width: 1140px) 100vw, 1100px"
           />
         </div>
       </section>

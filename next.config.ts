@@ -30,10 +30,23 @@ const CSP = [
   "frame-src https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
+  // Forms on this site only ever post to itself (fetch calls aren't affected).
+  "form-action 'self'",
   "frame-ancestors 'none'",
+  // Never let a stray http:// asset load on the https site.
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
 ].join('; ');
 
+// The site uses none of these powerful features — deny them outright so an
+// injected third-party script couldn't request them either.
+const PERMISSIONS_POLICY = [
+  'camera=()', 'microphone=()', 'geolocation=()', 'payment=()', 'usb=()',
+  'magnetometer=()', 'gyroscope=()', 'accelerometer=()', 'browsing-topics=()',
+].join(', ');
+
 const nextConfig: NextConfig = {
+  // Don't advertise the framework/version in an X-Powered-By header.
+  poweredByHeader: false,
   async headers() {
     return [
       {
@@ -44,7 +57,17 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'Content-Security-Policy', value: CSP },
+          { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
+          // Isolates the browsing context from cross-origin openers while
+          // still allowing OAuth-style sign-in popups (Firebase Auth).
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
         ],
+      },
+      {
+        // API responses carry per-request data and should never be cached
+        // by a shared cache.
+        source: '/api/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
     ];
   },

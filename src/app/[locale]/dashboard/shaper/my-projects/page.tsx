@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import ModalPortal from '@/components/ModalPortal';
@@ -301,7 +302,7 @@ export default function MyProjects() {
     }
   };
 
-  if (!user || !loaded) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</div>;
+  if (!user || !loaded) return <DashSkeleton rows={3} label={t('loading')} />;
 
   return (
     <div className={styles.page}>

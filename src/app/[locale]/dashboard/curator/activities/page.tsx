@@ -17,6 +17,7 @@ import {
 import type { Highlight, CustomFormQuestion, CustomForm, ActivityKind } from '@/lib/activityTypes';
 import { normalizeRole } from '@/lib/role';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Activities.module.css';
 
 interface Activity {
@@ -683,7 +684,7 @@ export default function ActivitiesPage() {
       )}
 
       {loading ? (
-        <p className={styles.empty}>{t('loading')}</p>
+        <DashSkeleton rows={3} header={false} label={t('loading')} />
       ) : activities.length === 0 ? (
         <div className={styles.emptyState}>
           <p className={styles.emptyTitle}>{t('noActivities')}</p>
@@ -965,7 +966,7 @@ export default function ActivitiesPage() {
             </div>
             <div className={styles.modalBody}>
               {loadingResponses ? (
-                <p className={styles.empty}>{t('loading')}</p>
+                <DashSkeleton rows={3} header={false} label={t('loading')} />
               ) : responses.length === 0 ? (
                 <p className={styles.empty}>{t('noResponsesYet')}</p>
               ) : (

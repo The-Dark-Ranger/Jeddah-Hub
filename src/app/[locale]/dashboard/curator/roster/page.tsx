@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import {
   collection, getDocs, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc, query, where
 } from 'firebase/firestore';
@@ -22,6 +24,7 @@ export default function ManageRoster() {
   const [selectedUser, setSelectedUser] = useState('');
   const [tempRole, setTempRole]         = useState('');
   const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState('');
   const [saving, setSaving]   = useState(false);
 
   const fetchData = async () => {
@@ -154,6 +157,15 @@ export default function ManageRoster() {
   };
 
   const activeInitiatives = initiatives.filter(i => i.status !== 'archived');
+  // An initiative stays listed if its title matches, or any member does —
+  // in which case only the matching members are shown.
+  const visibleInitiatives = initiatives
+    .map(init => {
+      const members: any[] = init.members || [];
+      if (matchesQuery(search, init.title)) return { init, members };
+      return { init, members: members.filter(m => matchesQuery(search, getUserLabel(m.userId), m.role)) };
+    })
+    .filter(({ init, members }) => !search.trim() || members.length > 0 || matchesQuery(search, init.title));
 
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
@@ -241,27 +253,36 @@ export default function ManageRoster() {
 
       {/* Roster list per initiative */}
       <div className={styles.card}>
-        <h3 className={styles.cardTitle}>{t('initiativeMembers')}</h3>
+        <div className={styles.cardTitleRow}>
+          <h3 className={styles.cardTitle}>{t('initiativeMembers')}</h3>
+          <DashSearch
+            value={search}
+            onChange={setSearch}
+            placeholder={t('searchRosterPh')}
+            resultLabel={t('resultsCount', { count: visibleInitiatives.length })}
+          />
+        </div>
         {loading ? (
-          <div className={styles.loading}><div className={styles.spinner} /></div>
+          <DashSkeleton rows={4} header={false} label={t('loading')} />
         ) : initiatives.length === 0 ? (
           <div className={styles.empty}>{t('noMembers')}</div>
+        ) : visibleInitiatives.length === 0 ? (
+          <div className={styles.empty}>{t('noMatches')}</div>
         ) : (
           <div className={styles.initiativeList}>
-            {initiatives.map(init => {
-              const members: any[] = init.members || [];
+            {visibleInitiatives.map(({ init, members }) => {
               return (
                 <div key={init.id} className={styles.initiativeBlock}>
                   <div className={styles.initiativeHeader}>
                     <span className={styles.initiativeName}>{init.title}</span>
                     <span className={styles.memberCount}>
-                      {members.length} {members.length === 1 ? 'member' : 'members'}
+                      {t('memberCount', { count: members.length })}
                     </span>
                     <span
                       className={styles.statusPill}
                       style={{ color: init.status === 'active' ? '#059669' : '#94a3b8' }}
                     >
-                      {init.status || 'active'}
+                      {init.status === 'archived' ? t('filterArchived') : t('filterActive')}
                     </span>
                   </div>
                   {members.length === 0 ? (
@@ -280,7 +301,7 @@ export default function ManageRoster() {
                           <tr key={m.userId + idx}>
                             <td className={styles.memberEmail}>{getUserLabel(m.userId)}</td>
                             <td>
-                              <span className={styles.rolePill}>{m.role || 'Member'}</span>
+                              <span className={styles.rolePill}>{m.role || t('memberDefaultRole')}</span>
                             </td>
                             <td style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
                               {isDriftedLead(init, m) && (

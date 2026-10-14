@@ -8,6 +8,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Messages.module.css';
 
 interface ContactMessage {
@@ -58,6 +60,8 @@ export default function MessagesPage() {
   const [loading, setLoading]         = useState(true);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
   const [filter, setFilter]           = useState('all');
+  const [status, setStatus]           = useState<'all' | 'unread' | 'replied' | 'awaiting'>('all');
+  const [search, setSearch]           = useState('');
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeTo, setComposeTo]     = useState('');
   const [composeSubj, setComposeSubj] = useState('');
@@ -152,7 +156,13 @@ export default function MessagesPage() {
     }
   };
 
-  const filtered    = filter === 'all' ? messages : messages.filter(m => m.subject === filter);
+  const filtered = messages.filter(m =>
+    (filter === 'all' || m.subject === filter)
+    && (status === 'all'
+      || (status === 'unread' && !m.read)
+      || (status === 'replied' && m.replied)
+      || (status === 'awaiting' && !m.replied))
+    && matchesQuery(search, m.name, m.email, m.message, subjectLabel(m.subject)));
   const unreadCount = messages.filter(m => !m.read).length;
   const FILTERS     = ['all', 'general', 'partnership', 'join', 'media', 'other'];
 
@@ -176,6 +186,28 @@ export default function MessagesPage() {
         </button>
       </div>
 
+      <div className={styles.toolbar}>
+        <DashSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={t('searchMessagesPh')}
+          resultLabel={t('resultsCount', { count: filtered.length })}
+        />
+        <div className={styles.statusTabs} role="group" aria-label={t('filterByStatus')}>
+          {(['all', 'unread', 'awaiting', 'replied'] as const).map(s => (
+            <button
+              key={s}
+              type="button"
+              className={styles.statusTab + (status === s ? ' ' + styles.statusTabActive : '')}
+              aria-pressed={status === s}
+              onClick={() => setStatus(s)}
+            >
+              {s === 'all' ? t('filterAll') : s === 'unread' ? t('statusUnread') : s === 'awaiting' ? t('statusAwaiting') : t('repliedLabel')}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Filter bar */}
       <div className={styles.filterBar}>
         {FILTERS.map(f => (
@@ -190,14 +222,14 @@ export default function MessagesPage() {
 
       {/* Message list */}
       {loading ? (
-        <div className={styles.loading}><div className={styles.spinner} /></div>
+        <DashSkeleton rows={5} header={false} label={t('loading')} />
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
-          <p>{t('noMessages')}</p>
+          <p>{search || status !== 'all' || filter !== 'all' ? t('noMatches') : t('noMessages')}</p>
         </div>
       ) : (
         <div className={styles.messageList}>

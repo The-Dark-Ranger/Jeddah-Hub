@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import WaveDivider from '@/components/WaveDivider';
+import LegalDocument from './LegalDocument';
 import styles from './Legal.module.css';
 
 interface Section { heading: string; body: string; }
@@ -20,6 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function PrivacyPolicyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'PrivacyPolicyPage' });
+  const tc = await getTranslations({ locale, namespace: 'Common' });
   const sections = t.raw('sections') as Section[];
 
   return (
@@ -34,17 +36,7 @@ export default async function PrivacyPolicyPage({ params }: { params: Promise<{ 
       </section>
 
       <div className={styles.container}>
-        <p className={styles.intro}>{t('intro')}</p>
-        <div className={styles.sections}>
-          {sections.map((s, i) => (
-            <section key={i} className={styles.section}>
-              <h2 className={styles.sectionTitle}>{s.heading}</h2>
-              <div className={styles.sectionBody}>
-                {s.body.split('\n\n').map((para, j) => <p key={j}>{para}</p>)}
-              </div>
-            </section>
-          ))}
-        </div>
+        <LegalDocument intro={t('intro')} sections={sections} tocLabel={tc('onThisPage')} />
       </div>
     </main>
   );

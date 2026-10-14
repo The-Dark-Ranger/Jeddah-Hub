@@ -379,7 +379,7 @@ export default function AboutPage() {
       {/* Mission */}
       <section className={styles.section}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>{t('mission')}</h2>
+          <h2 className={styles.sectionTitle + ' reveal'}>{t('mission')}</h2>
           <div className={styles.divider} />
           <div className={styles.missionGrid}>
             {[
@@ -401,7 +401,7 @@ export default function AboutPage() {
       {curators.length > 0 && (
         <section className={styles.section}>
           <div className={styles.container}>
-            <h2 className={styles.sectionTitle}>{t('curatorship')}</h2>
+            <h2 className={styles.sectionTitle + ' reveal'}>{t('curatorship')}</h2>
             <div className={styles.divider} />
             <div className={styles.curatorshipGrid}>
               {curators.map((c, i) => (
@@ -420,7 +420,7 @@ export default function AboutPage() {
       {/* Shapers (live from Firestore */}
       <section className={styles.sectionAlt}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>{t('shapers')}</h2>
+          <h2 className={styles.sectionTitle + ' reveal'}>{t('shapers')}</h2>
           <p className={styles.sectionSubtitle}>{t('shapersSubtitle')}</p>
           <div className={styles.divider} />
           {loadingShapers ? (
@@ -437,7 +437,7 @@ export default function AboutPage() {
       {(loadingShapers || alumni.length > 0) && (
         <section className={styles.section}>
           <div className={styles.container}>
-            <h2 className={styles.sectionTitle}>{t('alumni')}</h2>
+            <h2 className={styles.sectionTitle + ' reveal'}>{t('alumni')}</h2>
             <p className={styles.sectionSubtitle}>{t('alumniSubtitle')}</p>
             <div className={styles.divider} />
             {loadingShapers ? (
@@ -457,7 +457,7 @@ export default function AboutPage() {
               <a href="https://www.weforum.org" target="_blank" rel="noopener noreferrer" className={styles.wefLogoLink}>
                 <WefLogo alt={tw('logoAlt')} height={56} className={styles.wefLogo} />
               </a>
-              <h2 className={styles.sectionTitle}>{t('wefTitle')}</h2>
+              <h2 className={styles.sectionTitle + ' reveal'}>{t('wefTitle')}</h2>
               <div className={styles.divider} style={{ margin: '1rem 0 1.5rem' }} />
               <p className={styles.wefBody}>{t('wefDesc')}</p>
             </div>

@@ -266,7 +266,17 @@
     "contactEmail": "jeddahglobalshapers@gmail.com",
     "location": "جدة، المملكة العربية السعودية",
     "responseTime": "نردّ عادةً خلال ٢–٣ أيام عمل.",
-    "followUs": "تابعنا"
+    "followUs": "تابعنا",
+    "topicsTitle": "كيف يمكننا مساعدتك؟",
+    "topicCta": "ابدأ رسالة",
+    "topic_partnership_title": "كن شريكاً",
+    "topic_partnership_desc": "ارعَ مبادرة، أو شارك في استضافة فعالية، أو شاركنا خبرتك.",
+    "topic_join_title": "انضم إلى المركز",
+    "topic_join_desc": "أسئلة حول الانضمام كصانع وكيفية الاختيار.",
+    "topic_media_title": "الإعلام والصحافة",
+    "topic_media_desc": "المقابلات والقصص والاستفسارات الصحفية حول عملنا.",
+    "topic_general_title": "أمر آخر",
+    "topic_general_desc": "أفكار أو ملاحظات أو أي شيء لم نذكره."
   },
   "Navigation": {
     "home": "الرئيسية",
@@ -332,7 +342,8 @@
     "errorNetwork": "تعذّر الاتصال بالخادم. تحقق من اتصالك وحاول مرة أخرى."
   },
   "Common": {
-    "email": "البريد الإلكتروني"
+    "email": "البريد الإلكتروني",
+    "onThisPage": "في هذه الصفحة"
   },
   "NewsPostPage": {
     "notFound": "المقال غير موجود",
@@ -341,7 +352,13 @@
     "jeddahHub": "صناع جدة",
     "like": "إعجاب",
     "likes": "إعجاب",
-    "signIn": "تسجيل الدخول"
+    "signIn": "تسجيل الدخول",
+    "minRead": "{n, plural, one {دقيقة قراءة} two {دقيقتا قراءة} few {# دقائق قراءة} many {# دقيقة قراءة} other {# دقيقة قراءة}}",
+    "tags": "الوسوم",
+    "share": "مشاركة",
+    "copyLink": "نسخ الرابط",
+    "linkCopied": "تم نسخ الرابط",
+    "moreStories": "المزيد من أخبار المركز"
   },
   "BlogManager": {
     "back": "رجوع",
@@ -800,7 +817,19 @@
     "profileCheckBioAr": "نبذة بالعربية",
     "profileCheckSocial": "رابط تواصل اجتماعي",
     "profileCompleteTitle": "اكتمل ملفك الشخصي بنسبة {pct}%",
-    "profileMissing": "أضف"
+    "profileMissing": "أضف",
+    "clearSearch": "مسح البحث",
+    "searchMessagesPh": "ابحث بالاسم أو البريد أو نص الرسالة…",
+    "resultsCount": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
+    "filterByStatus": "تصفية حسب الحالة",
+    "statusUnread": "غير مقروءة",
+    "statusAwaiting": "بانتظار الرد",
+    "noMatches": "لا توجد نتائج مطابقة للبحث أو التصفية.",
+    "searchRosterPh": "ابحث في المبادرات أو الأعضاء…",
+    "memberCount": "{count, plural, zero {لا أعضاء} one {عضو واحد} two {عضوان} few {# أعضاء} many {# عضواً} other {# عضو}}",
+    "memberDefaultRole": "عضو",
+    "searchMembersPh": "ابحث بالاسم أو البريد أو الدور أو الملاحظة…",
+    "loadingDashboard": "جارٍ تجهيز لوحة التحكم…"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",
@@ -945,5 +974,16 @@
     "focus_technology_desc": "محو الأمية الرقمية وتسخير التقنية للصالح العام.",
     "focus_civic_title": "المشاركة المدنية",
     "focus_civic_desc": "منح الشباب صوتاً في القرارات التي تشكّل مدينتهم."
+  },
+  "NotFoundPage": {
+    "eyebrow": "الصفحة غير موجودة",
+    "title": "يبدو أن هذه الصفحة سلكت طريقاً آخر",
+    "body": "قد يكون الرابط معطلاً أو أن الصفحة نُقلت. دعنا نعيدك إلى المركز.",
+    "backHome": "العودة إلى الرئيسية",
+    "reportLink": "الإبلاغ عن رابط معطل",
+    "suggestTitle": "وجهات شائعة",
+    "suggestProjects": "مبادراتنا",
+    "suggestNews": "آخر الأخبار",
+    "suggestContact": "تواصل معنا"
   }
 }

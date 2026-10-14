@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import AvatarUploader from '@/components/AvatarUploader';
 import styles from './Profile.module.css';
@@ -92,7 +93,7 @@ export default function MyProfile() {
     }
   };
 
-  if (!user || !loaded) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('loading')}</div>;
+  if (!user || !loaded) return <DashSkeleton rows={3} label={t('loading')} />;
 
   return (
     <form className={styles.page} onSubmit={handleSave}>

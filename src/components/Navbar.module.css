@@ -293,18 +293,6 @@
 }
 .skipLink:focus { transform: translateY(0); outline: 2px solid #fff; outline-offset: 2px; }
 
-/* ── "Become a Shaper" call to action (desktop, signed out) ── */
-.joinBtn {
-  display: flex; align-items: center; min-height: 36px; padding: 0 1.15rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--primary-blue), #0a3272);
-  color: #fff; font-weight: 700; font-size: .85rem; white-space: nowrap;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary-blue) 35%, transparent);
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-.joinBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px color-mix(in srgb, var(--primary-blue) 45%, transparent); }
-.joinBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
-@media (max-width: 1024px) { .joinBtn { display: none; } }
 
 /* ── Reading progress along the bar's bottom edge ── */
 .progress {

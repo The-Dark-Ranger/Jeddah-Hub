@@ -94,10 +94,6 @@
 .sectionBody  { font-size:1rem;color:var(--text-muted);line-height:1.8;margin-bottom:1rem; }
 
 /* Split row */
-.splitRow { display:grid;grid-template-columns:1fr 280px;gap:5rem;align-items:start; }
-.splitText {}
-.splitStats { display:flex;flex-direction:column;gap:1.5rem;padding-top:1rem; }
-.statBox    { background:var(--card-bg-solid);border:1px solid var(--border-color);border-radius:12px;padding:1.75rem;text-align:center; }
 .statNum    { display:block;font-size:2.2rem;font-weight:800;color:var(--primary-blue);line-height:1; }
 .statLabel  { font-size:.82rem;color:var(--text-muted);margin-top:.4rem; }
 
@@ -266,10 +262,6 @@
 }
 
 /* Responsive */
-@media (max-width: 900px) {
-  .splitRow { grid-template-columns: 1fr; }
-  .splitStats { flex-direction: row; }
-}
 @media (max-width: 640px) {
   .hero { padding: 5rem 1rem 0; }
   .heroContent { padding-bottom: 3rem; }
@@ -277,7 +269,6 @@
   .heroChip { padding: 1.25rem 1.5rem; min-width: 110px; }
   .heroChip strong { font-size: 1.6rem; }
   .section, .sectionAlt, .ctaSection { padding: 4rem 1rem; }
-  .splitStats { flex-direction: column; }
   .stepsGrid { grid-template-columns: 1fr; }
   .quotesGrid { grid-template-columns: 1fr; }
   .valuesGrid { grid-template-columns: 1fr; }

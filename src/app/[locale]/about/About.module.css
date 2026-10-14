@@ -214,6 +214,10 @@
 /* ── WEF section ── */
 .wefSection { display: grid; grid-template-columns: 1fr auto; gap: 4rem; align-items: center; }
 .wefText    { display: flex; flex-direction: column; }
+.wefLogoLink { display: inline-flex; width: fit-content; margin-bottom: 1.5rem; border-radius: 6px; transition: opacity .2s ease; }
+.wefLogoLink:hover { opacity: .8; }
+.wefLogoLink:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 4px; }
+.wefLogo { display: block; height: 56px; width: auto; }
 .wefBody    { color: var(--text-muted); line-height: 1.75; font-size: 1.05rem; }
 .wefStats   { display: flex; flex-direction: column; gap: 1.4rem; flex-shrink: 0; }
 .wefStat    { text-align: center; }

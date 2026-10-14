@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import styles from './News.module.css';
 import WaveDivider from '@/components/WaveDivider';
 
@@ -29,15 +29,15 @@ interface NewsPost {
   createdAt: string;
 }
 
-function timeAgo(iso: string) {
+function timeAgo(iso: string, t: (key: 'timeMinutes' | 'timeHours' | 'timeDays', values: { n: number }) => string, locale: string) {
   const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  const mins = Math.max(0, Math.floor(diff / 60000));
+  if (mins < 60) return t('timeMinutes', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('timeHours', { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (days < 30) return t('timeDays', { n: days });
+  return new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function getExcerpt(post: NewsPost) {
@@ -47,6 +47,7 @@ function getExcerpt(post: NewsPost) {
 
 export default function NewsPage() {
   const t = useTranslations('NewsPage');
+  const locale = useLocale();
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [filtered, setFiltered] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +179,7 @@ export default function NewsPage() {
                       <div className={styles.cardAuthorRole}>{post.authorRole?.replace('_', ' ')}</div>
                     </div>
                   </div>
-                  <span className={styles.cardDate}>{timeAgo(post.createdAt)}</span>
+                  <span className={styles.cardDate}>{timeAgo(post.createdAt, t, locale)}</span>
                 </div>
               </Link>
             ))}

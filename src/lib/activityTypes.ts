@@ -34,6 +34,12 @@ export interface ActivityFormData {
   active: boolean;
   kind: ActivityKind;
   customForm: CustomForm;
+  /** Cover photo — a remote URL or a compressed data URI (ImageUploader). */
+  imageUrl: string;
+  /** Extra gallery photos shown on the activity's own page. */
+  images: string[];
+  /** Accent colour (#rrggbb) used for the activity's badge, button and hero. */
+  color: string;
 }
 
 /** The only fields a change request's `payload` may carry through to a
@@ -41,9 +47,10 @@ export interface ActivityFormData {
  *  time rather than spreading `payload` wholesale, so a malicious payload
  *  can't smuggle an unexpected field (e.g. `type`, `initiativeId`, or
  *  `slug`) past a curator who just clicks Approve. */
-export const ACTIVITY_PAYLOAD_KEYS = [
+const ACTIVITY_PAYLOAD_KEYS = [
   'title', 'eyebrow', 'subtitle', 'description', 'date', 'location',
   'ctaText', 'ctaUrl', 'highlights', 'active', 'archived', 'kind', 'customForm',
+  'imageUrl', 'images', 'color',
 ] as const;
 
 /** Picks only the known activity fields present in a change request's
@@ -62,7 +69,44 @@ export const emptyActivityForm = (): ActivityFormData => ({
   title: '', eyebrow: '', subtitle: '', description: '',
   date: '', location: '', ctaText: '', ctaUrl: '',
   highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
+  imageUrl: '', images: [], color: '',
 });
+
+/** Builds an edit form from a stored activity, filling any field an older
+ *  doc predates so the form never sends undefined to Firestore. */
+export function activityToForm(a: Partial<ActivityFormData>): ActivityFormData {
+  const base = emptyActivityForm();
+  return {
+    title: a.title ?? base.title,
+    eyebrow: a.eyebrow ?? base.eyebrow,
+    subtitle: a.subtitle ?? base.subtitle,
+    description: a.description ?? base.description,
+    date: a.date ?? base.date,
+    location: a.location ?? base.location,
+    ctaText: a.ctaText ?? base.ctaText,
+    ctaUrl: a.ctaUrl ?? base.ctaUrl,
+    highlights: a.highlights ?? base.highlights,
+    active: a.active ?? base.active,
+    kind: a.kind || base.kind,
+    customForm: a.customForm || base.customForm,
+    imageUrl: a.imageUrl ?? base.imageUrl,
+    images: Array.isArray(a.images) ? a.images : base.images,
+    color: safeColor(a.color) ?? '',
+  };
+}
+
+/** Curated accent palette offered as one-tap swatches in the colour picker. */
+export const ACCENT_SWATCHES = [
+  '#0F5A9F', '#1D4ED8', '#0891B2', '#0D9488', '#16A34A', '#65A30D',
+  '#CA8A04', '#EA580C', '#DC2626', '#DB2777', '#9333EA', '#475569',
+] as const;
+
+/** Returns the colour only if it is a plain #rgb/#rrggbb hex — anything
+ *  else (stored by an old client or a hand-edited doc) is dropped rather
+ *  than written into an inline style. */
+export function safeColor(value: unknown): string | undefined {
+  return typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) ? value : undefined;
+}
 
 export function newQuestionId(): string {
   return `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;

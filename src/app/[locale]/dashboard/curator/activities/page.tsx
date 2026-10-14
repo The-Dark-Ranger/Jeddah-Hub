@@ -12,10 +12,11 @@ import ModalPortal from '@/components/ModalPortal';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import {
   pickActivityFields, emptyActivityForm as emptyForm, emptyCustomForm,
-  newQuestionId, parseHighlights, highlightsToText,
+  newQuestionId, parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
 import type { Highlight, CustomFormQuestion, CustomForm, ActivityKind } from '@/lib/activityTypes';
 import { normalizeRole } from '@/lib/role';
+import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
 import styles from './Activities.module.css';
 
 interface Activity {
@@ -33,6 +34,9 @@ interface Activity {
   archived?: boolean;
   kind?: ActivityKind;
   customForm?: CustomForm;
+  imageUrl?: string;
+  images?: string[];
+  color?: string;
   createdAt?: any;
   initiativeId?: string;
 }
@@ -95,6 +99,9 @@ function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: Ret
 
   const highlights = fields.highlights as Highlight[] | undefined;
   const customForm = fields.customForm as CustomForm | undefined;
+  const color = safeColor(fields.color);
+  const imageUrl = typeof fields.imageUrl === 'string' ? fields.imageUrl : '';
+  const images = Array.isArray(fields.images) ? (fields.images as unknown[]).filter((s): s is string => typeof s === 'string') : [];
 
   return (
     <>
@@ -110,6 +117,14 @@ function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: Ret
         <ul className={styles.detailHighlightList}>
           {highlights.map((h, i) => <li key={i}>{h.name}{h.tag ? ` — ${h.tag}` : ''}</li>)}
         </ul>
+      )}
+      {color && row('activityAccentColor',
+        <span className={styles.detailColor}><span style={{ background: color }} />{color}</span>
+      )}
+      {(imageUrl || images.length > 0) && row('fieldPhotos',
+        <span className={styles.detailPhotos}>
+          {[imageUrl, ...images].filter(Boolean).slice(0, 6).map((src, i) => <img key={i} src={src} alt="" loading="lazy" />)}
+        </span>
       )}
       {typeof fields.active === 'boolean' && row('activityActiveLabel', fields.active ? t('yes') : t('no'))}
       {typeof fields.archived === 'boolean' && row('filterArchived', fields.archived ? t('yes') : t('no'))}
@@ -230,14 +245,9 @@ export default function ActivitiesPage() {
 
   function openCreate(prefill?: Omit<Activity, 'id' | 'createdAt'>) {
     setEditing(null);
-    // customForm/kind default here, not just in emptyForm(), because
-    // RETREAT_PREFILL doesn't set them — leaving either undefined would
-    // send an undefined field to Firestore on save, which the SDK rejects.
-    const f = {
-      ...(prefill ?? emptyForm()),
-      kind: prefill?.kind || 'activity',
-      customForm: prefill?.customForm || emptyCustomForm(),
-    };
+    // activityToForm fills every field RETREAT_PREFILL leaves out — an
+    // undefined field would be rejected by the Firestore SDK on save.
+    const f = activityToForm(prefill ?? emptyForm());
     setForm(f);
     setHighlightsText(highlightsToText(f.highlights || []));
     setModalOpen(true);
@@ -245,13 +255,7 @@ export default function ActivitiesPage() {
 
   function openEdit(a: Activity) {
     setEditing(a);
-    setForm({
-      title: a.title, eyebrow: a.eyebrow, subtitle: a.subtitle,
-      description: a.description, date: a.date, location: a.location,
-      ctaText: a.ctaText, ctaUrl: a.ctaUrl, highlights: a.highlights, active: a.active,
-      kind: a.kind || 'activity',
-      customForm: a.customForm || emptyCustomForm(),
-    });
+    setForm(activityToForm(a));
     setHighlightsText(highlightsToText(a.highlights || []));
     setModalOpen(true);
   }
@@ -700,8 +704,13 @@ export default function ActivitiesPage() {
           {activities
             .filter(a => archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived)
             .map(a => (
-            <div key={a.id} className={styles.card + (a.active ? ' ' + styles.cardActive : '')}>
+            <div
+              key={a.id}
+              className={styles.card + (a.active ? ' ' + styles.cardActive : '')}
+              style={safeColor(a.color) ? { '--activity-accent': a.color } as React.CSSProperties : undefined}
+            >
               <div className={styles.cardTop}>
+                {a.imageUrl && <img src={a.imageUrl} alt="" className={styles.cardThumb} loading="lazy" />}
                 <div className={styles.cardInfo}>
                   <div className={styles.cardBadgeRow}>
                     <span className={styles.kindBadge + ' ' + (a.kind === 'workshop' ? styles.kindWorkshop : styles.kindActivity)}>
@@ -799,6 +808,8 @@ export default function ActivitiesPage() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder={t('activityDescPh')} />
               </div>
+
+              <ActivityAppearanceFields form={form} setForm={setForm} />
 
               <div className={styles.formRow}>
                 <div className={styles.field}>

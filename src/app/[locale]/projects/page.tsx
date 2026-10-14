@@ -12,10 +12,11 @@ import { slugify } from '@/lib/slug';
 
 interface Project extends PlaceholderProject { slug?: string; }
 
-function ProjectCard({ project, archived, t, index = 0 }: {
+function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
   project: Project;
   archived?: boolean;
   t: ReturnType<typeof useTranslations>;
+  catLabel: (category: string) => string;
   index?: number;
 }) {
   const locale = useLocale();
@@ -48,7 +49,7 @@ function ProjectCard({ project, archived, t, index = 0 }: {
         <div className={styles.cardMeta}>
           {project.category && (
             <span className={styles.cardCategory} style={{ color: accentColor, background: accentColor + '22' }}>
-              {project.category.toUpperCase()}
+              {catLabel(project.category).toLocaleUpperCase(locale)}
             </span>
           )}
           <span className={styles.cardStatus + ' ' + (isActive ? styles.cardStatusActive : styles.cardStatusArchived)}>
@@ -96,6 +97,11 @@ function SkeletonCard() {
 export default function ProjectsPage() {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
+  // Known categories get a translated label; custom ones show as typed.
+  const catLabel = (category: string) => {
+    const key = category.trim().toLowerCase();
+    return tc.has(key as 'all') ? tc(key as 'all') : category;
+  };
   const [projects, setProjects]     = useState<Project[]>([]);
   const [loading, setLoading]       = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -174,7 +180,7 @@ export default function ProjectsPage() {
                 className={styles.catBtn + (activeCategory === cat ? ' ' + styles.catBtnActive : '')}
                 onClick={() => setActiveCategory(cat)}
               >
-                {cat}
+                {catLabel(cat)}
               </button>
             ))}
           </div>
@@ -198,7 +204,7 @@ export default function ProjectsPage() {
                   <span className={styles.sectionCount}>{active.length}</span>
                 </div>
                 <div className={styles.grid}>
-                  {active.map((p, i) => <ProjectCard key={p.id} project={p} t={t} index={i} />)}
+                  {active.map((p, i) => <ProjectCard catLabel={catLabel} key={p.id} project={p} t={t} index={i} />)}
                 </div>
               </div>
             )}
@@ -210,7 +216,7 @@ export default function ProjectsPage() {
                   <span className={styles.sectionCount}>{archived.length}</span>
                 </div>
                 <div className={styles.grid}>
-                  {archived.map((p, i) => <ProjectCard key={p.id} project={p} archived t={t} index={i} />)}
+                  {archived.map((p, i) => <ProjectCard catLabel={catLabel} key={p.id} project={p} archived t={t} index={i} />)}
                 </div>
               </div>
             )}

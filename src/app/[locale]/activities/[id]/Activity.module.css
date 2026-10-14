@@ -110,3 +110,22 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Accent colour + cover photo ── */
+.page { --activity-accent: var(--primary-blue); }
+.ctaBtn { background: var(--activity-accent); }
+.kindBadge { background: color-mix(in srgb, var(--activity-accent) 55%, rgba(255,255,255,.12)); }
+.heroWithImage { background: #050b1a; }
+.heroImg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: .45;
+  animation: heroImgIn 1.2s cubic-bezier(.16,1,.3,1) both;
+}
+.heroWithImage::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5,11,26,.35) 0%, rgba(5,11,26,.75) 100%),
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--activity-accent) 40%, transparent), transparent 70%);
+}
+@keyframes heroImgIn { from { opacity: 0; transform: scale(1.06); } to { opacity: .45; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .heroImg { animation: none; } }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { collection, getDocs, setDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -45,6 +47,7 @@ export default function MembersPage() {
   const [note, setNote]   = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
+  const [search, setSearch] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
 
   const normRole  = normalizeRole(user?.role);
@@ -186,8 +189,10 @@ export default function MembersPage() {
     return found?.displayName || null;
   };
 
-  const pending = assignments.filter(a => a.status !== 'joined');
-  const joined  = assignments.filter(a => a.status === 'joined');
+  const visible = assignments.filter(a => matchesQuery(search,
+    a.email, resolveName(a), a.note, ROLES.find(r => r.value === a.role)?.label));
+  const pending = visible.filter(a => a.status !== 'joined');
+  const joined  = visible.filter(a => a.status === 'joined');
 
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
@@ -316,8 +321,17 @@ export default function MembersPage() {
         </button>
       </form>
 
+      {!loading && assignments.length > 0 && (
+        <DashSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={t('searchMembersPh')}
+          resultLabel={t('resultsCount', { count: visible.length })}
+        />
+      )}
+
       {loading ? (
-        <div className={styles.loading}><div className={styles.spinner} /></div>
+        <DashSkeleton rows={4} header={false} label={t('loading')} />
       ) : (
         <>
           {/* Recently Joined — needs acknowledgement */}
@@ -340,7 +354,7 @@ export default function MembersPage() {
               <span className={styles.count}>{pending.length}</span>
             </div>
             {pending.length === 0 ? (
-              <div className={styles.empty}>{t('noAssignments')}</div>
+              <div className={styles.empty}>{search ? t('noMatches') : t('noAssignments')}</div>
             ) : renderTable(pending, false)}
           </div>
         </>

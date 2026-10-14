@@ -481,3 +481,23 @@ input, textarea, select {
   html:not([data-theme]) .theme-dark-only  { display: contents; }
   html:not([data-theme]) .theme-light-only { display: none; }
 }
+
+/* ── Scroll reveal ──
+   Elements tagged .reveal fade and rise in as they enter the viewport,
+   driven by CSS view timelines (no JS). Uses the individual `translate`
+   property so it never fights a component's own hover `transform`.
+   Browsers without view timelines, and reduced-motion users, just see
+   the content. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+@keyframes reveal-in {
+  from { opacity: 0; translate: 0 28px; }
+  to   { opacity: 1; translate: 0 0; }
+}

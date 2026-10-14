@@ -266,7 +266,17 @@
     "contactEmail": "jeddahglobalshapers@gmail.com",
     "location": "Jeddah, Saudi Arabia",
     "responseTime": "We typically respond within 2–3 business days.",
-    "followUs": "Follow Us"
+    "followUs": "Follow Us",
+    "topicsTitle": "How can we help?",
+    "topicCta": "Start a message",
+    "topic_partnership_title": "Partner with us",
+    "topic_partnership_desc": "Sponsor an initiative, co-host an event or share your expertise.",
+    "topic_join_title": "Join the hub",
+    "topic_join_desc": "Questions about becoming a Shaper and how selection works.",
+    "topic_media_title": "Media & press",
+    "topic_media_desc": "Interviews, stories and press enquiries about our work.",
+    "topic_general_title": "Something else",
+    "topic_general_desc": "Ideas, feedback or anything we haven’t covered."
   },
   "Navigation": {
     "home": "Home",
@@ -332,7 +342,8 @@
     "errorNetwork": "Can't reach the server. Check your connection and try again."
   },
   "Common": {
-    "email": "Email"
+    "email": "Email",
+    "onThisPage": "On this page"
   },
   "NewsPostPage": {
     "notFound": "Article not found",
@@ -341,7 +352,13 @@
     "jeddahHub": "Jeddah Hub",
     "like": "Like",
     "likes": "Likes",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "minRead": "{n} min read",
+    "tags": "Tags",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "moreStories": "More stories from the hub"
   },
   "BlogManager": {
     "back": "Back",
@@ -800,7 +817,19 @@
     "profileCheckBioAr": "Arabic bio",
     "profileCheckSocial": "a social link",
     "profileCompleteTitle": "Your profile is {pct}% complete",
-    "profileMissing": "Add your"
+    "profileMissing": "Add your",
+    "clearSearch": "Clear search",
+    "searchMessagesPh": "Search name, email or message…",
+    "resultsCount": "{count, plural, one {# result} other {# results}}",
+    "filterByStatus": "Filter by status",
+    "statusUnread": "Unread",
+    "statusAwaiting": "Awaiting reply",
+    "noMatches": "Nothing matches your search or filters.",
+    "searchRosterPh": "Search initiatives or members…",
+    "memberCount": "{count, plural, one {# member} other {# members}}",
+    "memberDefaultRole": "Member",
+    "searchMembersPh": "Search by name, email, role or note…",
+    "loadingDashboard": "Preparing your dashboard…"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",
@@ -945,5 +974,16 @@
     "focus_technology_desc": "Digital literacy and tech for public good.",
     "focus_civic_title": "Civic Engagement",
     "focus_civic_desc": "Giving young people a voice in the decisions that shape their city."
+  },
+  "NotFoundPage": {
+    "eyebrow": "Page not found",
+    "title": "This page took a different path",
+    "body": "The link may be broken, or the page may have moved. Let’s get you back to the hub.",
+    "backHome": "Back to home",
+    "reportLink": "Report a broken link",
+    "suggestTitle": "Popular destinations",
+    "suggestProjects": "Our initiatives",
+    "suggestNews": "Latest news",
+    "suggestContact": "Contact us"
   }
 }

@@ -14,6 +14,7 @@ import {
   emptyActivityForm, newQuestionId, parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
+import DashSkeleton from '@/components/dashboard/DashSkeleton';
 // Same page structure/classes as the curator's Activities dashboard — a
 // second lead-facing copy of ~250 lines of layout/form CSS would just be
 // this file's styles going stale the next time that one changes.
@@ -252,7 +253,7 @@ export default function LeadActivitiesPage() {
   }
 
   if (loading) {
-    return <p className={styles.empty}>{t('loading')}</p>;
+    return <DashSkeleton rows={3} label={t('loading')} />;
   }
 
   if (ledInitiatives.length === 0) {

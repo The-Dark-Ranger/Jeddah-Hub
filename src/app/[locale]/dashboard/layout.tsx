@@ -6,6 +6,7 @@ import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import PageTransition from '@/components/PageTransition';
+import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -32,10 +33,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div className={styles.loadingScreen}>
-        <div className={styles.loadingLogo}>Jeddah Hub</div>
-        <div className={styles.loadingSpinner} />
-        <p className={styles.loadingText}>{t('loading')}</p>
+      <div className={styles.loadingScreen} role="status" aria-busy="true">
+        <div className={styles.loadingMark}>
+          <svg className={styles.loadingArc} viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="29" pathLength="100" />
+          </svg>
+          <ThemeLogo className={styles.loadingLogoImg} priority />
+        </div>
+        <p className={styles.loadingText}>{t('loadingDashboard')}</p>
       </div>
     );
   }

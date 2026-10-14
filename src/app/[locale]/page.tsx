@@ -84,14 +84,14 @@ export default function HomePage() {
       {/* 2. About */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
-          <div className={styles.sectionHeader}>
+          <div className={styles.sectionHeader + ' reveal'}>
             <h2 className={styles.sectionTitle}>{nav('about')}</h2>
             <div className={styles.sectionDivider} />
           </div>
           <p className={styles.aboutText}>{t('aboutHub')}</p>
           <div className={styles.aboutPillars}>
             {PILLARS.map(p => (
-              <div key={p.title} className={styles.pillar}>
+              <div key={p.title} className={styles.pillar + ' reveal'}>
                 <h3>{p.title}</h3>
                 <p>{p.body}</p>
               </div>
@@ -106,7 +106,7 @@ export default function HomePage() {
       {/* 3. Impact metrics */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
-          <div className={styles.sectionHeader}>
+          <div className={styles.sectionHeader + ' reveal'}>
             <h2 className={styles.sectionTitle}>{t('impact')}</h2>
             <p className={styles.sectionSubtitle}>{t('impactSubtitle')}</p>
             <div className={styles.sectionDivider} />
@@ -117,7 +117,7 @@ export default function HomePage() {
               { num: '50+',   label: t('metrics.projects') },
               { num: '40+',   label: t('metrics.partners') },
             ].map(({ num, label }) => (
-              <div key={label} className={styles.impactCard}>
+              <div key={label} className={styles.impactCard + ' reveal'}>
                 <div className={styles.impactNumber}>{num}</div>
                 <div className={styles.impactLabel}>{label}</div>
               </div>
@@ -133,7 +133,7 @@ export default function HomePage() {
       {/* 5. Featured projects (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
-          <div className={styles.sectionHeader}>
+          <div className={styles.sectionHeader + ' reveal'}>
             <h2 className={styles.sectionTitle}>{t('projects')}</h2>
             <p className={styles.sectionSubtitle}>{t('projectsSubtitle')}</p>
             <div className={styles.sectionDivider} />
@@ -148,7 +148,7 @@ export default function HomePage() {
       {/* 6. Shapers (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
-          <div className={styles.sectionHeader}>
+          <div className={styles.sectionHeader + ' reveal'}>
             <h2 className={styles.sectionTitle}>{t('members')}</h2>
             <p className={styles.sectionSubtitle}>{t('membersSubtitle')}</p>
             <div className={styles.sectionDivider} />
@@ -163,7 +163,7 @@ export default function HomePage() {
       {/* 7. Partners */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
-          <div className={styles.sectionHeader}>
+          <div className={styles.sectionHeader + ' reveal'}>
             <h2 className={styles.sectionTitle}>{t('partners')}</h2>
             <p className={styles.sectionSubtitle}>{t('partnersSubtitle')}</p>
             <div className={styles.sectionDivider} />

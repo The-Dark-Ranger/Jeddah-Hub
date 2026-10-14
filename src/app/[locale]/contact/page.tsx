@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -14,10 +14,34 @@ import WaveDivider from '@/components/WaveDivider';
 const NAME_MAX    = 200;
 const MESSAGE_MAX = 5000;
 
+/** "How can we help?" shortcuts — each one preselects the form's subject. */
+const TOPICS = [
+  { subject: 'partnership', icon: 'M16 11V7a4 4 0 0 0-8 0v4M5 9h14l1 12H4L5 9z' },
+  { subject: 'join',        icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6' },
+  { subject: 'media',       icon: 'M23 7l-7 5 7 5V7zM1 5h15v14H1z' },
+  { subject: 'general',     icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+] as const;
+
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const pickTopic = (subject: string) => {
+    setFormData(f => ({ ...f, subject }));
+    if (status === 'success') setStatus('idle');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    formRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    // Focus the first empty field once the scroll has settled.
+    setTimeout(() => {
+      const form = formRef.current;
+      const target = form?.querySelector<HTMLInputElement>('#name')?.value
+        ? form?.querySelector<HTMLTextAreaElement>('#message')
+        : form?.querySelector<HTMLInputElement>('#name');
+      target?.focus({ preventScroll: true });
+    }, reduce ? 0 : 450);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,11 +90,40 @@ export default function ContactPage() {
       </div>
 
 
+      <section className={styles.topics} aria-labelledby="topics-title">
+        <h2 id="topics-title" className={styles.topicsTitle}>{t('topicsTitle')}</h2>
+        <div className={styles.topicGrid}>
+          {TOPICS.map(({ subject, icon }) => (
+            <button
+              key={subject}
+              type="button"
+              className={styles.topicCard + (formData.subject === subject ? ' ' + styles.topicCardActive : '')}
+              aria-pressed={formData.subject === subject}
+              onClick={() => pickTopic(subject)}
+            >
+              <span className={styles.topicIcon}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={icon} />
+                </svg>
+              </span>
+              <span className={styles.topicName}>{t(`topic_${subject}_title`)}</span>
+              <span className={styles.topicDesc}>{t(`topic_${subject}_desc`)}</span>
+              <span className={styles.topicCta}>
+                {t('topicCta')}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                </svg>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className={styles.body}>
         <div className={styles.grid}>
 
           {/* Form column */}
-          <div className={styles.formCard}>
+          <div className={styles.formCard} ref={formRef}>
             {status === 'success' ? (
               <div className={styles.successState}>
                 <div className={styles.successIcon}>

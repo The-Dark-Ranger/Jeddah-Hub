@@ -13,7 +13,7 @@
 .headerSubtitle { font-size: 1.1rem; color: rgba(255,255,255,0.75); line-height: 1.6; }
 .headerMeta { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-top: 1rem; }
 
-.container { max-width: 760px; margin-inline: auto; padding: 3.5rem 1.5rem 6rem; }
+.container { max-width: 1120px; margin-inline: auto; padding: 3.5rem 1.5rem 6rem; }
 
 .intro { font-size: 1.02rem; color: var(--text-muted); line-height: 1.8; margin-bottom: 2.5rem; }
 
@@ -32,4 +32,45 @@
 @media (max-width: 560px) {
   .header { padding: 4rem 1.25rem 5.5rem; }
   .container { padding: 2.5rem 1.25rem 4rem; }
+}
+
+/* ── Table of contents + numbered sections ── */
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 3.5rem; align-items: start; }
+.content { max-width: 760px; min-width: 0; }
+
+.toc { position: sticky; top: 92px; }
+.tocDetails { border: 1px solid var(--border-color); border-radius: 14px; background: var(--card-bg-solid); padding: .4rem; }
+.tocTitle {
+  list-style: none; cursor: pointer;
+  padding: .7rem .8rem; border-radius: 10px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.tocTitle::-webkit-details-marker { display: none; }
+.tocTitle::after {
+  content: ''; width: 8px; height: 8px;
+  border-inline-end: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform .2s ease;
+}
+.tocDetails:not([open]) .tocTitle::after { transform: rotate(-45deg); }
+[dir="rtl"] .tocDetails:not([open]) .tocTitle::after { transform: rotate(135deg); }
+.tocTitle:focus-visible, .tocLink:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 1px; }
+.tocList { list-style: none; margin: 0; padding: 0 0 .3rem; display: flex; flex-direction: column; }
+.tocLink {
+  display: flex; gap: .65rem; align-items: baseline;
+  padding: .5rem .8rem; border-radius: 8px;
+  font-size: .86rem; line-height: 1.4; color: var(--text-muted);
+  transition: background .15s ease, color .15s ease;
+}
+.tocLink:hover { background: var(--primary-blue-glow); color: var(--primary-blue); }
+.tocNum { font-size: .72rem; font-weight: 700; color: var(--primary-blue); font-variant-numeric: tabular-nums; }
+
+.section { scroll-margin-top: 96px; }
+.sectionTitle { display: flex; align-items: baseline; gap: .75rem; }
+.sectionNum { font-size: .8rem; font-weight: 800; color: var(--primary-blue); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; gap: 1.5rem; }
+  .toc { position: static; }
+  .content { max-width: none; }
 }

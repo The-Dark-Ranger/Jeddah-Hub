@@ -40,7 +40,7 @@ export default function WefSection() {
             </div>
           </div>
 
-          <div className={styles.logoCard}>
+          <div className={styles.logoCard + ' reveal'}>
             <WefLogo alt={t('logoAlt')} height={72} className={styles.logo} />
             <p className={styles.logoCaption}>{t('initiativeOf')}</p>
           </div>
@@ -48,7 +48,7 @@ export default function WefSection() {
 
         <dl className={styles.stats}>
           {(['hubs', 'countries', 'shapers'] as const).map(k => (
-            <div key={k} className={styles.stat}>
+            <div key={k} className={styles.stat + ' reveal'}>
               <dt className={styles.statLabel}>{t(`stat_${k}_label`)}</dt>
               <dd className={styles.statValue}>{t(`stat_${k}_value`)}</dd>
             </div>
@@ -61,7 +61,7 @@ export default function WefSection() {
         </div>
         <ol className={styles.focusGrid}>
           {FOCUS_AREAS.map(({ key, icon }, i) => (
-            <li key={key} className={styles.focusCard}>
+            <li key={key} className={styles.focusCard + ' reveal'}>
               <span className={styles.focusIndex}>{String(i + 1).padStart(2, '0')}</span>
               <svg className={styles.focusIcon} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />

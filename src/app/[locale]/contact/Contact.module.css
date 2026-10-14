@@ -453,3 +453,42 @@
   outline: 2px solid var(--primary-blue);
   outline-offset: 3px;
 }
+
+/* ── "How can we help?" topic shortcuts ── */
+.topics { max-width: 1040px; margin: 0 auto; padding: 2.5rem 1.5rem 0; }
+.topicsTitle { margin: 0 0 1.1rem; font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+.topicGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .85rem; }
+.topicCard {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .45rem;
+  padding: 1.2rem 1.15rem 1.1rem; border-radius: 16px;
+  border: 1px solid var(--border-color); background: var(--card-bg-solid);
+  text-align: start; cursor: pointer; color: inherit; font: inherit;
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.topicCard:hover { border-color: var(--primary-blue); transform: translateY(-3px); box-shadow: 0 12px 28px rgba(15, 23, 42, .08); }
+.topicCard:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+.topicCardActive { border-color: var(--primary-blue); box-shadow: 0 0 0 3px var(--primary-blue-glow); }
+.topicIcon {
+  width: 40px; height: 40px; border-radius: 11px; margin-bottom: .3rem;
+  display: grid; place-items: center;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+  transition: background .2s ease, color .2s ease;
+}
+.topicCard:hover .topicIcon, .topicCardActive .topicIcon { background: var(--primary-blue); color: #fff; }
+.topicName { font-weight: 700; font-size: .98rem; color: var(--text-main); }
+.topicDesc { font-size: .84rem; line-height: 1.55; color: var(--text-muted); flex: 1; }
+.topicCta { display: inline-flex; align-items: center; gap: .35rem; margin-top: .35rem; font-size: .8rem; font-weight: 700; color: var(--primary-blue); }
+[dir="rtl"] .topicCta svg { transform: scaleX(-1); }
+.formCard { scroll-margin-top: 88px; }
+
+@media (max-width: 900px) { .topicGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) {
+  .topics { padding: 2rem 1.25rem 0; }
+  .topicGrid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .topicCard { padding: 1rem .9rem; }
+  .topicDesc { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topicCard { transition: none; }
+  .topicCard:hover { transform: none; }
+}

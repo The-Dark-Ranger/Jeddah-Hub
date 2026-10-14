@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import WaveDivider from './WaveDivider';
 import { slugify } from '@/lib/slug';
+import { safeColor } from '@/lib/activityTypes';
 
 interface Highlight { name: string; tag: string; }
 
@@ -24,18 +25,21 @@ interface Activity {
   highlights?: Highlight[];
   active?: boolean;
   color?: string;
+  imageUrl?: string;
   kind?: 'activity' | 'workshop';
   slug?: string;
 }
 
 function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeof useTranslations> }) {
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
+  const hasAside = hasHighlights || !!activity.imageUrl;
+  const accent = safeColor(activity.color);
 
   return (
     <div className={styles.container + ' ' + styles.retreatFadeIn}>
       <div
         className={styles.retreatInner}
-        style={!hasHighlights ? { gridTemplateColumns: '1fr' } : undefined}
+        style={!hasAside ? { gridTemplateColumns: '1fr' } : undefined}
       >
         <div className={styles.retreatText}>
           <div className={styles.retreatBadgeRow}>
@@ -72,8 +76,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
                 href={activity.ctaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={styles.retreatBtn}
-                style={activity.color ? { background: activity.color, borderColor: activity.color } : undefined}
+                className={styles.retreatBtn + (accent ? ' ' + styles.retreatBtnAccent : '')}
               >
                 {activity.ctaText}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -88,17 +91,26 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
           </div>
         </div>
 
-        {hasHighlights && (
-          <div className={styles.retreatVenues}>
-            <p className={styles.retreatVenuesTitle}>{t('activityHighlightsLabel')}</p>
-            <div className={styles.retreatVenuesGrid}>
-              {activity.highlights!.map(h => (
-                <div key={h.name} className={styles.retreatVenueCard}>
-                  <div className={styles.retreatVenueName}>{h.name}</div>
-                  <div className={styles.retreatVenueTag}>{h.tag}</div>
+        {hasAside && (
+          <div className={styles.retreatAside}>
+            {activity.imageUrl && (
+              <div className={styles.retreatMedia}>
+                <img src={activity.imageUrl} alt={activity.title} className={styles.retreatMediaImg} />
+              </div>
+            )}
+            {hasHighlights && (
+              <div className={styles.retreatVenues}>
+                <p className={styles.retreatVenuesTitle}>{t('activityHighlightsLabel')}</p>
+                <div className={styles.retreatVenuesGrid}>
+                  {activity.highlights!.map(h => (
+                    <div key={h.name} className={styles.retreatVenueCard}>
+                      <div className={styles.retreatVenueName}>{h.name}</div>
+                      <div className={styles.retreatVenueTag}>{h.tag}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -135,11 +147,17 @@ export default function HomeActivity() {
 
   if (activities === 'loading') return null;
 
+  const current = activities[index] as Activity | undefined;
+  const accent = safeColor(current?.color);
+
   const goPrev = () => setIndex(i => (i - 1 + activities.length) % activities.length);
   const goNext = () => setIndex(i => (i + 1) % activities.length);
 
   return (
-    <section className={styles.retreatSection}>
+    <section
+      className={styles.retreatSection}
+      style={accent ? { '--activity-accent': accent } as React.CSSProperties : undefined}
+    >
       <WaveDivider flip fill="var(--card-bg)" />
 
       {activities.length > 0 ? (

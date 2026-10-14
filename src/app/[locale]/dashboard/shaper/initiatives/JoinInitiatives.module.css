@@ -117,7 +117,6 @@
 }
 
 /* Lead footer: member badge + edit button side by side */
-.leadFooter { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 
 .joinBtn {
   display: inline-flex; align-items: center;
@@ -146,12 +145,6 @@
   padding: 0.38rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
   background: rgba(16,185,129,0.1); color: var(--success);
   border: 1px solid rgba(16,185,129,0.25);
-}
-.rejectedBadge {
-  display: inline-flex; align-items: center;
-  padding: 0.38rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
-  background: rgba(100,116,139,0.1); color: var(--text-muted);
-  border: 1px solid var(--border-color);
 }
 
 /* Edit button for initiative leads */
@@ -267,20 +260,6 @@
   .editRow  { grid-template-columns: 1fr; }
   .editRow3 { grid-template-columns: 1fr; }
 }
-
-.colorRow { display: flex; align-items: center; gap: 0.5rem; }
-.colorInput {
-  width: 40px; height: 38px; border-radius: 8px;
-  border: 1px solid var(--border-color); cursor: pointer; padding: 2px;
-  background: var(--input-bg); flex-shrink: 0;
-}
-.colorHex { font-size: 0.82rem; color: var(--text-muted); font-family: monospace; flex: 1; }
-.colorClear {
-  padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-color);
-  background: transparent; color: var(--text-muted); font-size: 1rem; cursor: pointer;
-  line-height: 1; transition: all 0.15s;
-}
-.colorClear:hover { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.3); }
 
 /* Modal footer buttons */
 .modalCancelBtn {

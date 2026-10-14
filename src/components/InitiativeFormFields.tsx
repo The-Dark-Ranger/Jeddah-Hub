@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
+import ColorPicker from '@/components/ColorPicker';
 
 export const CATEGORIES = [
   'Environment', 'Education', 'Health', 'Technology',
@@ -181,17 +182,9 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
           </label>
           <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
         </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldThemeColor')}</label>
-          <div className={styles.colorRow}>
-            <input type="color" className={styles.colorInput} value={form.color || '#0F5A9F'} onChange={mk('color')} />
-            <span className={styles.colorHex}>{form.color || t('fieldThemeColorNone')}</span>
-            {form.color && (
-              <button type="button" className={styles.colorClear} onClick={() => onChange('color', '')} aria-label={t('clearColor')}>×</button>
-            )}
-          </div>
-        </div>
       </div>
+
+      <ColorPicker label={t('fieldThemeColor')} value={form.color} onChange={v => onChange('color', v)} />
 
       <ImageUploader coverUrl={form.imageUrl} photos={form.images} onChange={onChange} />
     </>

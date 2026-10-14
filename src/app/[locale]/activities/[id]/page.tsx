@@ -8,6 +8,8 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import WaveDivider from '@/components/WaveDivider';
 import { slugify } from '@/lib/slug';
+import { safeColor } from '@/lib/activityTypes';
+import InitiativeGallery from '@/components/InitiativeGallery';
 import styles from './Activity.module.css';
 
 interface Highlight { name: string; tag: string; }
@@ -32,6 +34,8 @@ interface Activity {
   ctaUrl?: string;
   highlights?: Highlight[];
   color?: string;
+  imageUrl?: string;
+  images?: string[];
   type?: string;
   kind?: 'activity' | 'workshop';
   customForm?: { enabled: boolean; questions: CustomFormQuestion[] };
@@ -153,10 +157,18 @@ export default function ActivityPage() {
 
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
   const hasForm = !!activity.customForm?.enabled && (activity.customForm?.questions?.length ?? 0) > 0;
+  const accent = safeColor(activity.color);
+  const gallery = Array.isArray(activity.images) ? activity.images.filter(Boolean) : [];
 
   return (
-    <main className={styles.page}>
-      <section className={styles.hero}>
+    <main
+      className={styles.page}
+      style={accent ? { '--activity-accent': accent } as React.CSSProperties : undefined}
+    >
+      <section className={styles.hero + (activity.imageUrl ? ' ' + styles.heroWithImage : '')}>
+        {activity.imageUrl && (
+          <img src={activity.imageUrl} alt="" className={styles.heroImg} fetchPriority="high" />
+        )}
         <div className={styles.heroContent}>
           <div className={styles.badgeRow}>
             <span className={styles.kindBadge + ' ' + (activity.kind === 'workshop' ? styles.kindWorkshop : '')}>
@@ -180,7 +192,6 @@ export default function ActivityPage() {
               target="_blank"
               rel="noopener noreferrer"
               className={styles.ctaBtn}
-              style={activity.color ? { background: activity.color, borderColor: activity.color } : undefined}
             >
               {activity.ctaText}
             </a>
@@ -200,6 +211,14 @@ export default function ActivityPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {gallery.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.container}>
+            <InitiativeGallery photos={[activity.imageUrl, ...gallery].filter((s): s is string => !!s)} title={activity.title} accent={accent} />
           </div>
         </section>
       )}

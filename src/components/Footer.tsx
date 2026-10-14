@@ -1,8 +1,9 @@
 'use client';
 
-import { Link } from '@/i18n/routing';
+import { Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import ThemeLogo from './ThemeLogo';
+import WefLogo from './WefLogo';
 import styles from './Footer.module.css';
 
 // Computed at render time, and the page renders per-request rather than
@@ -24,7 +25,11 @@ function FooterLink({ href, label, external }: { href: string; label: string; ex
 export default function Footer() {
   const t  = useTranslations('Footer');
   const tn = useTranslations('Navigation');
+  const tw = useTranslations('Wef');
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+  // The join CTA is redundant on the page it links to and inside the dashboard.
+  const showCta = !pathname.startsWith('/become-a-shaper') && !pathname.startsWith('/dashboard');
 
   const EXPLORE_LINKS = [
     { href: '/',                label: tn('home') },
@@ -46,6 +51,21 @@ export default function Footer() {
 
   return (
     <footer className={styles.footer}>
+      {showCta && (
+        <div className={styles.ctaBand}>
+          <div className={styles.ctaInner}>
+            <div>
+              <p className={styles.ctaTitle}>{t('ctaTitle')}</p>
+              <p className={styles.ctaText}>{t('ctaText')}</p>
+            </div>
+            <div className={styles.ctaActions}>
+              <Link href="/become-a-shaper" className={styles.ctaPrimary}>{tn('becomeShaper')}</Link>
+              <Link href="/contact" className={styles.ctaSecondary}>{t('partnerWithUs')}</Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.inner}>
 
         {/* Brand column */}
@@ -105,6 +125,16 @@ export default function Footer() {
           </nav>
         </div>
 
+      </div>
+
+      {/* Network strip — the hub's place in the Global Shapers / WEF family */}
+      <div className={styles.network}>
+        <div className={styles.networkInner}>
+          <a href="https://www.weforum.org" target="_blank" rel="noopener noreferrer" className={styles.networkLogo}>
+            <WefLogo alt={tw('logoAlt')} height={34} />
+          </a>
+          <p className={styles.networkText}>{tw('footerNote')}</p>
+        </div>
       </div>
 
       {/* Bottom bar */}

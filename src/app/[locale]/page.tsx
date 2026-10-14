@@ -7,6 +7,7 @@ import HomeShapers from '@/components/HomeShapers';
 import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
+import WefSection from '@/components/WefSection';
 import { SITE_URL } from '@/lib/seo';
 
 const ORGANIZATION_JSON_LD = {
@@ -23,6 +24,11 @@ const ORGANIZATION_JSON_LD = {
     'https://www.instagram.com/jeddahhub',
     'https://www.globalshapers.org',
   ],
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'World Economic Forum',
+    url: 'https://www.weforum.org',
+  },
   address: { '@type': 'PostalAddress', addressLocality: 'Jeddah', addressCountry: 'SA' },
 };
 
@@ -93,6 +99,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 2b. Part of the World Economic Forum */}
+      <WefSection />
 
       {/* 3. Impact metrics */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>

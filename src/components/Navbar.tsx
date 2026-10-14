@@ -24,6 +24,15 @@ const SunIcon = () => (
   </svg>
 );
 
+const SOCIALS = [
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/global-shapers-jeddah-hub',
+    icon: 'M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z' },
+  { label: 'X / Twitter', href: 'https://x.com/JeddahHub',
+    icon: 'M18.24 2.25h3.31l-7.23 8.26 8.5 11.24H16.17l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25H8.08l4.71 6.23zm-1.16 17.52h1.83L7.08 4.13H5.12z' },
+  { label: 'Instagram', href: 'https://www.instagram.com/jeddahhub',
+    icon: 'M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85s.01-3.58.07-4.85C2.38 3.92 3.9 2.38 7.15 2.23 8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.2-4.35-2.62-6.78-6.98-6.98C15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z' },
+];
+
 export default function Navbar() {
   const t          = useTranslations('Navigation');
   const locale     = useLocale();
@@ -122,6 +131,11 @@ export default function Navbar() {
     { href: '/contact',         label: t('contact') },
   ];
 
+  // On desktop "Become a Shaper" gets its own call-to-action button rather
+  // than sitting in the link row; the drawer keeps it in the list.
+  const DESKTOP_LINKS = NAV_LINKS.filter(l => l.href !== '/become-a-shaper');
+  const displayName = (locale === 'ar' && user?.displayNameAr) || user?.displayName || user?.email || '';
+
   // Segment-exact, so e.g. /projects doesn't light up for /projects-archive.
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
@@ -150,7 +164,7 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <ul className={styles.navLinks}>
-          {NAV_LINKS.map(l => (
+          {DESKTOP_LINKS.map(l => (
             <li key={l.href}>
               <Link
                 href={l.href}
@@ -203,7 +217,12 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <Link href="/login" className={styles.loginBtn}>{t('login')}</Link>
+            <>
+              <Link href="/login" className={styles.loginBtn}>{t('login')}</Link>
+              {!isActive('/become-a-shaper') && (
+                <Link href="/become-a-shaper" className={styles.joinBtn}>{t('becomeShaper')}</Link>
+              )}
+            </>
           )}
 
           {/* Hamburger */}
@@ -221,6 +240,9 @@ export default function Navbar() {
             <span className={styles.bar + (mobileOpen ? ' ' + styles.barOpen3 : '')} />
           </button>
         </div>
+
+        {/* Reading progress — driven purely by CSS scroll timelines. */}
+        <span className={styles.progress} aria-hidden="true" />
       </nav>
 
       {/* Backdrop */}
@@ -238,6 +260,17 @@ export default function Navbar() {
         className={styles.mobileDrawer + (mobileOpen ? ' ' + styles.mobileDrawerOpen : '')}
         inert={!mobileOpen}
       >
+        {user && (
+          <div className={styles.mobileUser}>
+            {user.photoURL
+              ? <img src={user.photoURL} alt="" className={styles.mobileAvatar} />
+              : <span className={styles.mobileAvatar} aria-hidden="true">{(displayName || '?').charAt(0).toUpperCase()}</span>}
+            <div className={styles.mobileUserText}>
+              <span className={styles.mobileUserLabel}>{t('signedInAs')}</span>
+              <span className={styles.mobileUserName}>{displayName}</span>
+            </div>
+          </div>
+        )}
         <ul className={styles.mobileLinks}>
           {NAV_LINKS.map((l, i) => (
             <li key={l.href} style={{ '--i': i } as React.CSSProperties}>
@@ -266,10 +299,22 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <Link href="/login" onClick={closeMobile} className={styles.mobilePrimaryBtn}>
-              {t('login')}
-            </Link>
+            <>
+              <Link href="/become-a-shaper" onClick={closeMobile} className={styles.mobilePrimaryBtn}>
+                {t('becomeShaper')}
+              </Link>
+              <Link href="/login" onClick={closeMobile} className={styles.mobileSecondaryBtn}>
+                {t('login')}
+              </Link>
+            </>
           )}
+          <div className={styles.mobileSocials}>
+            {SOCIALS.map(sl => (
+              <a key={sl.label} href={sl.href} target="_blank" rel="noopener noreferrer" aria-label={sl.label} className={styles.mobileSocial}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={sl.icon} /></svg>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </>

@@ -30,4 +30,4 @@ try {
   db = undefined as unknown as Firestore;
 }
 
-export { app, auth, db };
+export { auth, db };

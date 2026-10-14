@@ -50,10 +50,9 @@
   width: 40px; height: 40px; border-radius: 10px;
   background: var(--background); border: 1px solid var(--border-color);
   color: var(--text-muted);
-  transition: color .2s ease, border-color .2s ease, background .2s ease;
+  transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease;
 }
 .socialIcon:hover { color: var(--primary-blue); border-color: var(--primary-blue); background: var(--primary-blue-glow); transform: translateY(-2px); }
-.socialIcon { transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease; }
 
 /* ── Link columns ── */
 .col { display: flex; flex-direction: column; gap: .6rem; }
@@ -138,4 +137,62 @@
 /* Very small: single column */
 @media (max-width: 380px) {
   .inner { grid-template-columns: 1fr; }
+}
+
+/* ── Join CTA band ── */
+.ctaBand {
+  background:
+    radial-gradient(ellipse 50% 120% at 100% 0%, rgba(94, 163, 224, .28), transparent 60%),
+    linear-gradient(120deg, #051535 0%, #0a3272 60%, #0f5a9f 100%);
+  color: #fff;
+}
+.ctaInner {
+  max-width: 1200px; margin-inline: auto;
+  padding: 2.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem 2.5rem; flex-wrap: wrap;
+}
+.ctaTitle { margin: 0 0 .3rem; font-size: clamp(1.15rem, 2.2vw, 1.5rem); font-weight: 800; letter-spacing: -.01em; }
+.ctaText { margin: 0; font-size: .92rem; color: rgba(255, 255, 255, .72); max-width: 52ch; }
+.ctaActions { display: flex; gap: .75rem; flex-wrap: wrap; }
+.ctaPrimary, .ctaSecondary {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: .7rem 1.4rem; border-radius: 999px;
+  font-weight: 700; font-size: .9rem;
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.ctaPrimary { background: #fff; color: #0a3272; box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+.ctaSecondary { color: #fff; border: 1.5px solid rgba(255, 255, 255, .45); }
+.ctaPrimary:hover, .ctaSecondary:hover { transform: translateY(-2px); }
+.ctaSecondary:hover { background: rgba(255, 255, 255, .12); }
+.ctaPrimary:focus-visible, .ctaSecondary:focus-visible, .networkLogo:focus-visible {
+  outline: 2px solid var(--primary-blue-light, #60a5fa); outline-offset: 3px;
+}
+
+/* ── WEF network strip ── */
+.network { border-top: 1px solid var(--border-color); }
+.networkInner {
+  max-width: 1200px; margin-inline: auto;
+  padding: 1.25rem 2rem;
+  display: flex; align-items: center; gap: 1.25rem;
+}
+.networkLogo { display: inline-flex; flex-shrink: 0; border-radius: 6px; transition: opacity .2s ease; }
+.networkLogo:hover { opacity: .8; }
+.networkLogo img { display: block; height: 34px; width: auto; }
+.networkText {
+  margin: 0; padding-inline-start: 1.25rem;
+  border-inline-start: 1px solid var(--border-color);
+  font-size: .8rem; line-height: 1.55; color: var(--text-muted); max-width: 70ch;
+}
+
+@media (max-width: 640px) {
+  .ctaInner { padding: 1.75rem 1.25rem; flex-direction: column; align-items: stretch; text-align: center; }
+  .ctaText { margin-inline: auto; }
+  .ctaActions { justify-content: center; }
+  .ctaPrimary, .ctaSecondary { flex: 1 1 140px; }
+  .networkInner { padding: 1.25rem; flex-direction: column; text-align: center; gap: .75rem; }
+  .networkText { padding-inline-start: 0; border-inline-start: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctaPrimary, .ctaSecondary, .socialIcon, .backToTop { transition: none; }
+  .ctaPrimary:hover, .ctaSecondary:hover, .socialIcon:hover, .backToTop:hover { transform: none; }
 }

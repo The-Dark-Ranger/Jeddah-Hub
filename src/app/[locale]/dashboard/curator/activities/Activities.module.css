@@ -1,7 +1,7 @@
 /* ── Page layout ── */
 .page   { display:flex;flex-direction:column;gap:2rem; }
 .header { display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap; }
-.title  { font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 .25rem; }
+.title  { font-size:1.5rem;font-weight:700;color:var(--text-main);margin:0 0 .25rem; }
 .subtitle { font-size:.9rem;color:var(--text-muted);margin:0; }
 
 /* ── Lead-proposed activities awaiting review ── */
@@ -11,7 +11,7 @@
 }
 .proposalsTitle {
   display:flex;align-items:center;gap:.45rem;
-  font-size:.9rem;font-weight:700;color:var(--text-primary);margin:0 0 .75rem;
+  font-size:.9rem;font-weight:700;color:var(--text-main);margin:0 0 .75rem;
 }
 .proposalsBadge {
   display:inline-flex;align-items:center;justify-content:center;
@@ -24,7 +24,7 @@
   padding:.6rem .8rem;border-radius:9px;background:var(--background-alt);
 }
 .proposalInfo { display:flex;flex-direction:column;gap:.15rem;min-width:0; }
-.proposalName { font-size:.86rem;font-weight:600;color:var(--text-primary); }
+.proposalName { font-size:.86rem;font-weight:600;color:var(--text-main); }
 .proposalMeta { font-size:.78rem;color:var(--text-muted); }
 .proposalActions { display:flex;gap:.4rem;flex-shrink:0; }
 .approveProposalBtn {
@@ -50,7 +50,7 @@
 }
 .detailRow:last-child { border-bottom:none; }
 .detailLabel { font-size:.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em; }
-.detailValue { font-size:.9rem;color:var(--text-primary);white-space:pre-wrap;line-height:1.5; }
+.detailValue { font-size:.9rem;color:var(--text-main);white-space:pre-wrap;line-height:1.5; }
 .detailHighlightList { margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.2rem; }
 
 /* ── Active/Archived/All filter tabs ── */
@@ -76,7 +76,7 @@
 /* ── Empty state ── */
 .empty      { color:var(--text-muted);font-size:.9rem; }
 .emptyState { text-align:center;padding:3rem 1rem; }
-.emptyTitle { font-size:1.1rem;font-weight:600;color:var(--text-primary);margin:0 0 .4rem; }
+.emptyTitle { font-size:1.1rem;font-weight:600;color:var(--text-main);margin:0 0 .4rem; }
 .emptyDesc  { font-size:.9rem;color:var(--text-muted);margin:0 0 1.25rem; }
 
 /* Pre-fill button */
@@ -95,13 +95,13 @@
   background:var(--card-bg-solid);border:1.5px solid var(--border-color);
   border-radius:12px;padding:1.25rem 1.5rem;transition:border-color .2s;
 }
-.cardActive { border-color:var(--primary-blue); }
+.cardActive { border-color:var(--activity-accent, var(--primary-blue)); }
 
 .cardTop    { display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.5rem; }
 .cardInfo   { flex:1;min-width:0; }
 .cardBadgeRow { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; flex-wrap:wrap; }
 .cardEyebrow { font-size:.75rem;font-weight:600;color:var(--primary-blue);text-transform:uppercase;letter-spacing:.06em;margin:0; }
-.cardTitle  { font-size:1.05rem;font-weight:700;color:var(--text-primary);margin:0 0 .2rem; }
+.cardTitle  { font-size:1.05rem;font-weight:700;color:var(--text-main);margin:0 0 .2rem; }
 .cardSubtitle { font-size:.85rem;color:var(--text-muted);margin:0 0 .25rem; }
 .cardMeta   { font-size:.8rem;color:var(--text-muted);margin:0; }
 .cardDesc   { font-size:.875rem;color:var(--text-secondary,var(--text-muted));margin:.25rem 0 .75rem;line-height:1.55; }
@@ -121,7 +121,7 @@
 
 /* ── Card actions ── */
 .cardActions { display:flex;gap:.5rem;flex-wrap:wrap; }
-.editBtn   { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:.8rem;cursor:pointer;transition:background .18s; }
+.editBtn   { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-size:.8rem;cursor:pointer;transition:background .18s; }
 .editBtn:hover { background:var(--card-bg); }
 .responsesBtn { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--primary-blue);background:transparent;color:var(--primary-blue);font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s,color .18s; }
 .responsesBtn:hover { background:var(--primary-blue);color:#fff; }
@@ -143,7 +143,7 @@
   display:flex;align-items:center;justify-content:center;padding:1rem;
 }
 .modal {
-  background:var(--card-bg-solid);border-radius:14px;width:100%;max-width:600px;
+  background:var(--card-bg-solid);border-radius:14px;width:100%;max-width:760px;
   max-height:90vh;display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 24px 60px rgba(0,0,0,.25);
 }
@@ -151,7 +151,7 @@
   display:flex;justify-content:space-between;align-items:center;
   padding:1.1rem 1.5rem;border-bottom:1px solid var(--border-color);flex-shrink:0;
 }
-.modalHeader h2 { font-size:1.1rem;font-weight:700;margin:0;color:var(--text-primary); }
+.modalHeader h2 { font-size:1.1rem;font-weight:700;margin:0;color:var(--text-main); }
 .closeBtn { background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--text-muted);padding:.25rem; }
 .modalBody { padding:1.25rem 1.5rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem; }
 .modalFooter { padding:1rem 1.5rem;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:.75rem;flex-shrink:0; }
@@ -161,7 +161,7 @@
 @media (max-width:520px) { .formRow { grid-template-columns:1fr; } }
 .field  { display:flex;flex-direction:column;gap:.35rem; }
 .label  { font-size:.8rem;font-weight:600;color:var(--text-muted); }
-.input  { padding:.55rem .75rem;border-radius:7px;border:1px solid var(--border-color);background:var(--input-bg,var(--card-bg));color:var(--text-primary);font-size:.875rem; }
+.input  { padding:.55rem .75rem;border-radius:7px;border:1px solid var(--border-color);background:var(--input-bg,var(--card-bg));color:var(--text-main);font-size:.875rem; }
 .input:focus  { outline:none;border-color:var(--primary-blue); }
 /* <select>'s option-list popup is native browser chrome — setting
    background/color on the closed control (above) doesn't reach it, so
@@ -174,9 +174,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.input { color-scheme: dark; }
 }
-.textarea { padding:.55rem .75rem;border-radius:7px;border:1px solid var(--border-color);background:var(--input-bg,var(--card-bg));color:var(--text-primary);font-size:.875rem;resize:vertical;font-family:inherit; }
+.textarea { padding:.55rem .75rem;border-radius:7px;border:1px solid var(--border-color);background:var(--input-bg,var(--card-bg));color:var(--text-main);font-size:.875rem;resize:vertical;font-family:inherit; }
 .textarea:focus { outline:none;border-color:var(--primary-blue); }
-.checkRow { display:flex;align-items:center;gap:.6rem;font-size:.875rem;color:var(--text-primary);cursor:pointer; }
+.checkRow { display:flex;align-items:center;gap:.6rem;font-size:.875rem;color:var(--text-main);cursor:pointer; }
 
 /* ── Custom form builder — styled to read like a familiar form-builder
    (Google Forms-ish): each question is its own card with a prominent label
@@ -203,13 +203,13 @@
 .questionLabelInput {
   flex: 1; min-width: 0; padding: .55rem .75rem; border-radius: 7px;
   border: 1px solid var(--border-color); background: var(--input-bg,var(--card-bg));
-  color: var(--text-primary); font-size: .92rem; font-weight: 600;
+  color: var(--text-main); font-size: .92rem; font-weight: 600;
 }
 .questionLabelInput:focus { outline: none; border-color: var(--primary-blue); }
 .questionTypeSelect {
   flex-shrink: 0; width: 9.5rem; padding: .55rem .6rem; border-radius: 7px;
   border: 1px solid var(--border-color); background: var(--input-bg,var(--card-bg));
-  color: var(--text-primary); font-size: .82rem;
+  color: var(--text-main); font-size: .82rem;
 }
 @media (max-width: 480px) {
   .questionHeader { flex-wrap: wrap; }
@@ -222,7 +222,7 @@
 .optionInput {
   flex: 1; padding: .45rem .65rem; border-radius: 6px;
   border: 1px solid var(--border-color); background: var(--input-bg,var(--card-bg));
-  color: var(--text-primary); font-size: .85rem;
+  color: var(--text-main); font-size: .85rem;
 }
 .optionInput:focus { outline: none; border-color: var(--primary-blue); }
 .optionsWarning { font-size: .78rem; color: var(--danger); margin: 0 0 .3rem; }
@@ -257,10 +257,25 @@
   white-space: nowrap;
 }
 .responsesTable th { color: var(--text-muted); font-weight: 700; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; }
-.responsesTable td { color: var(--text-primary); }
+.responsesTable td { color: var(--text-main); }
 
 /* ── Footer buttons ── */
-.cancelBtn { padding:.5rem 1rem;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-primary);font-size:.875rem;cursor:pointer; }
+.cancelBtn { padding:.5rem 1rem;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-size:.875rem;cursor:pointer; }
 .saveBtn   { padding:.5rem 1.2rem;border-radius:7px;border:none;background:var(--primary-blue);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s; }
 .saveBtn:hover:not(:disabled) { background:var(--primary-blue-dark,#0052a3); }
 .saveBtn:disabled { opacity:.55;cursor:not-allowed; }
+
+/* ── Appearance: accent stripe, cover thumbnail, proposal previews ── */
+.card { border-inline-start: 4px solid var(--activity-accent, var(--border-color)); }
+.cardThumb {
+  width: 72px; height: 72px; flex-shrink: 0;
+  border-radius: 10px; object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+.detailColor { display: inline-flex; align-items: center; gap: .5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.detailColor > span { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border-color); }
+.detailPhotos { display: flex; flex-wrap: wrap; gap: .4rem; }
+.detailPhotos img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); }
+@media (max-width: 480px) {
+  .cardThumb { width: 56px; height: 56px; }
+}

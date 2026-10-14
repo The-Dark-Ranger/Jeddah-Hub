@@ -292,3 +292,66 @@
   transform: translateY(-160%); transition: transform .2s ease;
 }
 .skipLink:focus { transform: translateY(0); outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ── "Become a Shaper" call to action (desktop, signed out) ── */
+.joinBtn {
+  display: flex; align-items: center; min-height: 36px; padding: 0 1.15rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-blue), #0a3272);
+  color: #fff; font-weight: 700; font-size: .85rem; white-space: nowrap;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary-blue) 35%, transparent);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.joinBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px color-mix(in srgb, var(--primary-blue) 45%, transparent); }
+.joinBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+@media (max-width: 1024px) { .joinBtn { display: none; } }
+
+/* ── Reading progress along the bar's bottom edge ── */
+.progress {
+  position: absolute; inset-inline: 0; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, var(--primary-blue), #5ea3e0);
+  transform: scaleX(0); transform-origin: left center;
+  pointer-events: none;
+}
+[dir="rtl"] .progress { transform-origin: right center; }
+@supports (animation-timeline: scroll()) {
+  .progress { animation: navProgress linear both; animation-timeline: scroll(root block); }
+}
+@keyframes navProgress { to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .progress { display: none; } }
+
+/* ── Drawer: signed-in header, secondary action, socials ── */
+.mobileUser {
+  display: flex; align-items: center; gap: .85rem;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-alt);
+}
+.mobileAvatar {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  object-fit: cover;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--primary-blue); color: #fff; font-weight: 700;
+}
+.mobileUserText { display: flex; flex-direction: column; min-width: 0; }
+.mobileUserLabel { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+.mobileUserName { font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mobileSecondaryBtn {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 48px; border-radius: 12px; padding: 0 1.5rem;
+  border: 1.5px solid var(--border-color); color: var(--text-main);
+  font-weight: 700; font-size: 1rem;
+  transition: border-color .2s ease, color .2s ease;
+}
+.mobileSecondaryBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+.mobileSecondaryBtn:focus-visible, .mobileSocial:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+
+.mobileSocials { display: flex; justify-content: center; gap: .75rem; margin-top: .75rem; }
+.mobileSocial {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  border: 1px solid var(--border-color); color: var(--text-muted);
+  transition: color .2s ease, border-color .2s ease;
+}
+.mobileSocial:hover { color: var(--primary-blue); border-color: var(--primary-blue); }

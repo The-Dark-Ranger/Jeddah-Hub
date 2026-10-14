@@ -23,7 +23,6 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
-    "firebase-admin": "^13.10.0",
     "typescript": "^5"
   },
   "overrides": {

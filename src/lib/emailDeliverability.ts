@@ -6,7 +6,7 @@ import dns from 'node:dns/promises';
  * actually receive mail, catching syntactically-valid-but-fake addresses
  * (e.g. someone@dfgdf.com) that isValidEmail()'s format check can't.
  */
-export async function hasDeliverableDomain(email: string): Promise<boolean> {
+async function hasDeliverableDomain(email: string): Promise<boolean> {
   const domain = email.split('@')[1];
   if (!domain) return false;
 

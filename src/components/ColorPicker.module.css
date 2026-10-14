@@ -1,0 +1,61 @@
+.wrap { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+.swatch {
+  position: relative;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--card-bg-solid, #fff);
+  box-shadow: 0 0 0 1px var(--border-color);
+  cursor: pointer; padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+.swatchActive { box-shadow: 0 0 0 2px var(--text-main); transform: scale(1.08); }
+
+/* "No colour": a struck-through empty disc. */
+.swatchNone {
+  background:
+    linear-gradient(135deg, transparent 45%, var(--danger, #dc2626) 45%, var(--danger, #dc2626) 55%, transparent 55%),
+    var(--input-bg, var(--card-bg));
+}
+
+/* Custom: a colour wheel until a custom colour is chosen. */
+.swatchCustom {
+  display: inline-block; overflow: hidden;
+  background: conic-gradient(#ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444);
+}
+.native {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; border: 0; padding: 0;
+}
+
+.hexRow { display: flex; align-items: center; gap: 0.5rem; }
+.preview {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  border: 1px dashed var(--border-color);
+}
+.hexInput {
+  width: 7.5rem;
+  padding: 0.5rem 0.65rem; border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg, var(--card-bg)); color: var(--text-main);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem;
+  text-transform: uppercase;
+}
+.hexInput:focus { outline: none; border-color: var(--primary-blue); }
+.hexInvalid { border-color: var(--danger, #dc2626); }
+.clear {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 0.8rem; font-weight: 600;
+  padding: 0.3rem 0.4rem; border-radius: 6px;
+}
+.clear:hover { color: var(--danger, #dc2626); }
+
+@media (prefers-reduced-motion: reduce) {
+  .swatch, .swatch:hover, .swatchActive { transition: none; transform: none; }
+}

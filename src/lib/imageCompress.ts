@@ -13,7 +13,7 @@
 export const DOC_BUDGET_BYTES = 880_000;
 
 /** Ceiling for a single photo after compression. */
-export const MAX_IMAGE_BYTES = 260_000;
+const MAX_IMAGE_BYTES = 260_000;
 
 const MAX_DIMENSION = 1280;
 const START_QUALITY = 0.72;
@@ -22,7 +22,7 @@ const MIN_QUALITY   = 0.4;
 /** Avatars render at 150px at most, so they compress far harder than gallery photos. */
 export const AVATAR_OPTIONS = { maxDim: 512, quality: 0.8, maxBytes: 120_000 };
 
-export interface CompressOptions {
+interface CompressOptions {
   maxDim?: number;
   quality?: number;
   maxBytes?: number;

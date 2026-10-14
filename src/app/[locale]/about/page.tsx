@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
+import WefLogo from '@/components/WefLogo';
 import { avatarGradient, initials } from '@/lib/avatarUtils';
 import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 import { normalizeRole as normRole } from '@/lib/role';
@@ -244,6 +245,7 @@ const ROLE_ORDER: Record<string, number> = { curator: 0, vice_curator: 1, impact
 export default function AboutPage() {
   const t  = useTranslations('AboutPage');
   const tr = useTranslations('Role');
+  const tw = useTranslations('Wef');
 
   const [shapers, setShapers]                 = useState<LiveShaper[]>([]);
   const [alumni, setAlumni]                   = useState<LiveShaper[]>([]);
@@ -452,6 +454,9 @@ export default function AboutPage() {
         <div className={styles.container}>
           <div className={styles.wefSection}>
             <div className={styles.wefText}>
+              <a href="https://www.weforum.org" target="_blank" rel="noopener noreferrer" className={styles.wefLogoLink}>
+                <WefLogo alt={tw('logoAlt')} height={56} className={styles.wefLogo} />
+              </a>
               <h2 className={styles.sectionTitle}>{t('wefTitle')}</h2>
               <div className={styles.divider} style={{ margin: '1rem 0 1.5rem' }} />
               <p className={styles.wefBody}>{t('wefDesc')}</p>

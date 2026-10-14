@@ -11,8 +11,9 @@ import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import {
   type ActivityFormData, type CustomFormQuestion,
-  emptyCustomForm, emptyActivityForm, newQuestionId, parseHighlights, highlightsToText,
+  emptyActivityForm, newQuestionId, parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
+import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
 // Same page structure/classes as the curator's Activities dashboard — a
 // second lead-facing copy of ~250 lines of layout/form CSS would just be
 // this file's styles going stale the next time that one changes.
@@ -99,13 +100,7 @@ export default function LeadActivitiesPage() {
 
   function openEdit(a: Activity) {
     setEditing(a);
-    setForm({
-      title: a.title, eyebrow: a.eyebrow, subtitle: a.subtitle,
-      description: a.description, date: a.date, location: a.location,
-      ctaText: a.ctaText, ctaUrl: a.ctaUrl, highlights: a.highlights, active: a.active,
-      kind: a.kind || 'activity',
-      customForm: a.customForm || emptyCustomForm(),
-    });
+    setForm(activityToForm(a));
     setFormInitiativeId(a.initiativeId || ledInitiatives[0]?.id || '');
     setHighlightsText(highlightsToText(a.highlights || []));
     setModalOpen(true);
@@ -315,8 +310,13 @@ export default function LeadActivitiesPage() {
           {activities.map(a => {
             const pending = pendingForActivity(a.id);
             return (
-              <div key={a.id} className={styles.card + (a.active ? ' ' + styles.cardActive : '')}>
+              <div
+                key={a.id}
+                className={styles.card + (a.active ? ' ' + styles.cardActive : '')}
+                style={safeColor(a.color) ? { '--activity-accent': a.color } as React.CSSProperties : undefined}
+              >
                 <div className={styles.cardTop}>
+                  {a.imageUrl && <img src={a.imageUrl} alt="" className={styles.cardThumb} loading="lazy" />}
                   <div className={styles.cardInfo}>
                     <div className={styles.cardBadgeRow}>
                       <span className={styles.kindBadge + ' ' + (a.kind === 'workshop' ? styles.kindWorkshop : styles.kindActivity)}>
@@ -419,6 +419,8 @@ export default function LeadActivitiesPage() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder={t('activityDescPh')} />
               </div>
+
+              <ActivityAppearanceFields form={form} setForm={setForm} />
 
               <div className={styles.formRow}>
                 <div className={styles.field}>

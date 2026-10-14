@@ -4,17 +4,13 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: linear-gradient(160deg, #051535 0%, #0a3272 55%, #0f5a9f 100%);
+  overflow: hidden;
+  background: linear-gradient(160deg, #041029 0%, #08275a 55%, #0d4f8f 100%);
   display: none;
   align-items: center;
   justify-content: center;
   /* No fade-in: it must be fully opaque on the first frame, or the page
-     shows through it — only the logo inside animates in. */
-}
-
-.overlay.dismissing {
-  animation: splashOut 0.38s cubic-bezier(0.4, 0, 1, 1) both;
-  pointer-events: none;
+     shows through it — only the content inside animates in. */
 }
 
 :global(html[data-splash]) .overlay { display: flex; }
@@ -22,64 +18,96 @@
 /* Lock scrolling underneath while the splash is up. */
 :global(html[data-splash]) { overflow: hidden; }
 
-@keyframes splashOut {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(1.04); }
+/* Exit: content fades first, then the panel lifts like a curtain. */
+.overlay.dismissing {
+  animation: curtainUp 0.38s cubic-bezier(0.7, 0, 0.3, 1) 0.06s both;
+  pointer-events: none;
+}
+.overlay.dismissing .inner,
+.overlay.dismissing .footer {
+  animation: contentOut 0.2s ease-in both;
+}
+@keyframes curtainUp {
+  from { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 0 100% 0); }
+}
+@keyframes contentOut {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Hairline grid + slow glow: the quiet backdrop of Forum report covers. */
+.grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+}
+.glow {
+  position: absolute;
+  width: 640px; height: 640px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(94, 163, 224, .28), transparent 65%);
+  animation: glowPulse 3.2s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { transform: scale(0.92); opacity: .75; }
+  50%      { transform: scale(1.06); opacity: 1; }
 }
 
 .inner {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  animation: logoIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  gap: 1.9rem;
+  animation: logoIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 
 @keyframes logoIn {
-  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .logoRing {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 116px;
+  height: 116px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.logoRing::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0) 70%);
-  animation: ringRotate 2s linear infinite;
+.arc {
+  position: absolute; inset: -6px;
+  width: calc(100% + 12px); height: calc(100% + 12px);
+  transform: rotate(110deg);
+  overflow: visible;
 }
-
-.logoRing::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.2);
+.arcTrack { fill: none; stroke: rgba(255, 255, 255, .1); stroke-width: 1.5; }
+.arcStroke {
+  fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round;
+  stroke-dasharray: 72 100;
+  stroke-dashoffset: 72;
+  transform-origin: 60px 60px;
+  animation:
+    arcDraw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards,
+    arcSpin 2.4s linear 1.05s infinite;
 }
-
-@keyframes ringRotate {
-  to { transform: rotate(360deg); }
-}
+@keyframes arcDraw { to { stroke-dashoffset: 0; } }
+@keyframes arcSpin { to { transform: rotate(360deg); } }
 
 .wordmark {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.6rem;
   text-align: center;
 }
 
 .wordmarkMain {
-  font-size: clamp(2.4rem, 8vw, 3.5rem);
+  font-size: clamp(2.3rem, 8vw, 3.4rem);
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.03em;
@@ -92,11 +120,16 @@
 }
 
 .wordmarkSub {
-  font-size: clamp(0.85rem, 2.5vw, 1rem);
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.65);
-  letter-spacing: 0.08em;
+  display: inline-flex; align-items: center; gap: .7rem;
+  font-size: clamp(0.78rem, 2.4vw, 0.92rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+.wordmarkSub::before,
+.wordmarkSub::after {
+  content: ''; width: 22px; height: 1px; background: rgba(255, 255, 255, .35);
 }
 
 [dir="rtl"] .wordmarkSub {
@@ -105,56 +138,54 @@
 }
 
 .logo {
-  width: 84px;
-  height: 84px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
-  border-radius: 20px;
-  filter: drop-shadow(0 6px 20px rgba(0,0,0,.3));
+  border-radius: 22px;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
   position: relative;
   z-index: 1;
 }
 
-/* Theme-matched logo, decided by CSS so it is right on the first frame. */
-.logoDark { display: none; }
-:global([data-theme="dark"]) .logoLight { display: none; }
-:global([data-theme="dark"]) .logoDark { display: block; }
-@media (prefers-color-scheme: dark) {
-  :global(html:not([data-theme="light"])) .logoLight { display: none; }
-  :global(html:not([data-theme="light"])) .logoDark { display: block; }
-}
-
 .progressTrack {
-  width: 140px;
-  height: 3px;
-  background: rgba(255,255,255,0.2);
+  width: 168px;
+  height: 2px;
+  background: rgba(255,255,255,0.16);
   border-radius: 99px;
   overflow: hidden;
 }
 
-/* Indeterminate: the splash now leaves when the page is actually ready, so a
-   fixed-duration sweep would either stall at 100% or get cut off mid-way. */
+/* Determinate: SplashScreen.tsx eases it toward 90% while loading and
+   sweeps it to 100% the moment the page is ready. */
 .progressFill {
-  width: 45%;
+  width: 100%;
   height: 100%;
-  background: #fff;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .7), #fff);
   border-radius: 99px;
-  animation: progressShuttle 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform: scaleX(0.08);
+  transform-origin: left center;
+  box-shadow: 0 0 12px rgba(255, 255, 255, .6);
 }
+[dir="rtl"] .progressFill { transform-origin: right center; }
 
-@keyframes progressShuttle {
-  0%   { transform: translateX(-110%); }
-  100% { transform: translateX(240%); }
+.footer {
+  position: absolute;
+  bottom: max(1.75rem, env(safe-area-inset-bottom));
+  inset-inline: 1rem;
+  display: flex; align-items: center; justify-content: center; gap: .75rem;
+  font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+  color: rgba(255, 255, 255, .55);
+  text-align: center;
+  animation: footerIn .6s ease .35s both;
 }
-
-[dir="rtl"] .progressFill {
-  animation-name: progressShuttleRtl;
-}
-@keyframes progressShuttleRtl {
-  0%   { transform: translateX(110%); }
-  100% { transform: translateX(-240%); }
-}
+.wefLogo { height: 24px; width: auto; opacity: .85; flex-shrink: 0; }
+@keyframes footerIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .inner, .logoRing::before { animation: none !important; }
-  .progressFill { animation: none !important; width: 100%; transform: none; }
+  .overlay, .inner, .footer, .glow, .arcStroke,
+  .overlay.dismissing .inner, .overlay.dismissing .footer { animation: none !important; }
+  .overlay.dismissing { animation: fadeOnly .25s ease both !important; }
+  .arcStroke { stroke-dashoffset: 0; }
+  .progressFill { transform: scaleX(1); }
 }
+@keyframes fadeOnly { to { opacity: 0; } }

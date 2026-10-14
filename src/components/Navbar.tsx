@@ -131,9 +131,6 @@ export default function Navbar() {
     { href: '/contact',         label: t('contact') },
   ];
 
-  // On desktop "Become a Shaper" gets its own call-to-action button rather
-  // than sitting in the link row; the drawer keeps it in the list.
-  const DESKTOP_LINKS = NAV_LINKS.filter(l => l.href !== '/become-a-shaper');
   const displayName = (locale === 'ar' && user?.displayNameAr) || user?.displayName || user?.email || '';
 
   // Segment-exact, so e.g. /projects doesn't light up for /projects-archive.
@@ -164,7 +161,7 @@ export default function Navbar() {
 
         {/* Desktop links */}
         <ul className={styles.navLinks}>
-          {DESKTOP_LINKS.map(l => (
+          {NAV_LINKS.map(l => (
             <li key={l.href}>
               <Link
                 href={l.href}
@@ -217,12 +214,7 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <>
-              <Link href="/login" className={styles.loginBtn}>{t('login')}</Link>
-              {!isActive('/become-a-shaper') && (
-                <Link href="/become-a-shaper" className={styles.joinBtn}>{t('becomeShaper')}</Link>
-              )}
-            </>
+            <Link href="/login" className={styles.loginBtn}>{t('login')}</Link>
           )}
 
           {/* Hamburger */}

@@ -217,6 +217,11 @@ export default function Navbar() {
             <Link href="/login" className={styles.loginBtn}>{t('login')}</Link>
           )}
 
+          {/* Call to action for visitors, everywhere except the page it points to. */}
+          {!user && !isActive('/become-a-shaper') && (
+            <Link href="/become-a-shaper" className={styles.joinBtn}>{t('becomeShaper')}</Link>
+          )}
+
           {/* Hamburger */}
           <button
             type="button"

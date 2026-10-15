@@ -140,8 +140,10 @@ export default function NewsPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          {allTags.length > 0 && (
-            <div className={styles.tags}>
+          {/* Kept (empty) while loading so the row's height is reserved and
+              the grid below doesn't jump when the tags arrive. */}
+          {(loading || allTags.length > 0) && (
+            <div className={styles.tags} aria-busy={loading}>
               <button className={styles.tag + (!activeTag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag('')}>{t('tagAll')}</button>
               {allTags.map(tag => (
                 <button key={tag} className={styles.tag + (activeTag === tag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}>{tag}</button>

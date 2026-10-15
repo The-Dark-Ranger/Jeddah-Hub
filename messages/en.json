@@ -852,9 +852,6 @@
     "formIntroPh": "e.g. Seats are limited — register by Thursday.",
     "formSuccessMessageLabel": "Thank-you message",
     "formSuccessMessagePh": "See you there!",
-    "moveUp": "Move up",
-    "moveDown": "Move down",
-    "duplicateQuestion": "Duplicate question",
     "uncategorised": "Uncategorised",
     "missingCover": "cover photo",
     "missingProblem": "challenge",
@@ -879,9 +876,7 @@
     "regEmail": "Email",
     "regChipHint": "Tap to switch: optional → required → off",
     "regQuestionsCount": "{count, plural, one {# question} other {# questions}}",
-    "regNoQuestions": "No extra questions — registrants only give the details above.",
     "regRepeatsWarning": "This is already asked above — remove it to avoid asking twice.",
-    "regQuestionType": "Question type",
     "regMoreOptions": "More options",
     "regSummary": "Registrants will be asked: {list}",
     "regSummaryNothing": "Registrants will just confirm — nothing is asked.",
@@ -894,7 +889,8 @@
     "regBadgeClosed": "Registration closed",
     "regOpenAction": "Open registration",
     "regCloseAction": "Close registration",
-    "regClosedNote": "Registration is closed — visitors see the activity but can’t sign up. Switch to Open to show the form."
+    "regClosedNote": "Registration is closed — visitors see the activity but can’t sign up. Switch to Open to show the form.",
+    "activityCustomFormHint": "Add your own questions below. Anyone who visits this activity's page can fill them out, and you can download every response as a spreadsheet."
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

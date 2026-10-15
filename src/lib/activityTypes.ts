@@ -14,10 +14,27 @@ export interface CustomFormQuestion {
   required: boolean;
 }
 
+/** Whether the registration form asks for the registrant's name/email. */
+export type ContactFieldMode = 'off' | 'optional' | 'required';
+
 export interface CustomForm {
   enabled: boolean;
   questions: CustomFormQuestion[];
+  /* Editable "frame" around the questions — all optional so forms saved
+     before these existed keep their default wording. */
+  title?: string;
+  intro?: string;
+  submitLabel?: string;
+  successTitle?: string;
+  successMessage?: string;
+  collectName?: ContactFieldMode;
+  collectEmail?: ContactFieldMode;
+  /** Keeps the form visible but stops new registrations. */
+  closed?: boolean;
 }
+
+/** Hard caps for the frame's free text, mirrored in the builder inputs. */
+export const FORM_TEXT_MAX = { title: 120, intro: 600, submitLabel: 40, successTitle: 120, successMessage: 400 } as const;
 
 export type ActivityKind = 'activity' | 'workshop';
 
@@ -118,8 +135,9 @@ export function parseHighlights(raw: string): Highlight[] {
     .map(l => l.trim())
     .filter(Boolean)
     .map(l => {
-      const [name, ...rest] = l.split(',');
-      return { name: name.trim(), tag: rest.join(',').trim() };
+      // Accept the Arabic comma (،) too — Arabic keyboards type it by default.
+      const [name, ...rest] = l.split(/[,،]/);
+      return { name: name.trim(), tag: rest.join(', ').trim() };
     });
 }
 

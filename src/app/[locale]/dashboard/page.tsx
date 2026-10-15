@@ -28,6 +28,14 @@ interface LiveActivity {
   createdAt?: { toMillis?: () => number };
 }
 
+interface InitiativeLite {
+  id: string; title: string; titleAr?: string; slug?: string; category?: string; status?: string;
+  imageUrl?: string; problem?: string; objective?: string; impact?: string;
+  members?: { userId: string; role?: string }[];
+}
+
+interface MessageLite { id: string; name: string; subject: string; message: string; submittedAt: string; read?: boolean; }
+
 interface LatestPost { id: string; title: string; authorName?: string; createdAt?: string; }
 
 interface Notification {
@@ -39,10 +47,13 @@ interface Notification {
 export default function DashboardHome() {
   const { user, loading } = useAuth();
   const t = useTranslations('Dashboard');
+  const tCat = useTranslations('Categories');
   const locale = useLocale();
   const [statsLoading, setStatsLoading] = useState(true);
   const [liveActivities, setLiveActivities] = useState<LiveActivity[]>([]);
   const [latestPosts, setLatestPosts] = useState<LatestPost[]>([]);
+  const [initiatives, setInitiatives] = useState<InitiativeLite[]>([]);
+  const [recentMessages, setRecentMessages] = useState<MessageLite[]>([]);
   const [stats, setStats] = useState<Stats>({
     initiatives: 0, activeInitiatives: 0, blogs: 0,
     subscribers: 0, myProjects: 0, unreadMessages: 0, activityResponses: 0,
@@ -118,6 +129,15 @@ export default function DashboardHome() {
         next.blogs = (await getCountFromServer(target)).data().count;
       }),
 
+      // Every real initiative (public read) — feeds the category chart, a
+      // Shaper's "your initiatives" list and the "needs attention" list.
+      safe(async () => {
+        const snap = await getDocs(collection(db, 'initiatives'));
+        setInitiatives(snap.docs
+          .filter(d => !(d.data() as { type?: string }).type)
+          .map(d => ({ id: d.id, ...(d.data() as Omit<InitiativeLite, 'id'>) })));
+      }),
+
       // What visitors see right now — shown to every role.
       safe(async () => {
         const snap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
@@ -155,6 +175,10 @@ export default function DashboardHome() {
           next.activityResponses = (await getCountFromServer(
             query(collection(db, 'activity_responses'), where('read', '==', false)),
           )).data().count;
+        }),
+        safe(async () => {
+          const snap = await getDocs(query(collection(db, 'contact_messages'), orderBy('submittedAt', 'desc'), limit(3)));
+          setRecentMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<MessageLite, 'id'>) })));
         }),
         safe(async () => {
           // The panel renders at most 10, so only fetch 10.
@@ -216,6 +240,33 @@ export default function DashboardHome() {
   const name = (locale === 'ar' && user.displayNameAr) || user.displayName || user.email?.split('@')[0] || '';
   const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
   const today = new Date().toLocaleDateString(dateLocale, { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const tcat = (c: string) => {
+    const key = c.trim().toLowerCase();
+    return tCat.has(key as 'all') ? tCat(key as 'all') : c;
+  };
+  const initTitle = (i: InitiativeLite) => (locale === 'ar' && i.titleAr) || i.title;
+
+  // Initiatives per category, largest first.
+  const byCategory = Object.entries(initiatives.reduce<Record<string, number>>((acc, i) => {
+    const c = i.category?.trim() || t('uncategorised');
+    acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {})).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const maxCat = Math.max(1, ...byCategory.map(([, n]) => n));
+
+  const myInitiatives = initiatives.filter(i => i.members?.some(m => m.userId === user.uid));
+  // Active initiatives whose public page is missing something visible.
+  const needsAttention = initiatives
+    .filter(i => i.status !== 'archived')
+    .map(i => ({ i, missing: [
+      !i.imageUrl && t('missingCover'),
+      !i.problem && t('missingProblem'),
+      !i.objective && t('missingObjective'),
+      !i.impact && t('missingImpact'),
+    ].filter(Boolean) as string[] }))
+    .filter(x => x.missing.length > 0)
+    .slice(0, 4);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -468,6 +519,103 @@ export default function DashboardHome() {
           )}
         </section>
       </div>
+      {/* Hub insights */}
+      <div className={styles.liveGrid}>
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <h3 className={styles.panelTitle}>{t('byCategoryTitle')}</h3>
+            <span className={styles.panelMeta}>{t('initiativesTotal', { count: initiatives.length })}</span>
+          </div>
+          {statsLoading ? (
+            <div className={styles.panelSkeleton}><span /><span /></div>
+          ) : byCategory.length === 0 ? (
+            <p className={styles.panelEmpty}>{t('noInitiativesYet')}</p>
+          ) : (
+            <ul className={styles.bars}>
+              {byCategory.map(([cat, n]) => (
+                <li key={cat} className={styles.barRow}>
+                  <span className={styles.barLabel}>{tcat(cat)}</span>
+                  <span className={styles.barTrack}><span className={styles.barFill} style={{ width: `${(n / maxCat) * 100}%` }} /></span>
+                  <span className={styles.barValue}>{n}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {isShaper && (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h3 className={styles.panelTitle}>{t('yourInitiatives')}</h3>
+              <Link href="/dashboard/shaper/initiatives" className={styles.panelLink}>{t('browse')}</Link>
+            </div>
+            {statsLoading ? (
+              <div className={styles.panelSkeleton}><span /><span /></div>
+            ) : myInitiatives.length === 0 ? (
+              <p className={styles.panelEmpty}>{t('noInitiativesJoined')}</p>
+            ) : (
+              <ul className={styles.liveList}>
+                {myInitiatives.slice(0, 4).map(i => (
+                  <li key={i.id}>
+                    <Link href={`/projects/${i.slug || slugify(i.title)}`} className={styles.liveItem}>
+                      {i.imageUrl
+                        ? <img src={i.imageUrl} alt="" className={styles.liveThumb} loading="lazy" />
+                        : <span className={styles.liveThumb + ' ' + styles.liveThumbEmpty} aria-hidden="true" />}
+                      <span className={styles.liveText}>
+                        <span className={styles.liveTitle}>{initTitle(i)}</span>
+                        <span className={styles.liveMeta}>
+                          {[i.members?.find(m => m.userId === user.uid)?.role, i.category && tcat(i.category)].filter(Boolean).join(' · ')}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {isCurator && (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h3 className={styles.panelTitle}>{t('recentMessages')}</h3>
+              <Link href="/dashboard/curator/messages" className={styles.panelLink}>{t('viewAll')}</Link>
+            </div>
+            {statsLoading ? (
+              <div className={styles.panelSkeleton}><span /><span /></div>
+            ) : recentMessages.length === 0 ? (
+              <p className={styles.panelEmpty}>{t('noMessages')}</p>
+            ) : (
+              <ul className={styles.liveList}>
+                {recentMessages.map(m => (
+                  <li key={m.id}>
+                    <Link href="/dashboard/curator/messages" className={styles.liveItem}>
+                      <span className={styles.msgAvatar + (m.read ? '' : ' ' + styles.msgAvatarUnread)} aria-hidden="true">
+                        {(m.name || '?').charAt(0).toUpperCase()}
+                      </span>
+                      <span className={styles.liveText}>
+                        <span className={styles.liveTitle}>{m.name}</span>
+                        <span className={styles.liveMeta}>{m.message}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {isImpact && (
+          <NeedsAttention items={needsAttention} statsLoading={statsLoading} t={t} initTitle={initTitle} href="/dashboard/impact/projects" />
+        )}
+      </div>
+
+      {isCurator && (
+        <div className={styles.liveGrid}>
+          <NeedsAttention items={needsAttention} statsLoading={statsLoading} t={t} initTitle={initTitle} href="/dashboard/curator/initiatives" />
+        </div>
+      )}
+
       {/* Curator notifications panel */}
       {isCurator && notifications.length > 0 && (
         <div className={styles.notifSection}>
@@ -517,6 +665,43 @@ function StatCard({ label, value, icon, colorVar, loading }: { label: string; va
       </div>
       <div className={styles.statLabel}>{label}</div>
     </div>
+  );
+}
+
+/** Active initiatives whose public page is missing a cover or story section. */
+function NeedsAttention({ items, statsLoading, t, initTitle, href }: {
+  items: { i: InitiativeLite; missing: string[] }[];
+  statsLoading: boolean;
+  t: ReturnType<typeof useTranslations>;
+  initTitle: (i: InitiativeLite) => string;
+  href: string;
+}) {
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <h3 className={styles.panelTitle}>{t('needsAttention')}</h3>
+        <Link href={href} className={styles.panelLink}>{t('manage')}</Link>
+      </div>
+      {statsLoading ? (
+        <div className={styles.panelSkeleton}><span /><span /></div>
+      ) : items.length === 0 ? (
+        <p className={styles.panelEmpty}>{t('allComplete')}</p>
+      ) : (
+        <ul className={styles.liveList}>
+          {items.map(({ i, missing }) => (
+            <li key={i.id}>
+              <Link href={href} className={styles.liveItem}>
+                <span className={styles.attentionDot} aria-hidden="true" />
+                <span className={styles.liveText}>
+                  <span className={styles.liveTitle}>{initTitle(i)}</span>
+                  <span className={styles.liveMeta}>{t('missingLabel')}: {missing.join(' · ')}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

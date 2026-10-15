@@ -27,6 +27,7 @@ interface Activity {
   color?: string;
   imageUrl?: string;
   kind?: 'activity' | 'workshop';
+  customForm?: { enabled?: boolean; closed?: boolean };
   slug?: string;
 }
 
@@ -34,6 +35,8 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
   const hasAside = hasHighlights || !!activity.imageUrl;
   const accent = safeColor(activity.color);
+  const href = `/activities/${activity.slug || slugify(activity.title)}`;
+  const canRegister = !!activity.customForm?.enabled && !activity.customForm?.closed;
 
   return (
     <div className={styles.container + ' ' + styles.retreatFadeIn}>
@@ -85,7 +88,12 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
                 </svg>
               </a>
             )}
-            <Link href={`/activities/${activity.slug || slugify(activity.title)}`} className={styles.retreatBtnSecondary}>
+            {canRegister && (
+              <Link href={href + '#register'} className={styles.retreatBtn + (accent ? ' ' + styles.retreatBtnAccent : '')}>
+                {t('registerActivity')}
+              </Link>
+            )}
+            <Link href={href} className={styles.retreatBtnSecondary}>
               {t('viewActivityDetails')}
             </Link>
           </div>

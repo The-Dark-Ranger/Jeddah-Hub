@@ -16,6 +16,8 @@ export interface PlaceholderProject {
   images?: string[];
   members?: { userId: string; role?: string }[];
   color?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const PLACEHOLDER_PROJECTS: PlaceholderProject[] = [

@@ -10,10 +10,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import {
-  type ActivityFormData, type CustomFormQuestion,
-  emptyActivityForm, newQuestionId, parseHighlights, highlightsToText, activityToForm, safeColor,
+  type ActivityFormData,
+  emptyActivityForm, parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
+import RegistrationFormBuilder from '@/components/RegistrationFormBuilder';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 // Same page structure/classes as the curator's Activities dashboard — a
 // second lead-facing copy of ~250 lines of layout/form CSS would just be
@@ -105,81 +106,6 @@ export default function LeadActivitiesPage() {
     setFormInitiativeId(a.initiativeId || ledInitiatives[0]?.id || '');
     setHighlightsText(highlightsToText(a.highlights || []));
     setModalOpen(true);
-  }
-
-  /* ── Custom form question builder — identical to the curator page's ── */
-  function addQuestion() {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: [
-          ...(f.customForm?.questions || []),
-          { id: newQuestionId(), label: '', type: 'text', options: [], required: false },
-        ],
-      },
-    }));
-  }
-
-  function updateQuestion(id: string, patch: Partial<CustomFormQuestion>) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q => q.id === id ? { ...q, ...patch } : q),
-      },
-    }));
-  }
-
-  function removeQuestion(id: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).filter(q => q.id !== id),
-      },
-    }));
-  }
-
-  function addOption(qId: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: [...(q.options || []), ''] } : q
-        ),
-      },
-    }));
-  }
-
-  function updateOption(qId: string, idx: number, value: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: (q.options || []).map((o, i) => (i === idx ? value : o)) } : q
-        ),
-      },
-    }));
-  }
-
-  function removeOption(qId: string, idx: number) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: (q.options || []).filter((_, i) => i !== idx) } : q
-        ),
-      },
-    }));
-  }
-
-  function changeQuestionType(qId: string, current: CustomFormQuestion, newType: CustomFormQuestion['type']) {
-    const options = newType === 'select' && !(current.options || []).length ? [''] : current.options;
-    updateQuestion(qId, { type: newType, options });
   }
 
   async function submitRequest(changeType: 'create' | 'update', activityId: string | null, initiativeId: string, activityTitle: string, payload: Record<string, unknown>) {
@@ -466,94 +392,10 @@ export default function LeadActivitiesPage() {
                 {t('activityActiveLabel')}
               </label>
 
-              {/* ── Custom form builder ── */}
-              <div className={styles.customFormSection}>
-                <label className={styles.checkRow}>
-                  <input type="checkbox" checked={form.customForm?.enabled ?? false}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      customForm: { enabled: e.target.checked, questions: f.customForm?.questions || [] },
-                    }))} />
-                  {t('activityCustomFormEnable')}
-                </label>
-
-                {form.customForm?.enabled && (
-                  <div className={styles.questionList}>
-                    <p className={styles.customFormHint}>{t('activityCustomFormHint')}</p>
-                    {(form.customForm.questions || []).map((q, i) => (
-                      <div key={q.id} className={styles.questionCard}>
-                        <div className={styles.questionHeader}>
-                          <span className={styles.questionNum}>{i + 1}</span>
-                          <input
-                            className={styles.questionLabelInput}
-                            value={q.label}
-                            onChange={e => updateQuestion(q.id, { label: e.target.value })}
-                            placeholder={t('activityQuestionLabelPh')}
-                          />
-                          <select
-                            className={styles.questionTypeSelect}
-                            value={q.type}
-                            onChange={e => changeQuestionType(q.id, q, e.target.value as CustomFormQuestion['type'])}
-                          >
-                            <option value="text">{t('qTypeText')}</option>
-                            <option value="textarea">{t('qTypeTextarea')}</option>
-                            <option value="select">{t('qTypeSelect')}</option>
-                            <option value="checkbox">{t('qTypeCheckbox')}</option>
-                          </select>
-                        </div>
-
-                        {q.type === 'select' && (
-                          <div className={styles.optionsList}>
-                            {(q.options || []).filter(o => o.trim()).length === 0 && (
-                              <p className={styles.optionsWarning}>{t('activityQuestionNoOptionsWarning')}</p>
-                            )}
-                            {(q.options || []).map((opt, idx) => (
-                              <div key={idx} className={styles.optionRow}>
-                                <span className={styles.optionBullet} aria-hidden="true" />
-                                <input
-                                  className={styles.optionInput}
-                                  value={opt}
-                                  onChange={e => updateOption(q.id, idx, e.target.value)}
-                                  placeholder={`${t('optionPlaceholder')} ${idx + 1}`}
-                                />
-                                <button
-                                  type="button"
-                                  className={styles.optionRemoveBtn}
-                                  onClick={() => removeOption(q.id, idx)}
-                                  aria-label={t('removeOption')}
-                                >✕</button>
-                              </div>
-                            ))}
-                            <button type="button" className={styles.addOptionBtn} onClick={() => addOption(q.id)}>
-                              + {t('addOption')}
-                            </button>
-                          </div>
-                        )}
-
-                        <div className={styles.questionFooter}>
-                          <label className={styles.checkRow}>
-                            <input
-                              type="checkbox"
-                              checked={q.required}
-                              onChange={e => updateQuestion(q.id, { required: e.target.checked })}
-                            />
-                            {t('activityQuestionRequired')}
-                          </label>
-                          <button type="button" className={styles.removeQuestionBtn} onClick={() => removeQuestion(q.id)}>
-                            {t('removeQuestion')}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button type="button" className={styles.prefillBtn} onClick={addQuestion}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
-                      {t('addQuestion')}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <RegistrationFormBuilder
+                value={form.customForm}
+                onChange={customForm => setForm(f => ({ ...f, customForm }))}
+              />
             </div>
 
             <div className={styles.modalFooter}>

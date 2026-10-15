@@ -31,6 +31,12 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
   // initiative's own detail page (InitiativeGallery); this card is only
   // ever a preview.
   const coverImg = project.imageUrl || project.images?.[0];
+  const teamSize = Array.isArray(project.members) ? project.members.length : 0;
+  const yearOf = (v?: string) => { const d = v ? new Date(v) : null; return d && !isNaN(d.getTime()) ? d.getFullYear() : null; };
+  const startYear = yearOf(project.startDate), endYear = yearOf(project.endDate);
+  const year = startYear
+    ? (endYear && endYear !== startYear ? `${startYear}–${endYear}` : String(startYear)).replace(/\d/g, dgt => locale === 'ar' ? '٠١٢٣٤٥٦٧٨٩'[+dgt] : dgt)
+    : '';
 
   return (
     <Link
@@ -68,6 +74,26 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
             {project.stat}
           </div>
         )}
+        {(teamSize > 0 || year) && (
+          <div className={styles.cardFacts}>
+            {teamSize > 0 && (
+              <span className={styles.cardFact}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                {t('shapersCount', { count: teamSize })}
+              </span>
+            )}
+            {year && (
+              <span className={styles.cardFact}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                {year}
+              </span>
+            )}
+          </div>
+        )}
         <div className={styles.cardLink}>
           {t('exploreProject')}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -97,6 +123,7 @@ function SkeletonCard() {
 export default function ProjectsPage() {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
+  const locale = useLocale();
   // Known categories get a translated label; custom ones show as typed.
   const catLabel = (category: string) => {
     const key = category.trim().toLowerCase();
@@ -131,13 +158,22 @@ export default function ProjectsPage() {
     new Set(projects.map(p => p.category?.trim()).filter((c): c is string => !!c))
   ).sort((a, b) => a.localeCompare(b));
 
+  const q = search.trim().toLowerCase();
   const filtered = projects.filter(p => {
     const matchCat = activeCategory === 'all' || p.category?.trim() === activeCategory;
-    const matchSearch = !search ||
-      p.title?.toLowerCase().includes(search.toLowerCase()) ||
-      p.description?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !q || [p.title, p.titleAr, p.description, p.descriptionAr, p.category, p.category && catLabel(p.category)]
+      .some(v => v?.toLowerCase().includes(q));
     return matchCat && matchSearch;
   });
+
+  // Headline numbers for the summary strip.
+  const totals = {
+    all: projects.length,
+    active: projects.filter(p => p.status === 'active' || !p.status).length,
+    shapers: new Set(projects.flatMap(p => (p.members || []).map(m => m.userId))).size,
+    areas: categoryTabs.length,
+  };
+  const countIn = (cat: string) => projects.filter(p => p.category?.trim() === cat).length;
 
   const active   = filtered.filter(p => p.status === 'active' || !p.status);
   const archived = filtered.filter(p => p.status && p.status !== 'active');
@@ -154,6 +190,22 @@ export default function ProjectsPage() {
       </section>
 
       <div className={styles.container}>
+        {!loading && totals.all > 0 && (
+          <dl className={styles.summary}>
+            {([
+              ['summaryInitiatives', totals.all],
+              ['summaryActive', totals.active],
+              ['summaryShapers', totals.shapers],
+              ['summaryAreas', totals.areas],
+            ] as const).filter(([, n]) => n > 0).map(([key, n]) => (
+              <div key={key} className={styles.summaryItem + ' reveal'}>
+                <dd>{n.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}</dd>
+                <dt>{t(key)}</dt>
+              </div>
+            ))}
+          </dl>
+        )}
+
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -161,6 +213,8 @@ export default function ProjectsPage() {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
+              type="search"
+              aria-label={t('searchPlaceholder')}
               className={styles.searchInput}
               placeholder={t('searchPlaceholder')}
               value={search}
@@ -173,6 +227,7 @@ export default function ProjectsPage() {
               onClick={() => setActiveCategory('all')}
             >
               {tc('all')}
+              <span className={styles.catCount}>{projects.length}</span>
             </button>
             {categoryTabs.map(cat => (
               <button
@@ -181,6 +236,7 @@ export default function ProjectsPage() {
                 onClick={() => setActiveCategory(cat)}
               >
                 {catLabel(cat)}
+                <span className={styles.catCount}>{countIn(cat)}</span>
               </button>
             ))}
           </div>

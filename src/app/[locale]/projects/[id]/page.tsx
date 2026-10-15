@@ -10,6 +10,14 @@ import styles from './Initiative.module.css';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
+import { useAuth } from '@/context/AuthContext';
+
+/** The initiative's story, in reading order. */
+const STORY = [
+  { key: 'problem',   label: 'problem',     icon: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01' },
+  { key: 'objective', label: 'objective',   icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' },
+  { key: 'impact',    label: 'impactTitle', icon: 'M13 2 3 14h9l-1 8 10-12h-9l1-8z' },
+] as const;
 
 interface Initiative {
   id: string;
@@ -57,6 +65,16 @@ export default function InitiativePage() {
   const [initiative, setInitiative] = useState<Initiative | null>(null);
   const [users, setUsers]           = useState<UserRecord[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [related, setRelated]       = useState<Initiative[]>([]);
+  const [copied, setCopied]         = useState(false);
+  // Captured once so the timeline doesn't shift between re-renders.
+  const [now] = useState(() => Date.now());
+  const { user } = useAuth();
+  const tc = useTranslations('Categories');
+  const catLabel = (category: string) => {
+    const key = category.trim().toLowerCase();
+    return tc.has(key as 'all') ? tc(key as 'all') : category;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -99,6 +117,18 @@ export default function InitiativePage() {
         if (data) {
           setInitiative(data);
 
+          // "More initiatives": same category first, then the most recent others.
+          const current = data;
+          getDocs(collection(db, 'initiatives')).then(snap => {
+            const others = snap.docs
+              .map(d => ({ id: d.id, ...(d.data() as Omit<Initiative, 'id'>) }))
+              .filter(o => !(o as { type?: string }).type && o.id !== current.id);
+            others.sort((x, y) =>
+              Number(y.category === current.category) - Number(x.category === current.category)
+              || Number(y.status !== 'archived') - Number(x.status !== 'archived'));
+            setRelated(others.slice(0, 3));
+          }).catch(() => {});
+
           const canonical = data.slug || slugify(data.title);
           if (rawId !== canonical) router.replace(`/projects/${canonical}`);
 
@@ -135,6 +165,16 @@ export default function InitiativePage() {
 
   const getUserPhoto = (userId: string) => users.find(u => u.id === userId)?.photoURL || null;
 
+  const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+  const fmtMonth = (d: Date) => d.toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' });
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
+  };
+
   if (loading) return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
 
   if (!initiative) return (
@@ -160,8 +200,16 @@ export default function InitiativePage() {
    * just be the same picture shown twice in a row. */
   const galleryPhotos = [...new Set((initiative.images || []).filter(Boolean))] as string[];
 
+  // Timeline: how far between start and end we are today (null if open-ended).
+  const validDate = (v?: string) => { const d = v ? new Date(v) : null; return d && !isNaN(d.getTime()) ? d : null; };
+  const start = validDate(initiative.startDate);
+  const end = validDate(initiative.endDate);
+  const progress = start && end && end > start
+    ? Math.min(1, Math.max(0, (now - start.getTime()) / (end.getTime() - start.getTime())))
+    : null;
+
   return (
-    <main className={styles.page}>
+    <main className={styles.page} style={{ '--hero-color': heroColor } as React.CSSProperties}>
       {/* Hero banner */}
       <div
         className={styles.hero}
@@ -178,7 +226,7 @@ export default function InitiativePage() {
           <div className={styles.heroBadges}>
             {initiative.category && (
               <span className={styles.heroCategoryTag} style={{ color: heroColor, background: heroColor + '22' }}>
-                {initiative.category.toUpperCase()}
+                {catLabel(initiative.category).toLocaleUpperCase(locale)}
               </span>
             )}
             {initiative.status && (
@@ -224,127 +272,176 @@ export default function InitiativePage() {
 
       <div className={styles.container}>
         <Link href="/projects" className={styles.back}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           {t('backToProjects')}
         </Link>
 
-        <div className={styles.divider} />
+        <div className={styles.layout}>
+          {/* ── The story: challenge → goal → impact ── */}
+          <div className={styles.mainCol}>
+            <h2 className={styles.storyHeading}>{t('storyTitle')}</h2>
+            <ol className={styles.story}>
+              {STORY.map(({ key, label, icon }) => {
+                // With no structured story at all, the description stands in as the goal.
+                const bare = !initiative.problem && !initiative.objective && !initiative.impact;
+                const text = initiative[key] || (bare && key === 'objective' ? initiative.description : '');
+                if (!text) return null;
+                return (
+                  <li key={key} className={styles.storyStep}>
+                    <span className={styles.storyIcon} aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={icon} /></svg>
+                    </span>
+                    <div className={styles.storyBody}>
+                      <h3 className={styles.storyLabel}>{t(label)}</h3>
+                      <p className={styles.sectionBody}>{text}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
 
-        <div className={styles.sections}>
-          {initiative.problem && (
-            <section className={styles.contentSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.sectionIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                </span>
-                {t('problem')}
-              </h2>
-              <p className={styles.sectionBody}>{initiative.problem}</p>
-            </section>
-          )}
-          {initiative.objective && (
-            <section className={styles.contentSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.sectionIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <circle cx="12" cy="12" r="6"/>
-                    <circle cx="12" cy="12" r="2"/>
-                  </svg>
-                </span>
-                {t('objective')}
-              </h2>
-              <p className={styles.sectionBody}>{initiative.objective}</p>
-            </section>
-          )}
-          {initiative.impact && (
-            <section className={styles.contentSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.sectionIcon} style={{ color: heroColor }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                  </svg>
-                </span>
-                {t('impactTitle')}
-              </h2>
-              <p className={styles.sectionBody}>{initiative.impact}</p>
-            </section>
-          )}
-          {!initiative.problem && !initiative.objective && !initiative.impact && (
-            <section className={styles.contentSection}>
-              <h2 className={styles.sectionTitle}>{t('objective')}</h2>
-              <p className={styles.sectionBody}>{initiative.description}</p>
-            </section>
-          )}
+            {galleryPhotos.length > 0 && (
+              <section className={styles.block}>
+                <h2 className={styles.blockTitle}>{t('galleryTitle')}</h2>
+                <InitiativeGallery photos={galleryPhotos} title={initiative.title} accent={heroColor} />
+              </section>
+            )}
+
+            {Array.isArray(initiative.members) && initiative.members.length > 0 && (
+              <section className={styles.block}>
+                <h2 className={styles.blockTitle}>{t('teamMembers')}</h2>
+                <div className={styles.teamGrid}>
+                  {[...initiative.members]
+                    .sort((a, b) => {
+                      const aLead = initiative.leads?.includes(a.userId) ? 0 : 1;
+                      const bLead = initiative.leads?.includes(b.userId) ? 0 : 1;
+                      return aLead - bLead;
+                    })
+                    .map((m, i) => {
+                      const name = getUserName(m.userId) ?? t('shaperFallback');
+                      const photo = getUserPhoto(m.userId);
+                      const isLead = initiative.leads?.includes(m.userId);
+                      return (
+                        <div key={m.userId + i} className={styles.teamCard}>
+                          {photo ? (
+                            <img className={styles.teamAvatarImg} src={photo} alt="" loading="lazy" />
+                          ) : (
+                            <div className={styles.teamAvatar} style={{ background: heroColor + '22', color: heroColor }}>
+                              {name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className={styles.teamInfo}>
+                            <span className={styles.teamName}>{name}</span>
+                            {(isLead || m.role) && <span className={styles.teamRole}>{isLead ? t('leadBadge') : m.role}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* ── Key facts ── */}
+          <aside className={styles.sideCol}>
+            <div className={styles.factsCard} style={{ '--hero-color': heroColor } as React.CSSProperties}>
+              <h2 className={styles.factsTitle}>{t('keyFacts')}</h2>
+              <dl className={styles.factsList}>
+                <div className={styles.factRow}>
+                  <dt>{t('factStatus')}</dt>
+                  <dd>
+                    <span className={styles.factDot + (isActive ? ' ' + styles.factDotActive : '')} aria-hidden="true" />
+                    {isActive ? t('activeStatus') : t('archiveStatus')}
+                  </dd>
+                </div>
+                {initiative.category && (
+                  <div className={styles.factRow}>
+                    <dt>{t('factCategory')}</dt>
+                    <dd>{catLabel(initiative.category)}</dd>
+                  </div>
+                )}
+                {Array.isArray(initiative.members) && initiative.members.length > 0 && (
+                  <div className={styles.factRow}>
+                    <dt>{t('factTeam')}</dt>
+                    <dd>{t('shapersCount', { count: initiative.members.length })}</dd>
+                  </div>
+                )}
+                {initiative.stat && (
+                  <div className={styles.factRow + ' ' + styles.factHighlight}>
+                    <dt>{t('keyResult')}</dt>
+                    <dd>{initiative.stat}</dd>
+                  </div>
+                )}
+              </dl>
+
+              {start && (
+                <div className={styles.timeline}>
+                  <div className={styles.timelineHead}>
+                    <span>{t('factTimeline')}</span>
+                    {progress !== null && <span>{t('percentComplete', { pct: Math.round(progress * 100) })}</span>}
+                  </div>
+                  <div className={styles.timelineTrack}>
+                    <span className={styles.timelineFill} style={{ width: `${Math.round((progress ?? (isActive ? 0.5 : 1)) * 100)}%` }} />
+                  </div>
+                  <div className={styles.timelineDates}>
+                    <span>{fmtMonth(start)}</span>
+                    <span>{end ? fmtMonth(end) : t('ongoing')}</span>
+                  </div>
+                </div>
+              )}
+
+              {initiative.impactAreas && initiative.impactAreas.length > 0 && (
+                <div className={styles.factsAreas}>
+                  <span className={styles.factsAreasTitle}>{t('impactAreas')}</span>
+                  <div className={styles.impactAreaTags}>
+                    {initiative.impactAreas.map(area => (
+                      <span key={area} className={styles.impactAreaTag}>{area}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.factsActions}>
+                {isActive && (
+                  <Link href={user ? '/dashboard/shaper/initiatives' : '/become-a-shaper'} className={styles.joinBtn}>
+                    {user ? t('requestToJoin') : t('getInvolved')}
+                  </Link>
+                )}
+                <button type="button" className={styles.copyBtn} onClick={copyLink}>
+                  {copied ? t('linkCopied') : t('shareInitiative')}
+                </button>
+              </div>
+            </div>
+          </aside>
         </div>
 
-        {galleryPhotos.length > 0 && (
-          <>
-            <div className={styles.divider} />
-            <InitiativeGallery photos={galleryPhotos} title={initiative.title} accent={heroColor} />
-          </>
-        )}
-
-        {initiative.impactAreas && initiative.impactAreas.length > 0 && (
-          <>
-            <div className={styles.divider} />
-            <section className={styles.impactAreas}>
-              <h3 className={styles.impactAreasTitle}>{t('impactAreas')}</h3>
-              <div className={styles.impactAreaTags}>
-                {initiative.impactAreas.map((area, i) => (
-                  <span
-                    key={area}
-                    className={styles.impactAreaTag}
-                    style={i === 0 ? { color: heroColor, background: heroColor + '18', borderColor: heroColor + '44' } : undefined}
-                  >
-                    {area}
-                  </span>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
-
-        {Array.isArray(initiative.members) && initiative.members.length > 0 && (
-          <>
-            <div className={styles.divider} />
-            <section className={styles.teamSection}>
-              <h3 className={styles.impactAreasTitle}>{t('teamMembers')}</h3>
-              <div className={styles.teamGrid}>
-                {[...initiative.members]
-                  .sort((a, b) => {
-                    const aLead = initiative.leads?.includes(a.userId) ? 0 : 1;
-                    const bLead = initiative.leads?.includes(b.userId) ? 0 : 1;
-                    return aLead - bLead;
-                  })
-                  .map((m, i) => {
-                  const name = getUserName(m.userId) ?? m.userId;
-                  const photo = getUserPhoto(m.userId);
-                  return (
-                    <div key={m.userId + i} className={styles.teamCard}>
-                      {photo ? (
-                        <img className={styles.teamAvatarImg} src={photo} alt="" />
-                      ) : (
-                        <div className={styles.teamAvatar} style={{ background: heroColor + '22', color: heroColor }}>
-                          {name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className={styles.teamInfo}>
-                        <span className={styles.teamName}>{name}</span>
-                        {m.role && <span className={styles.teamRole}>{m.role}</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          </>
+        {related.length > 0 && (
+          <section className={styles.related}>
+            <div className={styles.relatedHead}>
+              <h2 className={styles.blockTitle}>{t('moreInitiatives')}</h2>
+              <Link href="/projects" className={styles.relatedAll}>{t('viewAllInitiatives')}</Link>
+            </div>
+            <div className={styles.relatedGrid}>
+              {related.map(r => {
+                const rColor = r.color || CATEGORY_COLORS[r.category ?? ''] || CATEGORY_COLORS.Default;
+                const rTitle = locale === 'ar' && r.titleAr ? r.titleAr : r.title;
+                const cover = r.imageUrl || r.images?.[0];
+                return (
+                  <Link key={r.id} href={'/projects/' + (r.slug || slugify(r.title))} className={styles.relatedCard}>
+                    {cover
+                      ? <img src={cover} alt="" className={styles.relatedImg} loading="lazy" />
+                      : <span className={styles.relatedImg} style={{ background: `linear-gradient(135deg, ${rColor}, ${rColor}88)` }} />}
+                    <span className={styles.relatedBody}>
+                      {r.category && <span className={styles.relatedCat} style={{ color: rColor }}>{catLabel(r.category)}</span>}
+                      <span className={styles.relatedName}>{rTitle}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
         )}
       </div>
     </main>

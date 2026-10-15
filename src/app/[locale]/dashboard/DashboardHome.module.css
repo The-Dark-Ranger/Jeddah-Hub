@@ -355,3 +355,28 @@
 @media (prefers-reduced-motion: reduce) {
   .statSkeleton, .panelSkeleton span { animation: none; }
 }
+
+/* ── Hub insights ── */
+.panelMeta { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
+.barRow { display: grid; grid-template-columns: minmax(80px, 34%) minmax(0, 1fr) 2rem; align-items: center; gap: .75rem; }
+.barLabel { font-size: .84rem; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barTrack { height: 10px; border-radius: 999px; background: var(--background-alt); overflow: hidden; }
+.barFill {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary-blue), color-mix(in srgb, var(--primary-blue) 55%, #fff));
+  transform-origin: left center; animation: barGrow .7s cubic-bezier(.16, 1, .3, 1) both;
+}
+[dir="rtl"] .barFill { transform-origin: right center; }
+@keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.barValue { font-size: .84rem; font-weight: 800; color: var(--text-main); text-align: end; font-variant-numeric: tabular-nums; }
+
+.msgAvatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: grid; place-items: center; font-weight: 700;
+  background: var(--background-alt); color: var(--text-muted);
+}
+.msgAvatarUnread { background: var(--primary-blue); color: #fff; }
+.attentionDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-inline: .3rem; background: var(--warning); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 20%, transparent); }
+
+@media (prefers-reduced-motion: reduce) { .barFill { animation: none; } }

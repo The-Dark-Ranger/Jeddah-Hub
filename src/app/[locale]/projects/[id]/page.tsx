@@ -10,7 +10,6 @@ import styles from './Initiative.module.css';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
-import { useAuth } from '@/context/AuthContext';
 
 /** The initiative's story, in reading order. */
 const STORY = [
@@ -69,7 +68,6 @@ export default function InitiativePage() {
   const [copied, setCopied]         = useState(false);
   // Captured once so the timeline doesn't shift between re-renders.
   const [now] = useState(() => Date.now());
-  const { user } = useAuth();
   const tc = useTranslations('Categories');
   const catLabel = (category: string) => {
     const key = category.trim().toLowerCase();
@@ -404,11 +402,6 @@ export default function InitiativePage() {
               )}
 
               <div className={styles.factsActions}>
-                {isActive && (
-                  <Link href={user ? '/dashboard/shaper/initiatives' : '/become-a-shaper'} className={styles.joinBtn}>
-                    {user ? t('requestToJoin') : t('getInvolved')}
-                  </Link>
-                )}
                 <button type="button" className={styles.copyBtn} onClick={copyLink}>
                   {copied ? t('linkCopied') : t('shareInitiative')}
                 </button>

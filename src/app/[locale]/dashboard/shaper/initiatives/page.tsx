@@ -28,10 +28,6 @@ export default function JoinInitiatives() {
   const [myRequests, setMyRequests]   = useState<JoinRequest[]>([]);
   const [loading, setLoading]         = useState(true);
 
-  /* Initiatives this user leads are managed from the "Active Projects" tab
-   * instead — excluded here so this page stays a pure browse/join list,
-   * not mixed with a lead's own management tools. */
-  const [leadInitiativeIds, setLeadInitiativeIds] = useState<string[]>([]);
 
   /* Leave request state */
   const [myLeaveRequests, setMyLeaveRequests] = useState<{id: string; initiativeId: string; status: string}[]>([]);
@@ -62,13 +58,15 @@ export default function JoinInitiatives() {
       const inits = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative));
       const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
+      // Initiatives this user leads are managed from the "Active Projects"
+      // tab instead — excluded here so this page stays a pure browse/join
+      // list, not mixed with a lead's own management tools.
       const leadIds = inits
         .filter(i => (i.members || []).some((m: any) =>
           (m.userId === user.uid || m === user.uid) &&
           typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
         ))
         .map(i => i.id);
-      setLeadInitiativeIds(leadIds);
 
       setInitiatives(inits.filter(i => !leadIds.includes(i.id)));
       setMyRequests(reqs);

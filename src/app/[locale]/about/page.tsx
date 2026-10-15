@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import WefLogo from '@/components/WefLogo';
+import PatternDivider from '@/components/PatternDivider';
 import { avatarGradient, initials } from '@/lib/avatarUtils';
 import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 import { normalizeRole as normRole } from '@/lib/role';
@@ -376,6 +377,8 @@ export default function AboutPage() {
         <div className={styles.statItem}><span className={styles.statNum}>{COMMUNITY_PARTNERS_STAT}</span><span className={styles.statLabel}>{t('statsPartners')}</span></div>
       </div>
 
+      <PatternDivider />
+
       {/* Mission */}
       <section className={styles.section}>
         <div className={styles.container}>
@@ -399,6 +402,8 @@ export default function AboutPage() {
 
       {/* Current Curatorship (dynamic from Firestore */}
       {curators.length > 0 && (
+        <>
+        <PatternDivider />
         <section className={styles.section}>
           <div className={styles.container}>
             <h2 className={styles.sectionTitle + ' reveal'}>{t('curatorship')}</h2>
@@ -415,7 +420,10 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+        </>
       )}
+
+      <PatternDivider />
 
       {/* Shapers (live from Firestore */}
       <section className={styles.sectionAlt}>
@@ -435,6 +443,8 @@ export default function AboutPage() {
 
       {/* Alumni */}
       {(loadingShapers || alumni.length > 0) && (
+        <>
+        <PatternDivider />
         <section className={styles.section}>
           <div className={styles.container}>
             <h2 className={styles.sectionTitle + ' reveal'}>{t('alumni')}</h2>
@@ -447,7 +457,10 @@ export default function AboutPage() {
             )}
           </div>
         </section>
+        </>
       )}
+
+      <PatternDivider />
 
       {/* WEF Context */}
       <section className={styles.section}>

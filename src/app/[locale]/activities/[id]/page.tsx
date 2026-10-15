@@ -207,7 +207,7 @@ export default function ActivityPage() {
           )}
           <div className={styles.heroActions}>
             {formOpen && (
-              <a href="#register" className={styles.ctaBtn}>{cf?.submitLabel?.trim() || t('registerNow')}</a>
+              <a href="#register" className={styles.ctaBtn}>{t('registerNow')}</a>
             )}
             {activity.ctaText && activity.ctaUrl && (
               <a
@@ -301,12 +301,12 @@ export default function ActivityPage() {
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
                 </svg>
-                <h2>{cf?.successTitle?.trim() || t('thankYouTitle')}</h2>
+                <h2>{t('thankYouTitle')}</h2>
                 <p>{cf?.successMessage?.trim() || t('thankYouBody')}</p>
               </div>
             ) : (
               <form className={styles.form} onSubmit={handleSubmit}>
-                <h2 className={styles.formTitle}>{cf?.title?.trim() || t('formTitle')}</h2>
+                <h2 className={styles.formTitle}>{t('formTitle')}</h2>
                 {cf?.intro?.trim() && <p className={styles.formIntro}>{cf.intro}</p>}
 
                 {(askName !== 'off' || askEmail !== 'off') && (
@@ -376,7 +376,7 @@ export default function ActivityPage() {
                 {error && <p className={styles.errorMsg}>{error}</p>}
 
                 <button type="submit" className={styles.submitBtn} disabled={submitting}>
-                  {submitting ? t('submittingDots') : (cf?.submitLabel?.trim() || t('submitBtn'))}
+                  {submitting ? t('submittingDots') : t('submitBtn')}
                 </button>
               </form>
             )}

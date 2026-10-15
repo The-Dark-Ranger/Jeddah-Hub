@@ -147,11 +147,17 @@ service cloud.firestore {
     // a display-only string (e.g. "Lead" badge text); actual lead
     // privilege is only ever granted through the separate `leads` field,
     // so a lead editing that text doesn't grant themselves anything new.
+    // `featured`/`featuredAt` pick what the homepage's Featured
+    // Initiatives section shows — a curatorship decision, so impact
+    // officers (who can otherwise edit initiatives) can't set them.
     match /initiatives/{docId} {
       allow read: if true;
-      allow create: if isCuratorOrImpact();
+      allow create: if isCurator()
+                    || (isImpactOfficer() && request.resource.data.get('featured', false) != true);
       allow delete: if isCurator();
-      allow update: if isCuratorOrImpact()
+      allow update: if isCurator()
+                    || (isImpactOfficer()
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['featured', 'featuredAt']))
                     || (isSignedIn()
                         && 'leads' in resource.data
                         && request.auth.uid in resource.data.leads
@@ -328,16 +334,6 @@ service cloud.firestore {
       allow read, update, delete: if isCurator();
     }
 
-    // ── impact_reports ────────────────────────────────────────
-    // Public can read. Curator/vice_curator only — the impact/reports
-    // dashboard page is no longer part of the impact officer's tools
-    // (see dashboard/layout.tsx), so this matches that UI-level
-    // restriction instead of leaving it enforceable only cosmetically.
-    match /impact_reports/{docId} {
-      allow read: if true;
-      allow create, update, delete: if isCurator();
-    }
-
     // ── role_assignments ──────────────────────────────────────
     // Curators create/delete. Ownership is by email match (isAssignee()
     // above) since these docs never carry a `uid` field. The assignee
@@ -392,34 +388,6 @@ service cloud.firestore {
       allow read, delete: if isCuratorOrImpact();
       allow update: if isCuratorOrImpact()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-    }
-
-    // ── blog_likes ────────────────────────────────────────────
-    // Any signed-in user can like/unlike. Public can read counts.
-    match /blog_likes/{docId} {
-      allow read: if true;
-      allow create, delete: if isSignedIn();
-    }
-
-    // ── blog_comments ─────────────────────────────────────────
-    // Public can read. Signed-in users can add as themselves only —
-    // authorId must match the writer's own uid, or anyone could post a
-    // comment impersonating another member (e.g. a curator) via a raw
-    // SDK call. Authors and curators can delete.
-    // NOTE: this collection has no live writer in the app yet (no comment
-    // UI has shipped) — the shape below is a forward-compatible best guess
-    // (postId to scope a comment to its post, content as the comment text)
-    // rather than a match against real production traffic; revisit the
-    // field list here once a real comment form lands.
-    match /blog_comments/{docId} {
-      allow read: if true;
-      allow create: if isSignedIn()
-                    && request.resource.data.authorId == request.auth.uid
-                    && request.resource.data.keys().hasOnly(['authorId', 'authorName', 'postId', 'content', 'createdAt'])
-                    && request.resource.data.postId is string
-                    && request.resource.data.content is string && request.resource.data.content.size() <= 3000;
-      allow delete: if isSignedIn()
-                    && (request.auth.uid == resource.data.authorId || isCurator());
     }
 
     // ── notifications ─────────────────────────────────────────

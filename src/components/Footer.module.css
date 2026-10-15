@@ -2,17 +2,8 @@
 .footer {
   position: relative;
   background: var(--card-bg-solid);
-  border-top: 1px solid var(--border-color);
   margin-top: auto;
 }
-/* Thin brand accent along the top edge */
-.footer::before {
-  content: '';
-  position: absolute; inset-inline: 0; top: -1px; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--primary-blue), transparent);
-  opacity: .55;
-}
-
 /* ── Main grid ── */
 .inner {
   max-width: 1200px;

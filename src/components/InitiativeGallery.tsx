@@ -35,7 +35,6 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
     setIndex(i => (i + delta + total) % total);
   }, [total]);
 
-  const openAt = (i: number) => { setIndex(i); setLightbox(true); };
 
   /* Keyboard: arrows page through, Escape leaves the lightbox.
    * Bound only while the lightbox is open so it never hijacks page keys. */

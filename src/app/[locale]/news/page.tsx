@@ -80,6 +80,7 @@ export default function NewsPage() {
         }
         setPosts(data);
         setFiltered(data);
+        setLoading(false);
 
         // Match each post's initials avatar to its author's real profile
         // photo where one exists, in chunks of 30 (Firestore 'in' limit),

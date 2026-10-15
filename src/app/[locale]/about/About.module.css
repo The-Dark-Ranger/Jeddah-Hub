@@ -6,7 +6,7 @@
    Design tokens (colours, spacing) live in globals.css.
    ============================================================ */
 
-.page { min-height: 100vh; }
+.page { min-height: 100svh; }
 
 /* ── Hero ── */
 .hero {

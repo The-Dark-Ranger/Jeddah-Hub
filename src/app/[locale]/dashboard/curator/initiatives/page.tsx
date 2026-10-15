@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
+import { omitKeys } from '@/lib/omitKeys';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
   emptyInitiativeForm as emptyForm, initiativeFormToDoc as formToDoc, initiativeToForm,
@@ -33,7 +34,13 @@ interface Initiative {
   color?: string;
   createdAt: string;
   members?: unknown[];
+  /** Hand-picked for the homepage's Featured Initiatives section. */
+  featured?: boolean;
+  featuredAt?: string;
 }
+
+/** How many initiatives the homepage's Featured section shows at most. */
+const MAX_FEATURED = 6;
 
 /* ── Default seed data ── */
 const DEFAULT_INITIATIVES = [
@@ -141,6 +148,9 @@ export default function ManageInitiatives() {
 
   const role      = normalizeRole(user?.role);
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
+  // Choosing what the homepage features is the curatorship's call
+  // (firestore.rules enforces the same split).
+  const canFeature = role === 'curator' || role === 'vice_curator';
 
   /* Stable onChange for FormFields */
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
@@ -299,8 +309,31 @@ export default function ManageInitiatives() {
   const handleArchive = async (id: string) => {
     if (!confirm(t('archiveInitiativeConfirm'))) return;
     try {
-      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
+      // An archived initiative can't stay on the homepage's Featured row.
+      await updateDoc(doc(db, 'initiatives', id), {
+        status: 'archived', archivedAt: new Date().toISOString(),
+        ...(canFeature ? { featured: false } : {}),
+      });
       await fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  const featuredCount = initiatives.filter(i => i.featured && i.status === 'active').length;
+
+  const handleToggleFeatured = async (init: Initiative) => {
+    if (!init.featured && featuredCount >= MAX_FEATURED) {
+      alert(t('featuredLimit', { n: MAX_FEATURED }));
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'initiatives', init.id), {
+        featured: !init.featured,
+        featuredAt: !init.featured ? new Date().toISOString() : null,
+      });
+      setInitiatives(prev => prev.map(i => i.id === init.id ? { ...i, featured: !init.featured } : i));
     } catch (err) {
       console.error(err);
       alert(t('saveFailed'));
@@ -406,8 +439,9 @@ export default function ManageInitiatives() {
   /* Proposed-initiative handlers */
   const handleApproveProposal = async (proposal: any) => {
     try {
-      const { id, proposedBy, proposedByName, status, requestedAt, ...fields } = proposal;
-      const slug = await uniqueInitiativeSlug(fields.title || '');
+      const { proposedBy } = proposal;
+      const fields = omitKeys(proposal, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+      const slug = await uniqueInitiativeSlug(String(fields.title || ''));
       // The proposer automatically becomes the new initiative's lead —
       // they're the one who wants to run it, and this is what actually
       // lets them edit it afterward (leads is the array firestore.rules
@@ -597,6 +631,15 @@ export default function ManageInitiatives() {
         </ModalPortal>
       )}
 
+      {canFeature && (
+        <p className={styles.featuredHint}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          {t('featuredHint', { count: featuredCount, max: MAX_FEATURED })}
+        </p>
+      )}
+
       {/* ── Filter tabs ── */}
       <div className={styles.filterBar}>
         {([
@@ -781,6 +824,9 @@ export default function ManageInitiatives() {
                     {init.status === 'active' ? t('statusActive') : t('statusArchived')}
                   </span>
                   {init.category && <span className={styles.categoryPill}>{init.category}</span>}
+                  {init.featured && init.status === 'active' && (
+                    <span className={styles.featuredPill}>★ {t('featuredBadge')}</span>
+                  )}
                 </div>
                 <h3 className={styles.cardTitle}>{init.title}</h3>
                 <p className={styles.cardDesc}>{init.description}</p>
@@ -818,6 +864,20 @@ export default function ManageInitiatives() {
               </div>
 
               <div className={styles.cardActions}>
+                {canFeature && init.status === 'active' && (
+                  <button
+                    type="button"
+                    className={styles.featureBtn + (init.featured ? ' ' + styles.featureBtnOn : '')}
+                    onClick={() => handleToggleFeatured(init)}
+                    aria-pressed={!!init.featured}
+                    title={init.featured ? t('unfeature') : t('featureOnHome')}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill={init.featured ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    {init.featured ? t('unfeature') : t('featureOnHome')}
+                  </button>
+                )}
                 <button className={styles.editBtn} onClick={() => openEdit(init)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects';
@@ -18,13 +18,35 @@ const PROJECT_GRADIENTS = [
 interface Initiative {
   id: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
+  type?: string;
+  featured?: boolean;
+  featuredAt?: string;
+  createdAt?: string | { toMillis?: () => number };
   category?: string;
   imageUrl?: string;
   images?: string[];
   stat?: string;
   color?: string;
   slug?: string;
+}
+
+/** Milliseconds for a createdAt that may be an ISO string or a Firestore Timestamp. */
+function timeOf(v: Initiative['createdAt'] | string | undefined): number {
+  if (!v) return 0;
+  if (typeof v === 'string') return Date.parse(v) || 0;
+  return v.toMillis?.() ?? 0;
+}
+
+/** Curator-picked initiatives (newest pick first), or — when none are
+ *  picked — the newest active initiatives. */
+function pickFeatured(all: Initiative[]): Initiative[] {
+  const real = all.filter(i => !i.type);
+  const picked = real.filter(i => i.featured).sort((a, b) => timeOf(b.featuredAt) - timeOf(a.featuredAt));
+  if (picked.length > 0) return picked.slice(0, 6);
+  return [...real].sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt)).slice(0, 3);
 }
 
 function cardImage(init: Initiative): string | undefined {
@@ -46,6 +68,7 @@ function cardGradient(init: Initiative, fallback: string): string {
 
 export default function HomeFeaturedInitiatives() {
   const t = useTranslations('HomePage');
+  const locale = useLocale();
   const [items, setItems]   = useState<Initiative[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -55,25 +78,12 @@ export default function HomeFeaturedInitiatives() {
     // the query inside this initial .then() turns that throw into a normal
     // promise rejection, so the .catch() below handles it the same way it
     // already handles a getDocs() failure, keeping the homepage rendering.
+    // A single-field query (no composite index needed); featuring and
+    // newest-first ordering are decided client-side by pickFeatured().
     Promise.resolve()
-      .then(() => getDocs(query(
-        collection(db, 'initiatives'),
-        where('status', '==', 'active'),
-        orderBy('createdAt', 'desc'),
-        limit(3),
-      )))
-      .then(snap => {
-        const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
-        setItems(all.filter(i => !(i as any).type));
-      })
-      .catch(() =>
-        getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'), limit(3)))
-          .then(snap => {
-            const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative));
-            setItems(all.filter(i => !(i as any).type));
-          })
-          .catch(() => {})
-      )
+      .then(() => getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))))
+      .then(snap => setItems(pickFeatured(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)))))
+      .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
 
@@ -123,8 +133,8 @@ export default function HomeFeaturedInitiatives() {
               {init.category && <span className={styles.projectBannerTag}>{init.category}</span>}
             </div>
             <div className={styles.projectInfo}>
-              <h3 className={styles.projectTitle}>{init.title}</h3>
-              <p className={styles.projectDesc}>{init.description?.slice(0, 120)}{(init.description?.length ?? 0) > 120 ? '…' : ''}</p>
+              <h3 className={styles.projectTitle}>{(locale === 'ar' && init.titleAr) || init.title}</h3>
+              <p className={styles.projectDesc}>{(locale === 'ar' && init.descriptionAr) || init.description}</p>
               <span className={styles.projectBadge}>{t('active')}</span>
             </div>
           </Link>

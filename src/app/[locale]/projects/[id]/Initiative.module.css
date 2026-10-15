@@ -1,4 +1,4 @@
-.page { min-height: 100vh; padding-bottom: 7rem; }
+.page { min-height: 100svh; padding-bottom: 7rem; }
 .container { max-width: 1140px; margin-inline: auto; padding: 0 1.5rem; }
 
 /* Hero banner */
@@ -156,7 +156,7 @@
 }
 
 /* Loading/404 */
-.loadingScreen { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+.loadingScreen { min-height: 60svh; display: flex; align-items: center; justify-content: center; }
 .spinner { width: 34px; height: 34px; border: 3px solid var(--border-color); border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -261,16 +261,14 @@
 .factsAreas .impactAreaTag { font-size: .78rem; padding: .3rem .7rem; border-radius: 999px; }
 
 .factsActions { display: flex; flex-direction: column; gap: .6rem; }
-.joinBtn, .copyBtn {
+.copyBtn {
   display: flex; align-items: center; justify-content: center;
   min-height: 46px; border-radius: 12px; font-weight: 700; font-size: .9rem; cursor: pointer;
   transition: transform .2s ease, background .2s ease, border-color .2s ease;
 }
-.joinBtn { background: var(--hero-color, var(--primary-blue)); color: #fff; }
-.joinBtn:hover { transform: translateY(-2px); }
 .copyBtn { background: none; border: 1.5px solid var(--border-color); color: var(--text-main); }
 .copyBtn:hover { border-color: var(--hero-color, var(--primary-blue)); }
-.joinBtn:focus-visible, .copyBtn:focus-visible, .relatedCard:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+.copyBtn:focus-visible, .relatedCard:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
 
 /* More initiatives */
 .related { margin-top: 4rem; padding-top: 2.5rem; border-top: 1px solid var(--border-color); }
@@ -301,6 +299,6 @@
   .storyBody { padding: .95rem 1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .joinBtn, .relatedCard { transition: none; }
-  .joinBtn:hover, .relatedCard:hover { transform: none; }
+  .relatedCard { transition: none; }
+  .relatedCard:hover { transform: none; }
 }

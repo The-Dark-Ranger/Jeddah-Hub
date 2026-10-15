@@ -23,8 +23,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://www.google.com https://www.gstatic.com`,
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data: https:",
   "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com https://*.firebaseio.com wss://*.firebaseio.com",
   "frame-src https://www.google.com",

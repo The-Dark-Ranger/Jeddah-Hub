@@ -15,6 +15,17 @@ import PageTransition from '@/components/PageTransition';
 import { SITE_URL, alternateLanguages } from '@/lib/seo';
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
+import { Inter, Tajawal } from 'next/font/google';
+
+// Self-hosted by next/font: no request to Google at runtime, and size-matched
+// fallback fonts so text doesn't reflow (jump) when the real font arrives.
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+const tajawal = Tajawal({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '700', '800'],
+  variable: '--font-tajawal',
+  display: 'swap',
+});
 
 // Browser chrome (mobile address bar, PWA title bar) follows the theme, and
 // color-scheme lets native controls — scrollbars, date pickers, selects —
@@ -37,8 +48,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     ? '\u0635\u0646\u0627\u0639 \u062c\u062f\u0629 | \u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645'
     : 'Jeddah Hub | Global Shapers Community';
   const description = locale === 'ar'
-    ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645 \u2014 \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
-    : 'Global Shapers Community \u2014 Jeddah Hub. A network of young leaders driving positive change in Jeddah.';
+    ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645 \— \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
+    : 'Global Shapers Community \— Jeddah Hub. A network of young leaders driving positive change in Jeddah.';
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -69,28 +80,20 @@ export default async function LocaleLayout({
   const messages = await getMessages({ locale });
   const isRtl    = locale === 'ar';
 
-  // Read theme from cookie set by ThemeProvider \u2014 eliminates client-side flash.
+  // Read theme from cookie set by ThemeProvider \— eliminates client-side flash.
   const cookieStore = await cookies();
   const savedTheme  = cookieStore.get('jh-theme')?.value;
   const themeAttr   = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : undefined;
 
   return (
-    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-theme={themeAttr} suppressHydrationWarning>
+    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-theme={themeAttr} className={`${inter.variable} ${tajawal.variable}`} suppressHydrationWarning>
       <head>
         {/* Must run before first paint: lock in the saved theme and decide
             whether this load shows the splash, so neither flashes in late. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + SPLASH_INIT_SCRIPT }} />
-        {/* Preconnect for faster font loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Inter for LTR, Tajawal for RTL \u2014 loaded together so switching is instant */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
-        {/* reCAPTCHA v3 \u2014 loaded after hydration so it never blocks first
+        {/* reCAPTCHA v3 \— loaded after hydration so it never blocks first
             paint; grecaptcha.execute() is ready long before anyone can
             submit a form that needs it. */}
         {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (

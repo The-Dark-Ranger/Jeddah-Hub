@@ -99,10 +99,10 @@ export default function SplashScreen({ locale }: { locale: string }) {
         </div>
         <div className={styles.wordmark}>
           <span className={styles.wordmarkMain}>
-            {isRtl ? 'صُنَّاع جدة' : 'Jeddah Hub'}
+            {isRtl ? 'صنّاع جدة' : 'Jeddah Hub'}
           </span>
           <span className={styles.wordmarkSub}>
-            {isRtl ? 'مجتمع صُنَّاع العالم' : 'Global Shapers Community'}
+            {isRtl ? 'مجتمع صنّاع العالم' : 'Global Shapers Community'}
           </span>
         </div>
         <div className={styles.progressTrack}>

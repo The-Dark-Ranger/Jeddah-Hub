@@ -14,7 +14,6 @@ const firebaseConfig = {
 // Graceful init: if NEXT_PUBLIC_FIREBASE_* vars are not set (e.g. during SSR without config),
 // we avoid crashing so that public pages still render. Auth/DB features won't work until
 // the env vars are added to the Vercel project settings.
-// eslint-disable-next-line prefer-const
 let app: FirebaseApp, auth: Auth, db: Firestore;
 try {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);

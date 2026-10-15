@@ -65,9 +65,20 @@ export default function Navbar() {
     const onScroll = () => {
       const y = window.scrollY;
       setScrolled(y > 8);
-      if (isDashboard) { setNavHidden(false); }
-      else if (y > lastScrollY.current && y > 72) { setNavHidden(true); setMobileOpen(false); }
-      else { setNavHidden(false); }
+      if (isDashboard || y <= 72) {
+        setNavHidden(false);
+        lastScrollY.current = y;
+        return;
+      }
+      // iOS rubber-band overscroll reports positions past either end —
+      // reacting to those made the bar flicker at the top and bottom.
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (y > max) return;
+      // Hysteresis: only a deliberate move flips the bar, so momentum
+      // wobble and tiny finger corrections don't toggle it back and forth.
+      const delta = y - lastScrollY.current;
+      if (Math.abs(delta) < 12) return;
+      setNavHidden(delta > 0);
       lastScrollY.current = y;
     };
     onScroll();
@@ -291,14 +302,9 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <>
-              <Link href="/become-a-shaper" onClick={closeMobile} className={styles.mobilePrimaryBtn}>
-                {t('becomeShaper')}
-              </Link>
-              <Link href="/login" onClick={closeMobile} className={styles.mobileSecondaryBtn}>
-                {t('login')}
-              </Link>
-            </>
+            <Link href="/login" onClick={closeMobile} className={styles.mobilePrimaryBtn}>
+              {t('login')}
+            </Link>
           )}
           <div className={styles.mobileSocials}>
             {SOCIALS.map(sl => (

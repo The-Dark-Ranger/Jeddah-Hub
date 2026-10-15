@@ -10,7 +10,10 @@ import { normalizeRole } from '@/lib/role';
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <onboarding@resend.dev>';
+// Same verified sender as the newsletter. (Resend's onboarding@resend.dev
+// test sender only delivers to the account owner, so invites sent from it
+// never reached anyone else.)
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
 
 export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);

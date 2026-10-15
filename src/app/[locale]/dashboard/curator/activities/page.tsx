@@ -16,6 +16,7 @@ import {
 } from '@/lib/activityTypes';
 import type { Highlight, CustomForm, ActivityKind } from '@/lib/activityTypes';
 import { normalizeRole } from '@/lib/role';
+import { omitKeys } from '@/lib/omitKeys';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
 import RegistrationFormBuilder from '@/components/RegistrationFormBuilder';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
@@ -130,9 +131,9 @@ function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: Ret
       )}
       {typeof fields.active === 'boolean' && row('activityActiveLabel', fields.active ? t('yes') : t('no'))}
       {typeof fields.archived === 'boolean' && row('filterArchived', fields.archived ? t('yes') : t('no'))}
-      {customForm && row('activityCustomFormEnable',
+      {customForm && row('regTitle',
         customForm.enabled
-          ? t('customFormQuestionCount', { n: customForm.questions?.length || 0 })
+          ? `${customForm.closed ? t('regClosed') : t('regOpen')} · ${t('customFormQuestionCount', { n: customForm.questions?.length || 0 })}`
           : t('no')
       )}
     </>
@@ -318,8 +319,8 @@ export default function ActivitiesPage() {
 
   async function handleApproveActivityProposal(req: any) {
     try {
-      const { id: _id, proposedBy: _pb, proposedByName: _pbn, status: _s, requestedAt: _ra, ...fields } = req;
-      const slug = await uniqueInitiativeSlug(fields.title || '');
+      const fields = omitKeys(req, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+      const slug = await uniqueInitiativeSlug(String(fields.title || ''));
       await addDoc(collection(db, 'initiatives'), {
         eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
         ...fields,

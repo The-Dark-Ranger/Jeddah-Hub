@@ -429,3 +429,28 @@
   border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s ease;
 }
 .declineRemovalBtn:hover { border-color: var(--text-muted); color: var(--text-main); }
+
+/* ── Homepage featuring (curator / vice curator) ── */
+.featuredHint {
+  display: flex; align-items: center; gap: .5rem;
+  margin: 0 0 1rem; padding: .65rem .9rem; border-radius: 10px;
+  background: rgba(245, 158, 11, .1); color: var(--text-main);
+  font-size: .84rem; border: 1px solid rgba(245, 158, 11, .3);
+}
+.featuredHint svg { color: #f59e0b; flex-shrink: 0; }
+.featuredPill {
+  font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
+  background: rgba(245, 158, 11, .15); color: #b45309;
+}
+:global([data-theme="dark"]) .featuredPill { color: #fbbf24; }
+.featureBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: .4rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 600;
+  border: 1px solid rgba(245, 158, 11, .35); color: #b45309;
+  background: rgba(245, 158, 11, .08); cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+:global([data-theme="dark"]) .featureBtn { color: #fbbf24; }
+.featureBtn:hover, .featureBtnOn { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+:global([data-theme="dark"]) .featureBtnOn, :global([data-theme="dark"]) .featureBtn:hover { color: #1f1300; }
+.featureBtn:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; }

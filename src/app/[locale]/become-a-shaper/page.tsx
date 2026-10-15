@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 import styles from './BecomeShaper.module.css';
 import FaqAccordion from './FaqAccordion';
+import PatternDivider from '@/components/PatternDivider';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -121,7 +122,7 @@ export default function BecomeAShaperPage() {
         <div className={styles.heroChip}><strong>120K+</strong><span>{t('statBenefited')}</span></div>
       </div>
 
-      {/* Jeddah stripe divider */}
+      <PatternDivider />
 
       {/* Who Are Global Shapers */}
       <section className={styles.section}>
@@ -155,6 +156,8 @@ export default function BecomeAShaperPage() {
           </div>
         </div>
       </section>
+
+      <PatternDivider />
 
       {/* How It Works */}
       <section className={styles.section}>
@@ -192,6 +195,8 @@ export default function BecomeAShaperPage() {
         </div>
       </section>
 
+      <PatternDivider />
+
       {/* Voices from Our Shapers */}
       <section className={styles.section}>
         <div className={styles.container}>
@@ -216,6 +221,8 @@ export default function BecomeAShaperPage() {
           </div>
         </div>
       </section>
+
+      <PatternDivider />
 
       {/* FAQ */}
       <section className={styles.section}>

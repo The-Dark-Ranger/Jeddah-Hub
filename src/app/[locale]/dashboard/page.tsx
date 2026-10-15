@@ -61,10 +61,6 @@ export default function DashboardHome() {
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    if (!loading && user?.role) fetchStats();
-  }, [loading, user]);
-
   const fetchStats = async () => {
     const role      = normalizeRole(user?.role);
     const isCurator = role === 'curator' || role === 'vice_curator';
@@ -208,6 +204,11 @@ export default function DashboardHome() {
     setStats(next);
     setStatsLoading(false);
   };
+
+  useEffect(() => {
+    if (!loading && user?.role) fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the signed-in user changes
+  }, [loading, user]);
 
   if (loading) return null;
 

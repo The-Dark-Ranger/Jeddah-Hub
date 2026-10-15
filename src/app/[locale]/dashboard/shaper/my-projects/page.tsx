@@ -143,6 +143,8 @@ export default function MyProjects() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyInitiativeForm); };
+
   /* Close modal on Escape / lock body scroll while open */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeLeadEdit(); };
@@ -158,7 +160,6 @@ export default function MyProjects() {
   const toggleMemberPanel = (id: string) => setMemberPanelOpenId(prev => prev === id ? null : id);
 
   const openLeadEdit = (p: Project) => { setLeadEditInit(p); setLeadForm(initiativeToForm(p)); };
-  const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyInitiativeForm); };
 
   const handleLeadSave = async (e: React.FormEvent) => {
     e.preventDefault();

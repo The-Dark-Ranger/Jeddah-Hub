@@ -20,12 +20,9 @@ export type ContactFieldMode = 'off' | 'optional' | 'required';
 export interface CustomForm {
   enabled: boolean;
   questions: CustomFormQuestion[];
-  /* Editable "frame" around the questions — all optional so forms saved
-     before these existed keep their default wording. */
-  title?: string;
+  /* Optional wording around the questions — the form's title and button
+     always use the site's defaults, so nothing here repeats the activity. */
   intro?: string;
-  submitLabel?: string;
-  successTitle?: string;
   successMessage?: string;
   collectName?: ContactFieldMode;
   collectEmail?: ContactFieldMode;
@@ -34,7 +31,7 @@ export interface CustomForm {
 }
 
 /** Hard caps for the frame's free text, mirrored in the builder inputs. */
-export const FORM_TEXT_MAX = { title: 120, intro: 600, submitLabel: 40, successTitle: 120, successMessage: 400 } as const;
+export const FORM_TEXT_MAX = { intro: 600, successMessage: 400 } as const;
 
 export type ActivityKind = 'activity' | 'workshop';
 

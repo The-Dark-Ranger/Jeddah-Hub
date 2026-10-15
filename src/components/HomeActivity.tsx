@@ -153,7 +153,15 @@ export default function HomeActivity() {
       .catch(() => setActivities([]));
   }, []);
 
-  if (activities === 'loading') return null;
+  // Hold the section's space while loading, so it doesn't pop in later and
+  // push everything below it down mid-scroll.
+  if (activities === 'loading') return (
+    <section className={styles.retreatSection} aria-busy="true">
+      <WaveDivider flip fill="var(--card-bg)" />
+      <div className={styles.retreatPlaceholder} />
+      <WaveDivider fill="var(--background)" />
+    </section>
+  );
 
   const current = activities[index] as Activity | undefined;
   const accent = safeColor(current?.color);

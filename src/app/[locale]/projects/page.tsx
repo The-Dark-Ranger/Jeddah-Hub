@@ -123,7 +123,6 @@ function SkeletonCard() {
 export default function ProjectsPage() {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
-  const locale = useLocale();
   // Known categories get a translated label; custom ones show as typed.
   const catLabel = (category: string) => {
     const key = category.trim().toLowerCase();
@@ -165,14 +164,6 @@ export default function ProjectsPage() {
       .some(v => v?.toLowerCase().includes(q));
     return matchCat && matchSearch;
   });
-
-  // Headline numbers for the summary strip.
-  const totals = {
-    all: projects.length,
-    active: projects.filter(p => p.status === 'active' || !p.status).length,
-    shapers: new Set(projects.flatMap(p => (p.members || []).map(m => m.userId))).size,
-    areas: categoryTabs.length,
-  };
   const countIn = (cat: string) => projects.filter(p => p.category?.trim() === cat).length;
 
   const active   = filtered.filter(p => p.status === 'active' || !p.status);
@@ -190,22 +181,6 @@ export default function ProjectsPage() {
       </section>
 
       <div className={styles.container}>
-        {!loading && totals.all > 0 && (
-          <dl className={styles.summary}>
-            {([
-              ['summaryInitiatives', totals.all],
-              ['summaryActive', totals.active],
-              ['summaryShapers', totals.shapers],
-              ['summaryAreas', totals.areas],
-            ] as const).filter(([, n]) => n > 0).map(([key, n]) => (
-              <div key={key} className={styles.summaryItem + ' reveal'}>
-                <dd>{n.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}</dd>
-                <dt>{t(key)}</dt>
-              </div>
-            ))}
-          </dl>
-        )}
-
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

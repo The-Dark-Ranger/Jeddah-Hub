@@ -4,6 +4,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import ThemeLogo from './ThemeLogo';
 import WefLogo from './WefLogo';
+import PatternDivider from './PatternDivider';
 import styles from './Footer.module.css';
 
 // Computed at render time, and the page renders per-request rather than
@@ -51,6 +52,7 @@ export default function Footer() {
 
   return (
     <footer className={styles.footer}>
+      <PatternDivider />
       {showCta && (
         <div className={styles.ctaBand}>
           <div className={styles.ctaInner}>

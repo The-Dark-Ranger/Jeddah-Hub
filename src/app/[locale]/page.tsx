@@ -8,6 +8,7 @@ import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
 import HomeActivity from '@/components/HomeActivity';
 import WefSection from '@/components/WefSection';
+import PatternDivider from '@/components/PatternDivider';
 import { SITE_URL } from '@/lib/seo';
 
 const ORGANIZATION_JSON_LD = {
@@ -113,11 +114,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Hijazi pattern band */}
-      <div className={styles.patternBand} aria-hidden="true" />
+      <PatternDivider />
 
       {/* 2b. Part of the World Economic Forum */}
       <WefSection />
+
+      <PatternDivider />
 
       {/* 3. Impact metrics */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
@@ -161,6 +163,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <PatternDivider />
+
       {/* 6. Shapers (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>
         <div className={styles.container}>
@@ -176,6 +180,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <PatternDivider />
+
       {/* 7. Partners */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
         <div className={styles.container}>
@@ -186,16 +192,23 @@ export default function HomePage() {
           </div>
           {/* next/image serves this as AVIF/WebP sized to the viewport
               instead of the full 412KB PNG on every visit. */}
-          <Image
-            src="/partners.png"
-            alt={t('partners')}
-            className={styles.partnersImage}
-            width={1856}
-            height={611}
-            sizes="(max-width: 1140px) 100vw, 1100px"
-          />
+          {/* Partner logos keep their brand colours, several of them black on
+              transparent — so they always sit on a light card, which keeps
+              them visible in dark mode too. */}
+          <div className={styles.partnersCard + ' reveal'}>
+            <Image
+              src="/partners.png"
+              alt={t('partners')}
+              className={styles.partnersImage}
+              width={1856}
+              height={611}
+              sizes="(max-width: 1140px) 100vw, 1100px"
+            />
+          </div>
         </div>
       </section>
+
+      <PatternDivider />
 
       {/* 8. Newsletter */}
       <section className={styles.section} style={{ backgroundColor: 'var(--card-bg)' }}>

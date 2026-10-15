@@ -889,7 +889,12 @@
     "unfeature": "Remove from homepage",
     "featuredBadge": "Featured",
     "featuredLimit": "You can feature up to {n} initiatives. Remove one first.",
-    "featuredHint": "{count} of {max} featured on the homepage. With none picked, the newest initiatives show automatically."
+    "featuredHint": "{count} of {max} featured on the homepage. With none picked, the newest initiatives show automatically.",
+    "regBadgeOpen": "Registration open",
+    "regBadgeClosed": "Registration closed",
+    "regOpenAction": "Open registration",
+    "regCloseAction": "Close registration",
+    "regClosedNote": "Registration is closed — visitors see the activity but can’t sign up. Switch to Open to show the form."
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

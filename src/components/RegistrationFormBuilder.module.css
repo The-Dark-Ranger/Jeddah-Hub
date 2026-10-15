@@ -1,4 +1,7 @@
 .wrap {
+  /* Never shrink: inside the editor's scrolling flex column, a box with
+     overflow:hidden otherwise collapses to zero height (just its border). */
+  flex-shrink: 0;
   border: 1px solid var(--border-color);
   border-radius: 14px;
   background: var(--card-bg-solid);

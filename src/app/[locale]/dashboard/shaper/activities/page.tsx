@@ -154,6 +154,20 @@ export default function LeadActivitiesPage() {
   // Archiving an activity that's still active also requests it be turned
   // inactive at the same time — same rule the curator's direct-write page
   // applies, so a lead can't archive-but-leave-live and forget to hide it.
+  // Leads request the change like any other edit; a curator approves it.
+  async function handleRequestToggleRegistration(a: Activity) {
+    if (!a.customForm) return;
+    try {
+      await submitRequest('update', a.id, a.initiativeId!, a.title, {
+        customForm: { ...a.customForm, closed: !a.customForm.closed },
+      });
+      fetchAll();
+    } catch (err) {
+      console.error('Failed to request registration toggle:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleRequestToggleArchive(a: Activity) {
     try {
       const archived = !a.archived;
@@ -261,6 +275,11 @@ export default function LeadActivitiesPage() {
                     {a.active ? t('activityActive') : t('activityInactive')}
                   </span>
                   {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
+                  {a.customForm?.enabled && (
+                  <span className={styles.badge + ' ' + (a.customForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
+                    {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
+                  </span>
+                )}
                 </div>
                 {a.description && <p className={styles.cardDesc}>{a.description}</p>}
                 {pending ? (
@@ -268,6 +287,14 @@ export default function LeadActivitiesPage() {
                 ) : (
                   <div className={styles.cardActions}>
                     <button className={styles.editBtn} onClick={() => openEdit(a)}>{t('editActivity')}</button>
+                    {a.customForm?.enabled && (
+                  <button
+                    className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
+                    onClick={() => handleRequestToggleRegistration(a)}
+                  >
+                    {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
+                  </button>
+                )}
                     <button
                       className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
                       onClick={() => handleRequestToggleActive(a)}

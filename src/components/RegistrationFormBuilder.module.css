@@ -147,3 +147,10 @@
 @media (prefers-reduced-motion: reduce) {
   .switch, .knob { transition: none; }
 }
+
+.segmentOnClosed { background: var(--danger, #dc2626); color: #fff; }
+.closedNote {
+  margin: -.4rem 0 0; padding: .55rem .75rem; border-radius: 9px;
+  background: rgba(220, 38, 38, .08); border: 1px solid rgba(220, 38, 38, .25);
+  color: var(--danger, #dc2626); font-size: .8rem; font-weight: 600;
+}

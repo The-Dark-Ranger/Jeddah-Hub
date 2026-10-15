@@ -390,6 +390,25 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
     }
 
+    // ── media ─────────────────────────────────────────────────
+    // One uploaded photo per document (src/lib/media.ts), served publicly
+    // by /api/media/<id> — so reads are public, like the initiatives and
+    // activities that reference them. Only signed-in members may upload,
+    // only as themselves, only a JPEG data URI, and below Firestore's
+    // 1 MiB document limit. Documents are immutable once written.
+    match /media/{docId} {
+      allow read: if true;
+      allow create: if isAnyMember()
+                    && request.resource.data.keys().hasOnly(['data', 'contentType', 'uploadedBy', 'createdAt'])
+                    && request.resource.data.uploadedBy == request.auth.uid
+                    && request.resource.data.contentType == 'image/jpeg'
+                    && request.resource.data.data is string
+                    && request.resource.data.data.size() <= 1000000
+                    && request.resource.data.createdAt is string;
+      allow delete: if isCurator()
+                    || (isSignedIn() && resource.data.uploadedBy == request.auth.uid);
+    }
+
     // ── notifications ─────────────────────────────────────────
     // Signed-in users can create. Only curators can read and update.
     // Field-capped to the exact shape dashboard/impact/projects writes, so

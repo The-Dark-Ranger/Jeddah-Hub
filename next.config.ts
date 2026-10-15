@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // Kept permissive on script/connect/frame sources deliberately — this app
 // talks to Firebase Auth/Firestore (googleapis.com), Google reCAPTCHA v3
 // (google.com/gstatic.com, loaded as a classic <script> in layout.tsx), and
-// Google Fonts, and lets curators paste arbitrary external image URLs
+// and lets curators paste arbitrary external image URLs
 // (ImageUploader) alongside the base64 data-URI images it also stores —
 // hence img-src allows any https origin plus data:. A CSP that's too tight
 // to verify against a live Firebase project from this sandbox risks
@@ -65,8 +65,9 @@ const nextConfig: NextConfig = {
       },
       {
         // API responses carry per-request data and should never be cached
-        // by a shared cache.
-        source: '/api/:path*',
+        // by a shared cache — except /api/media, which serves immutable
+        // photos with its own long-lived Cache-Control.
+        source: '/api/:path((?!media/).*)',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
     ];

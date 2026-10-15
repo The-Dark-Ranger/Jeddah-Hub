@@ -19,6 +19,10 @@ const MAX_DIMENSION = 1280;
 const START_QUALITY = 0.72;
 const MIN_QUALITY   = 0.4;
 
+/** Photos stored as their own media document (src/lib/media.ts): sharper and
+ *  larger, bounded only by the 1 MiB limit of that one document. */
+export const MEDIA_OPTIONS = { maxDim: 1920, quality: 0.85, maxBytes: 900_000 };
+
 /** Avatars render at 150px at most, so they compress far harder than gallery photos. */
 export const AVATAR_OPTIONS = { maxDim: 512, quality: 0.8, maxBytes: 120_000 };
 

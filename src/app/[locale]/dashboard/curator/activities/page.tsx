@@ -303,6 +303,19 @@ export default function ActivitiesPage() {
   // curator can't accidentally archive-but-leave-live an activity and
   // forget to hide it — unarchiving never re-activates it automatically,
   // since bringing it back onto the homepage should be a deliberate step.
+  // One click to open or close an activity's registration form.
+  async function handleToggleRegistration(a: Activity) {
+    if (!a.customForm) return;
+    try {
+      const closed = !a.customForm.closed;
+      await updateDoc(doc(db, 'initiatives', a.id), { 'customForm.closed': closed });
+      setActivities(prev => prev.map(x => x.id === a.id && x.customForm ? { ...x, customForm: { ...x.customForm, closed } } : x));
+    } catch (err) {
+      console.error('Failed to toggle registration:', err);
+      alert(t('saveFailed'));
+    }
+  }
+
   async function handleToggleArchive(a: Activity) {
     try {
       const archived = !a.archived;
@@ -650,10 +663,23 @@ export default function ActivitiesPage() {
                   {a.active ? t('activityActive') : t('activityInactive')}
                 </span>
                 {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
+                {a.customForm?.enabled && (
+                  <span className={styles.badge + ' ' + (a.customForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
+                    {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
+                  </span>
+                )}
               </div>
               {a.description && <p className={styles.cardDesc}>{a.description}</p>}
               <div className={styles.cardActions}>
                 <button className={styles.editBtn} onClick={() => openEdit(a)}>{t('editActivity')}</button>
+                {a.customForm?.enabled && (
+                  <button
+                    className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
+                    onClick={() => handleToggleRegistration(a)}
+                  >
+                    {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
+                  </button>
+                )}
                 {a.customForm?.enabled && (
                   <button
                     className={styles.responsesBtn + (responseCounts[a.id] > 0 ? ' ' + styles.responsesBtnHasNew : '')}

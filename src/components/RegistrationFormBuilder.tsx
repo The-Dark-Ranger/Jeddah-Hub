@@ -110,7 +110,7 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
                   type="button"
                   role="radio"
                   aria-checked={!!form.closed === closed}
-                  className={styles.segmentBtn + (!!form.closed === closed ? ' ' + styles.segmentOn : '')}
+                  className={styles.segmentBtn + (!!form.closed === closed ? ' ' + (closed ? styles.segmentOnClosed : styles.segmentOn) : '')}
                   onClick={() => set({ closed })}
                 >
                   {closed ? t('regClosed') : t('regOpen')}
@@ -118,6 +118,8 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
               ))}
             </div>
           </div>
+
+          {form.closed && <p className={styles.closedNote}>{t('regClosedNote')}</p>}
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t('regAskFor')}</span>

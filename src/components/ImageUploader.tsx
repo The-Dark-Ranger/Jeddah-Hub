@@ -4,8 +4,12 @@ import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   compressToDataUrl, totalBytes, byteSize, formatBytes, isDataUri,
-  DOC_BUDGET_BYTES,
+  DOC_BUDGET_BYTES, MEDIA_OPTIONS,
 } from '@/lib/imageCompress';
+import { uploadMedia, isMediaUrl } from '@/lib/media';
+
+/** Gallery size cap — generous, but keeps a page from becoming a photo dump. */
+const MAX_PHOTOS = 24;
 import styles from './ImageUploader.module.css';
 
 /* Matches the onChange(key, value) contract already used by every initiative
@@ -43,17 +47,29 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
     return t('uploadFailed');
   };
 
+  /** High quality into its own media document; if that write is refused
+   *  (rules not deployed yet, offline…) fall back to a smaller inline copy
+   *  that counts against the document's photo budget. */
+  const storePhoto = async (file: File, inlineUsed: number): Promise<{ value: string; inlineBytes: number } | null> => {
+    try {
+      const url = await uploadMedia(await compressToDataUrl(file, MEDIA_OPTIONS));
+      return { value: url, inlineBytes: 0 };
+    } catch (err) {
+      if (err instanceof Error && (err.message === 'not-an-image' || err.message === 'decode-failed')) throw err;
+      const inline = await compressToDataUrl(file);
+      if (inlineUsed + byteSize(inline) > DOC_BUDGET_BYTES) return null;
+      return { value: inline, inlineBytes: byteSize(inline) };
+    }
+  };
+
   const handleCover = async (files: FileList | null) => {
     if (!files?.length) return;
     setBusy(true); setError('');
     try {
-      const next = await compressToDataUrl(files[0]);
       // Replacing the cover frees whatever the previous one occupied.
-      if (byteSize(next) + totalBytes('', inlinePhotos) > DOC_BUDGET_BYTES) {
-        setError(t('uploadTooLarge'));
-        return;
-      }
-      onChange('imageUrl', next);
+      const stored = await storePhoto(files[0], totalBytes('', inlinePhotos));
+      if (!stored) { setError(t('uploadTooLarge')); return; }
+      onChange('imageUrl', stored.value);
     } catch (err) {
       setError(describeFailure(err));
     } finally {
@@ -71,11 +87,12 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
     let skipped = 0;
 
     for (const file of Array.from(files)) {
+      if (photoList.length + accepted.length >= MAX_PHOTOS) { skipped++; continue; }
       try {
-        const next = await compressToDataUrl(file);
-        if (running + byteSize(next) > DOC_BUDGET_BYTES) { skipped++; continue; }
-        accepted.push(next);
-        running += byteSize(next);
+        const stored = await storePhoto(file, running);
+        if (!stored) { skipped++; continue; }
+        accepted.push(stored.value);
+        running += stored.inlineBytes;
       } catch (err) {
         setError(describeFailure(err));
       }
@@ -91,7 +108,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
   const removePhoto = (idx: number) =>
     onChange('images', photoList.filter((_, i) => i !== idx).join('\n'));
 
-  const label = (value: string) => isDataUri(value) ? t('uploadedLabel') : t('linkedLabel');
+  const label = (value: string) => isDataUri(value) || isMediaUrl(value) ? t('uploadedLabel') : t('linkedLabel');
 
   // Shared no-op-the-browser-default drag handlers — without preventDefault
   // on dragover, the browser refuses to fire drop at all.
@@ -152,10 +169,10 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
 
         <input
           className={styles.urlInput}
-          value={isDataUri(coverUrl) ? '' : coverUrl}
+          value={isDataUri(coverUrl) || isMediaUrl(coverUrl) ? '' : coverUrl}
           onChange={e => onChange('imageUrl', e.target.value)}
           placeholder={t('orPasteUrl')}
-          disabled={isDataUri(coverUrl)}
+          disabled={isDataUri(coverUrl) || isMediaUrl(coverUrl)}
         />
       </div>
 
@@ -215,8 +232,8 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
         />
       </div>
 
-      {/* ── Budget meter ── */}
-      <div className={styles.meterRow}>
+      {/* ── Budget meter: only inline (fallback) photos use document space ── */}
+      {used > 0 && <div className={styles.meterRow}>
         <div className={styles.meterTrack}>
           <div
             className={styles.meterFill}
@@ -226,7 +243,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
         <span className={styles.meterText}>
           {formatBytes(used)} / {formatBytes(DOC_BUDGET_BYTES)}
         </span>
-      </div>
+      </div>}
 
       {error && <p className={styles.error}>{error}</p>}
     </div>

@@ -852,9 +852,6 @@
     "formIntroPh": "مثال: المقاعد محدودة، سجّل قبل يوم الخميس.",
     "formSuccessMessageLabel": "نص رسالة الشكر",
     "formSuccessMessagePh": "نتطلّع إلى لقائك!",
-    "moveUp": "نقل للأعلى",
-    "moveDown": "نقل للأسفل",
-    "duplicateQuestion": "تكرار السؤال",
     "uncategorised": "دون تصنيف",
     "missingCover": "صورة الغلاف",
     "missingProblem": "التحدي",
@@ -879,9 +876,7 @@
     "regEmail": "البريد الإلكتروني",
     "regChipHint": "اضغط للتبديل: اختياري ← إلزامي ← بدون",
     "regQuestionsCount": "{count, plural, one {سؤال واحد} two {سؤالان} few {# أسئلة} many {# سؤالاً} other {# سؤال}}",
-    "regNoQuestions": "لا توجد أسئلة إضافية، يكتفي المسجّلون بالبيانات أعلاه.",
     "regRepeatsWarning": "هذا مطلوب في الأعلى بالفعل، احذفه كي لا يُسأل مرتين.",
-    "regQuestionType": "نوع السؤال",
     "regMoreOptions": "خيارات إضافية",
     "regSummary": "سيُطلب من المسجّلين: {list}",
     "regSummaryNothing": "سيكتفي المسجّلون بالتأكيد، دون أي أسئلة.",
@@ -894,7 +889,8 @@
     "regBadgeClosed": "التسجيل مغلق",
     "regOpenAction": "فتح التسجيل",
     "regCloseAction": "إغلاق التسجيل",
-    "regClosedNote": "التسجيل مغلق، يرى الزوار النشاط لكن لا يمكنهم التسجيل. اختر «مفتوح» لإظهار النموذج."
+    "regClosedNote": "التسجيل مغلق، يرى الزوار النشاط لكن لا يمكنهم التسجيل. اختر «مفتوح» لإظهار النموذج.",
+    "activityCustomFormHint": "أضف أسئلتك الخاصة أدناه. يمكن لأي زائر لصفحة هذا النشاط تعبئتها، ويمكنك تحميل كل الردود كجدول بيانات."
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",

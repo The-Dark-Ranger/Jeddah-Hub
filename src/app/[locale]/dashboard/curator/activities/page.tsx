@@ -12,11 +12,12 @@ import ModalPortal from '@/components/ModalPortal';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import {
   pickActivityFields, emptyActivityForm as emptyForm, emptyCustomForm,
-  newQuestionId, parseHighlights, highlightsToText, activityToForm, safeColor,
+  parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
-import type { Highlight, CustomFormQuestion, CustomForm, ActivityKind } from '@/lib/activityTypes';
+import type { Highlight, CustomForm, ActivityKind } from '@/lib/activityTypes';
 import { normalizeRole } from '@/lib/role';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
+import RegistrationFormBuilder from '@/components/RegistrationFormBuilder';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Activities.module.css';
 
@@ -259,87 +260,6 @@ export default function ActivitiesPage() {
     setForm(activityToForm(a));
     setHighlightsText(highlightsToText(a.highlights || []));
     setModalOpen(true);
-  }
-
-  /* ── Custom form question builder helpers ── */
-  function addQuestion() {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: [
-          ...(f.customForm?.questions || []),
-          { id: newQuestionId(), label: '', type: 'text', options: [], required: false },
-        ],
-      },
-    }));
-  }
-
-  function updateQuestion(id: string, patch: Partial<CustomFormQuestion>) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q => q.id === id ? { ...q, ...patch } : q),
-      },
-    }));
-  }
-
-  function removeQuestion(id: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).filter(q => q.id !== id),
-      },
-    }));
-  }
-
-  /* Dropdown-question options — edited as individual rows (Google Forms
-   * style) rather than one comma-separated field, which was easy to mangle
-   * (an option containing a comma silently split into two) and read as
-   * "not working" even though it technically parsed. */
-  function addOption(qId: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: [...(q.options || []), ''] } : q
-        ),
-      },
-    }));
-  }
-
-  function updateOption(qId: string, idx: number, value: string) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: (q.options || []).map((o, i) => (i === idx ? value : o)) } : q
-        ),
-      },
-    }));
-  }
-
-  function removeOption(qId: string, idx: number) {
-    setForm(f => ({
-      ...f,
-      customForm: {
-        enabled: f.customForm?.enabled ?? false,
-        questions: (f.customForm?.questions || []).map(q =>
-          q.id === qId ? { ...q, options: (q.options || []).filter((_, i) => i !== idx) } : q
-        ),
-      },
-    }));
-  }
-
-  function changeQuestionType(qId: string, current: CustomFormQuestion, newType: CustomFormQuestion['type']) {
-    // Seed one empty option automatically when switching into "Dropdown" —
-    // an empty options list would otherwise render nothing to fill in.
-    const options = newType === 'select' && !(current.options || []).length ? [''] : current.options;
-    updateQuestion(qId, { type: newType, options });
   }
 
   async function handleSave() {
@@ -855,94 +775,10 @@ export default function ActivitiesPage() {
                 {t('activityActiveLabel')}
               </label>
 
-              {/* ── Custom form builder ── */}
-              <div className={styles.customFormSection}>
-                <label className={styles.checkRow}>
-                  <input type="checkbox" checked={form.customForm?.enabled ?? false}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      customForm: { enabled: e.target.checked, questions: f.customForm?.questions || [] },
-                    }))} />
-                  {t('activityCustomFormEnable')}
-                </label>
-
-                {form.customForm?.enabled && (
-                  <div className={styles.questionList}>
-                    <p className={styles.customFormHint}>{t('activityCustomFormHint')}</p>
-                    {(form.customForm.questions || []).map((q, i) => (
-                      <div key={q.id} className={styles.questionCard}>
-                        <div className={styles.questionHeader}>
-                          <span className={styles.questionNum}>{i + 1}</span>
-                          <input
-                            className={styles.questionLabelInput}
-                            value={q.label}
-                            onChange={e => updateQuestion(q.id, { label: e.target.value })}
-                            placeholder={t('activityQuestionLabelPh')}
-                          />
-                          <select
-                            className={styles.questionTypeSelect}
-                            value={q.type}
-                            onChange={e => changeQuestionType(q.id, q, e.target.value as CustomFormQuestion['type'])}
-                          >
-                            <option value="text">{t('qTypeText')}</option>
-                            <option value="textarea">{t('qTypeTextarea')}</option>
-                            <option value="select">{t('qTypeSelect')}</option>
-                            <option value="checkbox">{t('qTypeCheckbox')}</option>
-                          </select>
-                        </div>
-
-                        {q.type === 'select' && (
-                          <div className={styles.optionsList}>
-                            {(q.options || []).filter(o => o.trim()).length === 0 && (
-                              <p className={styles.optionsWarning}>{t('activityQuestionNoOptionsWarning')}</p>
-                            )}
-                            {(q.options || []).map((opt, idx) => (
-                              <div key={idx} className={styles.optionRow}>
-                                <span className={styles.optionBullet} aria-hidden="true" />
-                                <input
-                                  className={styles.optionInput}
-                                  value={opt}
-                                  onChange={e => updateOption(q.id, idx, e.target.value)}
-                                  placeholder={`${t('optionPlaceholder')} ${idx + 1}`}
-                                />
-                                <button
-                                  type="button"
-                                  className={styles.optionRemoveBtn}
-                                  onClick={() => removeOption(q.id, idx)}
-                                  aria-label={t('removeOption')}
-                                >✕</button>
-                              </div>
-                            ))}
-                            <button type="button" className={styles.addOptionBtn} onClick={() => addOption(q.id)}>
-                              + {t('addOption')}
-                            </button>
-                          </div>
-                        )}
-
-                        <div className={styles.questionFooter}>
-                          <label className={styles.checkRow}>
-                            <input
-                              type="checkbox"
-                              checked={q.required}
-                              onChange={e => updateQuestion(q.id, { required: e.target.checked })}
-                            />
-                            {t('activityQuestionRequired')}
-                          </label>
-                          <button type="button" className={styles.removeQuestionBtn} onClick={() => removeQuestion(q.id)}>
-                            {t('removeQuestion')}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button type="button" className={styles.prefillBtn} onClick={addQuestion}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                      </svg>
-                      {t('addQuestion')}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <RegistrationFormBuilder
+                value={form.customForm}
+                onChange={customForm => setForm(f => ({ ...f, customForm }))}
+              />
             </div>
 
             <div className={styles.modalFooter}>

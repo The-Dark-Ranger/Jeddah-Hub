@@ -13,7 +13,7 @@ const FOCUS_AREAS = [
 ] as const;
 
 /** Homepage band in the World Economic Forum's visual language — a hairline
- *  grid, oversized figures, numbered topic tiles and the Forum's arc motif —
+ *  grid, oversized figures, topic tiles and the Forum's arc motif —
  *  placing the hub inside the Global Shapers / WEF network. */
 export default function WefSection() {
   const t = useTranslations('Wef');
@@ -59,10 +59,9 @@ export default function WefSection() {
           <h3 className={styles.focusTitle}>{t('focusTitle')}</h3>
           <Link href="/projects" className={styles.textLink}>{t('focusCta')}</Link>
         </div>
-        <ol className={styles.focusGrid}>
-          {FOCUS_AREAS.map(({ key, icon }, i) => (
+        <ul className={styles.focusGrid}>
+          {FOCUS_AREAS.map(({ key, icon }) => (
             <li key={key} className={styles.focusCard + ' reveal'}>
-              <span className={styles.focusIndex}>{String(i + 1).padStart(2, '0')}</span>
               <svg className={styles.focusIcon} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />
               </svg>
@@ -70,7 +69,7 @@ export default function WefSection() {
               <p className={styles.focusDesc}>{t(`focus_${key}_desc`)}</p>
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
     </section>
   );

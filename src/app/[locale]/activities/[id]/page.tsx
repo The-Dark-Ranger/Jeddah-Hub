@@ -8,19 +8,11 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import WaveDivider from '@/components/WaveDivider';
 import { slugify } from '@/lib/slug';
-import { safeColor } from '@/lib/activityTypes';
+import { safeColor, type CustomForm } from '@/lib/activityTypes';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import styles from './Activity.module.css';
 
 interface Highlight { name: string; tag: string; }
-
-interface CustomFormQuestion {
-  id: string;
-  label: string;
-  type: 'text' | 'textarea' | 'select' | 'checkbox';
-  options?: string[];
-  required: boolean;
-}
 
 interface Activity {
   id: string;
@@ -38,7 +30,7 @@ interface Activity {
   images?: string[];
   type?: string;
   kind?: 'activity' | 'workshop';
-  customForm?: { enabled: boolean; questions: CustomFormQuestion[] };
+  customForm?: CustomForm;
   slug?: string;
 }
 
@@ -54,6 +46,7 @@ export default function ActivityPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [error, setError]           = useState('');
+  const [copied, setCopied]         = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -116,6 +109,16 @@ export default function ActivityPage() {
       setError(t('missingRequired', { field: missing.label }));
       return;
     }
+    const cf = activity.customForm;
+    if (cf?.collectName === 'required' && !submitterName.trim()) {
+      setError(t('missingRequired', { field: t('yourName') }));
+      return;
+    }
+    if (cf?.collectEmail === 'required' && !submitterEmail.trim()) {
+      setError(t('missingRequired', { field: t('yourEmail') }));
+      return;
+    }
+    if (cf?.closed) return;
     setError('');
     setSubmitting(true);
     try {
@@ -156,7 +159,23 @@ export default function ActivityPage() {
   }
 
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
-  const hasForm = !!activity.customForm?.enabled && (activity.customForm?.questions?.length ?? 0) > 0;
+  const cf = activity.customForm;
+  const askName = cf?.collectName ?? 'optional';
+  const askEmail = cf?.collectEmail ?? 'optional';
+  // A form is worth showing if it asks anything at all — custom questions,
+  // or just the registrant's name/email.
+  const hasForm = !!cf?.enabled && ((cf.questions?.length ?? 0) > 0 || askName !== 'off' || askEmail !== 'off');
+  const formOpen = hasForm && !cf?.closed;
+  const mapsUrl = activity.location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.location)}`
+    : '';
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
+  };
   const accent = safeColor(activity.color);
   const gallery = Array.isArray(activity.images) ? activity.images.filter(Boolean) : [];
 
@@ -186,18 +205,64 @@ export default function ActivityPage() {
               {activity.location && <span>{activity.location}</span>}
             </div>
           )}
-          {activity.ctaText && activity.ctaUrl && (
-            <a
-              href={activity.ctaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.ctaBtn}
-            >
-              {activity.ctaText}
-            </a>
-          )}
+          <div className={styles.heroActions}>
+            {formOpen && (
+              <a href="#register" className={styles.ctaBtn}>{cf?.submitLabel?.trim() || t('registerNow')}</a>
+            )}
+            {activity.ctaText && activity.ctaUrl && (
+              <a
+                href={activity.ctaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={formOpen ? styles.ctaBtnGhost : styles.ctaBtn}
+              >
+                {activity.ctaText}
+              </a>
+            )}
+          </div>
         </div>
         <WaveDivider fill="var(--background)" className={styles.heroWave} />
+      </section>
+
+      {/* At-a-glance details */}
+      <section className={styles.factsSection}>
+        <div className={styles.container}>
+          <dl className={styles.facts}>
+            <div className={styles.fact}>
+              <dt>{t('factType')}</dt>
+              <dd>{activity.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}</dd>
+            </div>
+            {activity.date && (
+              <div className={styles.fact}>
+                <dt>{t('factDate')}</dt>
+                <dd>{activity.date}</dd>
+              </div>
+            )}
+            {activity.location && (
+              <div className={styles.fact}>
+                <dt>{t('factLocation')}</dt>
+                <dd>
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={styles.factLink}>
+                    {activity.location}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg>
+                  </a>
+                </dd>
+              </div>
+            )}
+            {hasForm && (
+              <div className={styles.fact}>
+                <dt>{t('factRegistration')}</dt>
+                <dd>
+                  <span className={styles.statusDot + (formOpen ? ' ' + styles.statusOpen : '')} aria-hidden="true" />
+                  {formOpen ? t('registrationOpen') : t('registrationClosed')}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <button type="button" className={styles.shareBtn} onClick={copyLink}>
+            {copied ? t('linkCopied') : t('shareActivity')}
+          </button>
+        </div>
       </section>
 
       {hasHighlights && (
@@ -224,32 +289,46 @@ export default function ActivityPage() {
       )}
 
       {hasForm && (
-        <section className={styles.sectionAlt}>
+        <section className={styles.sectionAlt + ' ' + styles.registerSection} id="register">
           <div className={styles.containerNarrow}>
-            {submitted ? (
+            {!formOpen ? (
+              <div className={styles.closedBox}>
+                <h2>{t('registrationClosedTitle')}</h2>
+                <p>{t('registrationClosedBody')}</p>
+              </div>
+            ) : submitted ? (
               <div className={styles.successBox}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
                 </svg>
-                <h2>{t('thankYouTitle')}</h2>
-                <p>{t('thankYouBody')}</p>
+                <h2>{cf?.successTitle?.trim() || t('thankYouTitle')}</h2>
+                <p>{cf?.successMessage?.trim() || t('thankYouBody')}</p>
               </div>
             ) : (
               <form className={styles.form} onSubmit={handleSubmit}>
-                <h2 className={styles.formTitle}>{t('formTitle')}</h2>
+                <h2 className={styles.formTitle}>{cf?.title?.trim() || t('formTitle')}</h2>
+                {cf?.intro?.trim() && <p className={styles.formIntro}>{cf.intro}</p>}
 
-                <div className={styles.formRow}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{t('yourName')}</label>
-                    <input className={styles.input} value={submitterName} onChange={e => setSubmitterName(e.target.value)} placeholder={t('yourNamePh')} />
+                {(askName !== 'off' || askEmail !== 'off') && (
+                  <div className={styles.formRow}>
+                    {askName !== 'off' && (
+                      <div className={styles.field}>
+                        <label className={styles.label} htmlFor="reg-name">{t('yourName')} {askName === 'required' && '*'}</label>
+                        <input id="reg-name" className={styles.input} autoComplete="name" maxLength={200} required={askName === 'required'}
+                          value={submitterName} onChange={e => setSubmitterName(e.target.value)} placeholder={t('yourNamePh')} />
+                      </div>
+                    )}
+                    {askEmail !== 'off' && (
+                      <div className={styles.field}>
+                        <label className={styles.label} htmlFor="reg-email">{t('yourEmail')} {askEmail === 'required' && '*'}</label>
+                        <input id="reg-email" className={styles.input} type="email" autoComplete="email" inputMode="email" maxLength={200} required={askEmail === 'required'}
+                          value={submitterEmail} onChange={e => setSubmitterEmail(e.target.value)} placeholder={t('yourEmailPh')} />
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{t('yourEmail')}</label>
-                    <input className={styles.input} type="email" value={submitterEmail} onChange={e => setSubmitterEmail(e.target.value)} placeholder={t('yourEmailPh')} />
-                  </div>
-                </div>
+                )}
 
-                {activity.customForm!.questions.map(q => (
+                {(cf?.questions || []).map(q => (
                   <div key={q.id} className={styles.field}>
                     <label className={styles.label}>{q.label} {q.required && '*'}</label>
                     {q.type === 'text' && (
@@ -297,7 +376,7 @@ export default function ActivityPage() {
                 {error && <p className={styles.errorMsg}>{error}</p>}
 
                 <button type="submit" className={styles.submitBtn} disabled={submitting}>
-                  {submitting ? t('submittingDots') : t('submitBtn')}
+                  {submitting ? t('submittingDots') : (cf?.submitLabel?.trim() || t('submitBtn'))}
                 </button>
               </form>
             )}

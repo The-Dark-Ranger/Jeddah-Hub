@@ -37,9 +37,9 @@ export default function HomePage() {
   const nav = useTranslations('Navigation');
 
   const PILLARS = [
-    { title: t('pillar1Title'), body: t('pillar1Body') },
-    { title: t('pillar2Title'), body: t('pillar2Body') },
-    { title: t('pillar3Title'), body: t('pillar3Body') },
+    { title: t('pillar1Title'), body: t('pillar1Body'), icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+    { title: t('pillar2Title'), body: t('pillar2Body'), icon: 'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z' },
+    { title: t('pillar3Title'), body: t('pillar3Body'), icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
   ];
 
   return (
@@ -55,6 +55,7 @@ export default function HomePage() {
       <section className={styles.hero}>
         <div className={styles.heroOrb1} />
         <div className={styles.heroOrb2} />
+        <div className={styles.heroGrid}>
         <div className={styles.heroContent}>
           <p className={styles.heroEyebrow + ' ' + styles.fadeInUp}>
             {t('eyebrow')}
@@ -77,6 +78,15 @@ export default function HomePage() {
             <div className={styles.heroStat}><span>120K+</span> {t('benefited')}</div>
           </div>
         </div>
+
+        {/* Jeddah landmarks in a Hijazi arch — desktop only */}
+        <div className={styles.heroVisual} aria-hidden="true">
+          <div className={styles.heroArch}>
+            <Image src="/jeddah-building.png" alt="" width={575} height={1184} className={styles.heroTower} sizes="230px" />
+          </div>
+          <Image src="/globe-mosaic.png" alt="" width={1061} height={1018} className={styles.heroGlobe} sizes="200px" />
+        </div>
+        </div>
         <WaveDivider fill="var(--background)" className={styles.heroWave} />
       </section>
 
@@ -92,6 +102,9 @@ export default function HomePage() {
           <div className={styles.aboutPillars}>
             {PILLARS.map(p => (
               <div key={p.title} className={styles.pillar + ' reveal'}>
+                <span className={styles.pillarIcon} aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={p.icon} /></svg>
+                </span>
                 <h3>{p.title}</h3>
                 <p>{p.body}</p>
               </div>
@@ -99,6 +112,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Hijazi pattern band */}
+      <div className={styles.patternBand} aria-hidden="true" />
 
       {/* 2b. Part of the World Economic Forum */}
       <WefSection />

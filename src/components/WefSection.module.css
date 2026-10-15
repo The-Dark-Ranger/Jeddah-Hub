@@ -126,11 +126,12 @@
 }
 .focusCard:hover { background: color-mix(in srgb, var(--wef-blue) 5%, transparent); }
 .focusCard:hover::after { width: 100%; }
-.focusIndex {
-  display: block; font-size: .78rem; font-weight: 700; letter-spacing: .1em;
-  color: var(--wef-blue); margin-bottom: 1.25rem; font-variant-numeric: tabular-nums;
+.focusIcon {
+  display: block; box-sizing: content-box; padding: 10px; margin-bottom: 1.1rem;
+  border-radius: 12px; background: color-mix(in srgb, var(--wef-blue) 9%, transparent); color: var(--wef-blue);
+  transition: background .25s ease, color .25s ease;
 }
-.focusIcon { position: absolute; inset-inline-end: 1.5rem; top: 1.6rem; color: var(--text-muted); }
+.focusCard:hover .focusIcon { background: var(--wef-blue); color: #fff; }
 .focusName { margin: 0 0 .5rem; font-size: 1.05rem; font-weight: 700; color: var(--wef-ink); }
 .focusDesc { margin: 0; font-size: .9rem; line-height: 1.6; color: var(--text-muted); }
 

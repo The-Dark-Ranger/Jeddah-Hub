@@ -15,12 +15,6 @@ interface Props {
 
 type QType = CustomFormQuestion['type'];
 
-const TYPE_ICONS: Record<QType, string> = {
-  text: 'M4 7h16M4 12h10',
-  textarea: 'M4 6h16M4 10h16M4 14h16M4 18h10',
-  select: 'M4 6h16v12H4zM8 11l4 4 4-4',
-  checkbox: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
-};
 
 /* Built-in name/email fields cycle off → optional → required. */
 const NEXT_MODE: Record<ContactFieldMode, ContactFieldMode> = { off: 'optional', optional: 'required', required: 'off' };
@@ -49,24 +43,10 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
   const addQuestion = (type: QType) =>
     setQuestions([...questions, { id: newQuestionId(), label: '', type, options: type === 'select' ? [''] : [], required: false }]);
   const removeQuestion = (id: string) => setQuestions(questions.filter(q => q.id !== id));
-  const duplicateQuestion = (q: CustomFormQuestion) => {
-    const i = questions.findIndex(x => x.id === q.id);
-    setQuestions([...questions.slice(0, i + 1), { ...q, id: newQuestionId(), options: [...(q.options || [])] }, ...questions.slice(i + 1)]);
-  };
-  const moveQuestion = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= questions.length) return;
-    const next = [...questions];
-    [next[i], next[j]] = [next[j], next[i]];
-    setQuestions(next);
-  };
   const setOptions = (q: CustomFormQuestion, options: string[]) => updateQuestion(q.id, { options });
   const changeType = (q: CustomFormQuestion, type: QType) =>
     updateQuestion(q.id, { type, options: type === 'select' && !(q.options || []).length ? [''] : q.options });
 
-  const typeLabel: Record<QType, string> = {
-    text: t('qTypeText'), textarea: t('qTypeTextarea'), select: t('qTypeSelect'), checkbox: t('qTypeCheckbox'),
-  };
   const modeLabel: Record<ContactFieldMode, string> = {
     off: t('fieldModeOff'), optional: t('fieldModeOptional'), required: t('fieldModeRequired'),
   };
@@ -139,34 +119,44 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
             </div>
           </div>
 
-          {/* ── Questions ── */}
-          <div className={styles.questions}>
-            {questions.length === 0 && <p className={styles.empty}>{t('regNoQuestions')}</p>}
+          {/* ── Questions (the original question editor) ── */}
+          <div className={styles.questionList}>
+            <p className={styles.customFormHint}>{t('activityCustomFormHint')}</p>
             {questions.map((q, i) => {
               const repeats = (askName !== 'off' && NAME_RE.test(q.label)) || (askEmail !== 'off' && EMAIL_RE.test(q.label));
               return (
-                <div key={q.id} className={styles.q}>
-                  <div className={styles.qTop}>
-                    <span className={styles.qIcon} title={typeLabel[q.type]} aria-hidden="true">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={TYPE_ICONS[q.type]} /></svg>
-                    </span>
+                <div key={q.id} className={styles.questionCard}>
+                  <div className={styles.questionHeader}>
+                    <span className={styles.questionNum}>{i + 1}</span>
                     <input
-                      className={styles.qLabel}
+                      className={styles.questionLabelInput}
                       value={q.label}
                       onChange={e => updateQuestion(q.id, { label: e.target.value })}
                       placeholder={t('activityQuestionLabelPh')}
-                      aria-label={`${t('activityQuestionLabelPh')} ${i + 1}`}
                       maxLength={200}
                     />
+                    <select
+                      className={styles.questionTypeSelect}
+                      value={q.type}
+                      onChange={e => changeType(q, e.target.value as QType)}
+                    >
+                      <option value="text">{t('qTypeText')}</option>
+                      <option value="textarea">{t('qTypeTextarea')}</option>
+                      <option value="select">{t('qTypeSelect')}</option>
+                      <option value="checkbox">{t('qTypeCheckbox')}</option>
+                    </select>
                   </div>
 
                   {repeats && <p className={styles.warn}>{t('regRepeatsWarning')}</p>}
 
                   {q.type === 'select' && (
-                    <div className={styles.options}>
+                    <div className={styles.optionsList}>
+                      {(q.options || []).filter(o => o.trim()).length === 0 && (
+                        <p className={styles.optionsWarning}>{t('activityQuestionNoOptionsWarning')}</p>
+                      )}
                       {(q.options || []).map((opt, idx) => (
-                        <div key={idx} className={styles.option}>
-                          <span className={styles.optionDot} aria-hidden="true" />
+                        <div key={idx} className={styles.optionRow}>
+                          <span className={styles.optionBullet} aria-hidden="true" />
                           <input
                             className={styles.optionInput}
                             value={opt}
@@ -174,59 +164,42 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
                             placeholder={`${t('optionPlaceholder')} ${idx + 1}`}
                             maxLength={120}
                           />
-                          <button type="button" className={styles.iconBtn} onClick={() => setOptions(q, (q.options || []).filter((_, k) => k !== idx))} aria-label={t('removeOption')}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                          </button>
+                          <button
+                            type="button"
+                            className={styles.optionRemoveBtn}
+                            onClick={() => setOptions(q, (q.options || []).filter((_, k) => k !== idx))}
+                            aria-label={t('removeOption')}
+                          >✕</button>
                         </div>
                       ))}
-                      <button type="button" className={styles.linkBtn} onClick={() => setOptions(q, [...(q.options || []), ''])}>+ {t('addOption')}</button>
-                      {(q.options || []).filter(o => o.trim()).length === 0 && (
-                        <p className={styles.warn}>{t('activityQuestionNoOptionsWarning')}</p>
-                      )}
+                      <button type="button" className={styles.addOptionBtn} onClick={() => setOptions(q, [...(q.options || []), ''])}>
+                        + {t('addOption')}
+                      </button>
                     </div>
                   )}
 
-                  <div className={styles.qBottom}>
-                    <select
-                      className={styles.typeSelect}
-                      value={q.type}
-                      onChange={e => changeType(q, e.target.value as QType)}
-                      aria-label={t('regQuestionType')}
-                    >
-                      {(Object.keys(typeLabel) as QType[]).map(k => <option key={k} value={k}>{typeLabel[k]}</option>)}
-                    </select>
-                    <label className={styles.req}>
-                      <input type="checkbox" checked={q.required} onChange={e => updateQuestion(q.id, { required: e.target.checked })} />
+                  <div className={styles.questionFooter}>
+                    <label className={styles.checkRow}>
+                      <input
+                        type="checkbox"
+                        checked={q.required}
+                        onChange={e => updateQuestion(q.id, { required: e.target.checked })}
+                      />
                       {t('activityQuestionRequired')}
                     </label>
-                    <span className={styles.tools}>
-                      <button type="button" className={styles.iconBtn} onClick={() => moveQuestion(i, -1)} disabled={i === 0} aria-label={t('moveUp')} title={t('moveUp')}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15" /></svg>
-                      </button>
-                      <button type="button" className={styles.iconBtn} onClick={() => moveQuestion(i, 1)} disabled={i === questions.length - 1} aria-label={t('moveDown')} title={t('moveDown')}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
-                      </button>
-                      <button type="button" className={styles.iconBtn} onClick={() => duplicateQuestion(q)} aria-label={t('duplicateQuestion')} title={t('duplicateQuestion')}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                      </button>
-                      <button type="button" className={styles.iconBtn + ' ' + styles.danger} onClick={() => removeQuestion(q.id)} aria-label={t('removeQuestion')} title={t('removeQuestion')}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                      </button>
-                    </span>
+                    <button type="button" className={styles.removeQuestionBtn} onClick={() => removeQuestion(q.id)}>
+                      {t('removeQuestion')}
+                    </button>
                   </div>
                 </div>
               );
             })}
-
-            <div className={styles.addRow}>
-              <span className={styles.rowLabel}>{t('addQuestion')}</span>
-              {(Object.keys(typeLabel) as QType[]).map(k => (
-                <button key={k} type="button" className={styles.addBtn} onClick={() => addQuestion(k)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={TYPE_ICONS[k]} /></svg>
-                  {typeLabel[k]}
-                </button>
-              ))}
-            </div>
+            <button type="button" className={styles.addQuestionBtn} onClick={() => addQuestion('text')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t('addQuestion')}
+            </button>
           </div>
 
           {/* ── Optional messages ── */}

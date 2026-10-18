@@ -189,12 +189,7 @@ export default function ActivityPage() {
           <img src={activity.imageUrl} alt="" className={styles.heroImg} fetchPriority="high" />
         )}
         <div className={styles.heroContent}>
-          <div className={styles.badgeRow}>
-            <span className={styles.kindBadge + ' ' + (activity.kind === 'workshop' ? styles.kindWorkshop : '')}>
-              {activity.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
-            </span>
-            {activity.eyebrow && <p className={styles.eyebrow}>{activity.eyebrow}</p>}
-          </div>
+          {activity.eyebrow && <p className={styles.eyebrow}>{activity.eyebrow}</p>}
           <h1 className={styles.title}>{activity.title}</h1>
           {activity.subtitle && <p className={styles.subtitle}>{activity.subtitle}</p>}
           {activity.description && <p className={styles.description}>{activity.description}</p>}

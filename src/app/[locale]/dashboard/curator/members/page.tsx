@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
+import { createMemberAccount, DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -22,6 +23,8 @@ interface RoleAssignment {
   note?: string;
   status?: 'pending' | 'joined';
   joinedAt?: string;
+  /** Result of creating this member's Firebase sign-in account. */
+  account?: CreateAccountResult;
 }
 
 interface KnownUser { email: string; displayName?: string; }
@@ -119,6 +122,10 @@ export default function MembersPage() {
         setSaving(false);
         return;
       }
+      // Create their sign-in account (temporary password) so they can log
+      // in right away; the role below is applied on that first sign-in.
+      const account = await createMemberAccount(emailLower);
+      if (account === 'failed') setError(t('accountCreateFailed'));
       // Keyed by the lowercased email (not an auto-id) so the Firestore
       // rules' preassignedRole() can look this doc up directly by path
       // when this person applies their own pre-assigned role on first login.
@@ -130,6 +137,7 @@ export default function MembersPage() {
         status: 'pending',
         createdAt: new Date().toISOString(),
         addedBy: user?.email,
+        account,
       });
       setEmail(''); setName(''); setNote(''); setRole('shaper');
       await fetchAssignments();
@@ -159,6 +167,26 @@ export default function MembersPage() {
     } catch (err) {
       console.error(err);
       setError(t('saveFailed'));
+    }
+  };
+
+  /* For assignments made before accounts were created automatically.
+   * role_assignments has no update rule, so the doc is rewritten. */
+  const [creatingLogin, setCreatingLogin] = useState<string | null>(null);
+  const handleCreateLogin = async (a: RoleAssignment) => {
+    setCreatingLogin(a.id); setError('');
+    try {
+      const account = await createMemberAccount(a.email);
+      if (account === 'failed') { setError(t('accountCreateFailed')); return; }
+      const { id, ...data } = a;
+      await deleteDoc(doc(db, 'role_assignments', id));
+      await setDoc(doc(db, 'role_assignments', id), { ...data, account });
+      setAssignments(prev => prev.map(x => x.id === id ? { ...x, account } : x));
+    } catch (err) {
+      console.error(err);
+      setError(t('saveFailed'));
+    } finally {
+      setCreatingLogin(null);
     }
   };
 
@@ -206,6 +234,17 @@ export default function MembersPage() {
         <td className={styles.emailCell}>
           {displayName && <div className={styles.memberName}>{displayName}</div>}
           <div className={styles.memberEmail}>{a.email}</div>
+          {!isJoined && (
+            a.account === 'created' ? (
+              <div className={styles.accountChip + ' ' + styles.accountReady}>{t('accountReady', { pw: DEFAULT_MEMBER_PASSWORD })}</div>
+            ) : a.account === 'exists' ? (
+              <div className={styles.accountChip}>{t('accountExists')}</div>
+            ) : (
+              <button type="button" className={styles.createLoginBtn} onClick={() => handleCreateLogin(a)} disabled={creatingLogin === a.id}>
+                {creatingLogin === a.id ? t('creatingLogin') : t('createLogin')}
+              </button>
+            )
+          )}
         </td>
         <td>
           <span className={styles.roleBadge} style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}>
@@ -274,6 +313,7 @@ export default function MembersPage() {
       {/* Add Form */}
       <form onSubmit={handleAdd} className={styles.form}>
         <h3 className={styles.formTitle}>{t('addRoleAssignment')}</h3>
+        <p className={styles.formHint}>{t('accountAutoHint', { pw: DEFAULT_MEMBER_PASSWORD })}</p>
         {error && <div className={styles.errorMsg}>{error}</div>}
 
         <div className={styles.formRow}>

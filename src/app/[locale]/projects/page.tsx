@@ -6,11 +6,53 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
+import Image from 'next/image';
 import WaveDivider from '@/components/WaveDivider';
+import PatternDivider from '@/components/PatternDivider';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
 
-interface Project extends PlaceholderProject { slug?: string; }
+interface Project extends PlaceholderProject { slug?: string; featured?: boolean; }
+
+/** The big feature card at the top of the list: a curator-featured
+ *  initiative if there is one, otherwise the first active one. */
+function Spotlight({ project, t, catLabel }: {
+  project: Project;
+  t: ReturnType<typeof useTranslations>;
+  catLabel: (category: string) => string;
+}) {
+  const locale = useLocale();
+  const title = locale === 'ar' && project.titleAr ? project.titleAr : project.title;
+  const description = locale === 'ar' && project.descriptionAr ? project.descriptionAr : project.description;
+  const accent = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
+  const cover = project.imageUrl || project.images?.[0];
+  return (
+    <Link
+      href={'/projects/' + (project.slug || slugify(project.title))}
+      className={styles.spotlight}
+      style={{ '--spot-accent': accent } as React.CSSProperties}
+    >
+      <div className={styles.spotlightMedia}>
+        {cover
+          ? <img src={cover} alt="" className={styles.spotlightImg} />
+          : <div className={styles.spotlightFallback} />}
+        <span className={styles.spotlightTag}>{t('spotlight')}</span>
+      </div>
+      <div className={styles.spotlightBody}>
+        {project.category && <span className={styles.spotlightCategory}>{catLabel(project.category)}</span>}
+        <h2 className={styles.spotlightTitle}>{title}</h2>
+        <p className={styles.spotlightDesc}>{description}</p>
+        {project.stat && <p className={styles.spotlightStat}>{project.stat}</p>}
+        <span className={styles.spotlightLink}>
+          {t('exploreProject')}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+          </svg>
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
   project: Project;
@@ -166,19 +208,26 @@ export default function ProjectsPage() {
   });
   const countIn = (cat: string) => projects.filter(p => p.category?.trim() === cat).length;
 
-  const active   = filtered.filter(p => p.status === 'active' || !p.status);
+  // Spotlight only on the unfiltered view, so a search never hides a match in it.
+  const showSpotlight = activeCategory === 'all' && !q;
+  const spotlight = showSpotlight
+    ? (projects.find(p => p.featured && (p.status === 'active' || !p.status)) ?? projects.find(p => p.status === 'active' || !p.status))
+    : undefined;
+  const active   = filtered.filter(p => (p.status === 'active' || !p.status) && p.id !== spotlight?.id);
   const archived = filtered.filter(p => p.status && p.status !== 'active');
 
   return (
     <main className={styles.page}>
       <section className={styles.header}>
         <div className={styles.headerOrb} />
+        <Image src="/globe-mosaic.png" alt="" width={1061} height={1018} className={styles.headerGlobe} sizes="260px" aria-hidden="true" />
         <div className={styles.headerContent}>
           <h1 className={styles.headerTitle}>{t('title')}</h1>
           <p className={styles.headerSubtitle}>{t('subtitle')}</p>
         </div>
         <WaveDivider fill="var(--background)" className={styles.headerWave} />
       </section>
+      <PatternDivider />
 
       <div className={styles.container}>
         <div className={styles.filters}>
@@ -227,6 +276,7 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <>
+            {spotlight && <Spotlight project={spotlight} t={t} catLabel={catLabel} />}
             {active.length > 0 && (
               <div className={styles.section}>
                 <div className={styles.sectionLabel}>

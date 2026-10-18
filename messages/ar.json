@@ -47,8 +47,7 @@
     "newsletterSubtitle": "اشترك في نشرتنا الإخبارية الشهرية.",
     "newsletterSubscribing": "جارٍ الاشتراك…",
     "newsletterSuccessTitle": "تمّ اشتراكك! أهلاً بك في مركز جدة.",
-    "newsletterSuccessDetail": "تفقّد بريدك الإلكتروني، فقد أرسلنا إليك رسالة ترحيب فيها كل ما تحتاج معرفته، وسنُبقيك على اطّلاع بأحدث المبادرات والقصص والفعاليات.",
-    "registerActivity": "سجّل الآن"
+    "newsletterSuccessDetail": "تفقّد بريدك الإلكتروني، فقد أرسلنا إليك رسالة ترحيب فيها كل ما تحتاج معرفته، وسنُبقيك على اطّلاع بأحدث المبادرات والقصص والفعاليات."
   },
   "AboutPage": {
     "title": "من نحن",
@@ -128,7 +127,8 @@
     "linkCopied": "تم نسخ الرابط",
     "shareInitiative": "مشاركة المبادرة",
     "moreInitiatives": "مبادرات أخرى",
-    "viewAllInitiatives": "عرض الكل"
+    "viewAllInitiatives": "عرض الكل",
+    "spotlight": "في الواجهة"
   },
   "NewsPage": {
     "title": "أصوات من المركز",
@@ -494,8 +494,6 @@
     "sendReply": "إرسال الرد",
     "send": "إرسال",
     "opening": "جارٍ الفتح…",
-    "profileEmail": "البريد الإلكتروني",
-    "profileRole": "الدور",
     "saveFailed": "تعذّر الحفظ.",
     "uploadCover": "رفع صورة الغلاف",
     "dropHere": "أفلت الملف هنا للرفع",
@@ -530,10 +528,6 @@
     "dataExport": "تصدير البيانات",
     "exportDesc": "تنزيل عناوين البريد الإلكتروني للمشتركين من قاعدة بيانات النشرة الإخبارية.",
     "newsletterSubscribers": "مشتركو النشرة الإخبارية",
-    "exportNewsletterDesc": "اجلب جميع عناوين البريد الإلكتروني للمستخدمين الذين سجّلوا في النشرة الإخبارية، ثم نزّلها كملف CSV أو انسخها إلى الحافظة.",
-    "pulling": "جارٍ الجلب...",
-    "pullEmails": "جلب المشتركين",
-    "foundSubscribers": "عدد المشتركين: {n}",
     "downloadCSV": "تحميل CSV",
     "emailAddresses": "عناوين البريد الإلكتروني",
     "copyAll": "نسخ الكل",
@@ -649,7 +643,6 @@
     "seedDefaultsConfirm": "سيتم تحميل ١٢ مبادرة افتراضية. هل تريد المتابعة؟",
     "editProfile": "تعديل ملفي الشخصي",
     "editProfileSubtitle": "يظهر ملفك الشخصي على صفحة صنّاعنا بمجرد حفظ اسمك.",
-    "accountInfo": "معلومات الحساب",
     "profileSection": "الملف الشخصي",
     "socialsSection": "روابط التواصل الاجتماعي",
     "displayName": "الاسم الظاهر",
@@ -836,7 +829,6 @@
     "clearSearch": "مسح البحث",
     "searchMessagesPh": "ابحث بالاسم أو البريد أو نص الرسالة…",
     "resultsCount": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
-    "filterByStatus": "تصفية حسب الحالة",
     "statusUnread": "غير مقروءة",
     "statusAwaiting": "بانتظار الرد",
     "noMatches": "لا توجد نتائج مطابقة للبحث أو التصفية.",
@@ -890,13 +882,24 @@
     "regOpenAction": "فتح التسجيل",
     "regCloseAction": "إغلاق التسجيل",
     "regClosedNote": "التسجيل مغلق، يرى الزوار النشاط لكن لا يمكنهم التسجيل. اختر «مفتوح» لإظهار النموذج.",
-    "activityCustomFormHint": "أضف أسئلتك الخاصة أدناه. يمكن لأي زائر لصفحة هذا النشاط تعبئتها، ويمكنك تحميل كل الردود كجدول بيانات."
+    "activityCustomFormHint": "أضف أسئلتك الخاصة أدناه. يمكن لأي زائر لصفحة هذا النشاط تعبئتها، ويمكنك تحميل كل الردود كجدول بيانات.",
+    "refresh": "تحديث",
+    "newLast30Days": "جدد خلال آخر ٣٠ يوماً",
+    "latestSignup": "آخر اشتراك",
+    "searchSubscribersPh": "ابحث في المشتركين…",
+    "copyCommas": "نسخ لإرسال بريد (نسخة مخفية)",
+    "copyCommasHint": "مفصولة بفواصل وجاهزة للصق في حقل النسخة المخفية",
+    "noSubscribersYet": "لا يوجد مشتركون بعد.",
+    "subscribedOn": "تاريخ الاشتراك",
+    "leadingCount": "{count, plural, one {تقود مشروعاً واحداً} two {تقود مشروعين} few {تقود # مشاريع} many {تقود # مشروعاً} other {تقود # مشروع}}"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",
     "title": "ميثاق المجتمع",
     "subtitle": "المبادئ التأسيسية وشروط العضوية وقواعد الحوكمة التي يلتزم بها كل عضو ومركز في مجتمع صنّاع العالم.",
-    "tableOfContents": "الانتقال إلى قسم"
+    "tableOfContents": "الانتقال إلى قسم",
+    "sectionsCount": "{count, plural, one {قسم واحد} two {قسمان} few {# أقسام} many {# قسماً} other {# قسم}}",
+    "readMinutes": "{n, plural, one {دقيقة قراءة} two {دقيقتا قراءة} few {# دقائق قراءة} many {# دقيقة قراءة} other {# دقيقة قراءة}}"
   },
   "PrivacyPolicyPage": {
     "title": "سياسة الخصوصية",

@@ -380,3 +380,11 @@
 .attentionDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-inline: .3rem; background: var(--warning); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 20%, transparent); }
 
 @media (prefers-reduced-motion: reduce) { .barFill { animation: none; } }
+
+/* The arrow sits in the row instead of floating over the text
+   (long descriptions like "Download subscriber list" ran under it). */
+.actionArrow { position: static; transform: none; flex-shrink: 0; margin-inline-start: auto; }
+[dir="rtl"] .actionArrow { left: auto; transform: rotate(180deg); }
+.actionCard:hover .actionArrow { transform: translateX(3px); }
+[dir="rtl"] .actionCard:hover .actionArrow { transform: rotate(180deg) translateX(3px); }
+.actionCard { align-items: center; }

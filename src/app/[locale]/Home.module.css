@@ -89,14 +89,6 @@
 @media (prefers-reduced-motion: reduce) {
   .retreatFadeIn { animation: none; }
 }
-
-.retreatBadgeRow { display:flex; align-items:center; gap:.6rem; margin-bottom:.6rem; flex-wrap:wrap; }
-.retreatKindBadge {
-  font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  padding:.2rem .6rem; border-radius:20px;
-  background:color-mix(in srgb, var(--activity-accent) 45%, rgba(255,255,255,.1)); color:#fff;
-}
-.retreatKindWorkshop { background:rgba(167,139,250,.25); color:#c4b5fd; }
 .retreatEyebrow { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:0; }
 .retreatTitle   { font-size:clamp(1.9rem,3.5vw,3rem);font-weight:800;line-height:1.1;color:#fff;margin-bottom:.3rem; }
 .retreatSubtitle{ font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;margin-bottom:1.4rem; }
@@ -303,3 +295,10 @@
 /* Reserved height for the activity spotlight while it loads */
 .retreatPlaceholder { min-height: 420px; }
 @media (max-width: 900px) { .retreatPlaceholder { min-height: 560px; } }
+
+/* ── Activity spotlight: stronger text contrast ── */
+.retreatEyebrow { color: rgba(255, 255, 255, .85); margin-bottom: .6rem; }
+.retreatSubtitle { color: rgba(255, 255, 255, .88); }
+.retreatDesc { color: rgba(255, 255, 255, .9); }
+.retreatMetaItem { color: rgba(255, 255, 255, .9); }
+.retreatMetaDot { background: rgba(255, 255, 255, .6); }

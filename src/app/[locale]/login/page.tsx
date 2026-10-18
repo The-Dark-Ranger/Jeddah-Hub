@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { getRecaptchaToken } from '@/lib/recaptcha';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
+import { DEFAULT_MEMBER_PASSWORD, DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import styles from './Login.module.css';
 
 export default function LoginPage() {
@@ -38,6 +39,12 @@ export default function LoginPage() {
       }
 
       const cred    = await signInWithEmailAndPassword(auth, email, password);
+      // Remember (for this tab only) that the temporary password was used,
+      // so the dashboard can ask the member to change it.
+      try {
+        if (password === DEFAULT_MEMBER_PASSWORD) sessionStorage.setItem(DEFAULT_PASSWORD_FLAG, '1');
+        else sessionStorage.removeItem(DEFAULT_PASSWORD_FLAG);
+      } catch { /* storage blocked */ }
       const profile = await getUserProfile(cred.user.uid);
 
       const normRole = normalizeRole(profile?.role);

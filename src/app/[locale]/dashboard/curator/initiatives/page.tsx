@@ -40,7 +40,7 @@ interface Initiative {
 }
 
 /** How many initiatives the homepage's Featured section shows at most. */
-const MAX_FEATURED = 6;
+const MAX_FEATURED = 3;
 
 /* ── Default seed data ── */
 const DEFAULT_INITIATIVES = [
@@ -864,7 +864,9 @@ export default function ManageInitiatives() {
               </div>
 
               <div className={styles.cardActions}>
-                {canFeature && init.status === 'active' && (
+                {/* Once the limit is reached only the featured ones keep a
+                    button (to remove them); the rest hide theirs. */}
+                {canFeature && init.status === 'active' && (init.featured || featuredCount < MAX_FEATURED) && (
                   <button
                     type="button"
                     className={styles.featureBtn + (init.featured ? ' ' + styles.featureBtnOn : '')}

@@ -45,7 +45,7 @@ function timeOf(v: Initiative['createdAt'] | string | undefined): number {
 function pickFeatured(all: Initiative[]): Initiative[] {
   const real = all.filter(i => !i.type);
   const picked = real.filter(i => i.featured).sort((a, b) => timeOf(b.featuredAt) - timeOf(a.featuredAt));
-  if (picked.length > 0) return picked.slice(0, 6);
+  if (picked.length > 0) return picked.slice(0, 3);
   return [...real].sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt)).slice(0, 3);
 }
 

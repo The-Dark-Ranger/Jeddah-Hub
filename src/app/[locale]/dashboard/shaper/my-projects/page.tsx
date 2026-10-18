@@ -310,6 +310,12 @@ export default function MyProjects() {
       <div className={styles.pageHeader}>
         <h2 className={styles.pageTitle}>{t('profileActiveProjects')}</h2>
         <p className={styles.pageSubtitle}>{t('myProjectsSubtitle')}</p>
+        {projects.length > 0 && (
+          <div className={styles.summary}>
+            <span className={styles.summaryChip}>{t('initiativesTotal', { count: projects.length })}</span>
+            {leadIds.length > 0 && <span className={styles.summaryChip + ' ' + styles.summaryLead}>{t('leadingCount', { count: leadIds.filter(id => projects.some(p => p.id === id)).length })}</span>}
+          </div>
+        )}
       </div>
 
       {/* Incoming join requests (for led projects) */}
@@ -388,7 +394,13 @@ export default function MyProjects() {
       )}
 
       {projects.length === 0 ? (
-        <div className={styles.empty}>{t('noActiveProjects')}</div>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon} aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <p>{t('noActiveProjects')}</p>
+          <Link href="/dashboard/shaper/initiatives" className={styles.emptyCta}>{t('actionBrowseInitiatives')}</Link>
+        </div>
       ) : (
         <div className={styles.grid}>
           {projects.map(p => {
@@ -399,17 +411,18 @@ export default function MyProjects() {
               // Plain member — unchanged from the original simple clickable card.
               return (
                 <Link key={p.id} href={`/projects/${p.slug || slugify(p.title)}`} className={styles.card}>
-                  <div className={styles.cardBanner} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}>
-                    {!p.imageUrl && (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                      </svg>
-                    )}
+                  <div
+                    className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
+                    style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
+                  >
+                    {p.category && <span className={styles.bannerCategory}>{p.category}</span>}
                   </div>
                   <div className={styles.cardBody}>
-                    {p.category && <span className={styles.categoryPill}>{p.category}</span>}
+                    <span className={styles.roleChip}>{t('memberDefaultRole')}</span>
                     <h3 className={styles.cardTitle}>{p.title}</h3>
+                    {p.description && <p className={styles.cardDesc}>{p.description}</p>}
                     {p.stat && <p className={styles.cardStat}>{p.stat}</p>}
+                    <p className={styles.cardMeta}>{t('memberCount', { count: (p.members || []).length })}</p>
                     <span className={styles.viewLink}>
                       {t('viewProject')}
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -424,18 +437,18 @@ export default function MyProjects() {
             // Led project — full management card.
             return (
               <div key={p.id} className={styles.leadCard}>
-                <div className={styles.cardBanner} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}>
-                  {!p.imageUrl && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  )}
+                <div
+                  className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
+                  style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
+                >
+                  {p.category && <span className={styles.bannerCategory}>{p.category}</span>}
                 </div>
                 <div className={styles.cardBody}>
-                  {p.category && <span className={styles.categoryPill}>{p.category}</span>}
                   <span className={styles.leadingBadge}>{t('leadingBadge')}</span>
                   <h3 className={styles.cardTitle}>{p.title}</h3>
+                  {p.description && <p className={styles.cardDesc}>{p.description}</p>}
                   {p.stat && <p className={styles.cardStat}>{p.stat}</p>}
+                  <p className={styles.cardMeta}>{t('memberCount', { count: (p.members || []).length })}</p>
 
                   <div className={styles.leadActions}>
                     <button

@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import SplashScreen from '@/components/SplashScreen';
 import { THEME_INIT_SCRIPT, SPLASH_INIT_SCRIPT } from '@/lib/initScripts';
 import LangSwitchHandler from '@/components/LangSwitchHandler';
+import ScrollToTop from '@/components/ScrollToTop';
 import PageTransition from '@/components/PageTransition';
 import { SITE_URL, alternateLanguages } from '@/lib/seo';
 import type { Metadata, Viewport } from 'next';
@@ -105,6 +106,7 @@ export default async function LocaleLayout({
         <SplashScreen locale={locale} />
         <LangSwitchHandler />
         <NextIntlClientProvider messages={messages}>
+          <ScrollToTop />
           <ThemeProvider>
             <AuthProvider>
               <Navbar />

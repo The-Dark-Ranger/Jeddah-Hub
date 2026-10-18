@@ -186,6 +186,27 @@ export default function MessagesPage() {
         </button>
       </div>
 
+      {/* At a glance — each count also filters the list */}
+      <div className={styles.summary}>
+        {([
+          ['all', t('filterAll'), messages.length],
+          ['unread', t('statusUnread'), unreadCount],
+          ['awaiting', t('statusAwaiting'), messages.filter(m => !m.replied).length],
+          ['replied', t('repliedLabel'), messages.filter(m => m.replied).length],
+        ] as const).map(([key, label, n]) => (
+          <button
+            key={key}
+            type="button"
+            className={styles.summaryItem + (status === key ? ' ' + styles.summaryActive : '')}
+            onClick={() => setStatus(key)}
+            aria-pressed={status === key}
+          >
+            <span className={styles.summaryValue}>{n}</span>
+            <span className={styles.summaryLabel}>{label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className={styles.toolbar}>
         <DashSearch
           value={search}
@@ -193,19 +214,6 @@ export default function MessagesPage() {
           placeholder={t('searchMessagesPh')}
           resultLabel={t('resultsCount', { count: filtered.length })}
         />
-        <div className={styles.statusTabs} role="group" aria-label={t('filterByStatus')}>
-          {(['all', 'unread', 'awaiting', 'replied'] as const).map(s => (
-            <button
-              key={s}
-              type="button"
-              className={styles.statusTab + (status === s ? ' ' + styles.statusTabActive : '')}
-              aria-pressed={status === s}
-              onClick={() => setStatus(s)}
-            >
-              {s === 'all' ? t('filterAll') : s === 'unread' ? t('statusUnread') : s === 'awaiting' ? t('statusAwaiting') : t('repliedLabel')}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Filter bar */}
@@ -241,6 +249,9 @@ export default function MessagesPage() {
 
                 <button className={styles.messageRow} onClick={() => handleExpand(msg)}>
                   <span className={styles.unreadDot + (msg.read ? ' ' + styles.unreadDotHidden : '')} />
+                  <span className={styles.senderAvatar} style={{ background: color + '1f', color }} aria-hidden="true">
+                    {(msg.name || '?').trim().charAt(0).toUpperCase()}
+                  </span>
                   <div className={styles.messageInfo}>
                     <span className={styles.senderName}>{msg.name}</span>
                     <span className={styles.subjectBadge} style={{ color, borderColor: color + '50', background: color + '12' }}>

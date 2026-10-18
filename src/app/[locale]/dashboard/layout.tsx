@@ -6,6 +6,7 @@ import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import PageTransition from '@/components/PageTransition';
+import DefaultPasswordBanner from '@/components/dashboard/DefaultPasswordBanner';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
 
@@ -290,6 +291,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <main className={styles.mainContent}>
+        <DefaultPasswordBanner />
         <PageTransition scope="section">{children}</PageTransition>
       </main>
     </div>

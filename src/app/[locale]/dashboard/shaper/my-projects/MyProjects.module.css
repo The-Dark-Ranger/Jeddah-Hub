@@ -4,12 +4,6 @@
 .pageTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
 .pageSubtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
 
-.empty {
-  padding: 3rem 1rem; text-align: center;
-  color: var(--text-muted); font-size: 0.92rem;
-  background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -35,13 +29,6 @@
 }
 
 .cardBody { padding: 1.1rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
-
-.categoryPill {
-  align-self: flex-start;
-  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 0.2rem 0.6rem; border-radius: 20px;
-  background: var(--primary-blue-glow); color: var(--primary-blue);
-}
 
 .cardTitle { font-size: 1.02rem; font-weight: 700; color: var(--text-main); }
 .cardStat { font-size: 0.85rem; color: var(--text-muted); }
@@ -78,3 +65,56 @@
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 .viewSiteLink:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+
+/* ── Summary + richer cards ── */
+.summary { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+.summaryChip {
+  padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 700;
+  background: var(--background-alt); color: var(--text-main); border: 1px solid var(--border-color);
+}
+.summaryLead { background: var(--primary-blue); color: #fff; border-color: var(--primary-blue); }
+
+.grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.card, .leadCard { box-shadow: 0 6px 20px rgba(15, 23, 42, .04); }
+.leadCard { border-width: 1.5px; }
+
+.cardBanner {
+  --card-accent: var(--primary-blue);
+  position: relative; height: 140px; align-items: flex-end; justify-content: flex-start;
+  padding: .75rem;
+  background-color: var(--card-accent);
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 85%, #fff), color-mix(in srgb, var(--card-accent) 55%, #0f172a));
+  background-size: cover; background-position: center;
+}
+.cardBannerImg::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .55));
+}
+.bannerCategory {
+  position: relative;
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: .22rem .6rem; border-radius: 999px;
+  background: rgba(255, 255, 255, .92); color: #0f172a;
+}
+.roleChip {
+  align-self: flex-start;
+  font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: .18rem .55rem; border-radius: 999px;
+  background: var(--background-alt); color: var(--text-muted);
+}
+.cardDesc {
+  margin: 0; font-size: .85rem; line-height: 1.55; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cardStat { font-weight: 700; color: var(--primary-blue); }
+.cardMeta { margin: 0; font-size: .78rem; color: var(--text-muted); }
+
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: .75rem;
+  padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: .92rem;
+  background: var(--card-bg); border: 1.5px dashed var(--border-color); border-radius: 16px;
+}
+.empty p { margin: 0; }
+.emptyIcon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--primary-blue-glow); color: var(--primary-blue); }
+.emptyCta { padding: .55rem 1.1rem; border-radius: 10px; background: var(--primary-blue); color: #fff; font-weight: 700; font-size: .86rem; }
+.emptyCta:hover { filter: brightness(1.08); }

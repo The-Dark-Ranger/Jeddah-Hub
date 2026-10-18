@@ -1,7 +1,4 @@
 .page { display: flex; flex-direction: column; gap: 1.5rem; }
-
-.pageHeader { margin-bottom: 0.25rem; }
-.pageTitle { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
 .pageSubtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
 
 .card {
@@ -15,16 +12,6 @@
   margin-bottom: 1.25rem; padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
 }
-
-.infoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-
-.infoItem {}
-.infoLabel {
-  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.05em;
-  display: block; margin-bottom: 0.3rem;
-}
-.infoValue { font-size: 0.92rem; color: var(--text-main); font-weight: 500; }
 .roleBadge {
   display: inline-block; padding: 0.22rem 0.7rem; border-radius: 20px;
   font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
@@ -82,7 +69,73 @@
 }
 
 @media (max-width: 640px) {
-  .infoGrid    { grid-template-columns: 1fr; }
   .socialsGrid { grid-template-columns: 1fr; }
   .card        { padding: 1.25rem; }
+}
+
+/* ── Identity header ── */
+.hero {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 1.6rem 1.75rem; border-radius: 18px;
+  background:
+    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(94, 163, 224, .3), transparent 60%),
+    linear-gradient(120deg, #051535 0%, #0a3272 60%, #0f5a9f 100%);
+  color: #fff;
+}
+.heroAvatar {
+  flex-shrink: 0; width: 76px; height: 76px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, .15); border: 3px solid rgba(255, 255, 255, .85);
+  font-size: 1.8rem; font-weight: 800;
+}
+.heroAvatar img { width: 100%; height: 100%; object-fit: cover; }
+.heroText { min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
+.heroName { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.heroNameAr { margin: 0; font-size: 1rem; color: rgba(255, 255, 255, .8); }
+.heroMeta { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .35rem; }
+.heroEmail { font-size: .85rem; color: rgba(255, 255, 255, .78); overflow-wrap: anywhere; }
+.hero .roleBadge { background: rgba(255, 255, 255, .18); color: #fff; }
+
+.formStack { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Section titles with an icon */
+.cardTitle { display: flex; align-items: center; gap: .55rem; }
+.cardIcon {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+}
+.cardIntro { margin: -.5rem 0 1rem; font-size: .85rem; color: var(--text-muted); line-height: 1.6; }
+
+/* Save bar stays reachable while editing a long form */
+.footer {
+  position: sticky; bottom: 0; z-index: 2;
+  padding: .85rem 1rem; margin: 0 -.25rem;
+  border-radius: 14px; border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--card-bg-solid) 92%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 -6px 24px rgba(15, 23, 42, .06);
+}
+
+/* ── Change password ── */
+.passwordCard { scroll-margin-top: 90px; }
+.pwGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.pwFooter { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; }
+.secondaryBtn {
+  padding: .6rem 1.25rem; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid var(--primary-blue); background: var(--primary-blue-glow); color: var(--primary-blue);
+  font-size: .88rem; font-weight: 700;
+}
+.secondaryBtn:hover:not(:disabled) { background: var(--primary-blue); color: #fff; }
+.secondaryBtn:disabled { opacity: .6; cursor: wait; }
+.errorMsg { font-size: .85rem; font-weight: 600; color: var(--danger); }
+
+@media (max-width: 760px) {
+  .pwGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .hero { flex-direction: column; text-align: center; padding: 1.4rem 1.1rem; }
+  .heroMeta { justify-content: center; }
+  .footer { margin: 0; }
 }

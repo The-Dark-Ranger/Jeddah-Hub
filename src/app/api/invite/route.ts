@@ -6,6 +6,7 @@ import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody, asString } from '@/lib/http';
 import { isRateLimited } from '@/lib/rateLimit';
 import { normalizeRole } from '@/lib/role';
+import { DEFAULT_MEMBER_PASSWORD } from '@/lib/memberAccounts';
 
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
   const roleName = escapeHtml(roleLabel[role] ?? 'Shaper');
   const firstName = escapeHtml(displayName?.split(' ')[0] || 'there');
   const loginUrl = 'https://jeddahhub.org/login';
+  const safeEmail = escapeHtml(email);
 
   const html = `
 <!DOCTYPE html>
@@ -91,7 +93,13 @@ export async function POST(req: NextRequest) {
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;padding:20px 24px;">
               <tr><td>
                 <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Your role</p>
-                <p style="margin:0;font-size:15px;font-weight:700;color:#0f5a9f;">${roleName}</p>
+                <p style="margin:0 0 14px;font-size:15px;font-weight:700;color:#0f5a9f;">${roleName}</p>
+                <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Sign in with</p>
+                <p style="margin:0;font-size:14px;color:#475569;line-height:1.7;">
+                  Email: <strong>${safeEmail}</strong><br />
+                  Temporary password: <strong>${DEFAULT_MEMBER_PASSWORD}</strong>
+                </p>
+                <p style="margin:12px 0 0;font-size:13px;color:#b45309;">Please change your password after your first sign-in (Dashboard → My Profile).</p>
               </td></tr>
             </table>
           </td>

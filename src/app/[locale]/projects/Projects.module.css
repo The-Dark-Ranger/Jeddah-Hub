@@ -228,3 +228,68 @@
 
 .cardFacts { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin-top: .75rem; }
 .cardFact { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+
+/* ── Header art (desktop) ── */
+.headerGlobe {
+  position: absolute; z-index: 0; pointer-events: none;
+  width: 240px; height: auto; inset-inline-end: 6%; bottom: 40px;
+  opacity: .9; filter: drop-shadow(0 20px 40px rgba(0, 0, 0, .35));
+  animation: globeBob 7s ease-in-out infinite;
+}
+.headerGlobe:dir(rtl) { inset-inline-end: auto; inset-inline-start: 6%; }
+@keyframes globeBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+@media (max-width: 1100px) { .headerGlobe { display: none; } }
+
+/* ── Spotlight card ── */
+.spotlight {
+  --spot-accent: var(--primary-blue);
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  margin-bottom: 3rem; border-radius: 22px; overflow: hidden;
+  background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .08);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.spotlight:hover { transform: translateY(-4px); box-shadow: 0 30px 70px rgba(15, 23, 42, .12); }
+.spotlight:focus-visible { outline: 2px solid var(--spot-accent); outline-offset: 3px; }
+.spotlightMedia { position: relative; min-height: 320px; background: var(--background-alt); }
+.spotlightImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.16, 1, .3, 1); }
+.spotlight:hover .spotlightImg { transform: scale(1.04); }
+.spotlightFallback { position: absolute; inset: 0; background: linear-gradient(135deg, var(--spot-accent), color-mix(in srgb, var(--spot-accent) 45%, #0f172a)); }
+.spotlightTag {
+  position: absolute; top: 1rem; inset-inline-start: 1rem;
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .75rem; border-radius: 999px;
+  background: rgba(255, 255, 255, .94); color: #0f172a;
+  font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+}
+.spotlightTag::before { content: '★'; color: #f59e0b; }
+.spotlightBody {
+  display: flex; flex-direction: column; gap: .75rem; justify-content: center;
+  padding: 2.5rem; border-top: 4px solid var(--spot-accent);
+}
+.spotlightCategory { font-size: .74rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--spot-accent); }
+.spotlightTitle { margin: 0; font-size: clamp(1.5rem, 2.6vw, 2.1rem); font-weight: 800; line-height: 1.15; color: var(--text-main); letter-spacing: -.01em; }
+.spotlightDesc {
+  margin: 0; font-size: .98rem; line-height: 1.7; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.spotlightStat {
+  align-self: flex-start; margin: .25rem 0 0; padding: .35rem .8rem; border-radius: 10px;
+  font-size: .85rem; font-weight: 800; color: var(--spot-accent);
+  background: color-mix(in srgb, var(--spot-accent) 12%, transparent);
+}
+.spotlightLink { display: inline-flex; align-items: center; gap: .4rem; margin-top: .5rem; font-weight: 800; font-size: .92rem; color: var(--spot-accent); }
+[dir="rtl"] .spotlightLink svg { transform: scaleX(-1); }
+
+@media (min-width: 901px) {
+  .spotlightBody { border-top: none; border-inline-start: 4px solid var(--spot-accent); }
+}
+@media (max-width: 900px) {
+  .spotlight { grid-template-columns: 1fr; margin-bottom: 2rem; }
+  .spotlightMedia { min-height: 0; aspect-ratio: 16 / 9; }
+  .spotlightBody { padding: 1.4rem 1.25rem 1.6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .headerGlobe, .spotlightImg { animation: none; transition: none; }
+  .spotlight:hover { transform: none; }
+}

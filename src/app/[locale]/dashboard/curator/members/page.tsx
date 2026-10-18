@@ -9,7 +9,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
-import { createMemberAccount, DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
+import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
+import { createMemberAccount } from '@/lib/createMemberAccount';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -125,7 +126,8 @@ export default function MembersPage() {
       // Create their sign-in account (temporary password) so they can log
       // in right away; the role below is applied on that first sign-in.
       const account = await createMemberAccount(emailLower);
-      if (account === 'failed') setError(t('accountCreateFailed'));
+      if (account === 'not-configured') setError(t('accountNotConfigured'));
+      else if (account === 'failed') setError(t('accountCreateFailed'));
       // Keyed by the lowercased email (not an auto-id) so the Firestore
       // rules' preassignedRole() can look this doc up directly by path
       // when this person applies their own pre-assigned role on first login.
@@ -177,6 +179,7 @@ export default function MembersPage() {
     setCreatingLogin(a.id); setError('');
     try {
       const account = await createMemberAccount(a.email);
+      if (account === 'not-configured') { setError(t('accountNotConfigured')); return; }
       if (account === 'failed') { setError(t('accountCreateFailed')); return; }
       const { id, ...data } = a;
       await deleteDoc(doc(db, 'role_assignments', id));

@@ -27,7 +27,6 @@ interface Activity {
   color?: string;
   imageUrl?: string;
   kind?: 'activity' | 'workshop';
-  customForm?: { enabled?: boolean; closed?: boolean };
   slug?: string;
 }
 
@@ -36,7 +35,6 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
   const hasAside = hasHighlights || !!activity.imageUrl;
   const accent = safeColor(activity.color);
   const href = `/activities/${activity.slug || slugify(activity.title)}`;
-  const canRegister = !!activity.customForm?.enabled && !activity.customForm?.closed;
 
   return (
     <div className={styles.container + ' ' + styles.retreatFadeIn}>
@@ -45,14 +43,9 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
         style={!hasAside ? { gridTemplateColumns: '1fr' } : undefined}
       >
         <div className={styles.retreatText}>
-          <div className={styles.retreatBadgeRow}>
-            <span className={styles.retreatKindBadge + ' ' + (activity.kind === 'workshop' ? styles.retreatKindWorkshop : '')}>
-              {activity.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
-            </span>
-            {activity.eyebrow && (
-              <p className={styles.retreatEyebrow}>{activity.eyebrow}</p>
-            )}
-          </div>
+          {activity.eyebrow && (
+            <p className={styles.retreatEyebrow}>{activity.eyebrow}</p>
+          )}
           <h2 className={styles.retreatTitle}>{activity.title}</h2>
           {activity.subtitle && (
             <p className={styles.retreatSubtitle}>{activity.subtitle}</p>
@@ -87,11 +80,6 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
                   <polyline points="12 5 19 12 12 19"/>
                 </svg>
               </a>
-            )}
-            {canRegister && (
-              <Link href={href + '#register'} className={styles.retreatBtn + (accent ? ' ' + styles.retreatBtnAccent : '')}>
-                {t('registerActivity')}
-              </Link>
             )}
             <Link href={href} className={styles.retreatBtnSecondary}>
               {t('viewActivityDetails')}

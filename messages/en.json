@@ -47,8 +47,7 @@
     "newsletterSubtitle": "Subscribe to our monthly newsletter.",
     "newsletterSubscribing": "Subscribing…",
     "newsletterSuccessTitle": "You're in! Welcome to Jeddah Hub.",
-    "newsletterSuccessDetail": "Check your inbox for a welcome email with everything you need to know. We'll keep you posted on new initiatives, stories, and events.",
-    "registerActivity": "Register"
+    "newsletterSuccessDetail": "Check your inbox for a welcome email with everything you need to know. We'll keep you posted on new initiatives, stories, and events."
   },
   "AboutPage": {
     "title": "Who We Are",
@@ -128,7 +127,8 @@
     "linkCopied": "Link copied",
     "shareInitiative": "Share initiative",
     "moreInitiatives": "More initiatives",
-    "viewAllInitiatives": "View all"
+    "viewAllInitiatives": "View all",
+    "spotlight": "Spotlight"
   },
   "NewsPage": {
     "title": "Voices from the Hub",
@@ -494,8 +494,6 @@
     "sendReply": "Send Reply",
     "send": "Send",
     "opening": "Opening…",
-    "profileEmail": "Email",
-    "profileRole": "Role",
     "saveFailed": "Could not save.",
     "uploadCover": "Upload cover photo",
     "dropHere": "Drop to upload",
@@ -530,10 +528,6 @@
     "dataExport": "Data Export",
     "exportDesc": "Download subscriber emails from the newsletter database.",
     "newsletterSubscribers": "Newsletter Subscribers",
-    "exportNewsletterDesc": "Fetch all email addresses from users who signed up for the newsletter. Download as CSV or copy to clipboard.",
-    "pulling": "Fetching...",
-    "pullEmails": "Fetch Subscribers",
-    "foundSubscribers": "{n} subscribers found",
     "downloadCSV": "Download CSV",
     "emailAddresses": "Email Addresses",
     "copyAll": "Copy All",
@@ -649,7 +643,6 @@
     "seedDefaultsConfirm": "This will load 12 default initiatives. Continue?",
     "editProfile": "Edit My Profile",
     "editProfileSubtitle": "Your profile is shown publicly on the Our Shapers page once you save your display name.",
-    "accountInfo": "Account Info",
     "profileSection": "Profile",
     "socialsSection": "Social Links",
     "displayName": "Display Name",
@@ -836,7 +829,6 @@
     "clearSearch": "Clear search",
     "searchMessagesPh": "Search name, email or message…",
     "resultsCount": "{count, plural, one {# result} other {# results}}",
-    "filterByStatus": "Filter by status",
     "statusUnread": "Unread",
     "statusAwaiting": "Awaiting reply",
     "noMatches": "Nothing matches your search or filters.",
@@ -890,13 +882,24 @@
     "regOpenAction": "Open registration",
     "regCloseAction": "Close registration",
     "regClosedNote": "Registration is closed — visitors see the activity but can’t sign up. Switch to Open to show the form.",
-    "activityCustomFormHint": "Add your own questions below. Anyone who visits this activity's page can fill them out, and you can download every response as a spreadsheet."
+    "activityCustomFormHint": "Add your own questions below. Anyone who visits this activity's page can fill them out, and you can download every response as a spreadsheet.",
+    "refresh": "Refresh",
+    "newLast30Days": "New in the last 30 days",
+    "latestSignup": "Latest sign-up",
+    "searchSubscribersPh": "Search subscribers…",
+    "copyCommas": "Copy for email (BCC)",
+    "copyCommasHint": "Comma-separated, ready to paste into BCC",
+    "noSubscribersYet": "No subscribers yet.",
+    "subscribedOn": "Subscribed",
+    "leadingCount": "{count, plural, one {Leading # project} other {Leading # projects}}"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",
     "title": "Community Charter",
     "subtitle": "The founding principles, membership terms, and governance rules every Global Shapers member and hub agrees to uphold.",
-    "tableOfContents": "Jump to a section"
+    "tableOfContents": "Jump to a section",
+    "sectionsCount": "{count, plural, one {# section} other {# sections}}",
+    "readMinutes": "{n} min read"
   },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",

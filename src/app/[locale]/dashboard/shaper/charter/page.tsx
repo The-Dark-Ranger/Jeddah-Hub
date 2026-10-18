@@ -2,7 +2,16 @@
 
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';
+import WefLogo from '@/components/WefLogo';
 import styles from './Charter.module.css';
+
+/** ~200 words a minute over the whole document. */
+const READ_MINUTES = Math.max(1, Math.round(
+  [CHARTER_INTRO, ...CHARTER_SECTIONS]
+    .flatMap(s => s.blocks)
+    .flatMap(b => [...(b.paragraphs ?? []), ...(b.items ?? []).flatMap(i => [i.text, ...(i.subItems ?? [])]), b.footnote ?? ''])
+    .join(' ').split(/\s+/).length / 200,
+));
 
 function Block({ block }: { block: CharterBlock }) {
   return (
@@ -36,10 +45,13 @@ function Block({ block }: { block: CharterBlock }) {
   );
 }
 
-function Section({ section, isIntro }: { section: CharterSection; isIntro?: boolean }) {
+function Section({ section, isIntro, num }: { section: CharterSection; isIntro?: boolean; num?: number }) {
   return (
     <section id={section.id} className={isIntro ? styles.introSection : styles.section}>
-      <h2 className={styles.sectionTitle}>{section.title}</h2>
+      <h2 className={styles.sectionTitle}>
+        {num !== undefined && <span className={styles.sectionNum} aria-hidden="true">{String(num).padStart(2, '0')}</span>}
+        {section.title}
+      </h2>
       {section.blocks.map((block, i) => <Block key={i} block={block} />)}
     </section>
   );
@@ -50,27 +62,42 @@ export default function CommunityCharterPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <p className={styles.eyebrow}>{t('eyebrow')}</p>
-        <h1 className={styles.title}>{t('title')}</h1>
-        <p className={styles.subtitle}>{t('subtitle')}</p>
+      <header className={styles.header}>
+        <div className={styles.headerText}>
+          <p className={styles.eyebrow}>{t('eyebrow')}</p>
+          <h1 className={styles.title}>{t('title')}</h1>
+          <p className={styles.subtitle}>{t('subtitle')}</p>
+          <p className={styles.headerMeta}>
+            {t('sectionsCount', { count: CHARTER_SECTIONS.length })}
+            <span aria-hidden="true">·</span>
+            {t('readMinutes', { n: READ_MINUTES })}
+          </p>
+        </div>
+        <WefLogo alt="World Economic Forum" variant="white" height={52} className={styles.headerLogo} />
+      </header>
+
+      <div className={styles.layout}>
+        <nav className={styles.toc} aria-label={t('tableOfContents')}>
+          <details open className={styles.tocDetails}>
+            <summary className={styles.tocTitle}>{t('tableOfContents')}</summary>
+            <ol className={styles.tocList}>
+              {CHARTER_SECTIONS.map((s, i) => (
+                <li key={s.id}>
+                  <a href={`#${s.id}`} className={styles.tocLink}>
+                    <span className={styles.tocNum}>{String(i + 1).padStart(2, '0')}</span>
+                    {s.title}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </details>
+        </nav>
+
+        <article className={styles.document}>
+          <Section section={CHARTER_INTRO} isIntro />
+          {CHARTER_SECTIONS.map((s, i) => <Section key={s.id} section={s} num={i + 1} />)}
+        </article>
       </div>
-
-      <nav className={styles.toc} aria-label={t('tableOfContents')}>
-        <p className={styles.tocTitle}>{t('tableOfContents')}</p>
-        <ul className={styles.tocList}>
-          {CHARTER_SECTIONS.map(s => (
-            <li key={s.id}>
-              <a href={`#${s.id}`} className={styles.tocLink}>{s.title}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <article className={styles.document}>
-        <Section section={CHARTER_INTRO} isIntro />
-        {CHARTER_SECTIONS.map(s => <Section key={s.id} section={s} />)}
-      </article>
     </div>
   );
 }

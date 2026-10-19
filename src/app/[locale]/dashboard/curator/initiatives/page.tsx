@@ -9,6 +9,7 @@ import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
 import { setSpotlight } from '@/lib/spotlight';
+import SearchSelect from '@/components/dashboard/SearchSelect';
 import { omitKeys } from '@/lib/omitKeys';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
@@ -128,7 +129,7 @@ export default function ManageInitiatives() {
   const locale   = useLocale();
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [users, setUsers]             = useState<{ id: string; displayName?: string; email?: string }[]>([]);
+  const [users, setUsers]             = useState<{ id: string; displayName?: string; displayNameAr?: string; email?: string }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [removalRequests, setRemovalRequests] = useState<any[]>([]);
   const [addRequests, setAddRequests] = useState<any[]>([]);
@@ -172,7 +173,7 @@ export default function ManageInitiatives() {
         .map(d => ({ id: d.id, ...d.data() } as Initiative))
         .filter(i => !(i as any).type);
       setInitiatives(inits);
-      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string })));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; email?: string })));
 
       // Leave requests (non-critical, catch separately)
       try {
@@ -967,12 +968,18 @@ export default function ManageInitiatives() {
                 <div className={styles.teamPanel}>
                   <p className={styles.teamPanelTitle}>{t('assignShapers')}</p>
                   <div className={styles.teamAssignRow}>
-                    <select value={assignUser} onChange={e => setAssignUser(e.target.value)} className={styles.teamSelect}>
-                      <option value="">{t('selectShaper')}</option>
-                      {users
+                    <SearchSelect
+                      className={styles.teamSelectSearch}
+                      options={users
                         .filter(u => !(init.members as any[] || []).some((m: any) => m.userId === u.id))
-                        .map(u => <option key={u.id} value={u.id}>{u.displayName || u.email || u.id}</option>)}
-                    </select>
+                        .map(u => ({ value: u.id, label: u.displayName || u.email || u.id, hint: u.email, keywords: u.displayNameAr }))
+                        .sort((a, b) => a.label.localeCompare(b.label))}
+                      value={assignUser}
+                      onChange={setAssignUser}
+                      placeholder={t('searchMemberPh')}
+                      noResults={t('noMatches')}
+                      clearLabel={t('clearSelection')}
+                    />
                     <input
                       value={assignRole}
                       onChange={e => setAssignRole(e.target.value)}

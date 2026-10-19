@@ -352,6 +352,10 @@
     "arts_culture": "Arts & Culture",
     "other": "Other"
   },
+  "PasswordInput": {
+    "show": "Show password",
+    "hide": "Hide password"
+  },
   "LoginPage": {
     "title": "Member Login",
     "subtitle": "Sign in to access your dashboard",

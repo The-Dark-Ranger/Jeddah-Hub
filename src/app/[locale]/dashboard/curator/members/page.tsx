@@ -12,6 +12,7 @@ import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
 import { createMemberAccount, removePendingMember } from '@/lib/createMemberAccount';
 import ShaperStatusPanel from './ShaperStatusPanel';
+import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -232,6 +233,8 @@ export default function MembersPage() {
     a.email, resolveName(a), a.note, ROLES.find(r => r.value === a.role)?.label));
   const pending = visible.filter(a => a.status !== 'joined');
   const joined  = visible.filter(a => a.status === 'joined');
+  // Long pending list: 10 at a time, starting over when the search changes.
+  const pendingPage = useViewMore(pending, search);
 
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
@@ -410,7 +413,17 @@ export default function MembersPage() {
             </div>
             {pending.length === 0 ? (
               <div className={styles.empty}>{search ? t('noMatches') : t('noAssignments')}</div>
-            ) : renderTable(pending, false)}
+            ) : (
+              <>
+                {renderTable(pendingPage.shown, false)}
+                <ViewMoreButton
+                  hiddenCount={pendingPage.hiddenCount}
+                  expanded={pendingPage.expanded}
+                  onMore={pendingPage.more}
+                  onLess={pendingPage.less}
+                />
+              </>
+            )}
           </div>
         </>
       )}

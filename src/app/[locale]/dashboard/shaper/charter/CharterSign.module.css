@@ -46,6 +46,7 @@
 .adminHint { font-size: .85rem; line-height: 1.55; color: var(--text-muted); max-width: 60ch; }
 .switch {
   flex-shrink: 0; position: relative; width: 50px; height: 28px; border-radius: 999px; border: none;
+  min-width: 50px; min-height: 0; padding: 0; box-sizing: border-box;
   background: var(--border-color); cursor: pointer; transition: background .2s ease;
 }
 .switchOn { background: #10b981; }

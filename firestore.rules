@@ -48,6 +48,35 @@ service cloud.firestore {
              && request.auth.uid in get(/databases/$(database)/documents/initiatives/$(initiativeId)).data.leads;
     }
 
+    // The Curator specifically (not a vice curator).
+    function isFullCurator() {
+      return isSignedIn() && userRole() == 'curator';
+    }
+
+    // A users/ or public_profiles/ doc with no role assigned yet.
+    function hasNoRole(d) {
+      return d.get('role', null) == null || d.get('role', null) == '';
+    }
+
+    // Curators and vice curators edit member records, but only the Curator
+    // can change a curator's record or hand out the curator role.
+    function curatorMayEdit(before, after) {
+      return isFullCurator()
+             || (before.get('role', '') != 'curator' && after.get('role', '') != 'curator');
+    }
+
+    // Size/type limits on the profile fields members and curators write.
+    function optStr(d, key, max) {
+      return !(key in d) || d[key] == null || (d[key] is string && d[key].size() <= max);
+    }
+    function validProfile(d) {
+      return optStr(d, 'displayName', 100) && optStr(d, 'displayNameAr', 100)
+             && optStr(d, 'bio', 5000) && optStr(d, 'bioAr', 5000)
+             && optStr(d, 'linkedin', 300) && optStr(d, 'twitter', 300) && optStr(d, 'instagram', 300)
+             // Photos may be stored inline as a compressed data URI.
+             && optStr(d, 'photoURL', 1000000);
+    }
+
     // Does the given role_assignments doc belong to the caller? These docs
     // never carry a `uid` field (the invitee doesn't have an account yet
     // when a curator creates one), so ownership is decided by matching the
@@ -91,19 +120,37 @@ service cloud.firestore {
     // from this field. Note this read restriction does NOT break those
     // checks — get()/exists() in rules always succeed server-side
     // regardless of the caller's read permission on the target doc.
+    //
+    // Hardened: a member's only role ever comes from a curator, either
+    // written by the server when their account is created
+    // (/api/members/create-account) or via the role_assignments grant for
+    // their own email. A member can no longer give themselves 'shaper' or
+    // 'alumni', change their role once they have one, or touch their uid,
+    // email or createdAt — only the profile fields My Profile edits, with
+    // size limits. Only the Curator (not a vice curator) can change or
+    // remove a curator's record, or make someone a curator.
     match /users/{uid} {
       allow read: if isOwner(uid) || isCuratorOrImpact();
       allow create: if isOwner(uid)
-                    && (!('role' in request.resource.data)
-                        || request.resource.data.role == null
-                        || request.resource.data.role in ['shaper', 'alumni']
-                        || request.resource.data.role == preassignedRole());
-      allow update: if isCurator()
+                    && request.resource.data.keys().hasOnly(
+                         ['uid', 'email', 'role', 'createdAt', 'displayName', 'displayNameAr',
+                          'photoURL', 'bio', 'bioAr', 'linkedin', 'twitter', 'instagram'])
+                    && request.resource.data.get('uid', uid) == uid
+                    && (!('email' in request.resource.data)
+                        || (request.auth.token.email != null
+                            && request.resource.data.email is string
+                            && request.resource.data.email.lower() == request.auth.token.email.lower()))
+                    && (hasNoRole(request.resource.data) || request.resource.data.role == preassignedRole())
+                    && validProfile(request.resource.data);
+      allow update: if (isCurator() && curatorMayEdit(resource.data, request.resource.data))
                     || (isOwner(uid)
-                        && (request.resource.data.role == resource.data.role
-                            || request.resource.data.role in ['shaper', 'alumni']
-                            || request.resource.data.role == preassignedRole()));
-      allow delete: if isCurator();
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                             ['displayName', 'displayNameAr', 'photoURL', 'bio', 'bioAr',
+                              'linkedin', 'twitter', 'instagram', 'role'])
+                        && (request.resource.data.get('role', null) == resource.data.get('role', null)
+                            || (hasNoRole(resource.data) && request.resource.data.role == preassignedRole()))
+                        && validProfile(request.resource.data));
+      allow delete: if isCurator() && (isFullCurator() || resource.data.get('role', '') != 'curator');
     }
 
     // ── public_profiles ───────────────────────────────────────
@@ -122,14 +169,16 @@ service cloud.firestore {
     // actual access.
     match /public_profiles/{uid} {
       allow read: if true;
-      allow write: if (isOwner(uid) || isCurator())
+      allow create, update: if (isOwner(uid) || isCurator())
                    && request.resource.data.keys().hasOnly(
                         ['displayName', 'displayNameAr', 'photoURL', 'bio', 'bioAr',
                          'linkedin', 'twitter', 'instagram', 'role'])
+                   && validProfile(request.resource.data)
                    && (isCurator()
                        || !('role' in request.resource.data)
                        || (resource != null && request.resource.data.role == resource.data.role)
                        || request.resource.data.role == userRole());
+      allow delete: if isCurator();
     }
 
     // ── initiatives ───────────────────────────────────────────
@@ -315,8 +364,13 @@ service cloud.firestore {
       // everyone else's direct writes are capped at draft/pending_review
       // regardless of what the client UI offers, since that's a
       // client-only signal with nothing server-side to verify it.
+      // authorRole is shown on the post ("Curator", "Global Shaper"), so it
+      // must be the author's real role, not whatever the client sends.
       allow create: if isAnyMember()
                     && request.resource.data.authorId == request.auth.uid
+                    && (!('authorRole' in request.resource.data)
+                        || (request.resource.data.authorRole is string
+                            && request.resource.data.authorRole.lower().replace(' ', '_') == userRole().replace(' ', '_')))
                     && (isCuratorOrImpact()
                         || request.resource.data.status in ['draft', 'pending_review']);
       allow update: if isCuratorOrImpact()
@@ -329,6 +383,7 @@ service cloud.firestore {
                         && request.auth.uid == resource.data.authorId
                         && resource.data.status in ['draft', 'pending_review']
                         && request.resource.data.authorId == resource.data.authorId
+                        && request.resource.data.get('authorRole', '') == resource.data.get('authorRole', '')
                         && request.resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
                     // likedBy/visitorLikes fields on a published post — needed because
@@ -368,9 +423,21 @@ service cloud.firestore {
     // nothing and no role, not even shaper/alumni, is ever applied.
     // Deliberately no `update` rule: marking an assignment "joined" for a
     // curator-facing notification is intentionally not supported.
+    // Hardened create: the doc id must be the (lowercased) email it grants,
+    // the role must be a real one, only the Curator can grant 'curator',
+    // and only the fields the Role Assignments page writes are accepted.
     match /role_assignments/{docId} {
       allow read:   if isAssignee(resource.data) || isCuratorOrImpact();
-      allow create: if isCurator();
+      allow create: if isCurator()
+                    && request.resource.data.email is string
+                    && request.resource.data.email == docId
+                    && docId == docId.lower()
+                    && request.resource.data.role in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']
+                    && (request.resource.data.role != 'curator' || isFullCurator())
+                    && request.resource.data.keys().hasOnly(
+                         ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt'])
+                    && optStr(request.resource.data, 'displayName', 100)
+                    && optStr(request.resource.data, 'note', 300);
       allow delete: if isCurator() || isAssignee(resource.data);
     }
 

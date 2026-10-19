@@ -52,8 +52,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const html = document.documentElement;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (reduceMotion) {
-      setTheme(next);
+    // Phones and tablets: switch instantly. The animated reveal snapshots the
+    // whole page, and mobile browsers shift that snapshot as their toolbar
+    // and the pinned header move, which read as a jitter. Every element's
+    // own colour transition is suppressed for the one frame of the swap so
+    // nothing fades at its own speed either.
+    const touch = window.matchMedia('(hover: none)').matches;
+    if (reduceMotion || touch) {
+      html.setAttribute('data-theme-switch', '');
+      html.setAttribute('data-theme', next);
+      flushSync(() => setTheme(next));
+      requestAnimationFrame(() => requestAnimationFrame(() => html.removeAttribute('data-theme-switch')));
       return;
     }
 

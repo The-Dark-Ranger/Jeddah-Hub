@@ -916,7 +916,7 @@
     "pwTooShort": "Use at least {n} characters.",
     "pwNotNew": "Choose a new password, different from the temporary one.",
     "pwMismatch": "The new passwords don’t match.",
-    "defaultPwBanner": "You’re signed in with the temporary password. Please change it to keep your account safe.",
+    "defaultPwBanner": "You’re signed in with the temporary password. Set your own password to continue to the rest of the dashboard.",
     "charterSignBanner": "Please read the Community Charter and confirm your compliance.",
     "charterSignCta": "Read & sign",
     "spotlightBadge": "Spotlight",
@@ -932,7 +932,8 @@
     "statusLoadFailed": "Couldn't load members.",
     "statusSaveFailed": "Couldn't change the status. Please try again.",
     "viewMoreCount": "View {count} more ({total} hidden)",
-    "viewLess": "View less"
+    "viewLess": "View less",
+    "viewMoreMembers": "View {count} more members"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

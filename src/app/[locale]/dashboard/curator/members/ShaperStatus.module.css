@@ -59,3 +59,7 @@
   .segment { align-self: stretch; }
   .segBtn { flex: 1; }
 }
+
+@media (hover: none) {
+  .segBtn { min-height: 40px; }
+}

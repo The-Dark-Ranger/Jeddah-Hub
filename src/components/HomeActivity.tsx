@@ -9,6 +9,7 @@ import styles from '@/app/[locale]/Home.module.css';
 import WaveDivider from './WaveDivider';
 import { slugify } from '@/lib/slug';
 import { safeColor } from '@/lib/activityTypes';
+import { safeExternalUrl } from '@/lib/sanitize';
 
 interface Highlight { name: string; tag: string; }
 
@@ -67,9 +68,9 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
             </div>
           )}
           <div className={styles.retreatBtnRow}>
-            {activity.ctaText && activity.ctaUrl && (
+            {activity.ctaText && safeExternalUrl(activity.ctaUrl) && (
               <a
-                href={activity.ctaUrl}
+                href={safeExternalUrl(activity.ctaUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.retreatBtn + (accent ? ' ' + styles.retreatBtnAccent : '')}

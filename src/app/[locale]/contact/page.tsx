@@ -36,7 +36,7 @@ export default function ContactPage() {
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, action: 'contact' }),
       });
       if (!verify.ok) { setStatus('error'); return; }
 

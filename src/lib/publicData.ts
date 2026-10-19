@@ -1,4 +1,4 @@
-﻿import { createHash } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { unstable_cache } from 'next/cache';
 
 /* Public site data, read on the server and sent inside the page HTML.
@@ -85,7 +85,7 @@ async function listCollection(collection: string): Promise<Doc[]> {
   const docs: Doc[] = [];
   let pageToken = '';
   do {
-    const res = await fetch(`${BASE}/${collection}?pageSize=300${pageToken ? `&pageToken=${pageToken}` : ''}`, {
+    const res = await fetch(`${BASE}/${collection}?pageSize=300${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, {
       cache: 'no-store', signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) throw new Error(`list ${collection}: ${res.status}`);

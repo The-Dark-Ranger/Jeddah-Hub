@@ -362,7 +362,9 @@
     "errorInvalid": "Invalid email or password.",
     "errorGeneral": "Sign in failed. Please try again.",
     "errorTooMany": "Too many attempts. Please wait a few minutes and try again.",
-    "errorNetwork": "Can't reach the server. Check your connection and try again."
+    "errorNetwork": "Can't reach the server. Check your connection and try again.",
+    "errorLocked": "Too many failed attempts. Please wait {seconds} seconds and try again.",
+    "errorEmailFormat": "Please enter a valid email address."
   },
   "Common": {
     "email": "Email",

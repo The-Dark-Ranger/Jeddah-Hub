@@ -25,6 +25,17 @@ export async function createMemberAccount(email: string, displayName: string, ro
   }
 }
 
+/** When each of these emails last signed in (only those that have).
+ *  Curators only; empty on any failure. */
+export async function getSignInStatus(emails: string[]): Promise<Record<string, string>> {
+  try {
+    const data = await post({ action: 'signin-status', emails }) as { signedIn?: Record<string, string> } | null;
+    return data?.signedIn ?? {};
+  } catch {
+    return {};
+  }
+}
+
 /** Undoes createMemberAccount for a pending member who has never signed in
  *  (the server keeps anyone who has). Best-effort. */
 export async function removePendingMember(email: string): Promise<void> {

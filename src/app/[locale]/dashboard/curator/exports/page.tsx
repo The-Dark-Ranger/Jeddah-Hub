@@ -9,6 +9,7 @@ import { normalizeRole } from '@/lib/role';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Exports.module.css';
+import { spreadsheetSafe } from '@/lib/sanitize';
 
 interface Subscriber { email: string; subscribedAt?: string; }
 
@@ -54,7 +55,9 @@ export default function ExportEmails() {
 
   const downloadCSV = () => {
     const rows = [['email', 'subscribed_at'], ...visible.map(s => [s.email, s.subscribedAt ?? ''])];
-    const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n');
+    // Quoted, with formula-looking values neutralised (subscribers type their
+    // own email into a public form).
+    const csv = rows.map(r => r.map(v => `"${String(spreadsheetSafe(v)).replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a');
     a.href = url;

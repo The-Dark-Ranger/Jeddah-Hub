@@ -11,6 +11,10 @@ import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import AvatarUploader from '@/components/AvatarUploader';
 import styles from './Profile.module.css';
+import { safeExternalUrl } from '@/lib/sanitize';
+
+/** Adds https:// to a link typed without a scheme (e.g. linkedin.com/in/x). */
+const withScheme = (v: string) => { const t = v.trim(); return t && !/^[a-z][a-z0-9+.-]*:/i.test(t) ? 'https://' + t : t; };
 
 interface ProfileForm {
   displayName: string;
@@ -163,9 +167,11 @@ export default function MyProfile() {
         photoURL:      form.photoURL.trim(),
         bio:           form.bio.trim(),
         bioAr:         form.bioAr.trim(),
-        linkedin:      form.linkedin.trim(),
-        twitter:       form.twitter.trim(),
-        instagram:     form.instagram.trim(),
+        // Only http(s) links are stored (firestore.rules refuses anything
+        // else); "linkedin.com/in/x" gets https:// added.
+        linkedin:      safeExternalUrl(withScheme(form.linkedin)) ?? '',
+        twitter:       safeExternalUrl(withScheme(form.twitter)) ?? '',
+        instagram:     safeExternalUrl(withScheme(form.instagram)) ?? '',
       };
       await updateDoc(doc(db, 'users', user.uid), publicFields);
       // Mirror to public_profiles (never email) so About/homepage reflect

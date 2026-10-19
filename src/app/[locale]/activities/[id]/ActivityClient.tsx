@@ -11,6 +11,7 @@ import { slugify } from '@/lib/slug';
 import { safeColor, type CustomForm } from '@/lib/activityTypes';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import styles from './Activity.module.css';
+import { safeExternalUrl } from '@/lib/sanitize';
 
 interface Highlight { name: string; tag: string; }
 
@@ -214,9 +215,9 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
             {formOpen && (
               <a href="#register" className={styles.ctaBtn}>{t('registerNow')}</a>
             )}
-            {activity.ctaText && activity.ctaUrl && (
+            {activity.ctaText && safeExternalUrl(activity.ctaUrl) && (
               <a
-                href={activity.ctaUrl}
+                href={safeExternalUrl(activity.ctaUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={formOpen ? styles.ctaBtnGhost : styles.ctaBtn}

@@ -1,3 +1,4 @@
+import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 
 interface Question {
@@ -33,7 +34,8 @@ export async function downloadActivityResponses(
   // curator following up on a response needs a way to reach the
   // respondent, not just read their answers.
   const header = ['Submitted At', 'Name', 'Email', ...questions.map(q => q.label)];
-  ws.addRow(header);
+  // Answers come from the public registration form: neutralise formulas.
+  ws.addRow(header.map(spreadsheetSafe));
   ws.getRow(1).font = { bold: true };
 
   if (responses.length === 0) {
@@ -45,7 +47,7 @@ export async function downloadActivityResponses(
         r.submitterName || '',
         r.submitterEmail || '',
         ...questions.map(q => r.answers?.[q.id] ?? ''),
-      ]);
+      ].map(spreadsheetSafe));
     });
   }
 

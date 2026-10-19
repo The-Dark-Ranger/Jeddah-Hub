@@ -12,25 +12,78 @@ import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import styles from './Login.module.css';
 
+/* Bot/brute-force deterrents on top of reCAPTCHA and Firebase's own
+ * per-account/IP throttling:
+ *  - a hidden "website" field people never see; anything that fills it is a bot
+ *  - a submission faster than a person can type is refused
+ *  - email/password are validated (format, length) before anything is sent
+ *  - after 5 failed attempts the form locks, 30s doubling up to 15 min
+ *    (kept in localStorage so a reload doesn't reset it). */
+const MAX_FAILS = 5;
+const LOCK_BASE_MS = 30_000;
+const LOCK_MAX_MS = 15 * 60_000;
+const MIN_FILL_MS = 1500;
+const LOCK_KEY = 'jh-login-lock';
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
+
+type LockState = { fails: number; until: number };
+function readLock(): LockState {
+  try {
+    const v = JSON.parse(localStorage.getItem(LOCK_KEY) || '{}');
+    return { fails: Number(v.fails) || 0, until: Number(v.until) || 0 };
+  } catch { return { fails: 0, until: 0 }; }
+}
+function writeLock(s: LockState) {
+  try { localStorage.setItem(LOCK_KEY, JSON.stringify(s)); } catch { /* storage blocked */ }
+}
+
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [openedAt] = useState(() => Date.now());
   const router = useRouter();
   const t = useTranslations('LoginPage');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const lock = readLock();
+    if (lock.until > Date.now()) {
+      setError(t('errorLocked', { seconds: Math.ceil((lock.until - Date.now()) / 1000) }));
+      return;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    // A filled honeypot or an instant submit: fail quietly, like a wrong password.
+    if (honeypot || Date.now() - openedAt < MIN_FILL_MS) {
+      setError(t('errorInvalid'));
+      return;
+    }
+    if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) {
+      setError(t('errorEmailFormat'));
+      return;
+    }
+    if (password.length < 6 || password.length > 128) {
+      setError(t('errorInvalid'));
+      return;
+    }
+
     setLoading(true);
+    const recordFailure = () => {
+      const fails = readLock().fails + 1;
+      const until = fails >= MAX_FAILS ? Date.now() + Math.min(LOCK_BASE_MS * 2 ** (fails - MAX_FAILS), LOCK_MAX_MS) : 0;
+      writeLock({ fails, until });
+    };
 
     try {
       const token = await getRecaptchaToken('login');
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, action: 'login' }),
       });
       if (!verify.ok) {
         setError(t('errorGeneral'));
@@ -38,7 +91,8 @@ export default function LoginPage() {
         return;
       }
 
-      const cred    = await signInWithEmailAndPassword(auth, email, password);
+      const cred    = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      writeLock({ fails: 0, until: 0 });
       // Remember (for this tab only) that the temporary password was used,
       // so the dashboard can ask the member to change it.
       try {
@@ -60,6 +114,7 @@ export default function LoginPage() {
     } catch (err) {
       const code = (err as { code?: string } | null)?.code ?? '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-email') {
+        recordFailure();
         setError(t('errorInvalid'));
       } else if (code === 'auth/too-many-requests') {
         setError(t('errorTooMany'));
@@ -93,6 +148,12 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
+          {/* Honeypot: hidden from people and screen readers; bots fill it. */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+            <label htmlFor="login-website">Website</label>
+            <input id="login-website" name="website" type="text" tabIndex={-1} autoComplete="off"
+              value={honeypot} onChange={e => setHoneypot(e.target.value)} />
+          </div>
           <div className={styles.field}>
             <label className="form-label" htmlFor="login-email">{t('email')}</label>
             <input
@@ -103,6 +164,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder={t('emailPlaceholder')}
               required
+              maxLength={254}
               autoComplete="email"
             />
           </div>
@@ -118,6 +180,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              maxLength={128}
               autoComplete="current-password"
             />
           </div>

@@ -69,10 +69,15 @@ service cloud.firestore {
     function optStr(d, key, max) {
       return !(key in d) || d[key] == null || (d[key] is string && d[key].size() <= max);
     }
+    // A user-entered link: empty, or an http(s) URL (never javascript:, data:, …).
+    function optUrl(d, key) {
+      return !(key in d) || d[key] == null || d[key] == ''
+             || (d[key] is string && d[key].size() <= 500 && d[key].matches('^https?://[^\\s]+$'));
+    }
     function validProfile(d) {
       return optStr(d, 'displayName', 100) && optStr(d, 'displayNameAr', 100)
              && optStr(d, 'bio', 5000) && optStr(d, 'bioAr', 5000)
-             && optStr(d, 'linkedin', 300) && optStr(d, 'twitter', 300) && optStr(d, 'instagram', 300)
+             && optUrl(d, 'linkedin') && optUrl(d, 'twitter') && optUrl(d, 'instagram')
              // Photos may be stored inline as a compressed data URI.
              && optStr(d, 'photoURL', 1000000);
     }
@@ -201,10 +206,12 @@ service cloud.firestore {
     // officers (who can otherwise edit initiatives) can't set them.
     match /initiatives/{docId} {
       allow read: if true;
-      allow create: if isCurator()
-                    || (isImpactOfficer() && request.resource.data.get('featured', false) != true);
+      // Every write: an activity's button link must be a real http(s) URL.
+      allow create: if optUrl(request.resource.data, 'ctaUrl')
+                    && (isCurator()
+                        || (isImpactOfficer() && request.resource.data.get('featured', false) != true));
       allow delete: if isCurator();
-      allow update: if isCurator()
+      allow update: if optUrl(request.resource.data, 'ctaUrl') && (isCurator()
                     || (isImpactOfficer()
                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['featured', 'featuredAt']))
                     || (isSignedIn()
@@ -216,7 +223,7 @@ service cloud.firestore {
                                'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
                                'impact', 'impactAreas', 'color', 'members', 'slug',
-                             ]));
+                             ])));
     }
 
     // ── join_requests ─────────────────────────────────────────
@@ -276,7 +283,8 @@ service cloud.firestore {
                     && request.resource.data.status == 'pending'
                     && request.resource.data.keys().hasOnly(
                          ['title', 'kind', 'eyebrow', 'subtitle', 'description', 'date', 'location',
-                          'ctaText', 'ctaUrl', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+                          'ctaText', 'ctaUrl', 'proposedBy', 'proposedByName', 'status', 'requestedAt'])
+                    && optUrl(request.resource.data, 'ctaUrl');
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
       allow update: if isCuratorOrImpact()

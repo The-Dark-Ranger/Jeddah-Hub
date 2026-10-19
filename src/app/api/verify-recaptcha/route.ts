@@ -22,7 +22,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'reCAPTCHA not configured' }, { status: 503 });
   }
 
-  const passed = await verifyRecaptchaToken(token);
+  // The token must have been issued for the form that's asking.
+  const action = body?.action === 'login' || body?.action === 'contact' ? body.action : null;
+  if (!action) return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 });
+  const passed = await verifyRecaptchaToken(token, { action });
   if (passed) return NextResponse.json({ ok: true });
   return NextResponse.json({ ok: false, error: 'reCAPTCHA verification failed' }, { status: 400 });
 }

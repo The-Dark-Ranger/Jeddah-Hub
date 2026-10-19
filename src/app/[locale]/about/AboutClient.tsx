@@ -12,6 +12,7 @@ import PatternDivider from '@/components/PatternDivider';
 import { avatarGradient, initials } from '@/lib/avatarUtils';
 import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 import { normalizeRole as normRole } from '@/lib/role';
+import { safeExternalUrl } from '@/lib/sanitize';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -259,9 +260,9 @@ function peopleFrom(all: any[]) {
     role:          normRole(u.role),
     bio:           u.bio          || '',
     bioAr:         u.bioAr        || '',
-    linkedin:      u.linkedin     || '',
-    twitter:       u.twitter      || '',
-    instagram:     u.instagram    || '',
+    linkedin:      safeExternalUrl(u.linkedin)     ?? '',
+    twitter:       safeExternalUrl(u.twitter)      ?? '',
+    instagram:     safeExternalUrl(u.instagram)    ?? '',
     photoURL:      u.photoURL     || '',
   });
 
@@ -283,9 +284,9 @@ function peopleFrom(all: any[]) {
       role:          normRole(u.role),
       bio:           u.bio         || '',
       bioAr:         u.bioAr       || '',
-      linkedin:      u.linkedin    || '',
-      twitter:       u.twitter     || '',
-      instagram:     u.instagram   || '',
+      linkedin:      safeExternalUrl(u.linkedin)    ?? '',
+      twitter:       safeExternalUrl(u.twitter)     ?? '',
+      instagram:     safeExternalUrl(u.instagram)   ?? '',
       photoURL:      u.photoURL    || '',
     }))
     .sort((a: LiveCurator, b: LiveCurator) =>

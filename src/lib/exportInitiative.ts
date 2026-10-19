@@ -1,3 +1,4 @@
+import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 
 interface Initiative {
@@ -51,7 +52,8 @@ export async function downloadInitiativeReport(
     ['Report Generated', new Date().toLocaleString()],
   ];
 
-  rows.forEach(r => wsOverview.addRow(r));
+  // Every cell through spreadsheetSafe: initiative text is user-entered.
+  rows.forEach(r => wsOverview.addRow(r.map(spreadsheetSafe)));
 
   const titleCell = wsOverview.getCell('A1');
   titleCell.font = { bold: true, size: 14 };
@@ -67,7 +69,7 @@ export async function downloadInitiativeReport(
     wsTeam.addRow(['', 'No members assigned', '']);
   } else {
     members.forEach((m, i) => {
-      wsTeam.addRow([i + 1, memberNames[m.userId] || m.userId, m.role || 'Member']);
+      wsTeam.addRow([i + 1, memberNames[m.userId] || m.userId, m.role || 'Member'].map(spreadsheetSafe));
     });
   }
 

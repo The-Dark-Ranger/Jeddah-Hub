@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     console.warn('[newsletter/welcome] RECAPTCHA_SECRET_KEY not configured — rejecting request');
     return NextResponse.json({ error: 'reCAPTCHA not configured' }, { status: 503 });
   }
-  const passed = await verifyRecaptchaToken(recaptchaToken);
+  const passed = await verifyRecaptchaToken(recaptchaToken, { action: 'newsletter_subscribe' });
   if (!passed) return NextResponse.json({ error: 'reCAPTCHA verification failed' }, { status: 400 });
 
   if (!RESEND_API_KEY) {

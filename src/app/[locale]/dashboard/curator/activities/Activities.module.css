@@ -212,3 +212,13 @@
 /* Registration status on activity cards */
 .badgeRegOpen { background: rgba(16, 185, 129, .12); color: var(--success); }
 .badgeRegClosed { background: rgba(220, 38, 38, .1); color: var(--danger); }
+
+/* Phones: thumbnail + title on the first line, the status badges on the
+   next, instead of squeezing the title into whatever width the badges
+   leave (it wrapped one word per line and the badges overlapped). */
+@media (max-width: 640px) {
+  .cardTop { flex-wrap: wrap; gap: .6rem .5rem; justify-content: flex-start; }
+  .cardInfo { flex: 1 1 calc(100% - 72px - .85rem); }
+  .cardTop:not(:has(.cardThumb)) .cardInfo { flex-basis: 100%; }
+  .cardActions > button { flex: 1 1 auto; min-height: 38px; }
+}

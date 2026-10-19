@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import AvatarUploader from '@/components/AvatarUploader';
+import PasswordInput from '@/components/PasswordInput';
 import styles from './Profile.module.css';
 import { safeExternalUrl } from '@/lib/sanitize';
 
@@ -102,15 +103,15 @@ function ChangePassword() {
       <div className={styles.pwGrid}>
         <div className={styles.formField}>
           <label className={styles.label} htmlFor="pw-current">{t('pwCurrent')}</label>
-          <input id="pw-current" className={styles.input} type="password" autoComplete="current-password" value={current} onChange={e => setCurrent(e.target.value)} required />
+          <PasswordInput id="pw-current" className={styles.input} autoComplete="current-password" value={current} onChange={e => setCurrent(e.target.value)} required />
         </div>
         <div className={styles.formField}>
           <label className={styles.label} htmlFor="pw-new">{t('pwNew')}</label>
-          <input id="pw-new" className={styles.input} type="password" autoComplete="new-password" minLength={PASSWORD_MIN} value={next} onChange={e => setNext(e.target.value)} required />
+          <PasswordInput id="pw-new" className={styles.input} autoComplete="new-password" minLength={PASSWORD_MIN} value={next} onChange={e => setNext(e.target.value)} required />
         </div>
         <div className={styles.formField}>
           <label className={styles.label} htmlFor="pw-confirm">{t('pwConfirm')}</label>
-          <input id="pw-confirm" className={styles.input} type="password" autoComplete="new-password" minLength={PASSWORD_MIN} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} required />
+          <PasswordInput id="pw-confirm" className={styles.input} autoComplete="new-password" minLength={PASSWORD_MIN} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} required />
         </div>
       </div>
       <div className={styles.pwFooter}>

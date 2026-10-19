@@ -18,7 +18,9 @@ import { DEFAULT_MEMBER_PASSWORD } from '@/lib/memberAccounts';
 function adminApp(): App | null {
   const existing = getApps().find(a => a.name === 'member-admin');
   if (existing) return existing;
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  // Tolerate a byte-order mark or stray whitespace: values piped in from a
+  // Windows shell (e.g. `... | vercel env add`) arrive with a leading BOM.
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.replace(/^﻿/, '').trim();
   if (!raw) return null;
   try {
     const sa = JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string };
@@ -27,6 +29,7 @@ function adminApp(): App | null {
       credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key.replace(/\\n/g, '\n') }),
     }, 'member-admin');
   } catch {
+    console.error('create-account: FIREBASE_SERVICE_ACCOUNT is not valid JSON');
     return null;
   }
 }

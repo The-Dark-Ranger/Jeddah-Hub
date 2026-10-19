@@ -114,7 +114,6 @@
 .noteCell { color: var(--text-muted); }
 .dateCell { color: var(--text-muted); white-space: nowrap; }
 
-
 .roleBadge {
   display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid;
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
@@ -153,8 +152,6 @@
 .inviteBtn.inviteFailed { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); cursor: default; }
 
 .loading { display: flex; justify-content: center; padding: 3rem; }
-.spinner { width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 

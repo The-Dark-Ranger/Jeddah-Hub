@@ -14,13 +14,12 @@
 }
 @media (max-width: 700px) { .formRow { grid-template-columns: 1fr; } }
 
-.select, .input {
+.input {
   padding: 0.7rem 1rem; border-radius: 9px; border: 1px solid var(--border-color);
   background: var(--input-bg); color: var(--text-main); font-size: 0.9rem; outline: none;
   transition: border-color 0.2s ease; width: 100%;
 }
-.select:focus, .input:focus { border-color: var(--primary-blue); }
-.select { cursor: pointer; }
+.input:focus { border-color: var(--primary-blue); }
 
 .assignBtn {
   padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-blue);
@@ -31,12 +30,6 @@
 .assignBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .loading { display: flex; justify-content: center; padding: 3rem; }
-.spinner {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 3px solid var(--border-color); border-top-color: var(--primary-blue);
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
 

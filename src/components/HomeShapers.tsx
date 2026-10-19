@@ -21,7 +21,7 @@ export interface Shaper {
 // "vice_curator"/"vice curator" and "impact_officer"/"impact officer") —
 // otherwise a vice curator or impact officer stored in one of those
 // variants would be silently excluded from this query.
-export const SHAPER_ROLES = [
+const SHAPER_ROLES = [
   'shaper', 'alumni', 'curator',
   'vice_curator', 'vice curator',
   'impact_officer', 'impact officer',

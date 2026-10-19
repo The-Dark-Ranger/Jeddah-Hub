@@ -168,11 +168,6 @@
 .card:hover .cardLink { gap: 0.6rem; }
 .card:hover .cardLink svg { transform: translateX(2px); transition: transform 0.2s ease; }
 
-/* Loading / Empty */
-.loading { display: flex; justify-content: center; padding: 5rem; }
-.spinner { width: 34px; height: 34px; border: 3px solid var(--border-color); border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .empty { text-align: center; padding: 5rem; color: var(--text-muted); }
 .empty h3 { font-size: 1.2rem; color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600; }
 .empty p { font-size: 0.9rem; }

@@ -305,13 +305,6 @@
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .teamAssignRow { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.teamSelect {
-  flex: 1; min-width: 130px;
-  padding: 0.45rem 0.7rem; border-radius: 8px;
-  border: 1px solid var(--border-color); background: var(--input-bg);
-  color: var(--text-main); font-size: 0.84rem; outline: none;
-}
-.teamSelect:focus { border-color: var(--primary-blue); }
 .teamRoleInput {
   width: 110px;
   padding: 0.45rem 0.7rem; border-radius: 8px;

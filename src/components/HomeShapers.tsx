@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useLocale, useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
+import { normalizeRole } from '@/lib/role';
 
 export interface Shaper {
   uid: string;
@@ -31,6 +32,7 @@ const SHAPER_ROLES = [
  *  they are fetched in the browser instead. */
 export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
   const t      = useTranslations('HomePage');
+  const tRole  = useTranslations('Role');
   const locale = useLocale();
   const [shapers, setShapers] = useState<Shaper[]>(initial ?? []);
   const [loaded, setLoaded]   = useState(!!initial);
@@ -89,7 +91,7 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
                 </div>
             }
             <div className={styles.memberName}>{name}</div>
-            <div className={styles.memberRole}>{t('globalShaper')}</div>
+            <div className={styles.memberRole}>{normalizeRole(s.role) === 'alumni' ? tRole('alumni') : t('globalShaper')}</div>
           </div>
         );
       })}

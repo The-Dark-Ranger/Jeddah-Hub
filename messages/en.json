@@ -926,7 +926,11 @@
     "searchInitiativePh": "Search initiatives…",
     "searchMemberPh": "Search by name or email…",
     "clearSelection": "Clear selection",
-    "alreadyOnInitiative": "Already on this initiative"
+    "alreadyOnInitiative": "Already on this initiative",
+    "statusTitle": "Shaper status",
+    "statusHint": "Keep a member as an active Shaper or move them to Alumni. Who We Are, the homepage and the member counts update within a minute; alumni aren't asked to sign the Charter.",
+    "statusLoadFailed": "Couldn't load members.",
+    "statusSaveFailed": "Couldn't change the status. Please try again."
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

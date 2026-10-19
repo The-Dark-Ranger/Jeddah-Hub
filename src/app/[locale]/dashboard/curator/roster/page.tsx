@@ -332,7 +332,8 @@ export default function ManageRoster() {
                             <td>
                               <span className={styles.rolePill}>{m.role || t('memberDefaultRole')}</span>
                             </td>
-                            <td style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <td className={styles.actionsTd}>
+                              <div className={styles.rowActions}>
                               {isDriftedLead(init, m) && (
                                 <button
                                   className={styles.assignBtn}
@@ -348,6 +349,7 @@ export default function ManageRoster() {
                               >
                                 {t('removeMember')}
                               </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

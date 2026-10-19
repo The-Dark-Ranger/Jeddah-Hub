@@ -2,7 +2,7 @@ import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   doc, getDoc, setDoc,
-  collection, query, where, getDocs, limit
+  collection, query, where, getDocs,
 } from 'firebase/firestore';
 import { normalizeRole } from './role';
 
@@ -49,26 +49,6 @@ async function syncPublicProfile(uid: string, data: Partial<UserProfile>) {
   } catch { /* non-fatal — public listing just stays stale until next sync */ }
 }
 
-async function bootstrapFirstAdmin(email: string): Promise<RoleResult> {
-  try {
-    const snap = await getDocs(query(collection(db, 'role_assignments'), limit(1)));
-    if (snap.empty) {
-      // Keyed by the lowercased email (not an auto-id) so the Firestore
-      // rules' preassignedRole() can look this doc up directly by path
-      // when the bootstrapped user applies their own curator role below.
-      const normalizedEmail = email.toLowerCase().trim();
-      await setDoc(doc(db, 'role_assignments', normalizedEmail), {
-        email: normalizedEmail,
-        role: 'curator',
-        createdAt: new Date().toISOString(),
-        addedBy: 'system-bootstrap',
-      });
-      return { role: 'curator' };
-    }
-  } catch { /* ignore */ }
-  return { role: null };
-}
-
 async function lookupRoleAssignment(email: string): Promise<RoleResult> {
   try {
     const q = query(
@@ -97,8 +77,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
 
       if (!role && (email || data.email)) {
         const target = (email || data.email) as string;
-        let result = await lookupRoleAssignment(target);
-        if (!result.role) result = await bootstrapFirstAdmin(target);
+        const result = await lookupRoleAssignment(target);
         if (result.role) {
           role = result.role;
           await setDoc(docRef, { role }, { merge: true });
@@ -122,8 +101,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
       void syncPublicProfile(uid, profile);
       return profile;
     } else if (email) {
-      let result = await lookupRoleAssignment(email);
-      if (!result.role) result = await bootstrapFirstAdmin(email);
+      const result = await lookupRoleAssignment(email);
       const profile: UserProfile = { uid, email, role: result.role, displayName: null };
       await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
       void syncPublicProfile(uid, profile);

@@ -471,3 +471,6 @@
 .spotlightBtn:hover, .spotlightBtnOn { background: #7c3aed; color: #fff; border-color: #7c3aed; }
 :global([data-theme="dark"]) .spotlightBtnOn, :global([data-theme="dark"]) .spotlightBtn:hover { color: #fff; }
 .spotlightBtn:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
+
+/* Searchable member picker in the team panel */
+.teamSelectSearch { flex: 1; min-width: 200px; }

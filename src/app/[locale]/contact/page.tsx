@@ -42,6 +42,7 @@ export default function ContactPage() {
 
       await addDoc(collection(db, 'contact_messages'), {
         ...formData,
+        email: formData.email.trim(),
         submittedAt: new Date().toISOString(),
         read: false,
       });

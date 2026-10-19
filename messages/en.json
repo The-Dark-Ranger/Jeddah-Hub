@@ -527,8 +527,6 @@
     "createInitiative": "Create New Initiative",
     "manageRoster": "Manage Roster & Roles",
     "assignMember": "Assign Member to Initiative",
-    "selectInitiative": "Select Initiative",
-    "selectUser": "Select User",
     "tempRolePlaceholder": "Temp Role (e.g. Lead)",
     "assignMemberBtn": "Assign Member",
     "dataExport": "Data Export",

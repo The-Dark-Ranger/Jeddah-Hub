@@ -121,7 +121,7 @@ function timeOf(v: unknown): number {
 }
 
 /** Active Hub Activities, newest first. */
-export function activeActivities(docs: (Activity & { createdAt?: unknown })[]): Activity[] {
+function activeActivities(docs: (Activity & { createdAt?: unknown })[]): Activity[] {
   return docs.filter(a => a.active === true).sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt));
 }
 

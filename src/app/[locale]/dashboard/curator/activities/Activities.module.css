@@ -178,18 +178,6 @@
 .textarea:focus { outline:none;border-color:var(--primary-blue); }
 .checkRow { display:flex;align-items:center;gap:.6rem;font-size:.875rem;color:var(--text-main);cursor:pointer; }
 
-/* ── Custom form builder — styled to read like a familiar form-builder
-   (Google Forms-ish): each question is its own card with a prominent label
-   field, a compact type selector, and — for dropdowns — individually
-   editable option rows instead of one easy-to-mangle comma-separated
-   field. ── */
-.optionInput {
-  flex: 1; padding: .45rem .65rem; border-radius: 6px;
-  border: 1px solid var(--border-color); background: var(--input-bg,var(--card-bg));
-  color: var(--text-main); font-size: .85rem;
-}
-.optionInput:focus { outline: none; border-color: var(--primary-blue); }
-
 /* ── Responses table ── */
 .responsesTableWrap { overflow-x: auto; }
 .responsesTable { width: 100%; border-collapse: collapse; font-size: .82rem; }

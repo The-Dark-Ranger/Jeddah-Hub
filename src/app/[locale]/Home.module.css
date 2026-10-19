@@ -302,3 +302,28 @@
 .retreatDesc { color: rgba(255, 255, 255, .9); }
 .retreatMetaItem { color: rgba(255, 255, 255, .9); }
 .retreatMetaDot { background: rgba(255, 255, 255, .6); }
+
+/* ── Activity colour ──
+ * When an activity / workshop has its own colour, the whole section takes
+ * it on: a deep version of the colour as the background, a brighter glow
+ * behind the photo, and the colour on the label and title underline.
+ * Without one, the default navy design above applies. */
+.retreatSectionAccent {
+  background:
+    radial-gradient(ellipse 55% 75% at 82% 45%, color-mix(in srgb, var(--activity-accent) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 8% 100%, color-mix(in srgb, var(--activity-accent) 30%, transparent), transparent 70%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--activity-accent) 28%, #0b1120) 0%,
+      color-mix(in srgb, var(--activity-accent) 48%, #0b1120) 100%);
+}
+.retreatSectionAccent .retreatEyebrow {
+  display: inline-block; padding: .35rem .8rem; border-radius: 999px;
+  color: #fff; background: color-mix(in srgb, var(--activity-accent) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--activity-accent) 85%, #fff);
+}
+.retreatSectionAccent .retreatTitle {
+  text-decoration: underline; text-decoration-color: var(--activity-accent);
+  text-decoration-thickness: .12em; text-underline-offset: .18em;
+}
+.retreatSectionAccent .retreatMetaDot { background: var(--activity-accent); }
+.retreatSectionAccent .retreatSliderDotActive { background: var(--activity-accent); }

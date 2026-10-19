@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
 import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
+import { CategoryLabel } from '@/lib/categoryLabel';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -133,7 +134,7 @@ export default function HomeFeaturedInitiatives({ initial }: { initial?: Initiat
                 : { background: bg }
               }
             >
-              {init.category && <span className={styles.projectBannerTag}>{init.category}</span>}
+              {init.category && <span className={styles.projectBannerTag}><CategoryLabel category={init.category} /></span>}
             </div>
             <div className={styles.projectInfo}>
               <h3 className={styles.projectTitle}>{(locale === 'ar' && init.titleAr) || init.title}</h3>

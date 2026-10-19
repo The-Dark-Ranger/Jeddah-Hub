@@ -173,13 +173,60 @@
 }
 
 /* CTA */
-.ctaSection { padding:6rem 1.5rem;background:var(--background-alt); }
-.cta { text-align:center;max-width:580px;margin-inline:auto; }
-.cta h2 { font-size:2rem;font-weight:700;color:var(--text-main);margin-bottom:.65rem; }
-.cta p  { color:var(--text-muted);font-size:1rem;margin-bottom:1.75rem; }
-.ctaBtn { display:inline-flex;align-items:center;gap:.5rem;background:var(--primary-blue);color:#fff;padding:.95rem 2.25rem;border-radius:8px;font-weight:700;font-size:1rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
-.ctaBtn:hover { transform:translateY(-2px);box-shadow:0 6px 18px var(--primary-blue-glow); }
-.ctaNote { font-size:.8rem;color:var(--text-muted);margin-top:1rem; }
+/* CTA: a bold brand card that closes the page */
+.ctaSection { padding: 5rem 1.5rem 6rem; background: var(--background); }
+.cta {
+  position: relative; overflow: hidden; isolation: isolate;
+  max-width: 980px; margin-inline: auto; padding: 4rem 2rem 3.5rem;
+  text-align: center; color: #fff; border-radius: 28px;
+  background: linear-gradient(140deg, #051535 0%, #0a3272 45%, #0f5a9f 80%, #1a7fd4 100%);
+  box-shadow: 0 30px 70px -20px rgba(10, 50, 114, .55), 0 0 0 1px rgba(255, 255, 255, .06) inset;
+}
+/* Hijazi lattice, faint, across the whole card */
+.cta::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; opacity: .045; background: #fff;
+  -webkit-mask: url('/hijazi-tile.png') repeat center / 56px auto;
+          mask: url('/hijazi-tile.png') repeat center / 56px auto;
+}
+/* Warm glow behind the headline */
+.cta::after {
+  content: ''; position: absolute; z-index: -1; width: 520px; height: 520px; border-radius: 50%;
+  top: -260px; left: 50%; transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 65%);
+}
+.ctaEyebrow {
+  display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1.1rem !important;
+  padding: .4rem .95rem; border-radius: 999px; font-size: .74rem !important; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: #fff !important;
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22);
+}
+.ctaEyebrow::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52, 211, 153, .25); }
+.cta h2 {
+  font-size: clamp(1.9rem, 4.2vw, 2.9rem); font-weight: 800; line-height: 1.12;
+  letter-spacing: -.02em; color: #fff; margin: 0 auto .9rem; max-width: 18ch;
+}
+.cta p { color: rgba(255, 255, 255, .82); font-size: 1.08rem; line-height: 1.6; margin: 0 auto 2rem; max-width: 46ch; }
+.ctaBtn {
+  display: inline-flex; align-items: center; gap: .6rem;
+  background: #fff; color: #0a3272; padding: 1.05rem 2.4rem; border-radius: 999px;
+  font-weight: 800; font-size: 1.05rem; transition: transform .2s ease, box-shadow .2s ease;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, .45); -webkit-tap-highlight-color: transparent;
+}
+.ctaBtn svg { transition: transform .2s ease; }
+.ctaBtn:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -10px rgba(0, 0, 0, .55); }
+.ctaBtn:hover svg { transform: translateX(4px); }
+:global([dir="rtl"]) .ctaBtn svg { transform: scaleX(-1); }
+:global([dir="rtl"]) .ctaBtn:hover svg { transform: scaleX(-1) translateX(4px); }
+.ctaBtn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.cta .ctaNote {
+  display: flex; align-items: center; justify-content: center; gap: .5rem; margin: 1.6rem auto 0;
+  font-size: .82rem; color: rgba(255, 255, 255, .72); max-width: none;
+}
+@media (max-width: 600px) {
+  .ctaSection { padding: 3rem 1rem 4rem; }
+  .cta { padding: 3rem 1.25rem 2.75rem; border-radius: 22px; }
+  .ctaBtn { width: 100%; justify-content: center; }
+}
 
 /* Values grid */
 .valuesHeader { margin-bottom: 3rem; }

@@ -279,7 +279,7 @@ export default function ActivitiesPage() {
     } catch (err: any) {
       console.error('Failed to save activity:', err);
       const code = err?.code || err?.message || 'unknown';
-      alert(`Failed to save (${code}). If this says "permission-denied", ensure the Firestore rules have been deployed.`);
+      alert(`${t('saveFailed')} (${code})`);
     } finally {
       setSaving(false);
     }

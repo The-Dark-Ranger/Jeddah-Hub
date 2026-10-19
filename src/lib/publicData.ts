@@ -147,6 +147,16 @@ async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
   }
 }
 
+const normRole = (r: unknown) => (typeof r === 'string' ? r.toLowerCase().replace(/\s+/g, '_') : '');
+
+/** The "Our Shapers" number on Who We Are: shapers plus the curatorship
+ *  (curator, vice curator, impact officer) who are listed there, i.e. who
+ *  have a name. Alumni aren't counted. Used wherever that number appears. */
+export function countListedShapers(profiles: Doc[]): number {
+  return profiles.filter(p =>
+    p.displayName && ['shaper', 'curator', 'vice_curator', 'impact_officer'].includes(normRole(p.role))).length;
+}
+
 /** Every initiative doc: real initiatives and Hub Activities (type 'hub_activity'). */
 export const getInitiatives = () => safe(loadInitiatives);
 export const getPublicProfiles = () => safe(loadProfiles);

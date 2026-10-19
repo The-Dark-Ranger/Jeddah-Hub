@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { slugify } from '@/lib/slug';
+import { newsPath, slugify } from '@/lib/slug';
 import { SITE_URL, LOCALES } from '@/lib/seo';
 
 /** Public, indexable static routes. Dashboard and login are intentionally
@@ -52,7 +52,7 @@ async function dynamicRoutes(): Promise<MetadataRoute.Sitemap> {
       .flatMap(d => toEntries(`/activities/${d.slug || slugify(d.title || '')}`, lastModified, 'monthly', 0.5));
 
     const posts = blogSnap.docs
-      .flatMap(d => toEntries(`/news/${d.id}`, lastModified, 'monthly', 0.5));
+      .flatMap(d => toEntries(newsPath({ id: d.id, ...(d.data() as { title?: string; slug?: string }) }), lastModified, 'monthly', 0.5));
 
     return [...initiatives, ...activities, ...posts];
   } catch {

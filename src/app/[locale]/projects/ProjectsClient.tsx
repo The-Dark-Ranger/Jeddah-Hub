@@ -11,8 +11,9 @@ import WaveDivider from '@/components/WaveDivider';
 import PatternDivider from '@/components/PatternDivider';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
+import { useCategoryLabel } from '@/lib/categoryLabel';
 
-export interface Project extends PlaceholderProject { slug?: string; featured?: boolean; }
+export interface Project extends PlaceholderProject { slug?: string; featured?: boolean; spotlight?: boolean; }
 
 /** The big feature card at the top of the list: a curator-featured
  *  initiative if there is one, otherwise the first active one. */
@@ -168,10 +169,7 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
   // Known categories get a translated label; custom ones show as typed.
-  const catLabel = (category: string) => {
-    const key = category.trim().toLowerCase();
-    return tc.has(key as 'all') ? tc(key as 'all') : category;
-  };
+  const catLabel = useCategoryLabel();
   const [projects, setProjects]     = useState<Project[]>(() =>
     initial ? (initial.length > 0 ? initial : PLACEHOLDER_PROJECTS) : []);
   const [loading, setLoading]       = useState(!initial);
@@ -214,8 +212,13 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
 
   // Spotlight only on the unfiltered view, so a search never hides a match in it.
   const showSpotlight = activeCategory === 'all' && !q;
+  // The one a curator / impact officer put in the spotlight, else a
+  // featured initiative, else the first active one.
+  const isActive = (p: Project) => p.status === 'active' || !p.status;
   const spotlight = showSpotlight
-    ? (projects.find(p => p.featured && (p.status === 'active' || !p.status)) ?? projects.find(p => p.status === 'active' || !p.status))
+    ? (projects.find(p => p.spotlight && isActive(p))
+      ?? projects.find(p => p.featured && isActive(p))
+      ?? projects.find(isActive))
     : undefined;
   const active   = filtered.filter(p => (p.status === 'active' || !p.status) && p.id !== spotlight?.id);
   const archived = filtered.filter(p => p.status && p.status !== 'active');

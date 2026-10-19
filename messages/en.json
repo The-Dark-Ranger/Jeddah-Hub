@@ -264,7 +264,8 @@
     "faq4Q": "How long does the application process take?",
     "faq4A": "Applications are reviewed on a rolling basis within each cycle. After screening, shortlisted candidates are invited to an interview, and successful applicants join as Guest Shapers for a probation period before full membership.",
     "faq5Q": "I don't have leadership experience. Can I still apply?",
-    "faq5A": "Yes. We look for genuine passion, a proactive mindset, and a willingness to contribute, not a resume. Many of our most active Shapers started with no prior leadership experience and grew into it here."
+    "faq5A": "Yes. We look for genuine passion, a proactive mindset, and a willingness to contribute, not a resume. Many of our most active Shapers started with no prior leadership experience and grew into it here.",
+    "ctaEyebrow": "Applications open"
   },
   "ContactPage": {
     "title": "Get in Touch",
@@ -333,7 +334,9 @@
     "legal": "Legal",
     "backToTop": "Back to top",
     "ctaTitle": "Ready to shape Jeddah’s future?",
-    "ctaText": "Join a community of young leaders turning ideas into action — or partner with us on the next initiative."
+    "ctaText": "Join a community of young leaders turning ideas into action — or partner with us on the next initiative.",
+    "globalShapersLink": "Global Shapers",
+    "wefLink": "World Economic Forum"
   },
   "Categories": {
     "all": "All",
@@ -344,7 +347,10 @@
     "community": "Community",
     "environment": "Environment",
     "technology": "Technology",
-    "health": "Health"
+    "health": "Health",
+    "economic_empowerment": "Economic Empowerment",
+    "arts_culture": "Arts & Culture",
+    "other": "Other"
   },
   "LoginPage": {
     "title": "Member Login",
@@ -912,7 +918,13 @@
     "pwTooShort": "Use at least {n} characters.",
     "pwNotNew": "Choose a new password, different from the temporary one.",
     "pwMismatch": "The new passwords don’t match.",
-    "defaultPwBanner": "You’re signed in with the temporary password. Please change it to keep your account safe."
+    "defaultPwBanner": "You’re signed in with the temporary password. Please change it to keep your account safe.",
+    "charterSignBanner": "Please read the Community Charter and confirm your compliance.",
+    "charterSignCta": "Read & sign",
+    "spotlightBadge": "Spotlight",
+    "setSpotlight": "Put in spotlight",
+    "removeSpotlight": "Remove spotlight",
+    "close": "Close"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",
@@ -920,7 +932,29 @@
     "subtitle": "The founding principles, membership terms, and governance rules every Global Shapers member and hub agrees to uphold.",
     "tableOfContents": "Jump to a section",
     "sectionsCount": "{count, plural, one {# section} other {# sections}}",
-    "readMinutes": "{n} min read"
+    "readMinutes": "{n} min read",
+    "signTitle": "Charter compliance",
+    "signIntro": "Confirm that you have read the Community Charter and comply with it.",
+    "signRequiredIntro": "The curatorship asks every member to read the Community Charter and confirm their compliance.",
+    "signName": "Name",
+    "signSubmit": "Submit confirmation",
+    "signing": "Submitting…",
+    "signFailed": "Couldn't save your confirmation. Please try again.",
+    "signedTitle": "You've confirmed the Charter",
+    "signedOn": "Signed as {name} on {date}.",
+    "adminTitle": "Charter sign-off",
+    "adminOnHint": "On: members see a reminder across the dashboard until they confirm the Charter.",
+    "adminOffHint": "Off: members can still confirm the Charter, but aren't reminded to.",
+    "adminToggleLabel": "Require members to sign the Charter",
+    "adminSignedCount": "{signed} of {total} members signed",
+    "adminShowList": "Show members",
+    "adminHideList": "Hide members",
+    "adminReset": "Start a new signing round",
+    "resetConfirm": "Clear all signatures so every member signs again?",
+    "adminSignedOn": "Signed {date}",
+    "adminNotSigned": "Not signed",
+    "adminLoadFailed": "Couldn't load signatures.",
+    "adminSaveFailed": "Couldn't save. Please try again."
   },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",

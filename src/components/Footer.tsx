@@ -46,8 +46,8 @@ export default function Footer() {
   ];
 
   const COMMUNITY_LINKS = [
-    { href: 'https://www.globalshapers.org', label: 'Global Shapers',       external: true },
-    { href: 'https://www.weforum.org',       label: 'World Economic Forum', external: true },
+    { href: 'https://www.globalshapers.org', label: t('globalShapersLink'), external: true },
+    { href: 'https://www.weforum.org',       label: t('wefLink'),           external: true },
   ];
 
   return (

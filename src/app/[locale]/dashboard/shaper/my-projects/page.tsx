@@ -18,6 +18,7 @@ import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { slugify, uniqueInitiativeSlug } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
+import { CategoryLabel } from '@/lib/categoryLabel';
 
 interface Project {
   id: string;
@@ -373,7 +374,7 @@ export default function MyProjects() {
           <form className={jiStyles.modal} onSubmit={handleLeadSave}>
             <div className={jiStyles.modalHeader}>
               <h3 className={jiStyles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
-              <button type="button" className={jiStyles.modalClose} onClick={closeLeadEdit} aria-label="Close">
+              <button type="button" className={jiStyles.modalClose} onClick={closeLeadEdit} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -415,7 +416,7 @@ export default function MyProjects() {
                     className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
                     style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
                   >
-                    {p.category && <span className={styles.bannerCategory}>{p.category}</span>}
+                    {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
                   </div>
                   <div className={styles.cardBody}>
                     <span className={styles.roleChip}>{t('memberDefaultRole')}</span>
@@ -441,7 +442,7 @@ export default function MyProjects() {
                   className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
                   style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
                 >
-                  {p.category && <span className={styles.bannerCategory}>{p.category}</span>}
+                  {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
                 </div>
                 <div className={styles.cardBody}>
                   <span className={styles.leadingBadge}>{t('leadingBadge')}</span>

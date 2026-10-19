@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';
+import { useCategoryLabel } from '@/lib/categoryLabel';
 
 export const CATEGORIES = [
   'Environment', 'Education', 'Health', 'Technology',
@@ -94,6 +95,7 @@ interface Props {
  *  different write targets (a real initiative doc vs a pending proposal). */
 export default function InitiativeFormFields({ form, onChange, styles }: Props) {
   const t = useTranslations('Dashboard');
+  const catLabel = useCategoryLabel();
   const mk = (k: keyof InitiativeFormShape) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       onChange(k, e.target.value);
@@ -119,7 +121,7 @@ export default function InitiativeFormFields({ form, onChange, styles }: Props) 
           <label className={styles.label}>{t('fieldCategory')}</label>
           <select className={styles.input} value={form.category} onChange={mk('category')}>
             <option value="">{t('categorySelectPrompt')}</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map(c => <option key={c} value={c}>{catLabel(c)}</option>)}
           </select>
           {form.category === 'Other' && (
             <input

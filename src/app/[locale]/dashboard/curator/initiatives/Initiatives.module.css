@@ -454,3 +454,20 @@
 .featureBtn:hover, .featureBtnOn { background: #f59e0b; color: #fff; border-color: #f59e0b; }
 :global([data-theme="dark"]) .featureBtnOn, :global([data-theme="dark"]) .featureBtn:hover { color: #1f1300; }
 .featureBtn:focus-visible { outline: 2px solid #f59e0b; outline-offset: 2px; }
+
+/* ── Spotlight (the Initiatives page's big feature card) ── */
+.spotlightPill {
+  font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
+  background: rgba(124, 58, 237, .14); color: #6d28d9;
+}
+:global([data-theme="dark"]) .spotlightPill { color: #c4b5fd; }
+.spotlightBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: .4rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 600;
+  border: 1px solid rgba(124, 58, 237, .35); color: #6d28d9;
+  background: rgba(124, 58, 237, .07); cursor: pointer; font-family: inherit;
+}
+:global([data-theme="dark"]) .spotlightBtn { color: #c4b5fd; }
+.spotlightBtn:hover, .spotlightBtnOn { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+:global([data-theme="dark"]) .spotlightBtnOn, :global([data-theme="dark"]) .spotlightBtn:hover { color: #fff; }
+.spotlightBtn:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }

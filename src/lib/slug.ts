@@ -12,6 +12,12 @@ export function slugify(text: string): string {
     .slice(0, 60);
 }
 
+/** A news post's public URL: its title as a slug (e.g. /news/welcome-to-the-new-website),
+ *  falling back to the doc id only when the title has nothing slug-able. */
+export function newsPath(post: { id: string; title?: string; slug?: string }): string {
+  return `/news/${post.slug || slugify(post.title || '') || post.id}`;
+}
+
 /** Computes a Firestore-unique slug for an initiative's title, called at
  *  create/edit time so it can be persisted as the doc's `slug` field —
  *  that's what lets /projects/{slug} resolve via a direct, cheap query

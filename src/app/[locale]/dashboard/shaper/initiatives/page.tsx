@@ -12,6 +12,7 @@ import InitiativeFormFields, {
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
+import { CategoryLabel } from '@/lib/categoryLabel';
 
 interface Initiative {
   id: string; title: string; description: string; status: string;
@@ -261,7 +262,7 @@ export default function JoinInitiatives() {
           <form className={styles.modal} onSubmit={handleProposeSubmit}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>{t('proposeInitiativeTitle')}</h3>
-              <button type="button" className={styles.modalClose} onClick={closePropose} aria-label="Close">
+              <button type="button" className={styles.modalClose} onClick={closePropose} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -291,7 +292,7 @@ export default function JoinInitiatives() {
           return (
             <div key={init.id} className={styles.card}>
               <div className={styles.cardBody}>
-                {init.category && <span className={styles.categoryPill}>{init.category}</span>}
+                {init.category && <span className={styles.categoryPill}><CategoryLabel category={init.category} /></span>}
                 <h3 className={styles.cardTitle}>{init.title}</h3>
                 <p className={styles.cardDesc}>{init.description}</p>
                 {init.stat && <p className={styles.cardStat}>{init.stat}</p>}

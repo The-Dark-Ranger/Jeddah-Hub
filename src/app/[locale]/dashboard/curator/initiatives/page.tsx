@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
+import { setSpotlight } from '@/lib/spotlight';
 import { omitKeys } from '@/lib/omitKeys';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
@@ -15,6 +16,7 @@ import InitiativeFormFields, {
   type InitiativeFormShape as FormShape,
 } from '@/components/InitiativeFormFields';
 import styles from './Initiatives.module.css';
+import { CategoryLabel } from '@/lib/categoryLabel';
 
 interface Initiative {
   id: string;
@@ -36,6 +38,8 @@ interface Initiative {
   members?: unknown[];
   /** Hand-picked for the homepage's Featured Initiatives section. */
   featured?: boolean;
+  /** The one initiative shown in the Initiatives page's Spotlight card. */
+  spotlight?: boolean;
   featuredAt?: string;
 }
 
@@ -309,9 +313,10 @@ export default function ManageInitiatives() {
   const handleArchive = async (id: string) => {
     if (!confirm(t('archiveInitiativeConfirm'))) return;
     try {
-      // An archived initiative can't stay on the homepage's Featured row.
+      // An archived initiative can't stay on the homepage's Featured row
+      // or in the Initiatives page's Spotlight.
       await updateDoc(doc(db, 'initiatives', id), {
-        status: 'archived', archivedAt: new Date().toISOString(),
+        status: 'archived', archivedAt: new Date().toISOString(), spotlight: false,
         ...(canFeature ? { featured: false } : {}),
       });
       await fetchAll();
@@ -334,6 +339,16 @@ export default function ManageInitiatives() {
         featuredAt: !init.featured ? new Date().toISOString() : null,
       });
       setInitiatives(prev => prev.map(i => i.id === init.id ? { ...i, featured: !init.featured } : i));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
+  const handleToggleSpotlight = async (init: Initiative) => {
+    try {
+      await setSpotlight(init.spotlight ? null : init.id, initiatives);
+      setInitiatives(prev => prev.map(i => ({ ...i, spotlight: !init.spotlight && i.id === init.id })));
     } catch (err) {
       console.error(err);
       alert(t('saveFailed'));
@@ -601,7 +616,7 @@ export default function ManageInitiatives() {
               <h3 className={styles.modalTitle}>
                 {isCreate ? t('createInitiative') : `${t('editInitiativeTitle')}: ${editingTitle}`}
               </h3>
-              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label="Close">
+              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
@@ -823,9 +838,12 @@ export default function ManageInitiatives() {
                   <span className={styles.statusPill + ' ' + (init.status === 'active' ? styles.statusActive : styles.statusArchived)}>
                     {init.status === 'active' ? t('statusActive') : t('statusArchived')}
                   </span>
-                  {init.category && <span className={styles.categoryPill}>{init.category}</span>}
+                  {init.category && <span className={styles.categoryPill}><CategoryLabel category={init.category} /></span>}
                   {init.featured && init.status === 'active' && (
                     <span className={styles.featuredPill}>★ {t('featuredBadge')}</span>
+                  )}
+                  {init.spotlight && init.status === 'active' && (
+                    <span className={styles.spotlightPill}>◎ {t('spotlightBadge')}</span>
                   )}
                 </div>
                 <h3 className={styles.cardTitle}>{init.title}</h3>
@@ -878,6 +896,20 @@ export default function ManageInitiatives() {
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                     </svg>
                     {init.featured ? t('unfeature') : t('featureOnHome')}
+                  </button>
+                )}
+                {init.status === 'active' && (
+                  <button
+                    type="button"
+                    className={styles.spotlightBtn + (init.spotlight ? ' ' + styles.spotlightBtnOn : '')}
+                    onClick={() => handleToggleSpotlight(init)}
+                    aria-pressed={!!init.spotlight}
+                    title={init.spotlight ? t('removeSpotlight') : t('setSpotlight')}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" fill={init.spotlight ? 'currentColor' : 'none'} />
+                    </svg>
+                    {init.spotlight ? t('removeSpotlight') : t('setSpotlight')}
                   </button>
                 )}
                 <button className={styles.editBtn} onClick={() => openEdit(init)}>

@@ -1,0 +1,82 @@
+/* ── Member sign-off ── */
+.signCard {
+  margin-top: 2.5rem; padding: 1.75rem; border-radius: 16px;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px rgba(15, 90, 159, .08);
+  scroll-margin-top: 6rem;
+}
+.signCardRequired { border-color: rgba(245, 158, 11, .55); box-shadow: 0 10px 30px rgba(245, 158, 11, .12); }
+.signCardDone { background: rgba(16, 185, 129, .07); border-color: rgba(16, 185, 129, .4); box-shadow: none; }
+.signTitle { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: .35rem; }
+.signText { font-size: .92rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 1.1rem; }
+.signedRow { display: flex; gap: 1rem; align-items: flex-start; }
+.signedRow .signText { margin-bottom: 0; }
+.signedIcon {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; background: #10b981; color: #fff;
+}
+.fieldLabel { display: block; font-size: .82rem; font-weight: 700; color: var(--text-main); margin-bottom: .4rem; }
+.input {
+  width: 100%; max-width: 420px; padding: .7rem .9rem; border-radius: 10px;
+  border: 1px solid var(--border-color); background: var(--background); color: var(--text-main);
+  font: inherit; font-size: .95rem;
+}
+.input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(15, 90, 159, .15); }
+.confirmRow {
+  display: flex; align-items: center; gap: .65rem; margin: 1.1rem 0 1.25rem;
+  font-size: .95rem; font-weight: 600; color: var(--text-main); cursor: pointer;
+}
+.confirmRow input { width: 18px; height: 18px; accent-color: var(--primary-blue); flex-shrink: 0; }
+.signBtn {
+  padding: .75rem 1.6rem; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--primary-blue); color: #fff; font: inherit; font-weight: 700; font-size: .95rem;
+  transition: transform .15s ease, background .15s ease;
+}
+.signBtn:hover:not(:disabled) { transform: translateY(-1px); background: #0c4a85; }
+.signBtn:disabled { opacity: .55; cursor: not-allowed; }
+.error { color: #dc2626; font-size: .85rem; font-weight: 600; margin: .25rem 0 .75rem; }
+
+/* ── Curator panel ── */
+.adminCard {
+  padding: 1.4rem 1.5rem; border-radius: 16px;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+}
+.adminHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.adminTitle { font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: .25rem; }
+.adminHint { font-size: .85rem; line-height: 1.55; color: var(--text-muted); max-width: 60ch; }
+.switch {
+  flex-shrink: 0; position: relative; width: 50px; height: 28px; border-radius: 999px; border: none;
+  background: var(--border-color); cursor: pointer; transition: background .2s ease;
+}
+.switchOn { background: #10b981; }
+.switch:disabled { opacity: .6; cursor: wait; }
+.switch:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+.switchKnob {
+  position: absolute; top: 3px; inset-inline-start: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s ease;
+}
+.switchOn .switchKnob { transform: translateX(22px); }
+:global([dir="rtl"]) .switchOn .switchKnob { transform: translateX(-22px); }
+.progressRow { display: flex; align-items: center; gap: 1rem; margin-top: 1.1rem; flex-wrap: wrap; }
+.progressText { font-size: .85rem; font-weight: 700; color: var(--text-main); }
+.progressBar { flex: 1; min-width: 140px; height: 8px; border-radius: 999px; background: var(--border-color); overflow: hidden; }
+.progressBar span { display: block; height: 100%; background: #10b981; border-radius: inherit; transition: width .3s ease; }
+.adminActions { display: flex; gap: 1rem; margin-top: .9rem; flex-wrap: wrap; }
+.linkBtn, .linkBtnDanger {
+  background: none; border: none; padding: 0; cursor: pointer; font: inherit; font-size: .85rem; font-weight: 700;
+  color: var(--primary-blue);
+}
+.linkBtnDanger { color: #dc2626; }
+.linkBtn:hover, .linkBtnDanger:hover { text-decoration: underline; }
+.memberList { list-style: none; margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--border-color); }
+.memberRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .65rem 0; border-bottom: 1px solid var(--border-color); font-size: .88rem;
+}
+.memberName { display: flex; flex-direction: column; font-weight: 600; color: var(--text-main); }
+.memberRole { font-size: .75rem; font-weight: 500; color: var(--text-muted); }
+.chipSigned, .chipPending { flex-shrink: 0; padding: .25rem .65rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+.chipSigned { background: rgba(16, 185, 129, .14); color: #047857; }
+.chipPending { background: rgba(245, 158, 11, .14); color: #b45309; }
+:global([data-theme="dark"]) .chipSigned { color: #6ee7b7; }
+:global([data-theme="dark"]) .chipPending { color: #fcd34d; }

@@ -409,6 +409,38 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.uploadedBy == request.auth.uid);
     }
 
+    // ── settings ──
+    // Hub-wide switches. Currently only settings/charter
+    // { requireSignature }: whether members must sign the Community
+    // Charter. Any signed-in member reads it (the dashboard banner);
+    // only curators change it, and only those fields.
+    match /settings/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if isCurator()
+                            && docId == 'charter'
+                            && request.resource.data.keys().hasOnly(['requireSignature', 'updatedAt', 'updatedBy'])
+                            && request.resource.data.requireSignature is bool;
+    }
+
+    // ── charter_signatures ──
+    // A member's sign-off on the Community Charter, keyed by their uid:
+    // their name plus the form's "I confirm compliance with Community
+    // Charter". Only the member writes their own (never someone else's);
+    // curators and impact officers read everyone's to see who signed, and
+    // curators delete them to start a new signing round.
+    match /charter_signatures/{uid} {
+      allow read: if isOwner(uid) || isCuratorOrImpact();
+      allow create, update: if isOwner(uid)
+                            && request.resource.data.keys().hasOnly(['uid', 'name', 'confirmed', 'signedAt'])
+                            && request.resource.data.uid == uid
+                            && request.resource.data.confirmed == true
+                            && request.resource.data.name is string
+                            && request.resource.data.name.size() > 0
+                            && request.resource.data.name.size() <= 120
+                            && request.resource.data.signedAt is string;
+      allow delete: if isCurator();
+    }
+
     // ── notifications ─────────────────────────────────────────
     // Signed-in users can create. Only curators can read and update.
     // Field-capped to the exact shape dashboard/impact/projects writes, so

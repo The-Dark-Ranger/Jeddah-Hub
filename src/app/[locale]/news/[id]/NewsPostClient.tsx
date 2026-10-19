@@ -8,7 +8,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
+import { newsPath } from '@/lib/slug';
+import { RoleLabel } from '@/lib/roleLabel';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Post.module.css';
 
@@ -23,7 +25,7 @@ function readingMinutes(text: string) {
   return Math.max(1, Math.round((text.trim().split(/\s+/).filter(Boolean).length) / 200));
 }
 
-export interface RelatedPost { id: string; title: string; createdAt?: string; tags?: string[]; }
+export interface RelatedPost { id: string; title: string; slug?: string; createdAt?: string; tags?: string[]; }
 
 function genGuestId() {
   return 'g_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -40,7 +42,11 @@ export interface NewsPostData {
 /** `initial`: data loaded on the server; when absent (e.g. an author
  *  previewing their own unpublished draft) it is fetched in the browser. */
 export default function NewsPostClient({ initial }: { initial?: NewsPostData }) {
-  const { id }   = useParams() as { id: string };
+  // The URL carries the post's title slug (or, for older links and drafts,
+  // its doc id); Firestore calls below always use the doc id.
+  const { id: urlId } = useParams() as { id: string };
+  const id       = (initial?.post.id as string | undefined) ?? urlId;
+  const router   = useRouter();
   const { user } = useAuth();
   const t        = useTranslations('NewsPostPage');
   const locale   = useLocale();
@@ -70,6 +76,9 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
 
   useEffect(() => {
     if (initial) {
+      // Old id-based links: switch to the clean title URL.
+      const canonical = newsPath(initial.post as { id: string; title?: string; slug?: string });
+      if (`/news/${decodeURIComponent(urlId)}` !== decodeURIComponent(canonical)) router.replace(canonical);
       // The server copy can be up to a minute old: refresh just the post
       // in the background so the like count is current.
       Promise.resolve()
@@ -111,7 +120,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
           .map(d => ({ id: d.id, ...(d.data() as Omit<RelatedPost, 'id'>) })));
       } catch { /* optional section — leave it out */ }
     })();
-  }, [id, initial]);
+  }, [id, initial, urlId, router]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const copyLink = async () => {
@@ -189,7 +198,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
               <div>
                 <div className={styles.authorName}>{post.authorName || t('globalShaper')}</div>
                 <div className={styles.authorRole}>
-                  {post.authorRole?.replace('_', ' ') || t('jeddahHub')}
+                  {post.authorRole ? <RoleLabel role={post.authorRole} /> : t('jeddahHub')}
                 </div>
               </div>
             </div>
@@ -251,7 +260,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
             <h2 id="related-title" className={styles.relatedTitle}>{t('moreStories')}</h2>
             <div className={styles.relatedGrid}>
               {related.map(r => (
-                <Link key={r.id} href={`/news/${r.id}`} className={styles.relatedCard}>
+                <Link key={r.id} href={newsPath(r)} className={styles.relatedCard}>
                   {r.tags?.[0] && <span className={styles.relatedTag}>{r.tags[0]}</span>}
                   <span className={styles.relatedName}>{r.title}</span>
                   {r.createdAt && <span className={styles.relatedDate}>{formatDate(r.createdAt, locale)}</span>}

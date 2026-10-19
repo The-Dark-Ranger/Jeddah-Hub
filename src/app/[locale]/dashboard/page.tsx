@@ -11,7 +11,8 @@ import { db } from '@/lib/firebase';
 import { useLocale, useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import { safeColor } from '@/lib/activityTypes';
-import { slugify } from '@/lib/slug';
+import { newsPath, slugify } from '@/lib/slug';
+import { useCategoryLabel } from '@/lib/categoryLabel';
 import type { UserProfile } from '@/lib/auth';
 import styles from './DashboardHome.module.css';
 
@@ -47,7 +48,7 @@ interface Notification {
 export default function DashboardHome() {
   const { user, loading } = useAuth();
   const t = useTranslations('Dashboard');
-  const tCat = useTranslations('Categories');
+  const tcat = useCategoryLabel();
   const locale = useLocale();
   const [statsLoading, setStatsLoading] = useState(true);
   const [liveActivities, setLiveActivities] = useState<LiveActivity[]>([]);
@@ -242,10 +243,6 @@ export default function DashboardHome() {
   const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
   const today = new Date().toLocaleDateString(dateLocale, { weekday: 'long', month: 'long', day: 'numeric' });
 
-  const tcat = (c: string) => {
-    const key = c.trim().toLowerCase();
-    return tCat.has(key as 'all') ? tCat(key as 'all') : c;
-  };
   const initTitle = (i: InitiativeLite) => (locale === 'ar' && i.titleAr) || i.title;
 
   // Initiatives per category, largest first.
@@ -505,7 +502,7 @@ export default function DashboardHome() {
             <ul className={styles.liveList}>
               {latestPosts.map(p => (
                 <li key={p.id}>
-                  <Link href={`/news/${p.id}`} className={styles.liveItem}>
+                  <Link href={newsPath(p)} className={styles.liveItem}>
                     <span className={styles.newsDot} aria-hidden="true" />
                     <span className={styles.liveText}>
                       <span className={styles.liveTitle}>{p.title}</span>

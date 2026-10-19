@@ -3,6 +3,10 @@
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';
 import WefLogo from '@/components/WefLogo';
+import { useAuth } from '@/context/AuthContext';
+import { normalizeRole } from '@/lib/role';
+import CharterAdmin from './CharterAdmin';
+import CharterSignOff from './CharterSignOff';
 import styles from './Charter.module.css';
 
 /** ~200 words a minute over the whole document. */
@@ -25,7 +29,7 @@ function Block({ block }: { block: CharterBlock }) {
             <li key={i} className={styles.item}>
               {item.marker
                 ? <span className={styles.itemMarker}>{item.marker}</span>
-                : <span className={styles.itemBullet}>&bull;</span>}
+                : <span className={styles.itemBullet}>–</span>}
               <span className={styles.itemBody}>
                 {item.text}
                 {item.subItems && (
@@ -59,9 +63,13 @@ function Section({ section, isIntro, num }: { section: CharterSection; isIntro?:
 
 export default function CommunityCharterPage() {
   const t = useTranslations('CharterPage');
+  const { user } = useAuth();
+  const role = normalizeRole(user?.role);
+  const isCurator = role === 'curator' || role === 'vice_curator';
 
   return (
     <div className={styles.page}>
+      {isCurator && <CharterAdmin />}
       <header className={styles.header}>
         <div className={styles.headerText}>
           <p className={styles.eyebrow}>{t('eyebrow')}</p>
@@ -96,6 +104,7 @@ export default function CommunityCharterPage() {
         <article className={styles.document}>
           <Section section={CHARTER_INTRO} isIntro />
           {CHARTER_SECTIONS.map((s, i) => <Section key={s.id} section={s} num={i + 1} />)}
+          <CharterSignOff />
         </article>
       </div>
     </div>

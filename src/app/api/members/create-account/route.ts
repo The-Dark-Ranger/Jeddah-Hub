@@ -98,6 +98,31 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await readJsonBody(req);
+
+  // Which of these assignment emails have signed in, and when — so Role
+  // Assignments can move them out of Pending. Only the sign-in time is
+  // returned, nothing else about the account.
+  if (body?.action === 'signin-status') {
+    const emails = Array.isArray(body.emails)
+      ? [...new Set(body.emails.filter((e): e is string => typeof e === 'string' && isValidEmail(e)).map(e => e.toLowerCase()))].slice(0, 500)
+      : [];
+    const app = adminApp();
+    if (!app) return NextResponse.json({ result: 'failed', reason: 'not-configured' }, { status: 503 });
+    const signedIn: Record<string, string> = {};
+    try {
+      for (let i = 0; i < emails.length; i += 100) {
+        const { users } = await getAuth(app).getUsers(emails.slice(i, i + 100).map(email => ({ email })));
+        for (const u of users) {
+          if (u.email && u.metadata.lastSignInTime) signedIn[u.email.toLowerCase()] = new Date(u.metadata.lastSignInTime).toISOString();
+        }
+      }
+    } catch (err) {
+      console.error('signin-status failed:', (err as { code?: string } | null)?.code);
+      return NextResponse.json({ result: 'failed' }, { status: 500 });
+    }
+    return NextResponse.json({ result: 'ok', signedIn });
+  }
+
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!isValidEmail(email)) return NextResponse.json({ result: 'failed', reason: 'invalid-email' }, { status: 400 });
 

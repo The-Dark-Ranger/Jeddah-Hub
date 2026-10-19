@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
@@ -131,6 +131,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
   const t = useTranslations('HomePage');
   const [activities, setActivities] = useState<Activity[] | 'loading'>(() => (initial ? activeActivities(initial) : 'loading'));
   const [index, setIndex] = useState(0);
+  const touchX = useRef<number | null>(null);
 
   useEffect(() => {
     if (initial) return;
@@ -149,7 +150,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
   // push everything below it down mid-scroll.
   if (activities === 'loading') return (
     <section className={styles.retreatSection} aria-busy="true">
-      <WaveDivider flip fill="var(--card-bg)" />
+      <WaveDivider flip fill="var(--card-bg)" backdrop="var(--background)" />
       <div className={styles.retreatPlaceholder} />
       <WaveDivider fill="var(--background)" />
     </section>
@@ -166,11 +167,37 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
       className={styles.retreatSection + (accent ? ' ' + styles.retreatSectionAccent : '')}
       style={accent ? { '--activity-accent': accent } as React.CSSProperties : undefined}
     >
-      <WaveDivider flip fill="var(--card-bg)" />
+      <WaveDivider flip fill="var(--card-bg)" backdrop="var(--background)" />
 
       {activities.length > 0 ? (
         <>
-          <ActivityCard key={activities[index].id} activity={activities[index]} t={t} />
+          <div
+            className={styles.retreatStage}
+            onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const start = touchX.current;
+              touchX.current = null;
+              if (start === null || activities.length < 2) return;
+              const dx = e.changedTouches[0].clientX - start;
+              if (Math.abs(dx) < 50) return;
+              // Swiping toward the reading direction's start shows the next one.
+              const rtl = document.documentElement.dir === 'rtl';
+              if ((dx < 0) !== rtl) goNext(); else goPrev();
+            }}
+          >
+            <ActivityCard key={activities[index].id} activity={activities[index]} t={t} />
+            {activities.length > 1 && (
+              <>
+                <button type="button" className={styles.retreatSideArrow + ' ' + styles.retreatSidePrev} onClick={goPrev} aria-label={t('previousActivity')}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button type="button" className={styles.retreatSideArrow + ' ' + styles.retreatSideNext} onClick={goNext} aria-label={t('nextActivity')}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <span className={styles.retreatCounter} aria-live="polite">{index + 1} / {activities.length}</span>
+              </>
+            )}
+          </div>
 
           {activities.length > 1 && (
             <div className={styles.container}>

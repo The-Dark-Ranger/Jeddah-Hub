@@ -40,7 +40,7 @@ export default function ActivityAppearanceFields({ form, setForm }: Props) {
         <div className={styles.previewCol} aria-hidden="true">
           <span className={styles.previewLabel}>{t('livePreview')}</span>
           <div
-            className={styles.preview}
+            className={styles.preview + (accent ? ' ' + styles.previewTinted : '')}
             style={accent ? { '--accent': accent } as React.CSSProperties : undefined}
           >
             <div className={styles.previewMedia}>

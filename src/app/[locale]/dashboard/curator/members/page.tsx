@@ -268,7 +268,8 @@ export default function MembersPage() {
             { month: 'short', day: 'numeric', year: 'numeric' }
           )}
         </td>
-        <td className={styles.actionsCell}>
+        <td>
+          <div className={styles.actionsCell}>
           {isJoined ? (
             <button className={styles.acknowledgeBtn} onClick={() => handleAcknowledge(a.id)}>
               {t('acknowledge')}
@@ -287,6 +288,7 @@ export default function MembersPage() {
               </button>
             </>
           )}
+          </div>
         </td>
       </tr>
     );

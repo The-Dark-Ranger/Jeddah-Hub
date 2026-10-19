@@ -282,6 +282,24 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid && resource.data.status == 'pending');
     }
 
+    // A like list changed by at most one entry: unchanged, one added, or one removed.
+    function oneLikeStep(field) {
+      let before = resource.data.get(field, []);
+      let after = request.resource.data.get(field, []);
+      return after == before
+             || (after.size() == before.size() + 1 && after.hasAll(before))
+             || (after.size() == before.size() - 1 && before.hasAll(after));
+    }
+
+    // The only likedBy entry added or removed is the caller's own uid
+    // (none at all for a signed-out visitor).
+    function ownLikeOnly() {
+      let before = resource.data.get('likedBy', []).toSet();
+      let after = request.resource.data.get('likedBy', []).toSet();
+      return after.difference(before).union(before.difference(after))
+               .hasOnly(request.auth == null ? [] : [request.auth.uid]);
+    }
+
     // ── blogs ─────────────────────────────────────────────────
     // Published posts are publicly readable.
     // Any authenticated member can create (status will be 'draft' or 'pending').
@@ -315,9 +333,16 @@ service cloud.firestore {
                     // Likes: anyone (including anonymous visitors) may toggle only the
                     // likedBy/visitorLikes fields on a published post — needed because
                     // guest likes are written with no Firebase Auth session at all.
+                    // Each write may add or remove a single like (what the page's
+                    // arrayUnion/arrayRemove does), and a signed-in like only as the
+                    // caller's own uid — otherwise one request could wipe every like
+                    // or add likes in other members' names.
                     || (resource.data.status == 'published'
                         && request.resource.data.diff(resource.data).affectedKeys()
-                             .hasOnly(['likedBy', 'visitorLikes']));
+                             .hasOnly(['likedBy', 'visitorLikes'])
+                        && oneLikeStep('likedBy')
+                        && oneLikeStep('visitorLikes')
+                        && ownLikeOnly());
       allow delete: if isCuratorOrImpact()
                     || (isSignedIn() && request.auth.uid == resource.data.authorId);
     }

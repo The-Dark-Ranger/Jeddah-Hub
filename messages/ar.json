@@ -946,7 +946,7 @@
     "adminOnHint": "مفعّل: يظهر للأعضاء تذكير في لوحة التحكم حتى يؤكدوا التزامهم بالميثاق.",
     "adminOffHint": "غير مفعّل: يمكن للأعضاء تأكيد الميثاق، لكن دون تذكير.",
     "adminToggleLabel": "إلزام الأعضاء بتوقيع الميثاق",
-    "adminSignedCount": "وقّع {signed} من أصل {total} عضوًا",
+    "adminSignedCount": "وقّع {signed} من أصل {total} من الصنّاع (دون الخرّيجين)",
     "adminShowList": "عرض الأعضاء",
     "adminHideList": "إخفاء الأعضاء",
     "adminReset": "بدء جولة توقيع جديدة",

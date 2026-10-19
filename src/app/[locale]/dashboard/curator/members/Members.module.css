@@ -108,9 +108,9 @@
 .table tr:last-child td { border-bottom: none; }
 .table tr:hover td { background: var(--background-alt); }
 
-.emailCell { font-weight: 500; word-break: break-all; }
+.emailCell { font-weight: 500; overflow-wrap: anywhere; }
 .memberName { font-weight: 700; color: var(--text-main); font-size: 0.9rem; }
-.memberEmail { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; word-break: break-all; }
+.memberEmail { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; overflow-wrap: anywhere; }
 .noteCell { color: var(--text-muted); }
 .dateCell { color: var(--text-muted); white-space: nowrap; }
 
@@ -160,7 +160,6 @@
 }
 @media (max-width: 600px) {
   .formRow { grid-template-columns: 1fr; }
-  .actionsCell { flex-direction: column; align-items: flex-start; }
 }
 
 /* ── Sign-in account status ── */
@@ -177,3 +176,27 @@
 }
 .createLoginBtn:hover:not(:disabled) { background: var(--primary-blue); color: #fff; }
 .createLoginBtn:disabled { opacity: .6; cursor: wait; }
+
+/* Phones: each assignment becomes a card (name, email and login status on
+   top; role and date; note; then full-width actions) instead of five
+   columns squeezed until names and chips broke mid-word. */
+@media (max-width: 700px) {
+  .table thead { display: none; }
+  .table, .table tbody { display: block; }
+  .table tr {
+    display: grid; grid-template-columns: 1fr auto; gap: .55rem .75rem;
+    grid-template-areas: "member member" "role date" "note note" "actions actions";
+    padding: 1rem; border-bottom: 1px solid var(--border-color);
+  }
+  .table tr:last-child { border-bottom: none; }
+  .table td { display: block; padding: 0; border: none; }
+  .table tr:hover td { background: none; }
+  .emailCell { grid-area: member; }
+  .roleCell { grid-area: role; align-self: center; }
+  .dateCell { grid-area: date; align-self: center; font-size: .8rem; }
+  .noteCell { grid-area: note; font-size: .82rem; }
+  .noteCell:empty { display: none; }
+  .actionsTd { grid-area: actions; }
+  .actionsCell { flex-wrap: wrap; }
+  .actionsCell > button { flex: 1; min-height: 38px; }
+}

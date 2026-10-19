@@ -187,3 +187,7 @@
 .heroWithImage .description { color: rgba(255, 255, 255, .92); }
 .heroWithImage .subtitle { color: #fff; }
 .heroWithImage .eyebrow { color: rgba(255, 255, 255, .9); }
+
+/* Yes/No answers: bigger radios and a full-height label, so they're easy to tap on a phone. */
+.checkRow input[type="radio"] { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--activity-accent, var(--primary-blue)); }
+.checkRow { min-height: 40px; }

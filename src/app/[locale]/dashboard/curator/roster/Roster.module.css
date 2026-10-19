@@ -61,7 +61,7 @@
 .memberTable tr:last-child td { border-bottom: none; }
 .memberTable tr:hover td { background: var(--background); }
 
-.memberEmail { color: var(--text-main); font-weight: 500; word-break: break-all; }
+.memberEmail { color: var(--text-main); font-weight: 500; overflow-wrap: anywhere; }
 
 .rolePill {
   display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px;
@@ -92,3 +92,24 @@
 
 .cardTitleRow { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .cardTitleRow .cardTitle { margin-bottom: 0; }
+
+/* Actions: flex lives inside the cell (a flex <td> drops out of the table row). */
+.rowActions { display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Phones: each member is one compact block, name on top and role + actions
+   below, instead of three squeezed columns that broke names mid-word. */
+@media (max-width: 600px) {
+  .memberTable thead { display: none; }
+  .memberTable, .memberTable tbody { display: block; }
+  .memberTable tr {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem;
+    padding: .8rem 1rem; border-bottom: 1px solid var(--border-color);
+  }
+  .memberTable tr:last-child { border-bottom: none; }
+  .memberTable td { display: block; padding: 0; border: none; }
+  .memberTable tr:hover td { background: none; }
+  .memberTable .memberEmail { flex: 1 1 100%; }
+  .memberTable .actionsTd { margin-inline-start: auto; }
+  .initiativeHeader { flex-wrap: wrap; padding: .75rem 1rem; gap: .35rem .75rem; }
+  .initiativeName { flex-basis: 100%; }
+}

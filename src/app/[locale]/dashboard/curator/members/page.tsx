@@ -11,6 +11,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
 import { createMemberAccount, removePendingMember } from '@/lib/createMemberAccount';
+import ShaperStatusPanel from './ShaperStatusPanel';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -256,7 +257,7 @@ export default function MembersPage() {
             )
           )}
         </td>
-        <td>
+        <td className={styles.roleCell}>
           <span className={styles.roleBadge} style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}>
             {ROLES.find(r => r.value === a.role)?.label ?? a.role}
           </span>
@@ -268,7 +269,7 @@ export default function MembersPage() {
             { month: 'short', day: 'numeric', year: 'numeric' }
           )}
         </td>
-        <td>
+        <td className={styles.actionsTd}>
           <div className={styles.actionsCell}>
           {isJoined ? (
             <button className={styles.acknowledgeBtn} onClick={() => handleAcknowledge(a.id)}>
@@ -413,6 +414,9 @@ export default function MembersPage() {
           </div>
         </>
       )}
+
+      {/* Shaper ⇄ Alumni for members who already have an account */}
+      <ShaperStatusPanel onChanged={fetchAssignments} />
     </div>
   );
 }

@@ -837,7 +837,7 @@
     "resultsCount": "{count, plural, one {# result} other {# results}}",
     "statusUnread": "Unread",
     "statusAwaiting": "Awaiting reply",
-    "noMatches": "Nothing matches your search or filters.",
+    "noMatches": "No matches",
     "searchRosterPh": "Search initiatives or members…",
     "memberCount": "{count, plural, one {# member} other {# members}}",
     "memberDefaultRole": "Member",
@@ -924,7 +924,11 @@
     "spotlightBadge": "Spotlight",
     "setSpotlight": "Put in spotlight",
     "removeSpotlight": "Remove spotlight",
-    "close": "Close"
+    "close": "Close",
+    "searchInitiativePh": "Search initiatives…",
+    "searchMemberPh": "Search by name or email…",
+    "clearSelection": "Clear selection",
+    "alreadyOnInitiative": "Already on this initiative"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

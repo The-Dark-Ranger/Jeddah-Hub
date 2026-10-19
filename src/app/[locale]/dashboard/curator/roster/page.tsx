@@ -10,10 +10,12 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
+import SearchSelect, { type SearchOption } from '@/components/dashboard/SearchSelect';
 import styles from './Roster.module.css';
 
 export default function ManageRoster() {
   const t = useTranslations('Dashboard');
+  const tRole = useTranslations('Role');
   const { user } = useAuth();
   const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
@@ -75,6 +77,7 @@ export default function ManageRoster() {
       }
       await updateDoc(doc(db, 'initiatives', selectedInit), payload);
       setTempRole('');
+      setSelectedUser('');
       await fetchData();
     } catch (err) {
       console.error(err);
@@ -157,6 +160,28 @@ export default function ManageRoster() {
   };
 
   const activeInitiatives = initiatives.filter(i => i.status !== 'archived');
+
+  const initiativeOptions: SearchOption[] = activeInitiatives
+    .map(i => ({ value: i.id, label: i.title, hint: i.category, keywords: i.titleAr || '' }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  // Searchable by name, Arabic name, email and role; anyone already on the
+  // chosen initiative is listed but can't be picked again.
+  const memberIds = new Set<string>(
+    (initiatives.find(i => i.id === selectedInit)?.members || []).map((m: any) => m.userId));
+  const userOptions: SearchOption[] = users
+    .map(u => {
+      const role = normalizeRole(u.role);
+      const roleLabel = role && tRole.has(role as 'shaper') ? tRole(role as 'shaper') : '';
+      return {
+        value: u.id,
+        label: u.displayName || u.email || u.id,
+        hint: [u.email, roleLabel].filter(Boolean).join(' · '),
+        keywords: u.displayNameAr || '',
+        disabledNote: memberIds.has(u.id) ? t('alreadyOnInitiative') : undefined,
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
   // An initiative stays listed if its title matches, or any member does —
   // in which case only the matching members are shown.
   const visibleInitiatives = initiatives
@@ -223,18 +248,22 @@ export default function ManageRoster() {
       <div className={styles.card}>
         <h3 className={styles.cardTitle}>{t('assignMember')}</h3>
         <div className={styles.formRow}>
-          <select value={selectedInit} onChange={e => setSelectedInit(e.target.value)} className={styles.select}>
-            <option value="">{t('selectInitiative')}</option>
-            {activeInitiatives.map(i => (
-              <option key={i.id} value={i.id}>{i.title}</option>
-            ))}
-          </select>
-          <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className={styles.select}>
-            <option value="">{t('selectUser')}</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.displayName || u.email || u.id}</option>
-            ))}
-          </select>
+          <SearchSelect
+            options={initiativeOptions}
+            value={selectedInit}
+            onChange={setSelectedInit}
+            placeholder={t('searchInitiativePh')}
+            noResults={t('noMatches')}
+            clearLabel={t('clearSelection')}
+          />
+          <SearchSelect
+            options={userOptions}
+            value={selectedUser}
+            onChange={setSelectedUser}
+            placeholder={t('searchMemberPh')}
+            noResults={t('noMatches')}
+            clearLabel={t('clearSelection')}
+          />
           <input
             value={tempRole}
             onChange={e => setTempRole(e.target.value)}

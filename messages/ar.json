@@ -837,7 +837,7 @@
     "resultsCount": "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
     "statusUnread": "غير مقروءة",
     "statusAwaiting": "بانتظار الرد",
-    "noMatches": "لا توجد نتائج مطابقة للبحث أو التصفية.",
+    "noMatches": "لا توجد نتائج",
     "searchRosterPh": "ابحث في المبادرات أو الأعضاء…",
     "memberCount": "{count, plural, zero {لا أعضاء} one {عضو واحد} two {عضوان} few {# أعضاء} many {# عضواً} other {# عضو}}",
     "memberDefaultRole": "عضو",
@@ -924,7 +924,11 @@
     "spotlightBadge": "تحت الضوء",
     "setSpotlight": "ضعه تحت الضوء",
     "removeSpotlight": "إزالة من الضوء",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "searchInitiativePh": "ابحث عن مبادرة…",
+    "searchMemberPh": "ابحث بالاسم أو البريد الإلكتروني…",
+    "clearSelection": "مسح الاختيار",
+    "alreadyOnInitiative": "عضو في هذه المبادرة بالفعل"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",

@@ -212,14 +212,11 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
 
   // Spotlight only on the unfiltered view, so a search never hides a match in it.
   const showSpotlight = activeCategory === 'all' && !q;
-  // The one a curator / impact officer put in the spotlight, else a
-  // featured initiative, else the first active one.
+  // Only the initiative a curator / impact officer put in the spotlight.
+  // With none picked (or after "Remove spotlight") there's no Spotlight
+  // card and the page is just the grid.
   const isActive = (p: Project) => p.status === 'active' || !p.status;
-  const spotlight = showSpotlight
-    ? (projects.find(p => p.spotlight && isActive(p))
-      ?? projects.find(p => p.featured && isActive(p))
-      ?? projects.find(isActive))
-    : undefined;
+  const spotlight = showSpotlight ? projects.find(p => p.spotlight && isActive(p)) : undefined;
   const active   = filtered.filter(p => (p.status === 'active' || !p.status) && p.id !== spotlight?.id);
   const archived = filtered.filter(p => p.status && p.status !== 'active');
 

@@ -146,9 +146,11 @@ export default function ExportEmails() {
                 {visible.map((s, i) => (
                   <tr key={s.email}>
                     <td className={styles.num}>{i + 1}</td>
-                    <td className={styles.email}>
-                      <span className={styles.avatar} aria-hidden="true">{s.email.charAt(0).toUpperCase()}</span>
-                      {s.email}
+                    <td>
+                      <span className={styles.email}>
+                        <span className={styles.avatar} aria-hidden="true">{s.email.charAt(0).toUpperCase()}</span>
+                        <span className={styles.emailText}>{s.email}</span>
+                      </span>
                     </td>
                     <td className={styles.date}>{fmt(s.subscribedAt)}</td>
                   </tr>

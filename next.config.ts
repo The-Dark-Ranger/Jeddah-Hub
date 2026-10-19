@@ -65,9 +65,9 @@ const nextConfig: NextConfig = {
       },
       {
         // API responses carry per-request data and should never be cached
-        // by a shared cache — except /api/media, which serves immutable
-        // photos with its own long-lived Cache-Control.
-        source: '/api/:path((?!media/).*)',
+        // by a shared cache — except /api/media and /api/img, which serve
+        // immutable photos with their own long-lived Cache-Control.
+        source: '/api/:path((?!media/|img/).*)',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
     ];

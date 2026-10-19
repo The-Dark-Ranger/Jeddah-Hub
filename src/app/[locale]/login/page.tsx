@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
-import { getRecaptchaToken } from '@/lib/recaptcha';
+import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
@@ -92,7 +92,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
           <div className={styles.field}>
             <label className="form-label" htmlFor="login-email">{t('email')}</label>
             <input

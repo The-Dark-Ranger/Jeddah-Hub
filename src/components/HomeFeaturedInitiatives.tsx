@@ -15,7 +15,7 @@ const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#7c3aed,#a78bfa)',
 ];
 
-interface Initiative {
+export interface Initiative {
   id: string;
   title: string;
   titleAr?: string;
@@ -66,13 +66,16 @@ function cardGradient(init: Initiative, fallback: string): string {
   return fallback;
 }
 
-export default function HomeFeaturedInitiatives() {
+/** `initial`: active initiatives loaded on the server (see HomeSections);
+ *  when absent the list is fetched in the browser instead. */
+export default function HomeFeaturedInitiatives({ initial }: { initial?: Initiative[] }) {
   const t = useTranslations('HomePage');
   const locale = useLocale();
-  const [items, setItems]   = useState<Initiative[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [items, setItems]   = useState<Initiative[]>(() => (initial ? pickFeatured(initial) : []));
+  const [loaded, setLoaded] = useState(!!initial);
 
   useEffect(() => {
+    if (initial) return;
     // db can be undefined if Firebase failed to initialize (missing env
     // vars) — collection()/query() throw synchronously in that case. Building
     // the query inside this initial .then() turns that throw into a normal
@@ -85,7 +88,7 @@ export default function HomeFeaturedInitiatives() {
       .then(snap => setItems(pickFeatured(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)))))
       .catch(() => {})
       .finally(() => setLoaded(true));
-  }, []);
+  }, [initial]);
 
   if (!loaded) return (
     <div className={styles.projectsGrid}>

@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
 
-interface Shaper {
+export interface Shaper {
   uid: string;
   displayName: string;
   displayNameAr?: string;
@@ -21,19 +21,22 @@ interface Shaper {
 // "vice_curator"/"vice curator" and "impact_officer"/"impact officer") —
 // otherwise a vice curator or impact officer stored in one of those
 // variants would be silently excluded from this query.
-const SHAPER_ROLES = [
+export const SHAPER_ROLES = [
   'shaper', 'alumni', 'curator',
   'vice_curator', 'vice curator',
   'impact_officer', 'impact officer',
 ];
 
-export default function HomeShapers() {
+/** `initial`: members loaded on the server (see HomeSections); when absent
+ *  they are fetched in the browser instead. */
+export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
   const t      = useTranslations('HomePage');
   const locale = useLocale();
-  const [shapers, setShapers] = useState<Shaper[]>([]);
-  const [loaded, setLoaded]   = useState(false);
+  const [shapers, setShapers] = useState<Shaper[]>(initial ?? []);
+  const [loaded, setLoaded]   = useState(!!initial);
 
   useEffect(() => {
+    if (initial) return;
     // Public homepage — reads the public_profiles mirror (no email field,
     // see firestore.rules) rather than the private `users` collection, and
     // scopes to shaper-family roles with a capped download.
@@ -58,7 +61,7 @@ export default function HomeShapers() {
         setShapers(list.slice(0, 10));
         setLoaded(true);
       }).catch(() => setLoaded(true));
-  }, []);
+  }, [initial]);
 
   if (!loaded) return (
     <div className={styles.membersGrid}>

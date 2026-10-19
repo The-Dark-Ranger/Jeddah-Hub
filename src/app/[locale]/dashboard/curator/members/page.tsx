@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
-import { createMemberAccount, removePendingMember } from '@/lib/createMemberAccount';
+import { createMemberAccount, getSignInStatus, removePendingMember } from '@/lib/createMemberAccount';
 import ShaperStatusPanel from './ShaperStatusPanel';
 import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './Members.module.css';
@@ -71,7 +71,17 @@ export default function MembersPage() {
     setLoading(true);
     try {
       const snap = await getDocs(query(collection(db, 'role_assignments'), orderBy('createdAt', 'desc')));
-      setAssignments(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment)));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment));
+      setAssignments(list);
+      // Anyone who has signed in moves out of Pending into "Recently
+      // joined" (Acknowledge clears them). Sign-in times come from the
+      // server, the only place that can read them.
+      const signedIn = await getSignInStatus(list.filter(a => a.status !== 'joined').map(a => a.email));
+      if (Object.keys(signedIn).length) {
+        setAssignments(list.map(a => signedIn[a.email.toLowerCase()]
+          ? { ...a, status: 'joined', joinedAt: a.joinedAt ?? signedIn[a.email.toLowerCase()] }
+          : a));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -235,6 +245,7 @@ export default function MembersPage() {
   const joined  = visible.filter(a => a.status === 'joined');
   // Long pending list: 10 at a time, starting over when the search changes.
   const pendingPage = useViewMore(pending, search);
+  const joinedPage  = useViewMore(joined, search);
 
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
@@ -403,7 +414,8 @@ export default function MembersPage() {
                 <span className={styles.countJoined}>{joined.length}</span>
               </div>
               <p className={styles.tableSubtitle}>{t('roleAssignmentsSubtitleJoined')}</p>
-              {renderTable(joined, true)}
+              {renderTable(joinedPage.shown, true)}
+              <ViewMoreButton hiddenCount={joinedPage.hiddenCount} expanded={joinedPage.expanded} onMore={joinedPage.more} onLess={joinedPage.less} />
             </div>
           )}
 

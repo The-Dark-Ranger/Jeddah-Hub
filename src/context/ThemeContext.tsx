@@ -52,13 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const html = document.documentElement;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Phones and tablets: switch instantly. The animated reveal snapshots the
-    // whole page, and mobile browsers shift that snapshot as their toolbar
-    // and the pinned header move, which read as a jitter. Every element's
-    // own colour transition is suppressed for the one frame of the swap so
-    // nothing fades at its own speed either.
-    const touch = window.matchMedia('(hover: none)').matches;
-    if (reduceMotion || touch) {
+    if (reduceMotion) {
       html.setAttribute('data-theme-switch', '');
       html.setAttribute('data-theme', next);
       flushSync(() => setTheme(next));
@@ -82,27 +76,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // keyboard-triggered click reports (0, 0), so start from the top-end
     // corner (where the toggle lives) instead of the top-left.
     const w = document.documentElement.clientWidth;
-    const h = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+    // Mobile toolbars can hide/show mid-animation and grow the viewport;
+    // size the circle for the tallest the screen can get so it never stops
+    // short of the bottom edge.
+    const h = Math.max(window.innerHeight, window.visualViewport?.height ?? 0, window.screen?.height ?? 0);
     const fromPointer = e && (e.clientX !== 0 || e.clientY !== 0);
     const rtl = document.documentElement.dir === 'rtl';
     const x = fromPointer ? e.clientX : (rtl ? 0 : w);
     const y = fromPointer ? e.clientY : 0;
     const radius = Math.ceil(Math.hypot(Math.max(x, w - x), Math.max(y, h - y)));
-    html.style.setProperty('--theme-x', `${x}px`);
-    html.style.setProperty('--theme-y', `${y}px`);
-    html.style.setProperty('--theme-r', `${radius}px`);
-    html.setAttribute('data-theme-switch', '');
     switching.current = true;
 
-    const vt = document.startViewTransition(() => {
-      html.setAttribute('data-theme', next);
-      flushSync(() => setTheme(next));
-    });
-    vt.ready.catch(() => { /* skipped (e.g. tab hidden) — theme still applied */ });
-    vt.finished.finally(() => {
-      html.removeAttribute('data-theme-switch');
-      switching.current = false;
-    });
+    const run = () => {
+      html.setAttribute('data-theme-switch', '');
+      const vt = document.startViewTransition(() => {
+        html.setAttribute('data-theme', next);
+        flushSync(() => setTheme(next));
+      });
+      // Driven from JS with literal pixel values (no CSS variables in the
+      // keyframes): one clip-path animation on one pseudo-element, which
+      // browsers can run on the compositor instead of repainting every frame.
+      vt.ready.then(() => {
+        html.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+          { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
+        );
+      }).catch(() => { /* skipped (e.g. tab hidden) — theme still applied */ });
+      vt.finished.finally(() => {
+        html.removeAttribute('data-theme-switch');
+        switching.current = false;
+      });
+    };
+
+    // The incoming theme's logo is display:none until now, so the browser
+    // hasn't decoded it; decode it first (briefly capped) so it's already in
+    // the new snapshot instead of popping in mid-animation.
+    const pending = [...document.querySelectorAll<HTMLImageElement>(`.theme-${next}-only img`)]
+      .filter(img => img.loading !== 'lazy')
+      .map(img => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
+    Promise.race([Promise.all(pending), new Promise(r => setTimeout(r, 120))]).then(run);
   }, [theme]);
 
   return (

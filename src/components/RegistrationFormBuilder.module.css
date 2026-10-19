@@ -174,3 +174,8 @@
   padding-top: .6rem; border-top: 1px solid var(--border-color);
 }
 
+
+/* Touch screens: the Open/Closed choice keeps a comfortable tap height. */
+@media (hover: none) {
+  .segmentBtn { min-height: 40px; }
+}

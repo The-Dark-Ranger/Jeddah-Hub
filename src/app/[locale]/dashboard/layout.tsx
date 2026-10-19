@@ -8,6 +8,7 @@ import { normalizeRole } from '@/lib/role';
 import PageTransition from '@/components/PageTransition';
 import DefaultPasswordBanner from '@/components/dashboard/DefaultPasswordBanner';
 import CharterSignBanner from '@/components/dashboard/CharterSignBanner';
+import { DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
 
@@ -20,6 +21,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
+
+  // Signed in with the shared temporary password: nothing else in the
+  // dashboard until they've set their own (My Profile → Change password
+  // clears the flag). Narrows the window in which someone who only knows a
+  // member's email and the default password could use their account.
+  useEffect(() => {
+    if (loading || !user) return;
+    let mustChange = false;
+    try { mustChange = sessionStorage.getItem(DEFAULT_PASSWORD_FLAG) === '1'; } catch { /* storage blocked */ }
+    if (mustChange && !pathname.startsWith('/dashboard/shaper/profile')) {
+      router.replace('/dashboard/shaper/profile#password');
+    }
+  }, [loading, user, pathname, router]);
 
   const handleLogout = async () => { await logout(); router.push('/'); };
 

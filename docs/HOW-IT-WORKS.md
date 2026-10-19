@@ -86,7 +86,7 @@ flowchart TD
     A -->|no| N[No role yet:<br/>dashboard shows nothing to manage]
     R --> PW{Signed in with<br/>temporary password?}
     R2 --> PW
-    PW -->|yes| B[Banner: change your password<br/>→ My Profile]
+    PW -->|yes| B[Must set their own password<br/>on My Profile before anything else]
     PW -->|no| D[Dashboard for the role]
     B --> D
 ```
@@ -99,8 +99,9 @@ flowchart TD
 | Curator / Vice Curator | Everything: roles and accounts, featured initiatives, messages, exports, Charter sign-off |
 
 Each permission is enforced in the dashboard **and** in `firestore.rules`.
-The rules are the real boundary: a member can never give themselves a higher
-role, even by talking to Firestore directly.
+The rules are the real boundary: a member can never give themselves any role\r
+or change it (only a curator can), can only edit their own profile fields, and\r
+only the Curator can change a curator's record or make someone a curator.
 
 ## 4. Initiatives: proposals, joining and leaving
 

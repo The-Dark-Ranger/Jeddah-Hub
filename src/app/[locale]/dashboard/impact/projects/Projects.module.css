@@ -71,7 +71,7 @@
 @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  background: var(--card-bg); border-radius: 18px;
+  background: var(--card-bg-solid); border-radius: 18px;
   border: 1px solid var(--border-color);
   box-shadow: 0 24px 64px rgba(0,0,0,0.22);
   width: 100%; max-width: 680px;

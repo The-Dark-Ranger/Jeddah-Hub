@@ -30,7 +30,7 @@ const empty: ProfileForm = {
 
 // Long enough for a real bio, short enough that shaper/curator cards
 // across the site (About page, homepage) stay a reasonable, consistent size.
-const BIO_MAX_LENGTH = 300;
+const BIO_MAX_LENGTH = 600;
 const PASSWORD_MIN = 8;
 
 const ICONS = {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';
 import WefLogo from '@/components/WefLogo';
@@ -66,6 +67,12 @@ export default function CommunityCharterPage() {
   const { user } = useAuth();
   const role = normalizeRole(user?.role);
   const isCurator = role === 'curator' || role === 'vice_curator';
+  // On phones the 12-item contents list would push the Charter itself far
+  // down the page, so it starts collapsed there (one tap opens it).
+  const tocRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (tocRef.current && window.matchMedia('(max-width: 768px)').matches) tocRef.current.open = false;
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -86,7 +93,7 @@ export default function CommunityCharterPage() {
 
       <div className={styles.layout}>
         <nav className={styles.toc} aria-label={t('tableOfContents')}>
-          <details open className={styles.tocDetails}>
+          <details open ref={tocRef} className={styles.tocDetails}>
             <summary className={styles.tocTitle}>{t('tableOfContents')}</summary>
             <ol className={styles.tocList}>
               {CHARTER_SECTIONS.map((s, i) => (

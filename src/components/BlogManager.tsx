@@ -32,8 +32,10 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     pending_review: { label: t('statusPending'),    color: '#f59e0b' },
   };
 
+  // Captured once, so "x days ago" doesn't change between renders.
+  const [now] = useState(() => Date.now());
   const timeAgo = (iso: string) => {
-    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    const days = Math.floor((now - new Date(iso).getTime()) / 86400000);
     if (days < 1) return t('today');
     if (days === 1) return t('yesterday');
     return t('daysAgo', { n: days });

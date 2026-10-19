@@ -6,10 +6,12 @@ import { useLocale, useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { normalizeRole } from '@/lib/role';
-import { getRequireSignature, setRequireSignature, SIGNATURES, type CharterSignature } from '@/lib/charterSignature';
+import { getRequireSignature, setRequireSignature, SIGNATURES, SIGNING_ROLES, type CharterSignature } from '@/lib/charterSignature';
 import styles from './CharterSign.module.css';
 
-const MEMBER_ROLES = ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
+/** Who the sign-off applies to: active Shapers, including the curatorship.
+ *  Alumni aren't counted (see SIGNING_ROLES). */
+const MEMBER_ROLES = SIGNING_ROLES;
 
 interface Member { uid: string; name: string; role: string; }
 

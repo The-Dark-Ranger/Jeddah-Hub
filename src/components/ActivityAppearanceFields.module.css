@@ -28,6 +28,7 @@
   --accent: var(--primary-blue);
   border-radius: 12px; overflow: hidden;
   background: linear-gradient(135deg, #0f172a, #0f3460);
+  transition: border-color 0.2s ease, background 0.3s ease;
   color: #fff;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
   border-top: 4px solid var(--accent);
@@ -65,4 +66,11 @@
 @media (max-width: 720px) {
   .grid { grid-template-columns: 1fr; }
   .previewCol { position: static; order: -1; max-width: 320px; }
+}
+
+/* With a colour picked, the card takes it on like the homepage section does. */
+.previewTinted {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 28%, #0b1120) 0%,
+    color-mix(in srgb, var(--accent) 48%, #0b1120) 100%);
 }

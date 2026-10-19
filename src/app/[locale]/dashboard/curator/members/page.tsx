@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
 import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
-import { createMemberAccount } from '@/lib/createMemberAccount';
+import { createMemberAccount, removePendingMember } from '@/lib/createMemberAccount';
 import styles from './Members.module.css';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
@@ -99,6 +99,8 @@ export default function MembersPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    // The name is what lists them on the public Who We Are page.
+    if (!name.trim()) { setError(t('nameRequired')); return; }
     const emailLower = email.toLowerCase().trim();
     if (!isValidEmail(emailLower)) {
       setError(t('invalidEmail'));
@@ -124,8 +126,9 @@ export default function MembersPage() {
         return;
       }
       // Create their sign-in account (temporary password) so they can log
-      // in right away; the role below is applied on that first sign-in.
-      const account = await createMemberAccount(emailLower);
+      // in right away, already holding this role and listed under it on
+      // the Who We Are page with this name.
+      const account = await createMemberAccount(emailLower, name.trim(), role);
       if (account === 'not-configured') setError(t('accountNotConfigured'));
       else if (account === 'failed') setError(t('accountCreateFailed'));
       // Keyed by the lowercased email (not an auto-id) so the Firestore
@@ -154,6 +157,10 @@ export default function MembersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm(t('confirmRemove'))) return;
     try {
+      // Take a not-yet-signed-in member back off the Who We Are page and
+      // delete their unused login; anyone who has signed in is kept.
+      const a = assignments.find(x => x.id === id);
+      if (a && a.status !== 'joined' && a.account) await removePendingMember(a.email);
       await deleteDoc(doc(db, 'role_assignments', id));
       setAssignments(prev => prev.filter(a => a.id !== id));
     } catch (err) {
@@ -178,7 +185,7 @@ export default function MembersPage() {
   const handleCreateLogin = async (a: RoleAssignment) => {
     setCreatingLogin(a.id); setError('');
     try {
-      const account = await createMemberAccount(a.email);
+      const account = await createMemberAccount(a.email, resolveName(a) ?? '', a.role);
       if (account === 'not-configured') { setError(t('accountNotConfigured')); return; }
       if (account === 'failed') { setError(t('accountCreateFailed')); return; }
       const { id, ...data } = a;
@@ -321,12 +328,14 @@ export default function MembersPage() {
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('fullNameLabel')} <span className={styles.optional}>{t('optional')}</span></label>
+            <label className={styles.label}>{t('fullNameLabel')} *</label>
             <input
               className={styles.input}
               type="text"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => { setName(e.target.value); setError(''); }}
+              required
+              maxLength={100}
               placeholder={locale === 'ar' ? 'الاسم الكامل' : 'Full name'}
             />
           </div>

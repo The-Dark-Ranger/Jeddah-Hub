@@ -408,7 +408,11 @@ input, textarea, select {
 
 /* -- Touch / tap targets ------------------------------------ */
 @media (hover: none) {
-  button, a, [role="button"] { min-height: 44px; }
+  /* Not on switches and option buttons (role="switch"/"radio"): they're
+     drawn at a fixed size, e.g. the Charter on/off switch and the colour
+     swatches, and stretching them to 44px tall turned them into ovals.
+     Those components size their own tap area instead. */
+  button:not([role="switch"]):not([role="radio"]), a, [role="button"] { min-height: 44px; }
 }
 
 /* -- Mobile: fixed navbar offset & font scale -------------- */

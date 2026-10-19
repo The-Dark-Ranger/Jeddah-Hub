@@ -360,7 +360,9 @@ export default function MembersPage() {
           <div className={styles.formGroup}>
             <label className={styles.label}>{t('colRole')} *</label>
             <select className={styles.select} value={role} onChange={e => setRole(e.target.value as UserRole)}>
-              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              {/* Only the Curator can make someone a curator (firestore.rules). */}
+              {ROLES.filter(r => r.value !== 'curator' || normRole === 'curator')
+                .map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
           <div className={styles.formGroup}>

@@ -11,6 +11,8 @@ const JWKS = createRemoteJWKSet(
 interface VerifiedCaller {
   uid: string;
   email: string | null;
+  /** Normalized stored role (set by requireRole). */
+  role?: string;
 }
 
 /** Verifies a Firebase Auth ID token's signature/claims via Google's public JWKS — no firebase-admin/service-account needed. */
@@ -20,6 +22,8 @@ async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
     const { payload } = await jwtVerify(idToken, JWKS, {
       issuer: `https://securetoken.google.com/${PROJECT_ID}`,
       audience: PROJECT_ID,
+      // Firebase ID tokens are always RS256; refuse anything else outright.
+      algorithms: ['RS256'],
     });
     if (typeof payload.sub !== 'string' || !payload.sub) return null;
     return { uid: payload.sub, email: typeof payload.email === 'string' ? payload.email : null };
@@ -70,5 +74,5 @@ export async function requireRole(req: NextRequest, allowedRoles: string[]): Pro
   const role = await getCallerRole(caller.uid, idToken);
   if (!role || !allowedRoles.includes(role)) return null;
 
-  return caller;
+  return { ...caller, role };
 }

@@ -72,7 +72,7 @@ async function upsertProfile(app: App, uid: string, email: string, displayName: 
 }
 
 /** Removes a never-signed-in member's account and profile. */
-async function removePending(app: App, email: string): Promise<'removed' | 'kept' | 'not-found'> {
+async function removePending(app: App, email: string, callerRole: string | undefined): Promise<'removed' | 'kept' | 'not-found'> {
   const auth = getAuth(app);
   let record;
   try {
@@ -82,6 +82,9 @@ async function removePending(app: App, email: string): Promise<'removed' | 'kept
   }
   if (record.metadata.lastSignInTime) return 'kept';
   const db = getFirestore(app);
+  // Only the Curator may remove a curator's account.
+  const target = (await db.doc(`users/${record.uid}`).get()).data();
+  if (target?.role === 'curator' && callerRole !== 'curator') return 'kept';
   await Promise.all([db.doc(`public_profiles/${record.uid}`).delete(), db.doc(`users/${record.uid}`).delete()]);
   await auth.deleteUser(record.uid);
   return 'removed';
@@ -103,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   if (body?.action === 'remove') {
     try {
-      return NextResponse.json({ result: await removePending(app, email) });
+      return NextResponse.json({ result: await removePending(app, email, caller.role) });
     } catch (err) {
       console.error('remove-pending failed:', (err as { code?: string } | null)?.code);
       return NextResponse.json({ result: 'failed' }, { status: 500 });
@@ -113,6 +116,10 @@ export async function POST(req: NextRequest) {
   const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 100) : '';
   const role = MEMBER_ROLES.find(r => r === body?.role);
   if (!role) return NextResponse.json({ result: 'failed', reason: 'invalid-role' }, { status: 400 });
+  // Only the Curator can make someone a curator (matches firestore.rules).
+  if (role === 'curator' && caller.role !== 'curator') {
+    return NextResponse.json({ result: 'failed', reason: 'forbidden-role' }, { status: 403 });
+  }
 
   const auth = getAuth(app);
   let uid: string;

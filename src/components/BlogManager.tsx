@@ -102,17 +102,23 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     try {
       const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
       const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
-      const payload = {
+      const content_ = {
         title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
-        tags, status, authorId: user.uid,
-        authorName: user.displayName || user.email || 'Shaper',
-        authorRole: user.role || 'shaper',
-        updatedAt: new Date().toISOString(),
+        tags, status, updatedAt: new Date().toISOString(),
       };
       if (view === 'edit' && editId) {
-        await updateDoc(doc(db, 'blogs', editId), payload);
+        // Editing keeps the original author: a curator fixing someone's post
+        // used to overwrite its author with themselves.
+        await updateDoc(doc(db, 'blogs', editId), content_);
       } else {
-        await addDoc(collection(db, 'blogs'), { ...payload, createdAt: new Date().toISOString(), likedBy: [] });
+        await addDoc(collection(db, 'blogs'), {
+          ...content_,
+          authorId: user.uid,
+          authorName: user.displayName || user.email || 'Shaper',
+          authorRole: normalizeRole(user.role) || 'shaper',
+          createdAt: new Date().toISOString(),
+          likedBy: [],
+        });
       }
       resetForm(); setView('list');
       await fetchPosts();

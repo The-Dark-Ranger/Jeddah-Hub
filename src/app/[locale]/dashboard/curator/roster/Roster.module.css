@@ -113,3 +113,14 @@
   .initiativeHeader { flex-wrap: wrap; padding: .75rem 1rem; gap: .35rem .75rem; }
   .initiativeName { flex-basis: 100%; }
 }
+/* "View N more" under a long team: phones only. */
+.rosterMore { display: none; }
+@media (max-width: 600px) {
+  .rowExtra { display: none !important; }
+  .rosterMore {
+    display: block; width: calc(100% - 2rem); margin: .25rem 1rem 1rem; min-height: 40px;
+    padding: .55rem 1rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--primary-blue); background: var(--primary-blue-glow); color: var(--primary-blue);
+    font: inherit; font-size: .86rem; font-weight: 700;
+  }
+}

@@ -13,6 +13,9 @@ import { normalizeRole } from '@/lib/role';
 import SearchSelect, { type SearchOption } from '@/components/dashboard/SearchSelect';
 import styles from './Roster.module.css';
 
+/** Team members shown per initiative on phones before "View more". */
+const MOBILE_ROSTER_ROWS = 5;
+
 export default function ManageRoster() {
   const t = useTranslations('Dashboard');
   const tRole = useTranslations('Role');
@@ -28,6 +31,8 @@ export default function ManageRoster() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const [saving, setSaving]   = useState(false);
+  // Initiatives whose full team is shown on phones (otherwise the first 5).
+  const [expandedInits, setExpandedInits] = useState<Set<string>>(() => new Set());
 
   const fetchData = async () => {
     setLoading(true);
@@ -327,7 +332,7 @@ export default function ManageRoster() {
                       </thead>
                       <tbody>
                         {members.map((m: any, idx: number) => (
-                          <tr key={m.userId + idx}>
+                          <tr key={m.userId + idx} className={idx >= MOBILE_ROSTER_ROWS && !expandedInits.has(init.id) ? styles.rowExtra : undefined}>
                             <td className={styles.memberEmail}>{getUserLabel(m.userId)}</td>
                             <td>
                               <span className={styles.rolePill}>{m.role || t('memberDefaultRole')}</span>
@@ -354,7 +359,25 @@ export default function ManageRoster() {
                           </tr>
                         ))}
                       </tbody>
-                    </table></div>
+                    </table>
+                    {/* Phones only (CSS): long teams show 5, then the rest on demand. */}
+                    {members.length > MOBILE_ROSTER_ROWS && (
+                      <button
+                        type="button"
+                        className={styles.rosterMore}
+                        aria-expanded={expandedInits.has(init.id)}
+                        onClick={() => setExpandedInits(prev => {
+                          const next = new Set(prev);
+                          if (next.has(init.id)) next.delete(init.id); else next.add(init.id);
+                          return next;
+                        })}
+                      >
+                        {expandedInits.has(init.id)
+                          ? t('viewLess')
+                          : t('viewMoreMembers', { count: members.length - MOBILE_ROSTER_ROWS })}
+                      </button>
+                    )}
+                    </div>
                   )}
                 </div>
               );

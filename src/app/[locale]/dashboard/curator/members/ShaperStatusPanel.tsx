@@ -8,6 +8,7 @@ import { normalizeRole } from '@/lib/role';
 import { refreshPublicPages } from '@/lib/spotlight';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './ShaperStatus.module.css';
 
 type Status = 'shaper' | 'alumni';
@@ -95,6 +96,8 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
   const alumniCount = members?.filter(m => m.status === 'alumni').length ?? 0;
   const visible = (members ?? []).filter(m =>
     (filter === 'all' || m.status === filter) && matchesQuery(search, m.name, m.nameAr, m.email));
+  // 10 at a time; a new search or tab starts over at the first 10.
+  const page = useViewMore(visible, `${filter}|${search}`);
 
   return (
     <section className={styles.panel} aria-labelledby="shaper-status-title">
@@ -140,7 +143,7 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
         <p className={styles.empty}>{t('noMatches')}</p>
       ) : (
         <ul className={styles.list}>
-          {visible.map(m => {
+          {page.shown.map(m => {
             const name = (locale === 'ar' && m.nameAr) || m.name;
             return (
               <li key={m.uid} className={styles.row}>
@@ -173,6 +176,7 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
           })}
         </ul>
       )}
+      <ViewMoreButton hiddenCount={page.hiddenCount} expanded={page.expanded} onMore={page.more} onLess={page.less} />
     </section>
   );
 }

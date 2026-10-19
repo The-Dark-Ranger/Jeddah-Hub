@@ -3,10 +3,8 @@ import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import styles from './Home.module.css';
 import NewsletterForm from '@/components/NewsletterForm';
-import HomeShapers from '@/components/HomeShapers';
-import HomeFeaturedInitiatives from '@/components/HomeFeaturedInitiatives';
 import WaveDivider from '@/components/WaveDivider';
-import HomeActivity from '@/components/HomeActivity';
+import { HomeActivitySection, HomeFeaturedSection, HomeShapersSection } from '@/components/HomeSections';
 import WefSection from '@/components/WefSection';
 import PatternDivider from '@/components/PatternDivider';
 import { SITE_URL } from '@/lib/seo';
@@ -146,7 +144,7 @@ export default function HomePage() {
 
 
       {/* 4. Activity spotlight (curator-managed, falls back to "Stay Tuned") */}
-      <HomeActivity />
+      <HomeActivitySection />
 
       {/* 5. Featured projects (live from Firestore) */}
       <section className={styles.section} style={{ backgroundColor: 'var(--background)' }}>
@@ -156,7 +154,7 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('projectsSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <HomeFeaturedInitiatives />
+          <HomeFeaturedSection />
           <div className={styles.sectionCta}>
             <Link href="/projects" className={styles.secondaryButton}>{t('viewAllInitiatives')}</Link>
           </div>
@@ -173,7 +171,7 @@ export default function HomePage() {
             <p className={styles.sectionSubtitle}>{t('membersSubtitle')}</p>
             <div className={styles.sectionDivider} />
           </div>
-          <HomeShapers />
+          <HomeShapersSection />
           <div className={styles.sectionCta}>
             <Link href="/about" className={styles.secondaryButton}>{t('viewAllShapers')}</Link>
           </div>

@@ -15,7 +15,6 @@ import ScrollToTop from '@/components/ScrollToTop';
 import PageTransition from '@/components/PageTransition';
 import { SITE_URL, alternateLanguages } from '@/lib/seo';
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { Inter, Tajawal } from 'next/font/google';
 
 // Self-hosted by next/font: no request to Google at runtime, and size-matched
@@ -94,15 +93,8 @@ export default async function LocaleLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + SPLASH_INIT_SCRIPT }} />
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
-        {/* reCAPTCHA v3 \— loaded after hydration so it never blocks first
-            paint; grecaptcha.execute() is ready long before anyone can
-            submit a form that needs it. */}
-        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-          <Script
-            src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
-            strategy="afterInteractive"
-          />
-        )}
+        {/* reCAPTCHA is loaded on demand by the forms that use it
+            (src/lib/recaptcha.ts), not on every page. */}
         <SplashScreen locale={locale} />
         <LangSwitchHandler />
         <NextIntlClientProvider messages={messages}>

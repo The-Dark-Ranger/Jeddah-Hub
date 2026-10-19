@@ -12,7 +12,7 @@ import { safeColor } from '@/lib/activityTypes';
 
 interface Highlight { name: string; tag: string; }
 
-interface Activity {
+export interface Activity {
   id: string;
   title: string;
   eyebrow?: string;
@@ -114,12 +114,26 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
   );
 }
 
-export default function HomeActivity() {
+/** createdAt may be an ISO string (server-loaded) or a Firestore Timestamp. */
+function timeOf(v: unknown): number {
+  if (typeof v === 'string') return Date.parse(v) || 0;
+  return (v as { toMillis?: () => number } | undefined)?.toMillis?.() ?? 0;
+}
+
+/** Active Hub Activities, newest first. */
+export function activeActivities(docs: (Activity & { createdAt?: unknown })[]): Activity[] {
+  return docs.filter(a => a.active === true).sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt));
+}
+
+/** `initial`: Hub Activity docs loaded on the server (see HomeSections);
+ *  when absent they are fetched in the browser instead. */
+export default function HomeActivity({ initial }: { initial?: Activity[] }) {
   const t = useTranslations('HomePage');
-  const [activities, setActivities] = useState<Activity[] | 'loading'>('loading');
+  const [activities, setActivities] = useState<Activity[] | 'loading'>(() => (initial ? activeActivities(initial) : 'loading'));
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    if (initial) return;
     // db can be undefined if Firebase failed to initialize (missing env
     // vars) — collection()/query() throw synchronously in that case. Building
     // the query inside this initial .then() turns that throw into a normal
@@ -127,19 +141,9 @@ export default function HomeActivity() {
     // it already handles a getDocs() failure, keeping the homepage rendering.
     Promise.resolve()
       .then(() => getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))))
-      .then(snap => {
-        const all = snap.docs
-          .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
-          .filter(a => a.active === true)
-          .sort((a, b) => {
-            const ta = (a as any).createdAt?.toMillis?.() ?? 0;
-            const tb = (b as any).createdAt?.toMillis?.() ?? 0;
-            return tb - ta;
-          });
-        setActivities(all);
-      })
+      .then(snap => setActivities(activeActivities(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) })))))
       .catch(() => setActivities([]));
-  }, []);
+  }, [initial]);
 
   // Hold the section's space while loading, so it doesn't pop in later and
   // push everything below it down mid-scroll.

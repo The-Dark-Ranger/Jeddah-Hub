@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getRecaptchaToken } from '@/lib/recaptcha';
+import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import styles from './NewsletterForm.module.css';
 
@@ -64,7 +64,7 @@ export default function NewsletterForm() {
     <div className={styles.newsletterContainer}>
       <h3 className={styles.title}>{t('newsletter')}</h3>
       <p className={styles.subtitle}>{t('newsletterSubtitle')}</p>
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
         <input
           type="email"
           value={email}

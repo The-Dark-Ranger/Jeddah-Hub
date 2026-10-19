@@ -247,9 +247,12 @@ html[data-theme-switch]::view-transition-old(root) {
   animation: none;
   mix-blend-mode: normal;
 }
+/* The circle itself is animated from ThemeContext (Web Animations API with
+   literal pixel values), so no CSS animation runs on the new snapshot. */
 html[data-theme-switch]::view-transition-new(root) {
-  animation: theme-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: none;
   mix-blend-mode: normal;
+  will-change: clip-path;
 }
 
 /* Browsers without View Transitions: one uniform crossfade of colours
@@ -259,10 +262,6 @@ html[data-theme-fade] *::before,
 html[data-theme-fade] *::after {
   transition: background-color .3s ease, color .3s ease, border-color .3s ease,
               fill .3s ease, stroke .3s ease, box-shadow .3s ease !important;
-}
-@keyframes theme-reveal {
-  from { clip-path: circle(0 at var(--theme-x, 100%) var(--theme-y, 0)); }
-  to   { clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 100%) var(--theme-y, 0)); }
 }
 
 @keyframes vt-fade-out {

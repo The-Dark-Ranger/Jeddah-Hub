@@ -5,6 +5,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from '
 import { useLocale, useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { normalizeRole } from '@/lib/role';
+import { refreshPublicPages } from '@/lib/spotlight';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './ShaperStatus.module.css';
@@ -80,6 +81,7 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
         }
       }
       setMembers(prev => prev?.map(x => x.uid === m.uid ? { ...x, status: next } : x) ?? null);
+      void refreshPublicPages();
       onChanged?.();
     } catch (err) {
       console.error(err);

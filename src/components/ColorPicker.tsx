@@ -81,7 +81,11 @@ export default function ColorPicker({ label, value, onChange }: Props) {
       </div>
 
       <div className={styles.hexRow}>
-        <span className={styles.preview} style={{ background: safeColor(value) ?? 'transparent' }} aria-hidden="true" />
+        <span
+          className={styles.preview + (safeColor(value) ? '' : ' ' + styles.swatchNone)}
+          style={safeColor(value) ? { background: safeColor(value)! } : undefined}
+          aria-hidden="true"
+        />
         <input
           className={styles.hexInput + (hex && !safeColor(hex) ? ' ' + styles.hexInvalid : '')}
           value={hex}

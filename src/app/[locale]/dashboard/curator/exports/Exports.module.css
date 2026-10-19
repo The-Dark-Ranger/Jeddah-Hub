@@ -68,7 +68,8 @@
 .table tbody tr:last-child td { border-bottom: none; }
 .table tbody tr:hover td { background: var(--background-alt); }
 .num { width: 3rem; color: var(--text-muted) !important; font-variant-numeric: tabular-nums; }
-.email { display: flex; align-items: center; gap: .65rem; word-break: break-all; }
+.email { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+.emailText { min-width: 0; overflow-wrap: anywhere; }
 .avatar {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center; font-size: .75rem; font-weight: 700;
@@ -86,3 +87,10 @@
   .num { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .spinning { animation: none; } }
+
+/* Phones: the number column is noise; give the email the room. */
+@media (max-width: 560px) {
+  .table th:first-child, .table td:first-child { display: none; }
+  .table th, .table td { padding-inline: .75rem; }
+  .date { white-space: nowrap; font-size: .8rem; }
+}

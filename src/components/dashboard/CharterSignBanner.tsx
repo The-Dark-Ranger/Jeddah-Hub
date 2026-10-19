@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useAuth } from '@/context/AuthContext';
-import { useCharterStatus } from '@/lib/charterSignature';
+import { SIGNING_ROLES, useCharterStatus } from '@/lib/charterSignature';
+import { normalizeRole } from '@/lib/role';
 import styles from './DefaultPasswordBanner.module.css';
 
 /** Shown across the dashboard while curators require members to sign the
@@ -14,8 +15,9 @@ export default function CharterSignBanner() {
   const pathname = usePathname();
   const { loading, required, signature } = useCharterStatus(user?.uid);
 
-  // The charter page has the sign-off form itself.
-  if (loading || !required || signature || pathname.startsWith('/dashboard/shaper/charter')) return null;
+  // The charter page has the sign-off form itself; alumni aren't asked.
+  if (loading || !required || signature || !SIGNING_ROLES.includes(normalizeRole(user?.role))
+      || pathname.startsWith('/dashboard/shaper/charter')) return null;
   return (
     <div className={styles.banner} role="alert">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

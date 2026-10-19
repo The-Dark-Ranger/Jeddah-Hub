@@ -11,6 +11,9 @@ import { db } from '@/lib/firebase';
  * curators / impact officers read everyone's. */
 
 export const CHARTER_SETTINGS = { collection: 'settings', id: 'charter' } as const;
+/** Roles asked to sign: active Shapers, including the curatorship.
+ *  Alumni aren't asked and aren't counted. */
+export const SIGNING_ROLES = ['shaper', 'curator', 'vice_curator', 'impact_officer'];
 export const SIGNATURES = 'charter_signatures';
 /** Fired after a member signs or a curator changes the setting, so the
  *  dashboard banner updates without a reload. */

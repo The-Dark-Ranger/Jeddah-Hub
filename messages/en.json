@@ -946,7 +946,7 @@
     "adminOnHint": "On: members see a reminder across the dashboard until they confirm the Charter.",
     "adminOffHint": "Off: members can still confirm the Charter, but aren't reminded to.",
     "adminToggleLabel": "Require members to sign the Charter",
-    "adminSignedCount": "{signed} of {total} members signed",
+    "adminSignedCount": "{signed} of {total} Shapers signed (alumni not included)",
     "adminShowList": "Show members",
     "adminHideList": "Hide members",
     "adminReset": "Start a new signing round",

@@ -1,19 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { requireRole } from '@/lib/serverAuth';
 import { readJsonBody } from '@/lib/http';
 import { isValidEmail } from '@/lib/validateEmail';
 import { isRateLimited } from '@/lib/rateLimit';
-import { DEFAULT_MEMBER_PASSWORD } from '@/lib/memberAccounts';
+import { DEFAULT_MEMBER_PASSWORD, MEMBER_ROLES, type MemberRole } from '@/lib/memberAccounts';
 
-/* Creates a member's Firebase sign-in account with the temporary password.
+/* Creates a member's Firebase sign-in account with the temporary password,
+ * and lists them on the public Who We Are page straight away.
  *
  * Public sign-up is (rightly) disabled on the Firebase project, so accounts
  * can only be created with admin rights: this route uses the Admin SDK with
  * the service account in FIREBASE_SERVICE_ACCOUNT, and only for a signed-in
- * curator or vice curator. The member's role still comes solely from their
- * role_assignments document, applied on first sign-in. */
+ * curator or vice curator.
+ *
+ * Alongside the account it writes users/{uid} (role + name) and the public
+ * mirror public_profiles/{uid} (name + role only, never email — see
+ * firestore.rules), so the member appears under their role without having
+ * to fill in their own profile first. A member who already has a users doc
+ * keeps their role and any name they set themselves; only blanks are filled.
+ *
+ * `action: 'remove'` undoes this for a pending member removed from Role
+ * Assignments — but only if they have never signed in, so it can never
+ * delete a real member's account or profile. */
 
 function adminApp(): App | null {
   const existing = getApps().find(a => a.name === 'member-admin');
@@ -34,6 +45,48 @@ function adminApp(): App | null {
   }
 }
 
+/** Fills in users/{uid} and public_profiles/{uid} for a newly added member. */
+async function upsertProfile(app: App, uid: string, email: string, displayName: string, role: MemberRole) {
+  const db = getFirestore(app);
+  const userRef = db.doc(`users/${uid}`);
+  const publicRef = db.doc(`public_profiles/${uid}`);
+  await db.runTransaction(async tx => {
+    const [userSnap, publicSnap] = await Promise.all([tx.get(userRef), tx.get(publicRef)]);
+    const existing = userSnap.data() ?? {};
+    const effectiveRole = (existing.role as string | undefined) || role;
+    const name = (existing.displayName as string | undefined) || displayName;
+
+    if (!userSnap.exists) {
+      tx.set(userRef, { uid, email, role, displayName: displayName || null, createdAt: new Date().toISOString() });
+    } else {
+      const fill: Record<string, string> = {};
+      if (!existing.role) fill.role = role;
+      if (!existing.displayName && displayName) fill.displayName = displayName;
+      if (Object.keys(fill).length) tx.set(userRef, fill, { merge: true });
+    }
+
+    const pub: Record<string, string> = { role: effectiveRole };
+    if (!publicSnap.data()?.displayName && name) pub.displayName = name;
+    tx.set(publicRef, pub, { merge: true });
+  });
+}
+
+/** Removes a never-signed-in member's account and profile. */
+async function removePending(app: App, email: string): Promise<'removed' | 'kept' | 'not-found'> {
+  const auth = getAuth(app);
+  let record;
+  try {
+    record = await auth.getUserByEmail(email);
+  } catch {
+    return 'not-found';
+  }
+  if (record.metadata.lastSignInTime) return 'kept';
+  const db = getFirestore(app);
+  await Promise.all([db.doc(`public_profiles/${record.uid}`).delete(), db.doc(`users/${record.uid}`).delete()]);
+  await auth.deleteUser(record.uid);
+  return 'removed';
+}
+
 export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);
   if (!caller) return NextResponse.json({ result: 'failed', reason: 'unauthorized' }, { status: 401 });
@@ -48,13 +101,43 @@ export async function POST(req: NextRequest) {
   const app = adminApp();
   if (!app) return NextResponse.json({ result: 'failed', reason: 'not-configured' }, { status: 503 });
 
+  if (body?.action === 'remove') {
+    try {
+      return NextResponse.json({ result: await removePending(app, email) });
+    } catch (err) {
+      console.error('remove-pending failed:', (err as { code?: string } | null)?.code);
+      return NextResponse.json({ result: 'failed' }, { status: 500 });
+    }
+  }
+
+  const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 100) : '';
+  const role = MEMBER_ROLES.find(r => r === body?.role);
+  if (!role) return NextResponse.json({ result: 'failed', reason: 'invalid-role' }, { status: 400 });
+
+  const auth = getAuth(app);
+  let uid: string;
+  let result: 'created' | 'exists';
   try {
-    await getAuth(app).createUser({ email, password: DEFAULT_MEMBER_PASSWORD, emailVerified: false });
-    return NextResponse.json({ result: 'created' });
+    uid = (await auth.createUser({ email, password: DEFAULT_MEMBER_PASSWORD, emailVerified: false })).uid;
+    result = 'created';
   } catch (err) {
     const code = (err as { code?: string } | null)?.code;
-    if (code === 'auth/email-already-exists') return NextResponse.json({ result: 'exists' });
-    console.error('create-account failed:', code);
-    return NextResponse.json({ result: 'failed', reason: code ?? 'unknown' }, { status: 500 });
+    if (code !== 'auth/email-already-exists') {
+      console.error('create-account failed:', code);
+      return NextResponse.json({ result: 'failed', reason: code ?? 'unknown' }, { status: 500 });
+    }
+    uid = (await auth.getUserByEmail(email)).uid;
+    result = 'exists';
   }
+
+  // The account exists either way; a profile failure is reported but
+  // doesn't undo it (the member's own first sign-in also fills these in).
+  let listed = true;
+  try {
+    await upsertProfile(app, uid, email, displayName, role);
+  } catch (err) {
+    listed = false;
+    console.error('create-account: profile write failed:', (err as { code?: string } | null)?.code);
+  }
+  return NextResponse.json({ result, listed });
 }

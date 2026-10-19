@@ -122,10 +122,10 @@ function ChangePassword() {
 }
 
 export default function MyProfile() {
-  const { user } = useAuth();
+  const { user, patchUser } = useAuth();
   const t = useTranslations('Dashboard');
 
-  const [form, setForm]                   = useState<ProfileForm>(empty);
+  const [form, setForm]                 = useState<ProfileForm>(empty);
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
   const [loaded, setLoaded]               = useState(false);
@@ -177,6 +177,10 @@ export default function MyProfile() {
       // Mirror to public_profiles (never email) so About/homepage reflect
       // the edit immediately instead of waiting for next sign-in.
       await setDoc(doc(db, 'public_profiles', user.uid), publicFields, { merge: true }).catch(() => {});
+      patchUser({
+        displayName:   publicFields.displayName || null,
+        displayNameAr: publicFields.displayNameAr || undefined,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
     } catch (err) {

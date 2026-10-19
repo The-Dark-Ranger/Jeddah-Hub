@@ -68,7 +68,16 @@ const nextConfig: NextConfig = {
         // by a shared cache — except /api/media and /api/img, which serve
         // immutable photos with their own long-lived Cache-Control.
         source: '/api/:path((?!media/|img/).*)',
-        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+        headers: [
+          { key: 'Cache-Control', value: 'no-store' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+        ],
+      },
+      {
+        // Members-only and sign-in pages stay out of search engines (and so
+        // out of search-based reconnaissance), not just out of robots.txt.
+        source: '/:locale(en|ar)/:area(dashboard|login)/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];
   },

@@ -11,6 +11,8 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
+import { newsPath } from '@/lib/slug';
+import { RoleLabel } from '@/lib/roleLabel';
 import { useLocale, useTranslations } from 'next-intl';
 import styles from './News.module.css';
 import WaveDivider from '@/components/WaveDivider';
@@ -170,7 +172,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
         ) : (
           <div className={styles.grid}>
             {filtered.map(post => (
-              <Link key={post.id} href={`/news/${post.id}`} className={styles.card}>
+              <Link key={post.id} href={newsPath(post)} className={styles.card}>
                 <div className={styles.cardCategory}>
                   {post.tags && post.tags.length > 0 ? post.tags[0].toUpperCase() : t('hubUpdate').toUpperCase()}
                 </div>
@@ -187,7 +189,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
                     )}
                     <div>
                       <div className={styles.cardAuthorName}>{post.authorName || t('defaultAuthor')}</div>
-                      <div className={styles.cardAuthorRole}>{post.authorRole?.replace('_', ' ')}</div>
+                      <div className={styles.cardAuthorRole}><RoleLabel role={post.authorRole} /></div>
                     </div>
                   </div>
                   <span className={styles.cardDate}>{timeAgo(post.createdAt, t, locale)}</span>

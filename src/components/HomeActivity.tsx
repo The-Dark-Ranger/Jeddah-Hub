@@ -163,7 +163,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
 
   return (
     <section
-      className={styles.retreatSection}
+      className={styles.retreatSection + (accent ? ' ' + styles.retreatSectionAccent : '')}
       style={accent ? { '--activity-accent': accent } as React.CSSProperties : undefined}
     >
       <WaveDivider flip fill="var(--card-bg)" />

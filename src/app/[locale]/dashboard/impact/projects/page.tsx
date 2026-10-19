@@ -13,7 +13,9 @@ import ImageUploader from '@/components/ImageUploader';
 import ModalPortal from '@/components/ModalPortal';
 import { CATEGORIES } from '@/components/InitiativeFormFields';
 import { normalizeRole } from '@/lib/role';
+import { setSpotlight } from '@/lib/spotlight';
 import styles from './Projects.module.css';
+import { CategoryLabel } from '@/lib/categoryLabel';
 
 interface Member { userId: string; role: string; }
 
@@ -34,6 +36,8 @@ interface Initiative {
   impactAreas?: string[];
   createdAt: string;
   members?: Member[];
+  /** The one initiative shown in the Initiatives page's Spotlight card. */
+  spotlight?: boolean;
 }
 
 interface UserRecord { id: string; displayName?: string; email?: string; }
@@ -278,11 +282,22 @@ export default function ImpactProjects() {
     } catch { /* notifications optional */ }
   };
 
+  const handleToggleSpotlight = async (init: Initiative) => {
+    try {
+      await setSpotlight(init.spotlight ? null : init.id, initiatives);
+      setInitiatives(prev => prev.map(i => ({ ...i, spotlight: !init.spotlight && i.id === init.id })));
+    } catch (err) {
+      console.error(err);
+      alert(t('saveFailed'));
+    }
+  };
+
   const handleArchive = async (id: string) => {
     if (!confirm(t('archiveInitiativeConfirm'))) return;
     const init = initiatives.find(i => i.id === id);
     try {
-      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString() });
+      // An archived initiative can't stay in the Initiatives page's Spotlight.
+      await updateDoc(doc(db, 'initiatives', id), { status: 'archived', archivedAt: new Date().toISOString(), spotlight: false });
     } catch (err) {
       console.error(err);
       alert(t('saveFailed'));
@@ -407,7 +422,7 @@ export default function ImpactProjects() {
               <h3 className={styles.modalTitle}>
                 {isCreate ? t('createProject') : `${t('editInitiativeTitle')}: ${editingTitle}`}
               </h3>
-              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label="Close">
+              <button type="button" className={styles.modalClose} onClick={closeModal} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -496,7 +511,10 @@ export default function ImpactProjects() {
                     <span className={styles.statusPill + ' ' + (init.status === 'active' ? styles.statusActive : styles.statusArchived)}>
                       {init.status === 'active' ? t('statusActive') : t('statusArchived')}
                     </span>
-                    {init.category && <span className={styles.categoryPill}>{init.category}</span>}
+                    {init.category && <span className={styles.categoryPill}><CategoryLabel category={init.category} /></span>}
+                    {init.spotlight && init.status === 'active' && (
+                      <span className={styles.spotlightPill}>◎ {t('spotlightBadge')}</span>
+                    )}
                   </div>
                   <h3 className={styles.cardTitle}>{init.title}</h3>
                   <p className={styles.cardDesc}>{init.description}</p>
@@ -525,6 +543,19 @@ export default function ImpactProjects() {
 
                 {/* Action bar */}
                 <div className={styles.cardActions}>
+                  {init.status === 'active' && (
+                    <button
+                      type="button"
+                      className={styles.spotlightBtn + (init.spotlight ? ' ' + styles.spotlightBtnOn : '')}
+                      onClick={() => handleToggleSpotlight(init)}
+                      aria-pressed={!!init.spotlight}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" fill={init.spotlight ? 'currentColor' : 'none'} />
+                      </svg>
+                      {init.spotlight ? t('removeSpotlight') : t('setSpotlight')}
+                    </button>
+                  )}
                   <button className={styles.editBtn} onClick={() => openEdit(init)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>

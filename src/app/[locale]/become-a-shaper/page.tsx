@@ -1,9 +1,12 @@
-import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
+import { countListedShapers, getPublicProfiles } from '@/lib/publicData';
 import styles from './BecomeShaper.module.css';
 import FaqAccordion from './FaqAccordion';
 import PatternDivider from '@/components/PatternDivider';
+
+/** Shown if the member count can't be loaded. */
+const FALLBACK_MEMBERS = 30;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -15,8 +18,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export default function BecomeAShaperPage() {
-  const t = useTranslations('BecomeShaperPage');
+export default async function BecomeAShaperPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'BecomeShaperPage' });
+  // Same count as "Our Shapers" on Who We Are.
+  const profiles = await getPublicProfiles();
+  const memberCount = profiles ? countListedShapers(profiles) : FALLBACK_MEMBERS;
 
   const criteriaBlocks = [
     { title: t('applyTitle'),  items: (t.raw('criteria1') as string[]) },
@@ -117,7 +124,7 @@ export default function BecomeAShaperPage() {
 
       {/* Stats row below wave */}
       <div className={styles.heroChips}>
-        <div className={styles.heroChip}><strong>32</strong><span>{t('statShapers')}</span></div>
+        <div className={styles.heroChip}><strong>{memberCount}</strong><span>{t('statShapers')}</span></div>
         <div className={styles.heroChip}><strong>50+</strong><span>{t('statInitiatives')}</span></div>
         <div className={styles.heroChip}><strong>120K+</strong><span>{t('statBenefited')}</span></div>
       </div>
@@ -239,6 +246,7 @@ export default function BecomeAShaperPage() {
       <section className={styles.ctaSection}>
         <div className={styles.container}>
           <div className={styles.cta}>
+            <p className={styles.ctaEyebrow}>{t('ctaEyebrow')}</p>
             <h2>{t('ctaTitle')}</h2>
             <p>{t('ctaBody')}</p>
             <a
@@ -248,8 +256,17 @@ export default function BecomeAShaperPage() {
               className={styles.ctaBtn}
             >
               {t('applyNow')}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
             </a>
-            <p className={styles.ctaNote}>{t('ctaNote')}</p>
+            <p className={styles.ctaNote}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
+              </svg>
+              {t('ctaNote')}
+            </p>
           </div>
         </div>
       </section>

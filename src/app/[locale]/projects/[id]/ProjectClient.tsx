@@ -10,6 +10,7 @@ import styles from './Initiative.module.css';
 import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
+import { useCategoryLabel } from '@/lib/categoryLabel';
 
 /** The initiative's story, in reading order. */
 const STORY = [
@@ -81,11 +82,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
   const [copied, setCopied]         = useState(false);
   // Captured once so the timeline doesn't shift between re-renders.
   const [now] = useState(() => Date.now());
-  const tc = useTranslations('Categories');
-  const catLabel = (category: string) => {
-    const key = category.trim().toLowerCase();
-    return tc.has(key as 'all') ? tc(key as 'all') : category;
-  };
+  const catLabel = useCategoryLabel();
 
   useEffect(() => {
     if (initial) {

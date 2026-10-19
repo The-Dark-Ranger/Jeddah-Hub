@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/auth';
 import { normalizeRole } from '@/lib/role';
+import { RoleLabel } from '@/lib/roleLabel';
 import styles from './BlogManager.module.css';
 
 interface BlogPost {
@@ -258,7 +259,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
                     </div>
                   )}
                   {canSeeAll && (
-                    <div className={styles.postAuthorLine}>{t('byAuthor')} <strong>{post.authorName}</strong> · {post.authorRole?.replace('_', ' ')}</div>
+                    <div className={styles.postAuthorLine}>{t('byAuthor')} <strong>{post.authorName}</strong> · <RoleLabel role={post.authorRole} /></div>
                   )}
                 </div>
                 <div className={styles.postActions}>

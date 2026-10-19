@@ -12,33 +12,71 @@ It's a single Next.js application that serves both halves. Nothing here is a
 template or a demo: every feature exists because a specific need on the hub came
 up and I built a way to handle it.
 
-**Live site:** [jeddahhub.org](https://jeddahhub.org)
+**Live site:** [jeddahhub.org](https://jeddahhub.org) ·
+**How it works, with diagrams:** [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)
+
+## At a glance
+
+```mermaid
+flowchart LR
+    subgraph Visitors
+        V([Public visitor])
+    end
+    subgraph Members
+        S([Shaper / Lead])
+        C([Curatorship])
+    end
+    subgraph Vercel["Vercel: Next.js 16"]
+        PUB[Public pages<br/>server-rendered, cached 60 s]
+        DASH[Dashboard<br/>role-gated]
+        API[API routes<br/>accounts · email · images · reCAPTCHA]
+    end
+    subgraph Firebase
+        AUTH[Authentication]
+        FS[(Firestore<br/>+ security rules)]
+    end
+    RS[Resend<br/>email]
+
+    V --> PUB
+    S --> DASH
+    C --> DASH
+    PUB -->|public reads| FS
+    DASH -->|reads and writes,<br/>checked by rules| FS
+    DASH --> AUTH
+    DASH --> API
+    API -->|admin: create accounts| AUTH
+    API --> FS
+    API --> RS
+```
 
 ## What's on the site
 
 ### Public pages
 
 - **Home**: the hub's story, our place in the World Economic Forum network,
-  impact numbers, the current Hub Activity, curator-picked featured
-  initiatives, our Shapers and partners.
+  impact numbers, the current Hub Activities (in each one's own colour, with
+  arrows when there are several), curator-picked featured initiatives, our
+  Shapers and partners.
 - **Who We Are**: the current curatorship, active Shapers and alumni, each with
-  a bio, photo and social links pulled live from the database.
+  a bio (English and Arabic), photo and social links.
 - **Initiatives**: every project the hub runs or has run, searchable and
-  filterable by area, with a detail page per initiative (challenge, goal,
-  impact, key facts, timeline, gallery and team).
+  filterable by area. A Spotlight card at the top is chosen from the dashboard.
+  Each initiative has a detail page (challenge, goal, impact, key facts,
+  timeline, gallery and team).
 - **Hub Activities & Workshops**: a page per event, with an optional
   registration form the organisers build themselves. Responses land in the
   dashboard and export to Excel.
 - **News**: articles written by Shapers and curators, with likes, sharing and
   related stories.
-- **Become a Shaper**: the recruitment page, linking to the World Economic
-  Forum's own application platform.
+- **Become a Shaper**: the recruitment page, with a live member count, linking
+  to the World Economic Forum's own application platform.
 - **Contact**: a reCAPTCHA-protected message form, plus a newsletter signup
   with a real welcome email.
 - **Privacy Policy** and **Terms of Use**.
 
 Everything is available in English and Arabic (with full right-to-left layout)
-and in light and dark themes.
+and in light and dark themes. Every URL is a readable name: `/en/projects/tech-j-shore`,
+`/ar/news/welcome-to-the-new-website`.
 
 ### The dashboard
 
@@ -47,25 +85,29 @@ their role:
 
 | Role | What they can do |
 |---|---|
-| **Shaper / Alumni** | Manage their profile, browse and join initiatives, propose a new initiative or Hub Activity for review, and write blog posts. |
+| **Shaper / Alumni** | Manage their profile, browse and join initiatives, propose a new initiative or Hub Activity for review, write blog posts, and sign the Community Charter. |
 | **Initiative Lead** | Everything a Shaper can, plus manage their own initiative: edit its content and photos, review join requests, request that a member be added or removed, and export a member report. |
-| **Curator / Vice Curator** | Full administrative control: approve proposals and membership requests, manage every initiative and Hub Activity, choose the homepage's featured initiatives, assign member roles, moderate posts, read contact messages and export the newsletter list. |
-| **Impact Officer** | Manages initiatives and Hub Activities and publishes posts, without the curator-only tools (roles, messages, featuring, exports). |
+| **Curator / Vice Curator** | Full administrative control: add members (their login is created automatically), approve proposals and membership requests, manage every initiative and Hub Activity, choose featured and spotlight initiatives, require Charter sign-off and see who signed, moderate posts, read contact messages and export the newsletter list. |
+| **Impact Officer** | Manages initiatives and Hub Activities, picks the spotlight and publishes posts, without the curator-only tools (roles, messages, featuring, exports, Charter sign-off). |
 
 Every permission is enforced twice: once in the UI, so people only see what's
 relevant to them, and again in **Firestore Security Rules**
 ([`firestore.rules`](firestore.rules)), which is the actual authorization
-boundary.
+boundary. The flows behind each feature are drawn out in
+[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 
 ## Tech stack
 
 - **[Next.js 16](https://nextjs.org)** (App Router), React 19 and TypeScript
 - **[next-intl](https://next-intl.dev)** for English/Arabic with RTL layout
-- **Firebase**: Authentication and Firestore (client SDK)
+- **Firebase**: Authentication and Firestore (client SDK in the browser;
+  Firestore REST for cached public pages; **Admin SDK** on the server only to
+  create member accounts)
 - **CSS Modules**: no UI framework, a hand-built design system
 - **[Resend](https://resend.com)** for transactional email
-- **Google reCAPTCHA v3** on the public forms
+- **Google reCAPTCHA v3** on the public forms, loaded only when a form is used
 - **[ExcelJS](https://github.com/exceljs/exceljs)** for `.xlsx` exports
+- **[jose](https://github.com/panva/jose)** to verify Firebase ID tokens in API routes
 - Hosted on **[Vercel](https://vercel.com)**
 
 ## Project structure
@@ -74,22 +116,28 @@ boundary.
 src/
 ├── app/
 │   ├── [locale]/            # Every localized route (/en, /ar): public pages
-│   │   │                    # and the whole /dashboard tree
+│   │   │                    # (server page.tsx + *Client.tsx) and /dashboard
 │   │   └── dashboard/
 │   │       ├── curator/     # Curator / Vice Curator pages
 │   │       ├── impact/      # Impact Officer pages
 │   │       └── shaper/      # Pages shared by every signed-in member
-│   └── api/                 # Server routes: invite emails, newsletter welcome,
-│                            # reCAPTCHA verification, email validation
-├── components/              # Shared UI (navbar, footer, form builders, …)
+│   └── api/
+│       ├── members/         # create-account: logins for new members (Admin SDK)
+│       ├── invite/          # invite emails
+│       ├── newsletter/      # welcome emails
+│       ├── img/ · media/    # cached photo delivery
+│       └── verify-recaptcha/ · validate-email/
+├── components/              # Shared UI (navbar, footer, home sections,
+│   └── dashboard/           #   form builders, search picker, banners, …)
 ├── context/                 # Auth and theme providers
 ├── i18n/                    # next-intl routing and config
-└── lib/                     # Firebase client, shared types and helpers
+└── lib/                     # Firebase client, public data loader, shared helpers
 
 messages/
 ├── en.json                  # Every English string
 └── ar.json                  # Its Arabic counterpart, kept in lockstep
 
+docs/HOW-IT-WORKS.md         # Flowcharts of every main flow
 firestore.rules              # The security boundary, documented inline
 .github/workflows/           # Deploys firestore.rules when it changes
 ```
@@ -121,23 +169,32 @@ npm run typecheck  # TypeScript, no output
 
 ## Deployment
 
+```mermaid
+flowchart LR
+    PR[Pull request] --> CHK[Vercel preview<br/>build check] -->|passes| MAIN[Merge to main]
+    MAIN --> SITE[Vercel deploys<br/>jeddahhub.org]
+    MAIN -->|firestore.rules changed| RULES[GitHub Action<br/>publishes the rules]
+```
+
 - **Website:** every push to `main` deploys to Vercel automatically. The
-  environment variables from `.env.example` are set in the Vercel project.
+  environment variables from `.env.example` are set in the Vercel project,
+  including `FIREBASE_SERVICE_ACCOUNT` for member account creation.
 - **Firestore rules:** the
   [Deploy Firestore Rules](.github/workflows/deploy-firebase-rules.yml)
   workflow publishes `firestore.rules` whenever it changes on `main`. It needs
   two repository secrets, `FIREBASE_SERVICE_ACCOUNT` (a service account JSON
   key with the *Firebase Rules Admin* role) and `FIREBASE_PROJECT_ID`. Until
   they're added the workflow skips itself; rules can also be published by hand
-  with `npx firebase-tools deploy --only firestore`.
+  with `npx firebase-tools deploy --only firestore:rules`.
 
 ## A note on privacy
 
 Shapers' names, photos, bios and event sign-ups live in Firestore, not in this
 repository; nothing in the code or its history contains anyone's private
-information or credentials. What each role can see and do is governed by
-`firestore.rules`, and the site's Privacy Policy and Terms of Use describe what
-is collected and why.
+information or credentials. Public pages only ever read `public_profiles`,
+which never contains an email address. What each role can see and do is
+governed by `firestore.rules`, and the site's Privacy Policy and Terms of Use
+describe what is collected and why.
 
 ---
 

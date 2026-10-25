@@ -1,4 +1,4 @@
-/** Canonical production domain — already the address used throughout the
+/** Canonical production domain, already the address used throughout the
  *  transactional emails (welcome, invite, newsletter notify), so this is
  *  the single place other SEO code (sitemap, robots, per-page canonical
  *  URLs) should read it from instead of repeating the literal string. */

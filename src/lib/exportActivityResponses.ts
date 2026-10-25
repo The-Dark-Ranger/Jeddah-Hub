@@ -34,7 +34,7 @@ export async function downloadActivityResponses(
   ];
 
   // Name/email are surfaced even though the submission form never requires
-  // them (registrations are open to the public, no account needed) — a
+  // them (registrations are open to the public, no account needed), a
   // curator following up on a response needs a way to reach the
   // respondent, not just read their answers.
   const header = ['Submitted At', 'Name', 'Email', ...questions.map(q => q.label)];

@@ -6,7 +6,7 @@
  * product (Storage) has to be enabled or given its own rules deployment.
  *
  * The tradeoff is Firestore's hard 1 MiB per-document limit, so callers must
- * respect DOC_BUDGET_BYTES — fitsInBudget() below does that check. */
+ * respect DOC_BUDGET_BYTES, fitsInBudget() below does that check. */
 
 /** Ceiling for all photo data on one initiative. Firestore allows 1 MiB per
  *  document; the remainder is headroom for the title/description/etc. */
@@ -30,7 +30,7 @@ interface CompressOptions {
   maxDim?: number;
   quality?: number;
   maxBytes?: number;
-  /** Crop to a centred square before scaling — used for avatars. */
+  /** Crop to a centred square before scaling, used for avatars. */
   square?: boolean;
 }
 
@@ -96,7 +96,7 @@ function draw(src: ImageBitmap | HTMLImageElement, maxDim: number, square = fals
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('canvas-unsupported');
 
-  // JPEG has no alpha channel — flatten transparency onto white instead of black.
+  // JPEG has no alpha channel, flatten transparency onto white instead of black.
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
   ctx.drawImage(src as CanvasImageSource, cx, cy, cw, ch, 0, 0, w, h);

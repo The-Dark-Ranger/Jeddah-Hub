@@ -10,7 +10,7 @@ interface Props {
   onChange: (value: string) => void;
 }
 
-/** Profile photo picker — shared by every role (shaper, lead, curator,
+/** Profile photo picker, shared by every role (shaper, lead, curator,
  *  vice curator, impact officer, alumni), which all use the same profile page.
  *  Images are centre-cropped square and compressed to a data URI so they need
  *  no external hosting. */
@@ -95,7 +95,7 @@ export default function AvatarUploader({ value, onChange }: Props) {
         onChange={e => void handleFile(e.target.files)}
       />
 
-      {/* Existing profiles may hold a remote URL — keep that editable. */}
+      {/* Existing profiles may hold a remote URL, keep that editable. */}
       <input
         className={styles.urlInput}
         value={isDataUri(value) ? '' : value}

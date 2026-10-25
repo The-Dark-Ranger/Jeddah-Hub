@@ -137,7 +137,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
   useEffect(() => {
     if (initial) return;
     // db can be undefined if Firebase failed to initialize (missing env
-    // vars) — collection()/query() throw synchronously in that case. Building
+    // vars), collection()/query() throw synchronously in that case. Building
     // the query inside this initial .then() turns that throw into a normal
     // promise rejection, so the final .catch() below handles it the same way
     // it already handles a getDocs() failure, keeping the homepage rendering.

@@ -79,7 +79,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
           ));
           data = snap.docs.map(d => ({ id: d.id, ...d.data() } as NewsPost));
         } catch {
-          // Composite index missing — query with status filter only, sort client-side
+          // Composite index missing, query with status filter only, sort client-side
           const snap = await getDocs(query(
             collection(db, 'blogs'),
             where('status', '==', 'published')
@@ -110,7 +110,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
           setAuthorPhotos(photos);
         }
       } catch {
-        /* Firestore unavailable — leave empty list, stop spinner */
+        /* Firestore unavailable, leave empty list, stop spinner */
       } finally {
         setLoading(false);
       }

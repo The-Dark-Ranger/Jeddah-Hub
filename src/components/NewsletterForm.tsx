@@ -31,7 +31,7 @@ export default function NewsletterForm() {
     setStatus('loading');
     try {
       // Check the domain can actually receive mail before writing/showing
-      // success — a regex alone accepts syntactically-valid gibberish like
+      // success, a regex alone accepts syntactically-valid gibberish like
       // someone@dfgdf.com.
       const check = await fetch('/api/validate-email', {
         method: 'POST',

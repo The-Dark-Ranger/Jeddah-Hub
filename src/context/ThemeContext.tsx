@@ -21,7 +21,7 @@ function getInitialTheme(): Theme {
     const saved = localStorage.getItem('jh-theme');
     if (saved === 'dark' || saved === 'light') return saved;
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-  } catch { /* storage blocked — fall through */ }
+  } catch { /* storage blocked, fall through */ }
   return 'light';
 }
 
@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   // True while a switch animation is running. A second tap mid-animation
-  // would abort the first transition and snap — a visible jump on phones.
+  // would abort the first transition and snap, a visible jump on phones.
   const switching = useRef(false);
 
   const toggleTheme = useCallback((e?: { clientX: number; clientY: number }) => {
@@ -101,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
           { duration: 480, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' },
         );
-      }).catch(() => { /* skipped (e.g. tab hidden) — theme still applied */ });
+      }).catch(() => { /* skipped (e.g. tab hidden), theme still applied */ });
       vt.finished.finally(() => {
         html.removeAttribute('data-theme-switch');
         switching.current = false;

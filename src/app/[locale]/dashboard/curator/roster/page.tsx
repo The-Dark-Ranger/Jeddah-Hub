@@ -43,7 +43,7 @@ export default function ManageRoster() {
         getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
       ]);
       // Hub Activities (dashboard/curator/activities) are stored as
-      // initiatives docs tagged type:'hub_activity' — exclude them so they
+      // initiatives docs tagged type:'hub_activity', exclude them so they
       // don't show up as rosterable/team-having initiatives here.
       const inits: any[] = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() }));
       const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -71,7 +71,7 @@ export default function ManageRoster() {
       const role = tempRole.trim() || 'Member';
       // The `leads` array (not this display role text) is what
       // firestore.rules actually checks to grant a member edit rights on
-      // their own initiative — writing role text alone without also
+      // their own initiative, writing role text alone without also
       // updating `leads` here is exactly what leaves a "Lead"-badged
       // member unable to save their own edits (permission-denied).
       const payload: Record<string, unknown> = {
@@ -128,7 +128,7 @@ export default function ManageRoster() {
       const removed = (init.members || []).find((m: any) => m.userId === userId);
       const updated = (init.members || []).filter((m: any) => m.userId !== userId);
       const payload: Record<string, unknown> = { members: updated };
-      // Keep `leads` in sync in the other direction too — a removed lead
+      // Keep `leads` in sync in the other direction too, a removed lead
       // should lose write access, not keep a stale entry in the array
       // firestore.rules actually checks.
       if (removed?.role?.toLowerCase().includes('lead')) {
@@ -143,7 +143,7 @@ export default function ManageRoster() {
   };
 
   /** True when a member's role text implies "lead" but their uid was never
-   *  actually added to the initiative's `leads` array — the exact drift
+   *  actually added to the initiative's `leads` array, the exact drift
    *  that causes a "Lead"-badged member to hit permission-denied trying to
    *  save their own initiative. */
   const isDriftedLead = (init: any, m: any) =>
@@ -187,7 +187,7 @@ export default function ManageRoster() {
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
-  // An initiative stays listed if its title matches, or any member does —
+  // An initiative stays listed if its title matches, or any member does,
   // in which case only the matching members are shown.
   const visibleInitiatives = initiatives
     .map(init => {

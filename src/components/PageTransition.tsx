@@ -13,7 +13,7 @@ import { usePathname } from 'next/navigation';
  * `page-enter` class gives them the old CSS fade-in instead.
  *
  * `scope="site"` (root layout) collapses every /dashboard/* path to one key,
- * so moving between dashboard pages doesn't remount the dashboard layout —
+ * so moving between dashboard pages doesn't remount the dashboard layout,
  * its sidebar, auth check and loaded data stay put. The dashboard layout
  * wraps its own content area in a `scope="section"` instance instead, so
  * only that panel animates there.

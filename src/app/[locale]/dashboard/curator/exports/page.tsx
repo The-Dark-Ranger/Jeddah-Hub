@@ -48,7 +48,7 @@ export default function ExportEmails() {
 
   const fmt = (iso?: string) => iso
     ? new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : '—';
+    : '-';
 
   const visible = subs.filter(s => matchesQuery(search, s.email));
   const newThisMonth = subs.filter(s => s.subscribedAt && now - Date.parse(s.subscribedAt) < 30 * DAY).length;

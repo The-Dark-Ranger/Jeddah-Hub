@@ -4,7 +4,7 @@ import Image from 'next/image';
  * The Jeddah Hub logo in the variant matching the active theme.
  *
  * Both variants are rendered and CSS (.theme-light-only / .theme-dark-only in
- * globals.css) shows the right one, keyed off html[data-theme] — which the
+ * globals.css) shows the right one, keyed off html[data-theme], which the
  * server and the pre-paint init script already set. Choosing in CSS rather
  * than in React state means dark-mode visitors never see the light logo for a
  * frame before hydration, and no "mounted" flag is needed.

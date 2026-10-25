@@ -5,8 +5,8 @@ import { db } from '@/lib/firebase';
 /* Charter sign-off, mirroring the hub's Google Form ("Name" + "I confirm
  * compliance with Community Charter").
  *
- * settings/charter { requireSignature } — curators switch it on or off.
- * charter_signatures/{uid} { uid, name, confirmed, signedAt } — one per
+ * settings/charter { requireSignature }, curators switch it on or off.
+ * charter_signatures/{uid} { uid, name, confirmed, signedAt }, one per
  * member; firestore.rules let a member write only their own, and only
  * curators / impact officers read everyone's. */
 

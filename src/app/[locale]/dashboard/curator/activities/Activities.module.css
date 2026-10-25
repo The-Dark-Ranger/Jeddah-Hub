@@ -106,7 +106,7 @@
 .cardMeta   { font-size:.8rem;color:var(--text-muted);margin:0; }
 .cardDesc   { font-size:.875rem;color:var(--text-secondary,var(--text-muted));margin:.25rem 0 .75rem;line-height:1.55; }
 
-/* ── Kind badge — distinguishes an "Activity" from a "Workshop" at a
+/* ── Kind badge, distinguishes an "Activity" from a "Workshop" at a
    glance, both in this admin list and (via the same values) on the public
    pages, per the request to differentiate the two for clearer logging. ── */
 .kindBadge { flex-shrink:0;font-size:.68rem;font-weight:700;padding:.15rem .55rem;border-radius:6px;letter-spacing:.04em;text-transform:uppercase; }
@@ -137,7 +137,7 @@
 
 /* ── Modal ── */
 .overlay {
-  /* 1050, matching the other modals — 1000 tied with the sticky navbar and
+  /* 1050, matching the other modals, 1000 tied with the sticky navbar and
      only won on DOM order. */
   position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1050;
   display:flex;align-items:center;justify-content:center;padding:1rem;
@@ -163,7 +163,7 @@
 .label  { font-size:.8rem;font-weight:600;color:var(--text-muted); }
 .input  { padding:.55rem .75rem;border-radius:7px;border:1px solid var(--border-color);background:var(--input-bg,var(--card-bg));color:var(--text-main);font-size:.875rem; }
 .input:focus  { outline:none;border-color:var(--primary-blue); }
-/* <select>'s option-list popup is native browser chrome — setting
+/* <select>'s option-list popup is native browser chrome, setting
    background/color on the closed control (above) doesn't reach it, so
    without this a dark-themed page can render the popup with light/system
    colors, making the text unreadable against its own dropdown (looks

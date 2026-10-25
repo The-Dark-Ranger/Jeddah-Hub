@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 
-// Covers both the /news listing and /news/[id] article route generically —
+// Covers both the /news listing and /news/[id] article route generically,
 // see projects/layout.tsx for why this lives in a sibling layout rather than
 // the (Client Component) pages themselves.
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {

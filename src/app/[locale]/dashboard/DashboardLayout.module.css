@@ -32,7 +32,7 @@
   background: var(--sidebar-bg);
   /* Logical property: the separator sits between the sidebar and
      .mainContent, which flexbox places at the inline-end side of the
-     sidebar in both LTR and RTL — border-right alone would land on the
+     sidebar in both LTR and RTL, border-right alone would land on the
      wrong edge once the layout mirrors for Arabic. */
   border-inline-end: 1px solid var(--border-color);
   padding: 1.5rem;
@@ -117,7 +117,7 @@
 }
 
 /* A bare <ul> lays its <li>s out in normal block flow, i.e. always stacked
-   vertically regardless of any flex-direction set on ancestors — the
+   vertically regardless of any flex-direction set on ancestors, the
    mobile row layout below needs the list itself to be the flex container. */
 .navList {
   display: flex;
@@ -160,7 +160,7 @@
   font-weight: 600;
 }
 
-/* Sign out — rendered as the last item in every role's nav list (see
+/* Sign out, rendered as the last item in every role's nav list (see
    layout.tsx) rather than a separate button below it, so it's found in the
    same place as everything else instead of being a one-off at the bottom.
    Composed with .navLink for identical sizing/spacing/touch target; only
@@ -198,7 +198,7 @@
     border-bottom: 1px solid var(--border-color);
     padding: 0.5rem 0.75rem;
     gap: 0;
-    /* Solid on mobile, no blur — same reasoning as .navbar's mobile
+    /* Solid on mobile, no blur, same reasoning as .navbar's mobile
        override in Navbar.module.css: backdrop-filter on a position:sticky
        element is laid out correctly (getBoundingClientRect reports the
        right, stuck position) but reliably fails to REPAINT into that
@@ -206,10 +206,10 @@
        The element visually trails behind, scrolling with the page instead
        of staying pinned, even though it's technically "stuck". */
     background: var(--sidebar-bg);
-    /* Own sticky top bar, not the desktop pinned-column behavior above —
+    /* Own sticky top bar, not the desktop pinned-column behavior above,
        reset the properties that only make sense for that. Navbar is
        position:fixed on mobile too (Navbar.module.css), so top must match
-       its height — top:0 would stick this bar behind the fixed navbar
+       its height, top:0 would stick this bar behind the fixed navbar
        (which has a higher z-index) instead of right below it, making it
        appear to jump/hide as soon as the page scrolls. */
     position: sticky; top: 68px; z-index: 100;
@@ -233,7 +233,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     /* A flex item's default min-width is auto, i.e. "never shrink below my
-       content's natural size" — which silently defeats overflow-x:auto by
+       content's natural size", which silently defeats overflow-x:auto by
        letting content grow the container instead of overflowing it. This
        has to be reset at every level between here and the actual content
        (.navGroup, .navList below) or the scroll never engages no matter
@@ -255,7 +255,7 @@
 
   /* The actual fix for a horizontally scrolling mobile nav: without this,
      .navList's default (see base rule) is a vertical column, so every link
-     — plus Sign Out — stacked on top of each other above the page content,
+     (plus Sign Out) stacked on top of each other above the page content,
      regardless of .nav/.navGroup's own row direction above. */
   .navList {
     flex-direction: row;
@@ -271,7 +271,7 @@
     border-radius: 8px;
   }
 
-  /* Reset the desktop separator styling — a top border and extra top
+  /* Reset the desktop separator styling, a top border and extra top
      padding read as a stray line in a horizontal strip of pills, where
      Sign Out is just another item rather than the last row in a column. */
   .signOutLink {
@@ -304,7 +304,7 @@
   .navLink { min-height: 38px; }
 }
 
-/* Brand mark with a drawn arc — same motif as the site splash. */
+/* Brand mark with a drawn arc, same motif as the site splash. */
 .loadingMark { position: relative; width: 84px; height: 84px; display: grid; place-items: center; }
 .loadingLogoImg { width: 56px; height: auto; display: block; }
 .loadingArc { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(110deg); overflow: visible; }

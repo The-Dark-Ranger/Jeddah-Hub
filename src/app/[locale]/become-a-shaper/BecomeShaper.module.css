@@ -38,7 +38,7 @@
 .heroWave svg { width: 100%; height: 80px; display: block; }
 @media (max-width: 640px) { .heroWave svg { height: 50px; } }
 
-/* Stats row — sits below the wave, in page background */
+/* Stats row, sits below the wave, in page background */
 .heroChips {
   display: flex;
   justify-content: center;
@@ -152,7 +152,7 @@
    animatable in CSS), with no JS measuring and no fixed max-height guess
    that would clip longer answers or leave a jump on shorter ones.
    The padding that gives the answer its bottom gap has to live on
-   .faqAnswerInner (the grid item) rather than the paragraph itself — a
+   .faqAnswerInner (the grid item) rather than the paragraph itself, a
    grid item's stretched box still reserves room for its own padding even
    when its track is sized to 0fr, so the row never fully closes unless
    the padding sits one level deeper, inside the clipped child. */

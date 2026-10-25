@@ -66,7 +66,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
   const description = locale === 'ar' && project.descriptionAr ? project.descriptionAr : project.description;
   const accentColor = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
   const isActive = !archived;
-  // Just the cover — a multi-photo carousel on a listing-page card made
+  // Just the cover, a multi-photo carousel on a listing-page card made
   // every card's image block a different shape (arrows/dots on some,
   // nothing on others) and encouraged clicking a nav arrow instead of the
   // card itself. Full multi-photo browsing already lives on the
@@ -191,7 +191,7 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   }, [initial]);
 
   // Built from whatever categories actually exist on fetched initiatives,
-  // rather than a hardcoded/translated list — a curator picking any
+  // rather than a hardcoded/translated list, a curator picking any
   // category (including a custom "Other" one) always gets a matching,
   // clickable tab instead of silently having no way to filter to it.
   const categoryTabs = Array.from(

@@ -119,11 +119,11 @@ service cloud.firestore {
     }
 
     // A curator-created role_assignments doc keyed by the caller's own
-    // verified auth email (see role_assignments below — assignments are
+    // verified auth email (see role_assignments below, assignments are
     // created with the lowercased email as the doc ID specifically so
     // this can look them up directly). Lets a freshly-invited user apply
-    // ANY pre-assigned role — including curator/vice_curator/impact_officer
-    // — to their own account on first login, without opening up
+    // ANY pre-assigned role, including curator/vice_curator/impact_officer
+    // to their own account on first login, without opening up
     // self-escalation: the only way a role_assignments doc can exist at
     // all is isCurator() creating one (see below), so this just lets the
     // invitee redeem a grant a curator already made, not invent one.
@@ -135,13 +135,13 @@ service cloud.firestore {
     }
 
     // ── users ─────────────────────────────────────────────────
-    // Private — contains `email`, which must never be bulk-readable. Only
+    // Private, contains `email`, which must never be bulk-readable. Only
     // the owner or a curator/impact officer may read a given user's full
     // doc; public-facing pages (About/shapers, homepage, project member
     // lists) instead read the public_profiles mirror below, which never
     // has an email field. See public_profiles for why this split exists.
     // Users write only their own doc, but may never self-assign a
-    // privileged role out of thin air — only an existing curator can
+    // privileged role out of thin air, only an existing curator can
     // grant curator/vice_curator/impact_officer, UNLESS the value being
     // written exactly matches a role a curator already pre-assigned to
     // this account's own email via role_assignments (preassignedRole()).
@@ -150,7 +150,7 @@ service cloud.firestore {
     // and grant themselves admin access, since every
     // isCurator()/isImpactOfficer() check in this file reads straight
     // from this field. Note this read restriction does NOT break those
-    // checks — get()/exists() in rules always succeed server-side
+    // checks, get()/exists() in rules always succeed server-side
     // regardless of the caller's read permission on the target doc.
     //
     // Hardened: a member's only role ever comes from a curator, either
@@ -158,7 +158,7 @@ service cloud.firestore {
     // (/api/members/create-account) or via the role_assignments grant for
     // their own email. A member can no longer give themselves 'shaper' or
     // 'alumni', change their role once they have one, or touch their uid,
-    // email or createdAt — only the profile fields My Profile edits, with
+    // email or createdAt, only the profile fields My Profile edits, with
     // size limits. Only the Curator (not a vice curator) can change or
     // remove a curator's record, or make someone a curator.
     match /users/{uid} {
@@ -194,12 +194,12 @@ service cloud.firestore {
     // A deliberately narrow mirror of users/{uid}, kept in sync by the app
     // (src/lib/auth.ts, shaper/profile page) whenever the owner's public
     // fields change. Publicly readable by design (About/shapers pages,
-    // homepage, project member lists) — hasOnly() below is the actual
+    // homepage, project member lists), hasOnly() below is the actual
     // security boundary: `email` is structurally never a legal key here,
     // so even a compromised client can't smuggle it in via a direct write.
     // `role` is display-only text on this doc (real privilege only ever
     // comes from users/{uid}.role), but it's also what the public "Who We
-    // Are" page's curator/shaper listings query directly — so an owner's
+    // Are" page's curator/shaper listings query directly, so an owner's
     // self-write still can't set it to anything other than what's already
     // there or what their real, protected users/{uid}.role says, closing
     // off a self-promotion-for-display attack even though it grants no
@@ -221,20 +221,20 @@ service cloud.firestore {
     // ── initiatives ───────────────────────────────────────────
     // Public can read. Curators and impact officers can create/update
     // (the impact/projects dashboard page is impact officers' primary
-    // tool for managing projects — create, archive/restore, assign
-    // members — so they need the same access curators have here; hard
+    // tool for managing projects, create, archive/restore, assign
+    // members, so they need the same access curators have here; hard
     // delete stays curator-only since the impact officer UI never
     // exposes it). Initiative leads (UIDs in the `leads` array) can edit
     // their own initiative's content fields and its `members` array
-    // (accepting join requests, removing members — the shaper/initiatives
-    // dashboard's lead tools need this) — but never `status` or the
+    // (accepting join requests, removing members, the shaper/initiatives
+    // dashboard's lead tools need this), but never `status` or the
     // `leads` array itself, which would let a lead self-promote arbitrary
     // co-leads or remove others via a raw write. Note `members[].role` is
     // a display-only string (e.g. "Lead" badge text); actual lead
     // privilege is only ever granted through the separate `leads` field,
     // so a lead editing that text doesn't grant themselves anything new.
     // `featured`/`featuredAt` pick what the homepage's Featured
-    // Initiatives section shows — a curatorship decision, so impact
+    // Initiatives section shows, a curatorship decision, so impact
     // officers (who can otherwise edit initiatives) can't set them.
     match /initiatives/{docId} {
       allow read: if true;
@@ -261,7 +261,7 @@ service cloud.firestore {
     // ── join_requests ─────────────────────────────────────────
     // Shapers create requests for themselves.
     // Curators, impact officers, and that specific initiative's leads can
-    // read/update/delete — update is scoped to only the `status` field so
+    // read/update/delete, update is scoped to only the `status` field so
     // a lead can't rewrite anything else on the request doc.
     match /join_requests/{docId} {
       // Only as yourself (your own uid, email and name), pending, for a real initiative.
@@ -285,11 +285,11 @@ service cloud.firestore {
 
     // ── initiative_requests ──────────────────────────────────
     // Any member can propose a new initiative for curator/impact-officer
-    // review — same shape as join_requests/leave_requests above. Proposer
+    // review, same shape as join_requests/leave_requests above. Proposer
     // can only create as themselves and must start pending (no self-
     // approval); update is curator/impact-officer-only and field-capped to
     // just the review outcome, since only the curator side ever performs
-    // an approve/decline — the proposal's own content is never edited in
+    // an approve/decline, the proposal's own content is never edited in
     // place. Approval creates a real initiatives doc separately (governed
     // by the initiatives rules above, not this collection).
     match /initiative_requests/{docId} {
@@ -314,7 +314,7 @@ service cloud.firestore {
 
     // ── activity_requests ──────────────────────────────────────
     // Same shape as initiative_requests, for a lead proposing a Hub
-    // Activity/workshop instead of a whole new initiative — curator or
+    // Activity/workshop instead of a whole new initiative, curator or
     // vice_curator/impact_officer review turns an approved one into a
     // real initiatives doc tagged type:'hub_activity' (governed by the
     // initiatives rules above, not this collection).
@@ -337,13 +337,13 @@ service cloud.firestore {
 
     // ── activity_change_requests ────────────────────────────────
     // Lets an initiative's leads manage Hub Activities without being able
-    // to write to the live `initiatives` collection directly — every
+    // to write to the live `initiatives` collection directly, every
     // create/edit/archive action lands here as a pending request instead,
     // and only a curator/vice_curator/impact_officer applying it (via the
     // existing isCuratorOrImpact() create/update rules on `initiatives`
     // above) makes it real. `payload` carries whatever activity fields are
     // being proposed (the full form for a create/edit, or just e.g.
-    // {archived: true} for a one-click archive) — like
+    // {archived: true} for a one-click archive), like
     // activity_responses.answers, its inner keys aren't validated here
     // since the shape is open-ended; the approval code applies an explicit
     // field allowlist before writing it to `initiatives`, so a malicious
@@ -353,7 +353,7 @@ service cloud.firestore {
     // A request must name the specific initiative (`initiativeId`) that
     // makes the requester eligible, checked the same way
     // leave_requests/removal_requests already scope a lead's write to
-    // "an initiative they actually lead" (isLeadOf()) — for a 'create'
+    // "an initiative they actually lead" (isLeadOf()), for a 'create'
     // that's just whichever led initiative the lead is proposing the
     // activity for; for an 'update' it must additionally match the
     // *target* activity's own recorded initiativeId, so a lead can't
@@ -412,7 +412,7 @@ service cloud.firestore {
                        || request.auth.uid == resource.data.authorId
                      ));
       // authorId must be the writer's own uid (no impersonation), and only
-      // curators/impact officers may create a post already in 'published' —
+      // curators/impact officers may create a post already in 'published',
       // everyone else's direct writes are capped at draft/pending_review
       // regardless of what the client UI offers, since that's a
       // client-only signal with nothing server-side to verify it.
@@ -430,7 +430,7 @@ service cloud.firestore {
                         || request.resource.data.status in ['draft', 'pending_review']);
       allow update: if isCuratorOrImpact()
                     // Authors may only edit their own still-unpublished post, and only
-                    // into another unpublished status — otherwise a self-write could flip
+                    // into another unpublished status, otherwise a self-write could flip
                     // status straight to 'published' (bypassing curator review) or hijack
                     // authorId, neither of which the precondition on resource.data alone
                     // would catch since that only looks at the doc's state *before* the write.
@@ -442,11 +442,11 @@ service cloud.firestore {
                         && request.resource.data.get('authorName', '') == resource.data.get('authorName', '')
                         && request.resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
-                    // likedBy/visitorLikes fields on a published post — needed because
+                    // likedBy/visitorLikes fields on a published post, needed because
                     // guest likes are written with no Firebase Auth session at all.
                     // Each write may add or remove a single like (what the page's
                     // arrayUnion/arrayRemove does), and a signed-in like only as the
-                    // caller's own uid — otherwise one request could wipe every like
+                    // caller's own uid, otherwise one request could wipe every like
                     // or add likes in other members' names.
                     || (resource.data.status == 'published'
                         && request.resource.data.diff(resource.data).affectedKeys()
@@ -460,7 +460,7 @@ service cloud.firestore {
 
     // ── newsletter_subscribers ────────────────────────────────
     // Anyone can subscribe (src/components/NewsletterForm.tsx). Field-capped
-    // and size-bounded for the same reason as contact_messages — a direct
+    // and size-bounded for the same reason as contact_messages, a direct
     // SDK write shouldn't be able to smuggle extra fields or oversized
     // strings past the client form. Only curators can read the list.
     match /newsletter_subscribers/{docId} {
@@ -476,7 +476,7 @@ service cloud.firestore {
     // above) since these docs never carry a `uid` field. The assignee
     // needs read access to their own pending assignment so the client can
     // discover what role to self-apply on first login (src/lib/auth.ts,
-    // lookupRoleAssignment) — without it that lookup silently returns
+    // lookupRoleAssignment), without it that lookup silently returns
     // nothing and no role, not even shaper/alumni, is ever applied.
     // Deliberately no `update` rule: marking an assignment "joined" for a
     // curator-facing notification is intentionally not supported.
@@ -500,7 +500,7 @@ service cloud.firestore {
 
     // ── contact_messages ──────────────────────────────────────
     // Anyone can submit (the reCAPTCHA check on the contact form is
-    // client-side only — Firestore rules can't verify a token — so this
+    // client-side only (Firestore rules can't verify a token) so this
     // caps what a direct SDK write can contain instead: no extra/spoofed
     // fields like a pre-set `read:true`, and bounded string sizes so the
     // form can't be used to write arbitrarily large documents). Only
@@ -520,7 +520,7 @@ service cloud.firestore {
     // Hub Activities' custom-form submissions. Public create (activities
     // are open community events, not member-only, matching
     // contact_messages' precedent for unauthenticated public submissions)
-    // — `answers` can't be validated more granularly than "is a map" since
+    // `answers` can't be validated more granularly than "is a map" since
     // each activity's question set is curator-defined and dynamic, unlike
     // contact_messages' fixed fields. Reads are curator/impact-officer
     // only so individual respondents' answers are never publicly listable,
@@ -544,7 +544,7 @@ service cloud.firestore {
 
     // ── media ─────────────────────────────────────────────────
     // One uploaded photo per document (src/lib/media.ts), served publicly
-    // by /api/media/<id> — so reads are public, like the initiatives and
+    // by /api/media/<id>, so reads are public, like the initiatives and
     // activities that reference them. Only signed-in members may upload,
     // only as themselves, only a JPEG data URI, and below Firestore's
     // 1 MiB document limit. Documents are immutable once written.
@@ -619,7 +619,7 @@ service cloud.firestore {
     // ── leave_requests ─────────────────────────────────────────
     // Members request to leave their own initiative.
     // Curators, impact officers, and that specific initiative's leads can
-    // manage it — update is scoped to only the `status` field so a lead
+    // manage it, update is scoped to only the `status` field so a lead
     // can't rewrite anything else on the request doc.
     match /leave_requests/{docId} {
       allow create: if isAnyMember() && request.resource.data.userId == request.auth.uid
@@ -639,7 +639,7 @@ service cloud.firestore {
     }
 
     // ── removal_requests ────────────────────────────────────────
-    // Initiative leads submit removal requests for members — create
+    // Initiative leads submit removal requests for members, create
     // requires the caller to actually be a lead of that initiative
     // (otherwise any signed-in member could spam removal requests
     // targeting arbitrary users in initiatives they have no relation to).
@@ -662,8 +662,8 @@ service cloud.firestore {
 
     // ── member_add_requests ──────────────────────────────────────
     // Mirror of removal_requests: an initiative lead can invite someone
-    // who hasn't already submitted their own join_request, but — same as
-    // removal — can't unilaterally add them; a curator/impact officer
+    // who hasn't already submitted their own join_request, but, same as
+    // removal, can't unilaterally add them; a curator/impact officer
     // reviews and approves/declines before the target actually lands in
     // the initiative's `members` array.
     match /member_add_requests/{docId} {

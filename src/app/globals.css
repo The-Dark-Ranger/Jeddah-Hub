@@ -89,7 +89,7 @@ html {
   /* Stop iOS inflating text when a phone is rotated to landscape. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Sole horizontal clip — see the note on body below for why this can't
+  /* Sole horizontal clip, see the note on body below for why this can't
      also live on body. */
   overflow-x: hidden;
 }
@@ -106,7 +106,7 @@ body {
   /* Deliberately no overflow-x here, even though html has it. Per the CSS
      Overflow spec, pairing a non-visible overflow-x with a visible (i.e.
      unset) overflow-y on the SAME element computes the visible axis to
-     `auto` too — and that upgrade happens regardless of whether the
+     `auto` too, and that upgrade happens regardless of whether the
      visible value is explicit or just the default, so it can't be
      escaped by writing `overflow-y: visible` here. The only way to keep
      body from becoming its own independent vertical scroll container is
@@ -147,7 +147,7 @@ body.rtl {
 
    Fill mode is `backwards`, NOT `both`. With `both` the element keeps the
    final keyframe's `transform: translateY(0)` forever, and a transformed
-   ancestor becomes the containing block for `position: fixed` descendants —
+   ancestor becomes the containing block for `position: fixed` descendants,
    which silently anchored every modal and lightbox to the page content box
    instead of the viewport. `backwards` reverts to the base style (no
    transform) once the animation finishes; it looks identical because the
@@ -196,7 +196,7 @@ body.rtl {
 ::view-transition-new(site-header)   { animation: none; }
 
 /* Everything outside the page content (footer, backdrop) is identical before
-   and after an in-app navigation, so it doesn't animate at all — otherwise
+   and after an in-app navigation, so it doesn't animate at all, otherwise
    the root fade below would make the footer jump on every click. */
 ::view-transition-old(root),
 ::view-transition-new(root) { animation: none; }
@@ -224,7 +224,7 @@ body.rtl {
    1. Every element's own colour transition is switched off for the swap.
       Otherwise ~170 elements fade at different speeds underneath the
       reveal, so the revealed area keeps shifting colour while the circle
-      grows — the visible jitter.
+      grows, the visible jitter.
    2. The navbar joins the single root snapshot instead of animating as its
       own layer; a separately animated position:fixed bar can drift out of
       step with the page on mobile browsers (dynamic toolbar, fixed-element

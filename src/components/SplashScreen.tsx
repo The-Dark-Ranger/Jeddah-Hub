@@ -40,7 +40,7 @@ export default function SplashScreen({ locale }: { locale: string }) {
     };
     if (!reduceMotion) raf = requestAnimationFrame(creep);
 
-    // Leave as soon as the page is genuinely ready — never so fast it flickers.
+    // Leave as soon as the page is genuinely ready, never so fast it flickers.
     const finish = () => {
       if (settled) return;
       settled = true;

@@ -1,5 +1,7 @@
 'use client';
 
+/* Member login: email/password with bot checks (honeypot, minimum fill time,
+ * reCAPTCHA) and a lockout after repeated failures. */
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';

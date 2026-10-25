@@ -1,5 +1,6 @@
 'use client';
 
+/* Home page: a selection of current Shapers. */
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -51,13 +52,13 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
       .then(() => getDocs(query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30))))
       .then(snap => {
         const list = snap.docs
-          .map(d => ({ uid: d.id, ...d.data() } as any))
-          .filter((u: any) => u.displayName)
-          .map((u: any): Shaper => ({
+          .map(d => ({ uid: d.id, ...d.data() } as { uid: string; displayName?: string; displayNameAr?: string; role?: string; photoURL?: string }))
+          .filter(u => u.displayName)
+          .map((u): Shaper => ({
             uid:           u.uid,
-            displayName:   u.displayName,
+            displayName:   u.displayName ?? '',
             displayNameAr: u.displayNameAr || '',
-            role:          u.role,
+            role:          u.role ?? '',
             photoURL:      u.photoURL || '',
           }));
         setShapers(list.slice(0, 10));

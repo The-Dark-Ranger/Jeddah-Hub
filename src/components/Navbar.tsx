@@ -1,5 +1,7 @@
 'use client';
 
+/* Site navigation: links, theme and language switches, sign-in, and the
+ * mobile drawer. */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/routing';

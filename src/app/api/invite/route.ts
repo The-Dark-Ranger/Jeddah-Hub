@@ -1,3 +1,5 @@
+/* POST /api/invite (curators only): emails a member their invitation, with a
+ * fresh one-time password if they have never signed in. */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
 import { escapeHtml } from '@/lib/escapeHtml';

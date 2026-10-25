@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard home: a greeting, role-specific stats and quick links. */
 import { useAuth } from '@/context/AuthContext';
 import { Link } from '@/i18n/routing';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import { newsPath, slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
 import type { UserProfile } from '@/lib/auth';
 import styles from './DashboardHome.module.css';
+import { memberId, type MemberEntry } from '@/lib/types';
 
 interface Stats {
   initiatives: number; activeInitiatives: number;
@@ -97,12 +99,12 @@ export default function DashboardHome() {
             getCountFromServer(collection(db, 'initiatives')),
             getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
           ]);
-          const activeDocs = activeSnap.docs.filter(d => !(d.data() as any).type);
+          const activeDocs = activeSnap.docs.filter(d => !d.data().type);
           next.initiatives       = total.data().count - activityCount;
           next.activeInitiatives = activeDocs.length;
           activeDocs.forEach(d => {
             const data = d.data();
-            if (user && data.members?.some((m: any) => m.userId === user.uid)) next.myProjects++;
+            if (user && data.members?.some((m: MemberEntry) => memberId(m) === user.uid)) next.myProjects++;
           });
         } else {
           // Nobody else needs the documents, count them server-side instead.
@@ -207,6 +209,7 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load stats once the user is known
     if (!loading && user?.role) fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the signed-in user changes
   }, [loading, user]);

@@ -1,5 +1,6 @@
 'use client';
 
+/* The initiative form fields shared by the create/edit and propose forms. */
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';

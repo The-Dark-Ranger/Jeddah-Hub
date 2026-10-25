@@ -1,3 +1,5 @@
+/* Root layout for every /en and /ar page: fonts, theme, metadata, providers,
+ * navbar and footer. */
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import {routing} from '@/i18n/routing';

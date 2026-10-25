@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard shell: sign-in guard, the role-based sidebar, the one-time
+ * password redirect and the charter banner. */
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, Link, usePathname } from '@/i18n/routing';

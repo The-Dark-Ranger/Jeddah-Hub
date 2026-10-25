@@ -1,3 +1,4 @@
+/* 404 page for unknown addresses. */
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './NotFound.module.css';

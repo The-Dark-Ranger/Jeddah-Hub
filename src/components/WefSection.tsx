@@ -1,3 +1,4 @@
+/* Home page: the World Economic Forum / Global Shapers section. */
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import WefLogo from './WefLogo';

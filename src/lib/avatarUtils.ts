@@ -1,3 +1,4 @@
+/* Initials and colour for members without a profile photo. */
 export const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
   'linear-gradient(135deg,#10b981,#34d399)',

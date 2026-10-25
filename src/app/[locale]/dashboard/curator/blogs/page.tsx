@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Blogs for curators: every post, with review and publishing. */
 import { useEffect, useState } from 'react';
 import { subscribeToAuthChanges, UserProfile } from '@/lib/auth';
 import BlogManager from '@/components/BlogManager';

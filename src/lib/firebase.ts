@@ -1,3 +1,5 @@
+/* Firebase client (Auth and Firestore) for the browser, from the public
+ * NEXT_PUBLIC_FIREBASE_* settings. */
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";

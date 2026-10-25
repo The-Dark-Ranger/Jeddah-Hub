@@ -1,3 +1,4 @@
+/* Contact page: page title and description for search engines and link previews. */
 import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 

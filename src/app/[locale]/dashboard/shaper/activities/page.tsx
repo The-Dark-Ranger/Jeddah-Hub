@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > My Hub Activities (initiative leads): propose new activities and
+ * changes; a curator approves them before they go live. */
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection, getDocs, addDoc, deleteDoc, doc,
@@ -88,6 +90,7 @@ export default function LeadActivitiesPage() {
     }
   }, [user]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const pendingForActivity = (activityId: string) => pendingRequests.find(r => r.activityId === activityId);

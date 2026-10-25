@@ -1,5 +1,8 @@
 'use client';
 
+/* Who We Are page (client part): the curatorship, active Shapers and alumni,
+ * each with bio, photo and social links. Data arrives from page.tsx or loads
+ * in the browser as a fallback. */
 import { useState, useEffect, useRef } from 'react';
 import { collection, getDocs, getCountFromServer, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -252,10 +255,16 @@ export interface AboutData {
 }
 
 /** Splits public profiles into the page's shaper / alumni / curator lists. */
-function peopleFrom(all: any[]) {
-  const toShaper = (u: any): LiveShaper => ({
+/** The public_profiles fields this page reads. */
+interface PublicProfile {
+  uid: string; displayName?: string; displayNameAr?: string; role?: string;
+  bio?: string; bioAr?: string; linkedin?: string; twitter?: string; instagram?: string; photoURL?: string;
+}
+
+function peopleFrom(all: PublicProfile[]) {
+  const toShaper = (u: PublicProfile): LiveShaper => ({
     uid:           u.uid,
-    displayName:   u.displayName,
+    displayName:   u.displayName ?? '',
     displayNameAr: u.displayNameAr || '',
     role:          normRole(u.role),
     bio:           u.bio          || '',
@@ -267,19 +276,19 @@ function peopleFrom(all: any[]) {
   });
 
   const shapers = all
-    .filter((u: any) => normRole(u.role) === 'shaper' && u.displayName)
+    .filter(u => normRole(u.role) === 'shaper' && u.displayName)
     .map(toShaper);
 
   const alumni = all
-    .filter((u: any) => normRole(u.role) === 'alumni' && u.displayName)
+    .filter(u => normRole(u.role) === 'alumni' && u.displayName)
     .map(toShaper);
 
   const curatorRoles = ['curator', 'vice_curator', 'impact_officer'];
   const curators = all
-    .filter((u: any) => curatorRoles.includes(normRole(u.role)) && u.displayName)
-    .map((u: any): LiveCurator => ({
+    .filter(u => curatorRoles.includes(normRole(u.role)) && u.displayName)
+    .map((u): LiveCurator => ({
       uid:           u.uid,
-      displayName:   u.displayName,
+      displayName:   u.displayName ?? '',
       displayNameAr: u.displayNameAr || '',
       role:          normRole(u.role),
       bio:           u.bio         || '',
@@ -303,7 +312,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
   const tr = useTranslations('Role');
   const tw = useTranslations('Wef');
 
-  const [people] = useState(() => (initial ? peopleFrom(initial.profiles) : null));
+  const [people] = useState(() => (initial ? peopleFrom(initial.profiles as unknown as PublicProfile[]) : null));
   const [shapers, setShapers]                 = useState<LiveShaper[]>(people?.shapers ?? []);
   const [alumni, setAlumni]                   = useState<LiveShaper[]>(people?.alumni ?? []);
   const [curators, setCurators]               = useState<LiveCurator[]>(people?.curators ?? []);

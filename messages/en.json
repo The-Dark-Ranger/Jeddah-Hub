@@ -1025,18 +1025,6 @@
         "body": "Newsletter: your email address and the date you subscribed.\n\nContact form: your name, email address, subject and message, so we can reply.\n\nHub Activity and workshop forms: your answers to an activity's registration form before the event, and to its after-event feedback form (which can include a star rating), along with your name and email address where the form asks for them. Organizers use these to plan the event, follow up with you, and improve future events.\n\nLikes on news posts: if you like a post without signing in, we store a random identifier kept in your browser, not your name or any other detail about you."
       },
       {
-        "heading": "Information About Members",
-        "body": "Account: when the curatorship adds you, we store your name, email address and role (for example Shaper, alumni, impact officer or curator) and create your sign-in account. Your first password is a one-time password that you replace with your own at first sign-in. Passwords are handled by Google Firebase Authentication; we never see or store them.\n\nProfile: the details you choose to add on My Profile, such as your name in English and Arabic, a photo, a short bio in English and Arabic, and links to your LinkedIn, X or Instagram.\n\nActivity in the dashboard: requests to join or leave an initiative, initiative and activity proposals, changes you request as an initiative lead, blog posts and likes, and your sign-off on the Community Charter (your name, your confirmation and its date).\n\nPhotos you upload for initiatives, activities or posts are stored in compressed form and shown on the pages they belong to."
-      },
-      {
-        "heading": "What Is Public on the Site",
-        "body": "Members are listed on the Who We Are page by role. Only your public profile is shown there: name, photo, bios, social links and role. Your email address is never part of your public profile and is never shown on the site.\n\nInitiative pages show their team members by name. Published news posts show their author's name and role.\n\nEverything else, including contact messages, form responses, newsletter subscribers, requests, proposals and charter signatures, is visible only to the members whose role requires it, as described below."
-      },
-      {
-        "heading": "Who Can See What",
-        "body": "Contact messages and the newsletter list: the curator and vice curator.\n\nActivity registration and feedback responses: the curator, vice curator and impact officer.\n\nMember records, including email addresses: the member themselves, the curator, vice curator and impact officer.\n\nJoin and leave requests: the member who sent them, the initiative's leads, and the curatorship.\n\nCharter signatures: the member who signed, the curatorship and the impact officer.\n\nThese limits are enforced by the database's security rules, not only by what the dashboard shows. Curators can export some of this information to spreadsheets to run the hub, such as the newsletter list, activity responses and initiative team reports."
-      },
-      {
         "heading": "How We Use Information",
         "body": "To send the newsletter you subscribed to and its welcome email; to reply to your messages; to organize activities and workshops and learn from your feedback; to run member accounts, initiatives and the Community Charter sign-off; to send invitation emails with sign-in details to new members; to show members on the site; and to keep the site secure and working.\n\nWe do not sell your information and do not use it for advertising."
       },
@@ -1066,7 +1054,7 @@
       },
       {
         "heading": "Your Choices and Rights",
-        "body": "Members can view and edit their profile at any time from My Profile, including removing their photo, bios or links, and can change their password there.\n\nAnyone can ask us to see, correct or delete the personal information we hold about them, or to stop the newsletter, by contacting us using the details below. We will act on your request promptly."
+        "body": "Anyone can ask us to see, correct or delete the personal information we hold about them, or to stop the newsletter, by contacting us using the details below. We will act on your request promptly."
       },
       {
         "heading": "Children's Privacy",
@@ -1105,10 +1093,6 @@
         "body": "Membership in the Global Shapers Community is a separate process run by the World Economic Forum on its own application platform, generally open to young people between 18 and 27 years old. Applying does not guarantee acceptance, and the World Economic Forum sets the eligibility criteria, not these terms."
       },
       {
-        "heading": "Member Accounts",
-        "body": "Member accounts are created only by the Jeddah Hub curatorship; the site has no public sign-up. Your role decides what you can do in the dashboard.\n\nYou must change the one-time password you receive at first sign-in, keep your password private, and not share your account. Tell the curatorship promptly if you think someone else has used it. You are responsible for what is done with your account."
-      },
-      {
         "heading": "Your Profile",
         "body": "Your name, photo, bios, social links and role appear publicly on the Who We Are page. Keep them accurate and respectful, use only photos you have the right to share, and link only to your own profiles. The curatorship may correct or remove profile content that breaks these terms."
       },
@@ -1119,10 +1103,6 @@
       {
         "heading": "Initiatives, Activities and Events",
         "body": "Initiative pages, Hub Activities and workshops describe the hub's work. Dates, places and details may change, and registering for an event does not guarantee a place. Registration and feedback forms open and close at the organizers' discretion. Taking part in an event is also subject to any rules the organizers set for it."
-      },
-      {
-        "heading": "Community Charter",
-        "body": "Members are expected to follow the Global Shapers Community Charter. When the curatorship asks, active Shapers confirm that they have read it and comply with it by signing it in the dashboard."
       },
       {
         "heading": "Acceptable Use",

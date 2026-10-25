@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import type { App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { requireRole } from '@/lib/serverAuth';
 import { readJsonBody } from '@/lib/http';
 import { isValidEmail } from '@/lib/validateEmail';
 import { isRateLimited } from '@/lib/rateLimit';
-import { DEFAULT_MEMBER_PASSWORD, MEMBER_ROLES, type MemberRole } from '@/lib/memberAccounts';
+import { MEMBER_ROLES, type MemberRole } from '@/lib/memberAccounts';
+import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
 
 /* Creates a member's Firebase sign-in account with the temporary password,
  * and lists them on the public Who We Are page straight away.
@@ -23,27 +24,8 @@ import { DEFAULT_MEMBER_PASSWORD, MEMBER_ROLES, type MemberRole } from '@/lib/me
  * keeps their role and any name they set themselves; only blanks are filled.
  *
  * `action: 'remove'` undoes this for a pending member removed from Role
- * Assignments — but only if they have never signed in, so it can never
+ * Assignments, but only if they have never signed in, so it can never
  * delete a real member's account or profile. */
-
-function adminApp(): App | null {
-  const existing = getApps().find(a => a.name === 'member-admin');
-  if (existing) return existing;
-  // Tolerate a byte-order mark or stray whitespace: values piped in from a
-  // Windows shell (e.g. `... | vercel env add`) arrive with a leading BOM.
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.replace(/^﻿/, '').trim();
-  if (!raw) return null;
-  try {
-    const sa = JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string };
-    if (!sa.client_email || !sa.private_key) return null;
-    return initializeApp({
-      credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key.replace(/\\n/g, '\n') }),
-    }, 'member-admin');
-  } catch {
-    console.error('create-account: FIREBASE_SERVICE_ACCOUNT is not valid JSON');
-    return null;
-  }
-}
 
 /** Fills in users/{uid} and public_profiles/{uid} for a newly added member. */
 async function upsertProfile(app: App, uid: string, email: string, displayName: string, role: MemberRole) {
@@ -90,6 +72,24 @@ async function removePending(app: App, email: string, callerRole: string | undef
   return 'removed';
 }
 
+/** Gives a never-signed-in member a new one-time password (e.g. the first
+ *  one was lost). Anyone who has signed in keeps their own password. */
+async function resetTempPassword(app: App, email: string, callerRole: string | undefined): Promise<{ result: 'reset' | 'kept' | 'not-found'; tempPassword?: string }> {
+  const auth = getAuth(app);
+  let record;
+  try {
+    record = await auth.getUserByEmail(email);
+  } catch {
+    return { result: 'not-found' };
+  }
+  if (record.metadata.lastSignInTime) return { result: 'kept' };
+  const target = (await getFirestore(app).doc(`users/${record.uid}`).get()).data();
+  if (target?.role === 'curator' && callerRole !== 'curator') return { result: 'kept' };
+  const tempPassword = generateTempPassword();
+  await auth.updateUser(record.uid, { password: tempPassword });
+  return { result: 'reset', tempPassword };
+}
+
 export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);
   if (!caller) return NextResponse.json({ result: 'failed', reason: 'unauthorized' }, { status: 401 });
@@ -129,6 +129,15 @@ export async function POST(req: NextRequest) {
   const app = adminApp();
   if (!app) return NextResponse.json({ result: 'failed', reason: 'not-configured' }, { status: 503 });
 
+  if (body?.action === 'reset-temp') {
+    try {
+      return NextResponse.json(await resetTempPassword(app, email, caller.role));
+    } catch (err) {
+      console.error('reset-temp failed:', (err as { code?: string } | null)?.code);
+      return NextResponse.json({ result: 'failed' }, { status: 500 });
+    }
+  }
+
   if (body?.action === 'remove') {
     try {
       return NextResponse.json({ result: await removePending(app, email, caller.role) });
@@ -149,8 +158,10 @@ export async function POST(req: NextRequest) {
   const auth = getAuth(app);
   let uid: string;
   let result: 'created' | 'exists';
+  // Shown once to the curator (and sent with the invite); never stored.
+  let tempPassword: string | undefined = generateTempPassword();
   try {
-    uid = (await auth.createUser({ email, password: DEFAULT_MEMBER_PASSWORD, emailVerified: false })).uid;
+    uid = (await auth.createUser({ email, password: tempPassword, emailVerified: false })).uid;
     result = 'created';
   } catch (err) {
     const code = (err as { code?: string } | null)?.code;
@@ -160,6 +171,7 @@ export async function POST(req: NextRequest) {
     }
     uid = (await auth.getUserByEmail(email)).uid;
     result = 'exists';
+    tempPassword = undefined;
   }
 
   // The account exists either way; a profile failure is reported but
@@ -171,5 +183,5 @@ export async function POST(req: NextRequest) {
     listed = false;
     console.error('create-account: profile write failed:', (err as { code?: string } | null)?.code);
   }
-  return NextResponse.json({ result, listed });
+  return NextResponse.json({ result, listed, tempPassword });
 }

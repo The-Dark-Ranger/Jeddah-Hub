@@ -9,8 +9,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
-import { DEFAULT_MEMBER_PASSWORD, type CreateAccountResult } from '@/lib/memberAccounts';
-import { createMemberAccount, getSignInStatus, removePendingMember } from '@/lib/createMemberAccount';
+import type { CreateAccountResult } from '@/lib/memberAccounts';
+import { createMemberAccount, getSignInStatus, removePendingMember, resetTempPassword } from '@/lib/createMemberAccount';
 import ShaperStatusPanel from './ShaperStatusPanel';
 import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './Members.module.css';
@@ -55,6 +55,10 @@ export default function MembersPage() {
   const [error, setError]   = useState('');
   const [search, setSearch] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
+  // One-time passwords issued in this session, by assignment id. Never
+  // stored anywhere: once the page is closed only a reset can show one.
+  const [tempPasswords, setTempPasswords] = useState<Record<string, string>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
@@ -140,7 +144,8 @@ export default function MembersPage() {
       // Create their sign-in account (temporary password) so they can log
       // in right away, already holding this role and listed under it on
       // the Who We Are page with this name.
-      const account = await createMemberAccount(emailLower, name.trim(), role);
+      const { result: account, tempPassword } = await createMemberAccount(emailLower, name.trim(), role);
+      if (tempPassword) setTempPasswords(m => ({ ...m, [emailLower]: tempPassword }));
       if (account === 'not-configured') setError(t('accountNotConfigured'));
       else if (account === 'failed') setError(t('accountCreateFailed'));
       // Keyed by the lowercased email (not an auto-id) so the Firestore
@@ -197,19 +202,38 @@ export default function MembersPage() {
   const handleCreateLogin = async (a: RoleAssignment) => {
     setCreatingLogin(a.id); setError('');
     try {
-      const account = await createMemberAccount(a.email, resolveName(a) ?? '', a.role);
+      const { result: account, tempPassword } = await createMemberAccount(a.email, resolveName(a) ?? '', a.role);
       if (account === 'not-configured') { setError(t('accountNotConfigured')); return; }
       if (account === 'failed') { setError(t('accountCreateFailed')); return; }
       const { id, ...data } = a;
       await deleteDoc(doc(db, 'role_assignments', id));
       await setDoc(doc(db, 'role_assignments', id), { ...data, account });
       setAssignments(prev => prev.map(x => x.id === id ? { ...x, account } : x));
+      if (tempPassword) setTempPasswords(m => ({ ...m, [id]: tempPassword }));
     } catch (err) {
       console.error(err);
       setError(t('saveFailed'));
     } finally {
       setCreatingLogin(null);
     }
+  };
+
+  /** A new one-time password, for a member who lost theirs before signing in. */
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const handleResetTemp = async (a: RoleAssignment) => {
+    setResettingId(a.id); setError('');
+    const pw = await resetTempPassword(a.email);
+    if (pw) setTempPasswords(m => ({ ...m, [a.id]: pw }));
+    else setError(t('saveFailed'));
+    setResettingId(null);
+  };
+
+  const copyTempPassword = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(tempPasswords[id]);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(c => (c === id ? null : c)), 2000);
+    } catch { /* clipboard blocked: the password is still on screen */ }
   };
 
   const handleSendInvite = async (a: RoleAssignment) => {
@@ -225,6 +249,8 @@ export default function MembersPage() {
         body: JSON.stringify({ email: a.email, displayName: a.displayName, role: a.role }),
       });
       setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));
+      // The invite carries a fresh one-time password, so any shown here is now old.
+      if (res.ok) setTempPasswords(m => { const next = { ...m }; delete next[a.id]; return next; });
       // reset after 3s
       setTimeout(() => setInviteState(s => ({ ...s, [a.id]: 'idle' })), 3000);
     } catch {
@@ -260,8 +286,20 @@ export default function MembersPage() {
           {displayName && <div className={styles.memberName}>{displayName}</div>}
           <div className={styles.memberEmail}>{a.email}</div>
           {!isJoined && (
-            a.account === 'created' ? (
-              <div className={styles.accountChip + ' ' + styles.accountReady}>{t('accountReady', { pw: DEFAULT_MEMBER_PASSWORD })}</div>
+            tempPasswords[a.id] ? (
+              <div className={styles.accountChip + ' ' + styles.accountReady}>
+                {t('tempPassword')} <code className={styles.tempPw}>{tempPasswords[a.id]}</code>
+                <button type="button" className={styles.chipBtn} onClick={() => copyTempPassword(a.id)}>
+                  {copiedId === a.id ? t('copied') : t('copy')}
+                </button>
+              </div>
+            ) : a.account === 'created' ? (
+              <div className={styles.accountChip + ' ' + styles.accountReady}>
+                {t('accountReady')}
+                <button type="button" className={styles.chipBtn} onClick={() => handleResetTemp(a)} disabled={resettingId === a.id}>
+                  {resettingId === a.id ? '…' : t('newTempPassword')}
+                </button>
+              </div>
             ) : a.account === 'exists' ? (
               <div className={styles.accountChip}>{t('accountExists')}</div>
             ) : (
@@ -340,7 +378,7 @@ export default function MembersPage() {
       {/* Add Form */}
       <form onSubmit={handleAdd} className={styles.form}>
         <h3 className={styles.formTitle}>{t('addRoleAssignment')}</h3>
-        <p className={styles.formHint}>{t('accountAutoHint', { pw: DEFAULT_MEMBER_PASSWORD })}</p>
+        <p className={styles.formHint}>{t('accountAutoHint')}</p>
         {error && <div className={styles.errorMsg}>{error}</div>}
 
         <div className={styles.formRow}>

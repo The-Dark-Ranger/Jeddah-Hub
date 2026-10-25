@@ -8,7 +8,7 @@ import { normalizeRole } from '@/lib/role';
 import PageTransition from '@/components/PageTransition';
 import DefaultPasswordBanner from '@/components/dashboard/DefaultPasswordBanner';
 import CharterSignBanner from '@/components/dashboard/CharterSignBanner';
-import { DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
 
@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (loading || !user) return;
     let mustChange = false;
-    try { mustChange = sessionStorage.getItem(DEFAULT_PASSWORD_FLAG) === '1'; } catch { /* storage blocked */ }
+    try { mustChange = sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'; } catch { /* storage blocked */ }
     if (mustChange && !pathname.startsWith('/dashboard/shaper/profile')) {
       router.replace('/dashboard/shaper/profile#password');
     }

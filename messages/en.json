@@ -316,9 +316,13 @@
     "toggleTheme": "Toggle theme",
     "toggleMenu": "Toggle menu",
     "mainNav": "Main navigation",
-    "switchLanguage": "العربية — Switch to Arabic",
+    "switchLanguage": "العربية: Switch to Arabic",
     "skipToContent": "Skip to main content",
-    "signedInAs": "Signed in as"
+    "signedInAs": "Signed in as",
+    "appearance": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language"
   },
   "Role": {
     "curator": "Curator",

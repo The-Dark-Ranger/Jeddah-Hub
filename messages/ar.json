@@ -316,9 +316,13 @@
     "toggleTheme": "تبديل المظهر",
     "toggleMenu": "تبديل القائمة",
     "mainNav": "التنقل الرئيسي",
-    "switchLanguage": "English — التبديل إلى الإنجليزية",
+    "switchLanguage": "English: التبديل إلى الإنجليزية",
     "skipToContent": "انتقل إلى المحتوى الرئيسي",
-    "signedInAs": "تم تسجيل الدخول باسم"
+    "signedInAs": "تم تسجيل الدخول باسم",
+    "appearance": "المظهر",
+    "themeLight": "فاتح",
+    "themeDark": "داكن",
+    "language": "اللغة"
   },
   "Role": {
     "curator": "منسق",

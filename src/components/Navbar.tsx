@@ -24,6 +24,16 @@ const SunIcon = () => (
   </svg>
 );
 
+/* Line icons (24×24, stroked) for the mobile drawer's links. */
+const LINK_ICONS: Record<string, string> = {
+  '/': 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  '/about': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  '/projects': 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  '/news': 'M4 4h13a1 1 0 0 1 1 1v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2zM18 8h2a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4',
+  '/become-a-shaper': 'M12 3l2.5 5.5L20 9.5l-4 4 1 5.5-5-2.8L7 19l1-5.5-4-4 5.5-1z',
+  '/contact': 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 7l9 6 9-6',
+};
+
 const SOCIALS = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/company/global-shapers-jeddah-hub',
     icon: 'M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z' },
@@ -38,7 +48,7 @@ export default function Navbar() {
   const locale     = useLocale();
   const nextLocale = locale === 'en' ? 'ar' : 'en';
   const pathname   = usePathname();
-  const { toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { user, logout }       = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -283,14 +293,61 @@ export default function Navbar() {
                 className={styles.mobileLink + (isActive(l.href) ? ' ' + styles.mobileLinkActive : '')}
                 aria-current={isActive(l.href) ? 'page' : undefined}
               >
-                {l.label}
-                {isActive(l.href) && <span className={styles.activeDot} />}
+                <span className={styles.mobileLinkIcon} aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={LINK_ICONS[l.href]} />
+                  </svg>
+                </span>
+                <span className={styles.mobileLinkLabel}>{l.label}</span>
+                <svg className={styles.mobileChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
               </Link>
             </li>
           ))}
         </ul>
 
-        <div className={styles.mobileDivider} />
+        {/* Theme and language, labelled: easier to find here than as the
+            small icons in the bar. Which option looks selected is decided
+            by CSS from <html data-theme>, so it is right before hydration. */}
+        <div className={styles.mobileSettings}>
+          <div className={styles.settingRow}>
+            <span className={styles.settingLabel}>{t('appearance')}</span>
+            <div className={styles.settingSeg}>
+              <button
+                type="button"
+                className={styles.segBtn + ' ' + styles.segLight}
+                aria-pressed={theme === 'light'}
+                suppressHydrationWarning
+                onClick={e => { if (theme !== 'light') toggleTheme(e); }}
+              >
+                <SunIcon />{t('themeLight')}
+              </button>
+              <button
+                type="button"
+                className={styles.segBtn + ' ' + styles.segDark}
+                aria-pressed={theme === 'dark'}
+                suppressHydrationWarning
+                onClick={e => { if (theme !== 'dark') toggleTheme(e); }}
+              >
+                <MoonIcon />{t('themeDark')}
+              </button>
+            </div>
+          </div>
+          <div className={styles.settingRow}>
+            <span className={styles.settingLabel}>{t('language')}</span>
+            <div className={styles.settingSeg}>
+              {(['en', 'ar'] as const).map(l => l === locale ? (
+                <span key={l} className={styles.segBtn + ' ' + styles.segOn} aria-current="true">{l === 'en' ? 'English' : 'العربية'}</span>
+              ) : (
+                <Link key={l} href={pathname} locale={l} hrefLang={l} onClick={handleLangSwitch} className={styles.segBtn}>
+                  {l === 'en' ? 'English' : 'العربية'}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className={styles.mobileFooter}>
           {user ? (
             <>

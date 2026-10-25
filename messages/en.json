@@ -1012,105 +1012,149 @@
   },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",
-    "subtitle": "How Jeddah Hub collects, uses, and protects your information.",
-    "lastUpdated": "Last updated: August 9, 2026",
-    "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy explains what information we collect through jeddahhub.org, why we collect it, and the choices you have.",
+    "subtitle": "What jeddahhub.org collects, why, who can see it, and the choices you have.",
+    "lastUpdated": "Last updated: October 25, 2026",
+    "intro": "Jeddah Hub (Global Shapers Community, Jeddah Hub) respects your privacy. This policy covers everything on jeddahhub.org: the public pages anyone can visit, the forms visitors can fill in, and the member accounts and dashboard used by our Shapers, alumni and curatorship.",
     "sections": [
       {
-        "heading": "Information We Collect",
-        "body": "Newsletter: when you subscribe, we store your email address and the date you subscribed.\n\nContact form: when you send us a message, we store your name, email address, subject, and message content so we can reply to you.\n\nHub Activity and workshop registrations: when you register for a Hub Activity or workshop, we store your answers to the registration form, along with your name and email address if you choose to provide them, so organizers can plan the event and follow up with you.\n\nInitiative and impact content: initiative pages, impact reports, and blog posts published through the site may include names, photos, and project details submitted by Shapers and curators.\n\nAutomatically collected data: we use small amounts of local browser storage to remember your language and theme preference, to show the welcome screen only once per visit, and to let you like a blog post using an anonymous, randomly generated identifier that is not linked to your real identity."
+        "heading": "Who This Policy Covers",
+        "body": "Visitors: anyone browsing the site, reading news, subscribing to the newsletter, sending a message, or registering for or giving feedback on a Hub Activity or workshop.\n\nMembers: Global Shapers, alumni, initiative leads, impact officers and the curatorship, who have an account created for them by the curatorship and use the member dashboard."
+      },
+      {
+        "heading": "Information Visitors Give Us",
+        "body": "Newsletter: your email address and the date you subscribed.\n\nContact form: your name, email address, subject and message, so we can reply.\n\nHub Activity and workshop forms: your answers to an activity's registration form before the event, and to its after-event feedback form (which can include a star rating), along with your name and email address where the form asks for them. Organizers use these to plan the event, follow up with you, and improve future events.\n\nLikes on news posts: if you like a post without signing in, we store a random identifier kept in your browser, not your name or any other detail about you."
+      },
+      {
+        "heading": "Information About Members",
+        "body": "Account: when the curatorship adds you, we store your name, email address and role (for example Shaper, alumni, impact officer or curator) and create your sign-in account. Your first password is a one-time password that you replace with your own at first sign-in. Passwords are handled by Google Firebase Authentication; we never see or store them.\n\nProfile: the details you choose to add on My Profile, such as your name in English and Arabic, a photo, a short bio in English and Arabic, and links to your LinkedIn, X or Instagram.\n\nActivity in the dashboard: requests to join or leave an initiative, initiative and activity proposals, changes you request as an initiative lead, blog posts and likes, and your sign-off on the Community Charter (your name, your confirmation and its date).\n\nPhotos you upload for initiatives, activities or posts are stored in compressed form and shown on the pages they belong to."
+      },
+      {
+        "heading": "What Is Public on the Site",
+        "body": "Members are listed on the Who We Are page by role. Only your public profile is shown there: name, photo, bios, social links and role. Your email address is never part of your public profile and is never shown on the site.\n\nInitiative pages show their team members by name. Published news posts show their author's name and role.\n\nEverything else, including contact messages, form responses, newsletter subscribers, requests, proposals and charter signatures, is visible only to the members whose role requires it, as described below."
+      },
+      {
+        "heading": "Who Can See What",
+        "body": "Contact messages and the newsletter list: the curator and vice curator.\n\nActivity registration and feedback responses: the curator, vice curator and impact officer.\n\nMember records, including email addresses: the member themselves, the curator, vice curator and impact officer.\n\nJoin and leave requests: the member who sent them, the initiative's leads, and the curatorship.\n\nCharter signatures: the member who signed, the curatorship and the impact officer.\n\nThese limits are enforced by the database's security rules, not only by what the dashboard shows. Curators can export some of this information to spreadsheets to run the hub, such as the newsletter list, activity responses and initiative team reports."
+      },
+      {
+        "heading": "How We Use Information",
+        "body": "To send the newsletter you subscribed to and its welcome email; to reply to your messages; to organize activities and workshops and learn from your feedback; to run member accounts, initiatives and the Community Charter sign-off; to send invitation emails with sign-in details to new members; to show members on the site; and to keep the site secure and working.\n\nWe do not sell your information and do not use it for advertising."
+      },
+      {
+        "heading": "Security and Abuse Prevention",
+        "body": "To protect the site and its members, we use Google reCAPTCHA on the contact form, newsletter and member sign-in; check sign-in attempts for automated behaviour and pause sign-in after repeated failed attempts; and use our host's bot protection, which may briefly verify your browser before showing a page.\n\nWhen you visit, our hosting provider processes technical information such as your IP address and browser type to deliver the site and block attacks. We do not use this information to identify you."
+      },
+      {
+        "heading": "Cookies and Browser Storage",
+        "body": "We use only functional storage, not tracking or advertising cookies: your language and theme choice; a note that the welcome animation has already played; the random identifier for guest likes; a temporary counter of failed sign-in attempts; and, for members, the sign-in session that keeps you logged in. Our host's bot protection may set a short-lived cookie after verifying your browser. None of this is used to follow you across other websites."
+      },
+      {
+        "heading": "Service Providers",
+        "body": "We rely on a few providers to run the site, each processing data on our behalf under its own privacy and security practices: Google Firebase (database, member sign-in and site data); Vercel (hosting, delivery and bot protection); Google reCAPTCHA (abuse prevention); and Resend (newsletter welcome and member invitation emails)."
       },
       {
         "heading": "Become a Shaper Applications",
-        "body": "Applying to become a Global Shaper is handled entirely by the World Economic Forum on its own application platform, external to jeddahhub.org. When you click \"Apply Now,\" you leave our site. We do not receive, store, or process the information you submit on that form. It is governed by the World Economic Forum's own privacy practices, not this policy."
+        "body": "Applying to become a Global Shaper happens entirely on the World Economic Forum's own application platform. When you click \"Apply Now\" you leave our site. We do not receive or store what you submit there; it is governed by the World Economic Forum's privacy practices, not this policy."
       },
       {
-        "heading": "How We Use Your Information",
-        "body": "We use the information above to send the newsletter you subscribed to, respond to messages sent through the contact form, organize Hub Activities and workshops you register for, and maintain the security and basic functioning of the site.\n\nWe do not sell your information, and we do not use it for third-party advertising."
+        "heading": "Data Sharing",
+        "body": "We do not sell or rent personal information. We share it only with the service providers above, to the extent needed to run the site, or when required by law or to protect the rights, safety or property of Jeddah Hub, its members or others."
       },
       {
-        "heading": "Cookies and Similar Technologies",
-        "body": "We use functional local storage rather than tracking cookies: your saved language and theme preference, a flag so the welcome animation shows once per visit, and an anonymous identifier if you like a blog post. None of this is used to track you across other websites."
-      },
-      {
-        "heading": "Third-Party Services",
-        "body": "We rely on a small number of service providers to operate the site: Google Firebase for our database and infrastructure; Google reCAPTCHA to protect our contact form from automated abuse; and a transactional email provider to deliver the newsletter welcome email. Each of these providers processes data on our behalf and maintains its own privacy and security practices."
-      },
-      {
-        "heading": "Data Sharing and Disclosure",
-        "body": "We do not sell or rent your personal information. We share it only with the service providers described above, to the extent needed to operate the site, and if required to comply with a legal obligation or to protect the rights, safety, or property of Jeddah Hub or others."
-      },
-      {
-        "heading": "Data Retention",
-        "body": "We keep newsletter, contact form, and activity registration data for as long as needed to serve their purpose, or until you ask us to remove it."
+        "heading": "How Long We Keep Information",
+        "body": "Newsletter, contact and activity form data is kept for as long as it serves its purpose, or until you ask us to remove it.\n\nMember accounts and profiles are kept while you are part of the hub. Alumni may stay listed as alumni. When the curatorship removes a member, their sign-in account, private and public profile, role assignment, charter signature, initiative team entries and open requests are deleted. Blog posts you published may stay on the site unless you ask us to remove them.\n\nCharter signatures may be cleared at the start of a new term so members can sign again."
       },
       {
         "heading": "Your Choices and Rights",
-        "body": "To unsubscribe from the newsletter or request that we delete personal information we hold about you, contact us using the details below and we will act on your request promptly."
+        "body": "Members can view and edit their profile at any time from My Profile, including removing their photo, bios or links, and can change their password there.\n\nAnyone can ask us to see, correct or delete the personal information we hold about them, or to stop the newsletter, by contacting us using the details below. We will act on your request promptly."
       },
       {
         "heading": "Children's Privacy",
-        "body": "Jeddah Hub is a Global Shapers Community hub for young people generally between 18 and 27 years old. Our site is not directed at children, and we do not knowingly collect personal information from anyone under 13."
+        "body": "The Global Shapers Community is for young people generally between 18 and 27 years old. The site is not directed at children, and we do not knowingly collect personal information from anyone under 13."
       },
       {
         "heading": "Data Security",
-        "body": "We use industry-standard measures, including encrypted connections and access controls provided by our infrastructure providers, to protect the information we hold. No method of transmission or storage is completely secure, but we work to protect your information appropriately."
+        "body": "All connections to the site are encrypted. Access to data is limited by role and enforced by database security rules, new accounts start with one-time passwords, and links and spreadsheet exports are checked for harmful content. No method of storage or transmission is completely secure, but we work to protect your information appropriately."
       },
       {
         "heading": "International Data Transfers",
-        "body": "Jeddah Hub is based in Jeddah, Saudi Arabia. Because we use global infrastructure providers, your information may be processed in other countries. We take steps to ensure it continues to receive an appropriate level of protection wherever it is processed."
-      },
-      {
-        "heading": "Intellectual Property",
-        "body": "The Jeddah Hub name, logo, and the design, graphics, and text of this site belong to Jeddah Hub or its licensors, except for content submitted by Shapers and curators (such as blog posts, initiative pages, and impact reports) and third-party marks such as the Global Shapers Community and World Economic Forum names. This policy governs how we handle personal information; it does not grant any rights to reuse or copy the site's content, which are addressed in our Terms of Use."
+        "body": "Jeddah Hub is based in Jeddah, Saudi Arabia. Because our providers operate globally, your information may be processed in other countries. We choose providers that keep it appropriately protected wherever it is processed."
       },
       {
         "heading": "Changes to This Policy",
-        "body": "We may update this policy from time to time to reflect changes to the site or our practices. The date at the top of this page shows when it was last revised. Continued use of the site after an update means you accept the revised policy."
+        "body": "We may update this policy as the site changes. The date at the top shows when it was last revised. Continued use of the site after an update means you accept the revised policy."
       },
       {
         "heading": "Contact Us",
-        "body": "If you have questions about this policy or how your information is handled, reach us at jeddahglobalshapers@gmail.com or through our Contact page."
+        "body": "Questions about this policy or your information can be sent to jeddahglobalshapers@gmail.com or through our Contact page."
       }
     ]
   },
   "TermsOfUsePage": {
     "title": "Terms of Use",
-    "subtitle": "The rules for using the Jeddah Hub website.",
-    "lastUpdated": "Last updated: August 9, 2026",
-    "intro": "These terms govern your use of jeddahhub.org, operated by Jeddah Hub, a Global Shapers Community hub and an initiative of the World Economic Forum. By using this site, you agree to these terms.",
+    "subtitle": "The rules for visiting jeddahhub.org and for members using their accounts.",
+    "lastUpdated": "Last updated: October 25, 2026",
+    "intro": "These terms govern your use of jeddahhub.org, run by Jeddah Hub, a hub of the Global Shapers Community, an initiative of the World Economic Forum. They apply to everyone who visits the site, and the sections on accounts and content also apply to members using the dashboard. By using the site, you agree to these terms.",
     "sections": [
       {
-        "heading": "Eligibility to Become a Shaper",
-        "body": "Membership as a Global Shaper is a separate process, administered by the World Economic Forum through its own application platform, and is generally open to driven young people between 18 and 27 years old. Applying does not guarantee acceptance, and eligibility criteria are set by the World Economic Forum, not by these terms."
+        "heading": "Using the Site",
+        "body": "You may browse the site, read and share its pages, subscribe to the newsletter, contact us, and register for or give feedback on Hub Activities and workshops, for personal and non-commercial purposes."
+      },
+      {
+        "heading": "Becoming a Shaper",
+        "body": "Membership in the Global Shapers Community is a separate process run by the World Economic Forum on its own application platform, generally open to young people between 18 and 27 years old. Applying does not guarantee acceptance, and the World Economic Forum sets the eligibility criteria, not these terms."
+      },
+      {
+        "heading": "Member Accounts",
+        "body": "Member accounts are created only by the Jeddah Hub curatorship; the site has no public sign-up. Your role decides what you can do in the dashboard.\n\nYou must change the one-time password you receive at first sign-in, keep your password private, and not share your account. Tell the curatorship promptly if you think someone else has used it. You are responsible for what is done with your account."
+      },
+      {
+        "heading": "Your Profile",
+        "body": "Your name, photo, bios, social links and role appear publicly on the Who We Are page. Keep them accurate and respectful, use only photos you have the right to share, and link only to your own profiles. The curatorship may correct or remove profile content that breaks these terms."
+      },
+      {
+        "heading": "Content You Submit",
+        "body": "This includes blog posts, initiative and activity details, photos, proposals, form answers and feedback. You keep ownership of what you submit, and you give Jeddah Hub permission to publish, display, translate and share it on the site and the hub's channels for as long as it is needed for the hub's work.\n\nYou confirm that you have the right to share it, and that it is accurate, respectful, and free of anyone else's private information without their consent. Blog posts by members are reviewed by the curatorship before they are published, and any content may be edited or removed."
+      },
+      {
+        "heading": "Initiatives, Activities and Events",
+        "body": "Initiative pages, Hub Activities and workshops describe the hub's work. Dates, places and details may change, and registering for an event does not guarantee a place. Registration and feedback forms open and close at the organizers' discretion. Taking part in an event is also subject to any rules the organizers set for it."
+      },
+      {
+        "heading": "Community Charter",
+        "body": "Members are expected to follow the Global Shapers Community Charter. When the curatorship asks, active Shapers confirm that they have read it and comply with it by signing it in the dashboard."
       },
       {
         "heading": "Acceptable Use",
-        "body": "You agree not to misuse the site, including attempting to access data that is not yours, disrupting the site's normal operation, submitting false or misleading information through a Hub Activity or workshop registration form, or using automated tools to scrape or overload it."
+        "body": "Do not try to reach data or parts of the dashboard that are not yours, pretend to be someone else, submit false or misleading information, post anything unlawful, hateful or harassing, upload harmful files or links, disrupt the site, or use automated tools to sign in, scrape or overload it. Automated traffic may be challenged or blocked by the site's protections."
       },
       {
-        "heading": "Third-Party Links",
-        "body": "This site links to third-party destinations we do not control, including the World Economic Forum's Global Shapers application form and our social media profiles. We are not responsible for the content, terms, or privacy practices of those external sites."
+        "heading": "Removing Access",
+        "body": "The curatorship may change a member's role, move them to alumni, or remove their account and content, for example when their term ends or after a breach of these terms or the Community Charter. We may also restrict anyone's access to the site if they misuse it, without notice."
+      },
+      {
+        "heading": "Third-Party Links and Services",
+        "body": "The site links to places we do not control, such as the World Economic Forum application platform, partner sites, members' social profiles and activity links set by organizers. We are not responsible for their content, terms or privacy practices."
       },
       {
         "heading": "Intellectual Property",
-        "body": "The Jeddah Hub name, logo, and the design, graphics, and text of this site belong to Jeddah Hub or its licensors and may not be copied or used without permission, with two exceptions: third-party marks such as the Global Shapers Community and World Economic Forum names, and content you submit yourself."
+        "body": "The Jeddah Hub name, logo, and the site's design, graphics and text belong to Jeddah Hub or its licensors and may not be copied or reused without permission. This excludes content submitted by members, which stays theirs as described above, and third-party marks such as the Global Shapers Community and World Economic Forum names and partner logos."
       },
       {
         "heading": "Disclaimers",
-        "body": "This site and its content are provided \"as is,\" without warranties of any kind. We do not guarantee the site will be uninterrupted, error-free, or that impact figures and other statistics will be precisely up to date at every moment."
+        "body": "The site and its content are provided \"as is\", without warranties of any kind. We do not guarantee that it will always be available or error-free, or that impact figures and other statistics are up to date at every moment."
       },
       {
         "heading": "Limitation of Liability",
-        "body": "To the fullest extent permitted by law, Jeddah Hub is not liable for indirect, incidental, or consequential damages arising from your use of this site."
+        "body": "To the fullest extent permitted by law, Jeddah Hub and its members are not liable for indirect, incidental or consequential damages arising from your use of the site."
       },
       {
-        "heading": "Enforcement",
-        "body": "We may restrict or remove access to this site for anyone who violates these terms, without notice, at our discretion."
+        "heading": "Governing Law",
+        "body": "These terms are governed by the laws of the Kingdom of Saudi Arabia."
       },
       {
         "heading": "Changes to These Terms",
-        "body": "We may update these terms from time to time. The date at the top of this page shows when they were last revised. Continued use of the site after an update means you accept the revised terms."
+        "body": "We may update these terms as the site changes. The date at the top shows when they were last revised. Continued use of the site after an update means you accept the revised terms."
       },
       {
         "heading": "Contact Us",

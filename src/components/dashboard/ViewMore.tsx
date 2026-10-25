@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import styles from './ViewMore.module.css';
 
 /** How many rows a long dashboard list shows before "View more". */
-export const PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
 /** Shows the first `PAGE_SIZE` items of a list, then PAGE_SIZE more per
  *  "View more" tap. `resetKey` (e.g. the search text and filter) starts it

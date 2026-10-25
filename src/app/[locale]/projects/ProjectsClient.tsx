@@ -1,5 +1,7 @@
 'use client';
 
+/* Initiatives page (client part): summary strip, search, area filters,
+ * spotlight card and the grid of active and past initiatives. */
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { collection, getDocs } from 'firebase/firestore';

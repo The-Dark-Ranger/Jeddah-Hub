@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Role Assignments > Members: switch Shaper/Alumni and remove members. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { useLocale, useTranslations } from 'next-intl';
@@ -189,7 +190,6 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
               <li key={m.uid} className={styles.row}>
                 <div className={styles.who}>
                   {m.photoURL
-                    // eslint-disable-next-line @next/next/no-img-element -- inline data-URI photos
                     ? <img src={m.photoURL} alt="" className={styles.avatar} loading="lazy" />
                     : <span className={styles.avatarFallback} aria-hidden="true">{name.trim().charAt(0).toUpperCase()}</span>}
                   <div className={styles.names}>

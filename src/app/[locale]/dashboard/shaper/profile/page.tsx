@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > My Profile: name, photo, bios and links (mirrored to the public
+ * profile), plus changing the password. */
 import { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';

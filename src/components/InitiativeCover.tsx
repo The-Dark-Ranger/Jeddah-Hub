@@ -29,7 +29,6 @@ interface Props {
 export default function InitiativeCover({ src, title, accent, imgClassName, className, eager }: Props) {
   const [failed, setFailed] = useState(false);
   if (src && !failed) {
-    // eslint-disable-next-line @next/next/no-img-element -- remote and inline data-URI covers
     return <img src={src} alt="" className={imgClassName} loading={eager ? undefined : 'lazy'} decoding="async" onError={() => setFailed(true)} />;
   }
   return (

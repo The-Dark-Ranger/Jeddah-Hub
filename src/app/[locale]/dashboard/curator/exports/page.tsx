@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Export Emails: download newsletter subscribers as CSV or Excel. */
 import { useCallback, useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

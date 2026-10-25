@@ -29,7 +29,6 @@
 .assignBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
 .assignBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.loading { display: flex; justify-content: center; padding: 3rem; }
 
 .empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
 

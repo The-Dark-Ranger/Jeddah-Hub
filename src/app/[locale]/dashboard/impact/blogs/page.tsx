@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Blogs for impact officers: review and publish posts. */
 import { useEffect, useState } from 'react';
 import { subscribeToAuthChanges, UserProfile } from '@/lib/auth';
 import BlogManager from '@/components/BlogManager';

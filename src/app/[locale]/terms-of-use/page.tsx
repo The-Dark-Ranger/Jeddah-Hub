@@ -1,3 +1,4 @@
+/* Terms of Use page (text in messages/*.json). */
 import { getTranslations } from 'next-intl/server';
 import WaveDivider from '@/components/WaveDivider';
 import LegalDocument from '../privacy-policy/LegalDocument';

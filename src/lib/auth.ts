@@ -1,3 +1,4 @@
+/* Sign-in helpers: load the signed-in member's profile and role, and sign out. */
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {

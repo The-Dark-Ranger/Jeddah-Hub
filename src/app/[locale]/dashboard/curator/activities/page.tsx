@@ -1,5 +1,8 @@
 'use client';
 
+/* Dashboard > Hub Activities (curators, impact officers): create and edit
+ * activities, open/close their forms, view and export responses, and review
+ * activity proposals and leads' change requests. */
 import { useState, useEffect } from 'react';
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
@@ -22,6 +25,7 @@ import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
 import RegistrationFormBuilder from '@/components/RegistrationFormBuilder';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Activities.module.css';
+import { errorCode, type Proposal } from '@/lib/types';
 
 interface Activity {
   id: string;
@@ -42,7 +46,7 @@ interface Activity {
   imageUrl?: string;
   images?: string[];
   color?: string;
-  createdAt?: any;
+  createdAt?: { toMillis?: () => number };
   initiativeId?: string;
 }
 
@@ -169,7 +173,7 @@ export default function ActivitiesPage() {
   const [responsesTab, setResponsesTab] = useState<FormType>('registration');
 
   /* Lead-proposed activities/workshops awaiting review */
-  const [activityProposals, setActivityProposals] = useState<any[]>([]);
+  const [activityProposals, setActivityProposals] = useState<Proposal[]>([]);
 
   /* Lead-submitted create/edit/archive requests on existing activities,
      see activityTypes.ts and firestore.rules' activity_change_requests
@@ -184,7 +188,7 @@ export default function ActivitiesPage() {
    * from its row's "View Details" button, a curator/impact officer needs
    * the complete proposed content (not just the title) to decide whether
    * to approve or decline it. */
-  const [viewingLegacy, setViewingLegacy] = useState<any | null>(null);
+  const [viewingLegacy, setViewingLegacy] = useState<Proposal | null>(null);
   const [viewingChange, setViewingChange] = useState<ActivityChangeRequest | null>(null);
 
   const role = normalizeRole(user?.role);
@@ -199,8 +203,8 @@ export default function ActivitiesPage() {
       const sorted = snap.docs
         .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
         .sort((a, b) => {
-          const ta = (a as any).createdAt?.toMillis?.() ?? 0;
-          const tb = (b as any).createdAt?.toMillis?.() ?? 0;
+          const ta = a.createdAt?.toMillis?.() ?? 0;
+          const tb = b.createdAt?.toMillis?.() ?? 0;
           return tb - ta;
         });
       setActivities(sorted);
@@ -226,7 +230,7 @@ export default function ActivitiesPage() {
     // main activities list above it.
     try {
       const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
-      setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
     } catch {
       setActivityProposals([]);
     }
@@ -253,6 +257,7 @@ export default function ActivitiesPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAll(); }, []);
 
   function openCreate(prefill?: Omit<Activity, 'id' | 'createdAt'>) {
@@ -285,9 +290,9 @@ export default function ActivitiesPage() {
       }
       setModalOpen(false);
       fetchAll();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to save activity:', err);
-      const code = err?.code || err?.message || 'unknown';
+      const code = errorCode(err) || 'unknown';
       alert(`${t('saveFailed')} (${code})`);
     } finally {
       setSaving(false);
@@ -341,7 +346,7 @@ export default function ActivitiesPage() {
     }
   }
 
-  async function handleApproveActivityProposal(req: any) {
+  async function handleApproveActivityProposal(req: Proposal) {
     try {
       const fields = omitKeys(req, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
       const slug = await uniqueInitiativeSlug(String(fields.title || ''));

@@ -64,8 +64,9 @@ flowchart LR
   Each initiative has a detail page (challenge, goal, impact, key facts,
   timeline, gallery and team).
 - **Hub Activities & Workshops**: a page per event, with an optional
-  registration form the organisers build themselves. Responses land in the
-  dashboard and export to Excel.
+  registration form and an after-event feedback form (with star ratings) that
+  the organisers build themselves. Responses land in the dashboard and export
+  to Excel.
 - **News**: articles written by Shapers and curators, with likes, sharing and
   related stories.
 - **Become a Shaper**: the recruitment page, with a live member count, linking
@@ -87,7 +88,7 @@ their role:
 |---|---|
 | **Shaper / Alumni** | Manage their profile, browse and join initiatives, propose a new initiative or Hub Activity for review, write blog posts, and sign the Community Charter. |
 | **Initiative Lead** | Everything a Shaper can, plus manage their own initiative: edit its content and photos, review join requests, request that a member be added or removed, and export a member report. |
-| **Curator / Vice Curator** | Full administrative control: add members (their login is created automatically), approve proposals and membership requests, manage every initiative and Hub Activity, choose featured and spotlight initiatives, require Charter sign-off and see who signed, moderate posts, read contact messages and export the newsletter list. |
+| **Curator / Vice Curator** | Full administrative control: add members (their login is created automatically with a one-time password) or remove them, approve proposals and membership requests, manage every initiative and Hub Activity, choose featured and spotlight initiatives, require Charter sign-off and see who signed, moderate posts, read contact messages and export the newsletter list. |
 | **Impact Officer** | Manages initiatives and Hub Activities, picks the spotlight and publishes posts, without the curator-only tools (roles, messages, featuring, exports, Charter sign-off). |
 
 Every permission is enforced twice: once in the UI, so people only see what's
@@ -102,7 +103,7 @@ boundary. The flows behind each feature are drawn out in
 - **[next-intl](https://next-intl.dev)** for English/Arabic with RTL layout
 - **Firebase**: Authentication and Firestore (client SDK in the browser;
   Firestore REST for cached public pages; **Admin SDK** on the server only to
-  create member accounts)
+  create and remove member accounts and issue one-time passwords)
 - **CSS Modules**: no UI framework, a hand-built design system
 - **[Resend](https://resend.com)** for transactional email
 - **Google reCAPTCHA v3** on the public forms, loaded only when a form is used
@@ -138,6 +139,7 @@ messages/
 └── ar.json                  # Its Arabic counterpart, kept in lockstep
 
 docs/HOW-IT-WORKS.md         # Flowcharts of every main flow
+docs/CHANGELOG.md            # What changed, newest first
 firestore.rules              # The security boundary, documented inline
 .github/workflows/           # Deploys firestore.rules when it changes
 ```
@@ -186,6 +188,22 @@ flowchart LR
   key with the *Firebase Rules Admin* role) and `FIREBASE_PROJECT_ID`. Until
   they're added the workflow skips itself; rules can also be published by hand
   with `npx firebase-tools deploy --only firestore:rules`.
+
+## Security
+
+- **Authorization** lives in [`firestore.rules`](firestore.rules): roles can
+  only be granted by a curator, and names and emails on requests, posts and
+  notifications must be the sender's own.
+- **Accounts** start with a random one-time password that must be changed at
+  first sign-in. The login form adds a honeypot, a minimum fill time, reCAPTCHA
+  and a lockout after repeated failures.
+- **Links and exports**: only http(s) links are saved or shown, and spreadsheet
+  exports neutralise formula-like values.
+- **At the edge**: Vercel Bot Protection challenges non-browser traffic, common
+  scanner probes (`/.env`, `/wp-admin`, `*.php`, …) are refused, and the
+  dashboard, login and API are kept out of search engines.
+- **Secrets** (service account, reCAPTCHA and Resend keys) are Vercel
+  environment variables only; none are in the code or its history.
 
 ## A note on privacy
 

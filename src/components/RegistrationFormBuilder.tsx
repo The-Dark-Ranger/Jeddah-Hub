@@ -1,5 +1,6 @@
 'use client';
 
+/* Form editor for an activity's registration and after-event forms. */
 import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import {

@@ -196,7 +196,6 @@
    in shape depending on what content a given initiative happens to have. */
 .cardImage { width: 100%; height: 160px; overflow: hidden; background: var(--background-alt); }
 .cardImage img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cardImageFallback { width: 100%; height: 100%; }
 
 /* Card body */
 .cardBody { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; gap: 0.6rem; }

@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Projects (impact officers): create, edit and archive initiatives,
+ * manage teams and pick the spotlight. Archiving notifies the curators. */
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection, addDoc, getDocs, updateDoc, doc,
@@ -18,6 +20,7 @@ import { normalizeRole } from '@/lib/role';
 import { setSpotlight } from '@/lib/spotlight';
 import styles from './Projects.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { errorCode } from '@/lib/types';
 
 interface Member { userId: string; role: string; }
 
@@ -164,12 +167,13 @@ export default function ImpactProjects() {
       // initiatives docs tagged type:'hub_activity', exclude them, same as
       // the curator Initiatives page, so they don't appear in this list/
       // count or become editable through the initiative form here.
-      setInitiatives(initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative)));
+      setInitiatives(initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as Initiative)));
       setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord)));
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAll(); }, []);
 
   /* ── Modal helpers ── */
@@ -235,8 +239,8 @@ export default function ImpactProjects() {
         ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
       });
       closeModal(); fetchAll();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setSaving(false);
     }
@@ -249,8 +253,8 @@ export default function ImpactProjects() {
     try {
       await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
       closeModal(); fetchAll();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setSaving(false);
     }

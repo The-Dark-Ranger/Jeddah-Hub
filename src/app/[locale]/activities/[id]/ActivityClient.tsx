@@ -1,5 +1,7 @@
 'use client';
 
+/* A Hub Activity or workshop page: hero, key facts, highlights, gallery, and
+ * its registration and after-event forms (ActivityForm). */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';

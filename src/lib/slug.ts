@@ -35,7 +35,7 @@ export async function uniqueInitiativeSlug(title: string, excludeId?: string): P
   // not on every page view.
   const snap = await getDocs(query(collection(db, 'initiatives')));
   const taken = new Set(
-    snap.docs.filter(d => d.id !== excludeId).map(d => (d.data() as any).slug).filter(Boolean)
+    snap.docs.filter(d => d.id !== excludeId).map(d => d.data().slug).filter(Boolean)
   );
   if (!taken.has(base)) return base;
   let i = 2;

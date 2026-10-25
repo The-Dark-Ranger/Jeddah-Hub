@@ -1,5 +1,6 @@
 'use client';
 
+/* A news post: article, likes (members and guests), sharing and related posts. */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
@@ -23,6 +24,13 @@ function formatDate(iso: string, locale: string) {
 /** ~200 words a minute, never less than one. */
 function readingMinutes(text: string) {
   return Math.max(1, Math.round((text.trim().split(/\s+/).filter(Boolean).length) / 200));
+}
+
+/** A blog post as this page reads it (blogs/{id}). */
+interface BlogPost {
+  id: string; title: string; content: string; slug?: string; tags?: string[];
+  authorId?: string; authorName?: string; authorRole?: string; createdAt?: string;
+  likedBy?: string[]; visitorLikes?: string[];
 }
 
 export interface RelatedPost { id: string; title: string; slug?: string; createdAt?: string; tags?: string[]; }
@@ -51,7 +59,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
   const t        = useTranslations('NewsPostPage');
   const locale   = useLocale();
 
-  const [post, setPost]               = useState<any>(initial?.post ?? null);
+  const [post, setPost]               = useState<BlogPost | null>((initial?.post as BlogPost | undefined) ?? null);
   const [loading, setLoading]         = useState(!initial);
   const [liking, setLiking]           = useState(false);
   const [visitorId, setVisitorId]     = useState<string | null>(null);
@@ -63,6 +71,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
   useEffect(() => {
     let gid = localStorage.getItem('jh_guest_id');
     if (!gid) { gid = genGuestId(); localStorage.setItem('jh_guest_id', gid); }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read the guest id from browser storage
     setVisitorId(gid);
   }, []);
 
@@ -83,20 +92,20 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
       // in the background so the like count is current.
       Promise.resolve()
         .then(() => getDoc(doc(db, 'blogs', id)))
-        .then(snap => { if (snap.exists()) setPost({ id: snap.id, ...snap.data() }); })
+        .then(snap => { if (snap.exists()) setPost({ id: snap.id, ...snap.data() } as BlogPost); })
         .catch(() => {});
       return;
     }
     getDoc(doc(db, 'blogs', id)).then(snap => {
       if (snap.exists()) {
-        const data = { id: snap.id, ...snap.data() } as any;
+        const data = { id: snap.id, ...snap.data() } as BlogPost;
         setPost(data);
         // Real profile photo instead of the initials fallback, when the
         // author has one set, same public mirror the projects/about pages
         // already read from (no email field, safe to read publicly).
         if (data.authorId) {
           getDoc(doc(db, 'public_profiles', data.authorId))
-            .then(pSnap => setAuthorPhoto(pSnap.exists() ? (pSnap.data() as any).photoURL || null : null))
+            .then(pSnap => setAuthorPhoto(pSnap.exists() ? pSnap.data().photoURL || null : null))
             .catch(() => {});
         }
       }
@@ -141,18 +150,18 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
       if (user) {
         if (liked) {
           await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
-          setPost((p: any) => ({ ...p, likedBy: (p.likedBy ?? []).filter((u: string) => u !== user.uid) }));
+          setPost(p => p && ({ ...p, likedBy: (p.likedBy ?? []).filter(u => u !== user.uid) }));
         } else {
           await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
-          setPost((p: any) => ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
+          setPost(p => p && ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
         }
       } else if (visitorId) {
         if (liked) {
           await updateDoc(ref, { visitorLikes: arrayRemove(visitorId) });
-          setPost((p: any) => ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter((v: string) => v !== visitorId) }));
+          setPost(p => p && ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter(v => v !== visitorId) }));
         } else {
           await updateDoc(ref, { visitorLikes: arrayUnion(visitorId) });
-          setPost((p: any) => ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId] }));
+          setPost(p => p && ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId!] }));
         }
       }
     } catch (err) {
@@ -203,7 +212,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
               </div>
             </div>
             <div className={styles.articleDate}>
-              {formatDate(post.createdAt, locale)}
+              {formatDate(post.createdAt ?? "", locale)}
               <span className={styles.metaDot} aria-hidden="true" />
               {t('minRead', { n: readingMinutes(post.content || '') })}
             </div>

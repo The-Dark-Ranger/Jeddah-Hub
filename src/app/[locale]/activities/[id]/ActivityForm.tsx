@@ -1,5 +1,7 @@
 'use client';
 
+/* One of an activity's public forms (registration or after-event feedback),
+ * saved to activity_responses. */
 import { useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';

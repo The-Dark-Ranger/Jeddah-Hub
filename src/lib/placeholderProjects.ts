@@ -1,3 +1,5 @@
+/* Sample initiatives shown only when the database has none, plus the
+ * shared initiative shape and category colours. */
 export interface PlaceholderProject {
   id: string;
   title: string;

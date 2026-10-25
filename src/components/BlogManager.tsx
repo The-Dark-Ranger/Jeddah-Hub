@@ -1,5 +1,6 @@
 'use client';
 
+/* Shared blog editor and list used by the three Blogs dashboard pages. */
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';
@@ -79,6 +80,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- load posts once on mount
   useEffect(() => { fetchPosts(); }, []);
 
   const resetForm = () => {

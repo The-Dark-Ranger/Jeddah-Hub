@@ -151,7 +151,6 @@
 .inviteBtn.inviteSent { background: rgba(16,185,129,0.1); color: var(--success); border-color: rgba(16,185,129,0.25); cursor: default; }
 .inviteBtn.inviteFailed { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); cursor: default; }
 
-.loading { display: flex; justify-content: center; padding: 3rem; }
 
 .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 

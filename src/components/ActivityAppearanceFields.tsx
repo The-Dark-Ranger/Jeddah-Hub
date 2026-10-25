@@ -1,5 +1,6 @@
 'use client';
 
+/* Activity editor fields for the activity's look: cover photo, gallery and colour. */
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';

@@ -1,3 +1,5 @@
+/* Home page: hero, about, World Economic Forum section, impact numbers,
+ * activities, featured initiatives, Shapers, partners and newsletter. */
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Link } from '@/i18n/routing';

@@ -1,3 +1,5 @@
+/* Server-side checks for API routes: verifies a Firebase ID token and the
+ * caller's role. */
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
 import { normalizeRole } from './role';

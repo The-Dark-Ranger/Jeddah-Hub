@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Active Projects: the member's initiatives; leads also edit their
+ * initiative and handle its join, leave, add and remove requests. */
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc, documentId,
@@ -19,6 +21,7 @@ import { slugify, uniqueInitiativeSlug } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { errorCode, isLeadEntry, memberId, type LeadRequest, type MemberEntry, type MembershipRequest } from '@/lib/types';
 
 interface Project {
   id: string;
@@ -35,7 +38,7 @@ interface Project {
   startDate?: string;
   endDate?: string;
   color?: string;
-  members?: any[];
+  members?: MemberEntry[];
   slug?: string;
 }
 
@@ -50,8 +53,8 @@ export default function MyProjects() {
   /* Lead-only extras, fetched only when the user leads at least one project */
   const [users, setUsers] = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [memberPanelOpenId, setMemberPanelOpenId] = useState<string | null>(null);
-  const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
-  const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<any[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<MembershipRequest[]>([]);
+  const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<MembershipRequest[]>([]);
   const [pendingRemovals, setPendingRemovals] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
   const [pendingAdds, setPendingAdds] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
   /* Candidate shapers a lead can pick from to request adding, sourced from
@@ -76,15 +79,13 @@ export default function MyProjects() {
     try {
       const snap = await getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active')));
       const mine = snap.docs
-        .filter(d => !(d.data() as any).type) // exclude Hub Activities
+        .filter(d => !d.data().type) // exclude Hub Activities
         .map(d => ({ id: d.id, ...d.data() } as Project))
-        .filter(p => (p.members || []).some((m: any) => m === user.uid || m?.userId === user.uid));
+        .filter(p => (p.members || []).some(m => memberId(m) === user.uid));
       setProjects(mine);
 
       const leads = mine
-        .filter(p => (p.members || []).some((m: any) =>
-          (m.userId === user.uid || m === user.uid) && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
-        ))
+        .filter(p => (p.members || []).some(m => memberId(m) === user.uid && isLeadEntry(m)))
         .map(p => p.id);
       setLeadIds(leads);
 
@@ -96,25 +97,25 @@ export default function MyProjects() {
           getDocs(query(collection(db, 'member_add_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending'))).catch(() => null),
           getDocs(query(collection(db, 'public_profiles'), where('role', 'in', ['shaper', 'alumni']))).catch(() => null),
         ]);
-        setPendingAdds(addSnap ? addSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
-        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
+        setPendingAdds(addSnap ? addSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRequest)) : []);
+        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string })) : []);
 
         setIncomingRequests(joinSnap
           ? joinSnap.docs.map(d => {
               const data = d.data();
-              return { id: d.id, ...data, initiativeTitle: mine.find(p => p.id === data.initiativeId)?.title };
+              return { id: d.id, ...data, initiativeTitle: mine.find(p => p.id === data.initiativeId)?.title } as MembershipRequest;
             })
           : []);
         setIncomingLeaveRequests(leaveSnap
           ? leaveSnap.docs.map(d => {
               const data = d.data();
-              return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || mine.find(p => p.id === data.initiativeId)?.title };
+              return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || mine.find(p => p.id === data.initiativeId)?.title } as MembershipRequest;
             })
           : []);
-        setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)) : []);
+        setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRequest)) : []);
 
         const ledProjects = mine.filter(p => leads.includes(p.id));
-        const memberIds = ledProjects.flatMap(p => (p.members || []).map((m: any) => (typeof m === 'string' ? m : m.userId)).filter(Boolean));
+        const memberIds = ledProjects.flatMap(p => (p.members || []).map(memberId).filter(Boolean));
         const applicantIds = joinSnap ? joinSnap.docs.map(d => d.data().userId).filter(Boolean) : [];
         const neededIds = Array.from(new Set([...memberIds, ...applicantIds]));
         if (neededIds.length > 0) {
@@ -123,7 +124,7 @@ export default function MyProjects() {
           const userSnaps = await Promise.all(
             chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))).catch(() => null))
           );
-          setUsers(userSnaps.filter(Boolean).flatMap(s => s!.docs.map(d => ({ id: d.id, ...d.data() } as any))));
+          setUsers(userSnaps.filter(Boolean).flatMap(s => s!.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string }))));
         } else {
           setUsers([]);
         }
@@ -142,6 +143,7 @@ export default function MyProjects() {
     }
   }, [user]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyInitiativeForm); };
@@ -172,8 +174,8 @@ export default function MyProjects() {
       await updateDoc(doc(db, 'initiatives', leadEditInit.id), updated);
       setProjects(prev => prev.map(p => p.id === leadEditInit.id ? { ...p, ...updated, color: updated.color ?? undefined } : p));
       closeLeadEdit();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setLeadSaving(false);
     }
@@ -201,14 +203,14 @@ export default function MyProjects() {
     }
   };
 
-  const handleApproveLeave = async (req: any) => {
+  const handleApproveLeave = async (req: MembershipRequest) => {
     const init = projects.find(p => p.id === req.initiativeId);
     if (!init) return;
     try {
-      const memberObj = (init.members || []).find((m: any) => m.userId === req.userId);
+      const memberObj = (init.members || []).find(m => memberId(m) === req.userId);
       if (memberObj) {
         const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
-        if ((memberObj.role || '').toLowerCase().includes('lead')) payload.leads = arrayRemove(req.userId);
+        if (isLeadEntry(memberObj)) payload.leads = arrayRemove(req.userId);
         await updateDoc(doc(db, 'initiatives', req.initiativeId), payload);
       }
       await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
@@ -230,22 +232,22 @@ export default function MyProjects() {
     }
   };
 
-  const handleRequestRemoval = async (init: Project, member: any) => {
+  const handleRequestRemoval = async (init: Project, member: MemberEntry) => {
     if (!user) return;
-    const memberName = getUserLabel(member.userId);
+    const memberName = getUserLabel(memberId(member));
     if (!confirm(t('confirmRequestRemoval', { member: memberName, initiative: init.title }))) return;
     try {
       const ref = await addDoc(collection(db, 'removal_requests'), {
         initiativeId: init.id,
         initiativeTitle: init.title,
-        targetUserId: member.userId,
+        targetUserId: memberId(member),
         targetUserName: memberName,
         requestedByUserId: user.uid,
         requestedByName: user.displayName || user.email,
         status: 'pending',
         requestedAt: new Date().toISOString(),
       });
-      setPendingRemovals(prev => [...prev, { id: ref.id, targetUserId: member.userId, initiativeId: init.id }]);
+      setPendingRemovals(prev => [...prev, { id: ref.id, targetUserId: memberId(member), initiativeId: init.id }]);
     } catch (err) {
       console.error(err);
       alert(t('saveFailed'));
@@ -406,7 +408,7 @@ export default function MyProjects() {
         <div className={styles.grid}>
           {projects.map(p => {
             const isLead = leadIds.includes(p.id);
-            const nonLeadMembers = (p.members || []).filter((m: any) => m.userId !== user?.uid);
+            const nonLeadMembers = (p.members || []).filter(m => memberId(m) !== user?.uid);
 
             if (!isLead) {
               // Plain member, unchanged from the original simple clickable card.
@@ -462,8 +464,8 @@ export default function MyProjects() {
                     <button
                       className={jiStyles.downloadLeadBtn}
                       onClick={() => {
-                        const memberNames = Object.fromEntries((p.members || []).map((m: any) => [m.userId, getUserLabel(m.userId)]));
-                        void downloadInitiativeReport(p as any, memberNames);
+                        const memberNames = Object.fromEntries((p.members || []).map(m => [memberId(m), getUserLabel(memberId(m))]));
+                        void downloadInitiativeReport(p as Parameters<typeof downloadInitiativeReport>[0], memberNames);
                       }}
                       title={t('downloadReport')}
                     >
@@ -483,13 +485,14 @@ export default function MyProjects() {
                       {nonLeadMembers.length === 0 ? (
                         <p className={jiStyles.memberPanelEmpty}>{t('noTeamMembers')}</p>
                       ) : (
-                        nonLeadMembers.map((m: any, idx: number) => {
-                          const removal = pendingRemovals.find(r => r.targetUserId === m.userId && r.initiativeId === p.id);
+                        nonLeadMembers.map((m, idx) => {
+                          const mid = memberId(m);
+                          const removal = pendingRemovals.find(r => r.targetUserId === mid && r.initiativeId === p.id);
                           return (
-                            <div key={m.userId + idx} className={jiStyles.memberPanelItem}>
+                            <div key={mid + idx} className={jiStyles.memberPanelItem}>
                               <div className={jiStyles.memberPanelInfo}>
-                                <span className={jiStyles.memberPanelName}>{getUserLabel(m.userId)}</span>
-                                <span className={jiStyles.memberPanelRole}>{m.role || 'Member'}</span>
+                                <span className={jiStyles.memberPanelName}>{getUserLabel(mid)}</span>
+                                <span className={jiStyles.memberPanelRole}>{(typeof m === 'string' ? '' : m.role) || 'Member'}</span>
                               </div>
                               {removal ? (
                                 <div className={jiStyles.memberPanelActions}>
@@ -525,7 +528,7 @@ export default function MyProjects() {
                           >
                             <option value="">{t('selectShaperPrompt')}</option>
                             {directory
-                              .filter(d => !(p.members || []).some((m: any) => (m.userId || m) === d.id))
+                              .filter(d => !(p.members || []).some(m => memberId(m) === d.id))
                               .map(d => <option key={d.id} value={d.id}>{d.displayName || d.id}</option>)}
                           </select>
                           <button

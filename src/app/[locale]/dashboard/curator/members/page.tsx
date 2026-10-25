@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Role Assignments: add members (creates their login with a
+ * one-time password), send invites, and track who has signed in. */
 import { useState, useEffect, useCallback } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
@@ -103,6 +105,7 @@ export default function MembersPage() {
     } catch { /* users collection may not exist */ }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAssignments(); fetchKnownUsers(); }, [fetchAssignments]);
 
   const handleEmailBlur = () => {

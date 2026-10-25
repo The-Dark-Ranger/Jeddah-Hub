@@ -1,5 +1,6 @@
 'use client';
 
+/* Become a Shaper page: the FAQ list, one question open at a time. */
 import { useState } from 'react';
 import styles from './BecomeShaper.module.css';
 

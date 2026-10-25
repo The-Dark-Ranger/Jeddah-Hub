@@ -1,3 +1,4 @@
+/* Builds the .xlsx report for an initiative (details and team). */
 import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 

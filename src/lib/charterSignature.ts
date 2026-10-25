@@ -10,14 +10,14 @@ import { db } from '@/lib/firebase';
  * member; firestore.rules let a member write only their own, and only
  * curators / impact officers read everyone's. */
 
-export const CHARTER_SETTINGS = { collection: 'settings', id: 'charter' } as const;
+const CHARTER_SETTINGS = { collection: 'settings', id: 'charter' } as const;
 /** Roles asked to sign: active Shapers, including the curatorship.
  *  Alumni aren't asked and aren't counted. */
 export const SIGNING_ROLES = ['shaper', 'curator', 'vice_curator', 'impact_officer'];
 export const SIGNATURES = 'charter_signatures';
 /** Fired after a member signs or a curator changes the setting, so the
  *  dashboard banner updates without a reload. */
-export const CHARTER_EVENT = 'jh-charter-changed';
+const CHARTER_EVENT = 'jh-charter-changed';
 
 export interface CharterSignature {
   uid: string;
@@ -38,7 +38,7 @@ export async function setRequireSignature(value: boolean, by: string | null | un
   window.dispatchEvent(new Event(CHARTER_EVENT));
 }
 
-export async function getMySignature(uid: string): Promise<CharterSignature | null> {
+async function getMySignature(uid: string): Promise<CharterSignature | null> {
   const snap = await getDoc(doc(db, SIGNATURES, uid));
   return snap.exists() ? (snap.data() as CharterSignature) : null;
 }

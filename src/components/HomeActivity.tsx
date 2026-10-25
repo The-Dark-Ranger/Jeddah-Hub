@@ -1,5 +1,6 @@
 'use client';
 
+/* Home page: the current Hub Activities, one at a time with arrows. */
 import { useEffect, useRef, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

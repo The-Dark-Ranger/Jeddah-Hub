@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Community Charter: the charter text, the sign-off form, and
+ * (for curators) the sign-off switch and who has signed. */
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';

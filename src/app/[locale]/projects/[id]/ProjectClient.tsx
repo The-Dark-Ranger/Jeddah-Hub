@@ -1,5 +1,7 @@
 'use client';
 
+/* An initiative's page: story, key facts, impact, gallery, team and more
+ * initiatives. */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
@@ -110,15 +112,15 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
         // fields of their own.
         const slugSnap = await getDocs(query(collection(db, 'initiatives'), where('slug', '==', rawId)));
         if (!slugSnap.empty) {
-          const d = slugSnap.docs.find(d => !(d.data() as any).type);
+          const d = slugSnap.docs.find(d => !d.data().type);
           if (d) data = { id: d.id, ...(d.data() as Omit<Initiative, 'id'>) };
         }
 
         if (!data) {
           const allSnap = await getDocs(collection(db, 'initiatives'));
           const match = allSnap.docs.find(d => {
-            const docData = d.data() as any;
-            return !docData.type && slugify(docData.title || '') === rawId;
+            const docData = d.data();
+            return !docData.type && slugify(String(docData.title || '')) === rawId;
           });
           if (match) data = { id: match.id, ...(match.data() as Omit<Initiative, 'id'>) };
         }
@@ -126,7 +128,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
         if (!data) {
           const legacyId = rawId.includes('--') ? rawId.slice(rawId.lastIndexOf('--') + 2) : rawId;
           const legacySnap = await getDoc(doc(db, 'initiatives', legacyId));
-          if (legacySnap.exists() && !(legacySnap.data() as any).type) {
+          if (legacySnap.exists() && !legacySnap.data().type) {
             data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Initiative, 'id'>) };
           }
         }

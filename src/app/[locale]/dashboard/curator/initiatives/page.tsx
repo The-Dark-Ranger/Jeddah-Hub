@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Initiatives (curators): create, edit, archive and feature
+ * initiatives, manage teams, and review proposals and membership requests. */
 import { useState, useEffect, useCallback } from 'react';
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,6 +22,7 @@ import InitiativeFormFields, {
 } from '@/components/InitiativeFormFields';
 import styles from './Initiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { errorCode, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal } from '@/lib/types';
 
 interface Initiative {
   id: string;
@@ -38,7 +41,7 @@ interface Initiative {
   impactAreas?: string[];
   color?: string;
   createdAt: string;
-  members?: unknown[];
+  members?: InitiativeMember[];
   /** Hand-picked for the homepage's Featured Initiatives section. */
   featured?: boolean;
   /** The one initiative shown in the Initiatives page's Spotlight card. */
@@ -132,10 +135,10 @@ export default function ManageInitiatives() {
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [users, setUsers]             = useState<{ id: string; displayName?: string; displayNameAr?: string; email?: string }[]>([]);
-  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
-  const [removalRequests, setRemovalRequests] = useState<any[]>([]);
-  const [addRequests, setAddRequests] = useState<any[]>([]);
-  const [proposals, setProposals] = useState<any[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<MembershipRequest[]>([]);
+  const [removalRequests, setRemovalRequests] = useState<LeadRequest[]>([]);
+  const [addRequests, setAddRequests] = useState<LeadRequest[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [seeding, setSeeding]   = useState(false);
@@ -174,7 +177,7 @@ export default function ManageInitiatives() {
       ]);
       const inits = initSnap.docs
         .map(d => ({ id: d.id, ...d.data() } as Initiative))
-        .filter(i => !(i as any).type);
+        .filter(i => !(i as Initiative & { type?: string }).type);
       setInitiatives(inits);
       setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; email?: string })));
 
@@ -184,7 +187,7 @@ export default function ManageInitiatives() {
         setLeaveRequests(leaveSnap.docs.map(d => {
           const data = d.data();
           const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as MembershipRequest;
         }));
       } catch { setLeaveRequests([]); }
 
@@ -194,7 +197,7 @@ export default function ManageInitiatives() {
         setRemovalRequests(removalSnap.docs.map(d => {
           const data = d.data();
           const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as LeadRequest;
         }));
       } catch { setRemovalRequests([]); }
 
@@ -204,19 +207,20 @@ export default function ManageInitiatives() {
         setAddRequests(addSnap.docs.map(d => {
           const data = d.data();
           const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId };
+          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as LeadRequest;
         }));
       } catch { setAddRequests([]); }
 
       // Proposed initiatives from shapers (non-critical, catch separately)
       try {
         const proposalSnap = await getDocs(query(collection(db, 'initiative_requests'), where('status', '==', 'pending')));
-        setProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
       } catch { setProposals([]); }
     } catch { /* Firestore not configured */ }
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAll(); }, []);
 
   /* ── Modal helpers ── */
@@ -271,8 +275,8 @@ export default function ManageInitiatives() {
       });
       closeModal();
       fetchAll();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setSaving(false);
     }
@@ -287,8 +291,8 @@ export default function ManageInitiatives() {
       await updateDoc(doc(db, 'initiatives', editingId), { ...formToDoc(form), slug });
       closeModal();
       fetchAll();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setSaving(false);
     }
@@ -307,8 +311,8 @@ export default function ManageInitiatives() {
         });
       }
       await fetchAll();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setSeeding(false);
     }
@@ -400,10 +404,10 @@ export default function ManageInitiatives() {
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
     try {
-      const wasLead = (init.members as any[] || []).some(
-        (m: any) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+      const wasLead = (init.members || []).some(
+        (m: InitiativeMember) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
       );
-      const updated = (init.members as any[] || []).filter((m: any) => m.userId !== userId);
+      const updated = (init.members || []).filter((m: InitiativeMember) => m.userId !== userId);
       await updateDoc(doc(db, 'initiatives', initiativeId), {
         members: updated,
         ...(wasLead ? { leads: arrayRemove(userId) } : {}),
@@ -416,11 +420,11 @@ export default function ManageInitiatives() {
   };
 
   /* Leave request handlers */
-  const handleApproveLeave = async (req: any) => {
+  const handleApproveLeave = async (req: MembershipRequest) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
     try {
       if (init) {
-        const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
+        const memberObj = (init.members || []).find((m: InitiativeMember) => m.userId === req.userId);
         if (memberObj) {
           const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
           // A departing lead must also lose their `leads` entry, that's
@@ -436,7 +440,7 @@ export default function ManageInitiatives() {
       setLeaveRequests(prev => prev.filter(r => r.id !== req.id));
       setInitiatives(prev => prev.map(i =>
         i.id === req.initiativeId
-          ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.userId) }
+          ? { ...i, members: (i.members || []).filter((m: InitiativeMember) => m.userId !== req.userId) }
           : i
       ));
     } catch (err) {
@@ -456,7 +460,7 @@ export default function ManageInitiatives() {
   };
 
   /* Proposed-initiative handlers */
-  const handleApproveProposal = async (proposal: any) => {
+  const handleApproveProposal = async (proposal: Proposal) => {
     try {
       const { proposedBy } = proposal;
       const fields = omitKeys(proposal, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
@@ -497,11 +501,11 @@ export default function ManageInitiatives() {
   };
 
   /* Removal request handlers */
-  const handleApproveRemoval = async (req: any) => {
+  const handleApproveRemoval = async (req: LeadRequest) => {
     const init = initiatives.find(i => i.id === req.initiativeId);
     try {
       if (init) {
-        const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.targetUserId);
+        const memberObj = (init.members || []).find((m: InitiativeMember) => m.userId === req.targetUserId);
         const wasLead = memberObj && typeof memberObj.role === 'string' && memberObj.role.toLowerCase().includes('lead');
         if (memberObj) {
           await updateDoc(doc(db, 'initiatives', req.initiativeId), {
@@ -514,7 +518,7 @@ export default function ManageInitiatives() {
       setRemovalRequests(prev => prev.filter(r => r.id !== req.id));
       setInitiatives(prev => prev.map(i =>
         i.id === req.initiativeId
-          ? { ...i, members: (i.members as any[] || []).filter((m: any) => m.userId !== req.targetUserId) }
+          ? { ...i, members: (i.members || []).filter((m: InitiativeMember) => m.userId !== req.targetUserId) }
           : i
       ));
     } catch (err) {
@@ -534,7 +538,7 @@ export default function ManageInitiatives() {
   };
 
   /* Member-add request handlers */
-  const handleApproveAddMember = async (req: any) => {
+  const handleApproveAddMember = async (req: LeadRequest) => {
     try {
       await updateDoc(doc(db, 'initiatives', req.initiativeId), {
         members: arrayUnion({ userId: req.targetUserId, role: 'Member' }),
@@ -543,7 +547,7 @@ export default function ManageInitiatives() {
       setAddRequests(prev => prev.filter(r => r.id !== req.id));
       setInitiatives(prev => prev.map(i =>
         i.id === req.initiativeId
-          ? { ...i, members: [...(i.members as any[] || []), { userId: req.targetUserId, role: 'Member' }] }
+          ? { ...i, members: [...(i.members || []), { userId: req.targetUserId, role: 'Member' }] }
           : i
       ));
     } catch (err) {
@@ -568,7 +572,7 @@ export default function ManageInitiatives() {
   };
 
   const getMemberNames = (init: Initiative) =>
-    Object.fromEntries((init.members as any[] || []).map((m: any) => [m.userId, getUserLabel(m.userId)]));
+    Object.fromEntries((init.members || []).map((m: InitiativeMember) => [m.userId, getUserLabel(m.userId)]));
 
   const filtered      = initiatives.filter(i => (filter === 'all' || i.status === filter)
     && matchesQuery(search, i.title, i.description, i.category, i.stat));
@@ -979,7 +983,7 @@ export default function ManageInitiatives() {
                     <SearchSelect
                       className={styles.teamSelectSearch}
                       options={users
-                        .filter(u => !(init.members as any[] || []).some((m: any) => m.userId === u.id))
+                        .filter(u => !(init.members || []).some((m: InitiativeMember) => m.userId === u.id))
                         .map(u => ({ value: u.id, label: u.displayName || u.email || u.id, hint: u.email, keywords: u.displayNameAr }))
                         .sort((a, b) => a.label.localeCompare(b.label))}
                       value={assignUser}
@@ -998,11 +1002,11 @@ export default function ManageInitiatives() {
                       {assigning ? '…' : t('addToTeam')}
                     </button>
                   </div>
-                  {(init.members as any[] || []).length === 0 ? (
+                  {(init.members || []).length === 0 ? (
                     <p className={styles.noTeamMsg}>{t('noTeamMembers')}</p>
                   ) : (
                     <div className={styles.memberList}>
-                      {(init.members as any[]).map((m: any, idx: number) => (
+                      {(init.members || []).map((m, idx) => (
                         <div key={m.userId + idx} className={styles.memberRow}>
                           <span className={styles.memberName}>{getUserLabel(m.userId)}</span>
                           <span className={styles.memberRole}>{m.role || 'Member'}</span>

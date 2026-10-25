@@ -2,7 +2,7 @@ import { useTranslations } from 'next-intl';
 
 /** Translation key for a stored category: "Economic Empowerment" ->
  *  "economic_empowerment", "Arts & Culture" -> "arts_culture". */
-export function categoryKey(category: string): string {
+function categoryKey(category: string): string {
   return category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 }
 

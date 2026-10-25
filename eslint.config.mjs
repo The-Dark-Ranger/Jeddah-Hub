@@ -5,6 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // Member photos, covers and gallery images are stored inline as
+      // compressed data URIs or as links curators paste, which next/image
+      // can't optimise, so plain <img> (lazy-loaded) is intentional.
+      "@next/next/no-img-element": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

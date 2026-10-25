@@ -7,7 +7,7 @@ tech stack and setup, see the [README](../README.md).
 - [2. Adding a member](#2-adding-a-member)
 - [3. Signing in and roles](#3-signing-in-and-roles)
 - [4. Initiatives: proposals, joining and leaving](#4-initiatives-proposals-joining-and-leaving)
-- [5. Hub Activities and registration](#5-hub-activities-and-registration)
+- [5. Hub Activities: registration and feedback](#5-hub-activities-registration-and-feedback)
 - [6. News posts](#6-news-posts)
 - [7. Community Charter sign-off](#7-community-charter-sign-off)
 - [8. Contact form and newsletter](#8-contact-form-and-newsletter)
@@ -66,14 +66,24 @@ sequenceDiagram
     A->>DB: users/{uid}: role and name
     A->>DB: public_profiles/{uid}: name and role only
     D->>DB: role_assignments/{email}
+    A-->>D: The one-time password, shown once
     C->>D: Send Invite
-    D->>M: Invite email with sign-in details
+    D->>M: Invite email with a fresh one-time password
 ```
 
 - Account creation needs admin rights, so it runs on the server with the
   `FIREBASE_SERVICE_ACCOUNT` key (a Vercel environment variable, never in the repo).
+- Every new login gets its own random one-time password (`Tmp-XXXX-XXXX-XXXX`).
+  It is shown to the curator once and never stored. **Send Invite** and
+  **New one-time password** issue a fresh one, but only for someone who has
+  never signed in; anyone who has keeps their own password.
 - Removing a **pending** assignment also deletes the unused login and the
   public listing, but only if the person has never signed in.
+- **Members** (below Role Assignments) lists everyone with an account. Shaper
+  and Alumni switch with one click; **Remove** (click, then click again to
+  confirm) deletes the member everywhere: login, profiles, role assignment,
+  charter signature, initiative teams and open requests. Nobody can remove
+  themselves, and only the Curator can remove a curator.
 
 ## 3. Signing in and roles
 
@@ -84,7 +94,7 @@ flowchart TD
     U -->|no| A{role_assignments<br/>for this email?}
     A -->|yes| R2[Apply the assigned role]
     A -->|no| N[No role yet:<br/>dashboard shows nothing to manage]
-    R --> PW{Signed in with<br/>temporary password?}
+    R --> PW{Signed in with a<br/>one-time password?}
     R2 --> PW
     PW -->|yes| B[Must set their own password<br/>on My Profile before anything else]
     PW -->|no| D[Dashboard for the role]
@@ -99,8 +109,8 @@ flowchart TD
 | Curator / Vice Curator | Everything: roles and accounts, featured initiatives, messages, exports, Charter sign-off |
 
 Each permission is enforced in the dashboard **and** in `firestore.rules`.
-The rules are the real boundary: a member can never give themselves any role\r
-or change it (only a curator can), can only edit their own profile fields, and\r
+The rules are the real boundary: a member can never give themselves any role
+or change it (only a curator can), can only edit their own profile fields, and
 only the Curator can change a curator's record or make someone a curator.
 
 ## 4. Initiatives: proposals, joining and leaving
@@ -123,7 +133,7 @@ flowchart LR
 On the public Initiatives page, curators **feature** up to 3 initiatives on the
 homepage. Curators and impact officers put one in the **Spotlight** card.
 
-## 5. Hub Activities and registration
+## 5. Hub Activities: registration and feedback
 
 ```mermaid
 flowchart TD
@@ -135,10 +145,19 @@ flowchart TD
     I --> H[Homepage activity section<br/>in the activity's colour,<br/>arrows when there are several]
     I --> P[/activities/name page/]
     P --> F{Registration<br/>open?}
-    F -->|yes| V[Visitor fills the<br/>custom form] --> AR[(activity_responses)]
+    F -->|yes| V[Visitor fills the<br/>registration form] --> AR[(activity_responses<br/>formType: registration)]
     F -->|no| X[Closed notice]
-    AR --> E[Curator views responses<br/>and exports to Excel]
+    P --> FB{After-event form<br/>opened?}
+    FB -->|yes| FV[Attendee rates the event<br/>and answers questions] --> FR[(activity_responses<br/>formType: feedback)]
+    AR --> E[Curator views responses<br/>by tab and exports to Excel]
+    FR --> E
 ```
+
+Each activity has two forms built with the same editor: **Registration**
+(before the event) and **After the event**. The after-event form starts closed
+and only appears on the activity page once a curator clicks **Open feedback**.
+It starts with three editable questions, including a 1 to 5 star rating; the
+responses window shows each rating question's average.
 
 ## 6. News posts
 
@@ -211,7 +230,7 @@ with `npx firebase-tools deploy --only firestore:rules`.
 | `role_assignments` | Pending roles, keyed by email | The invitee, curators, impact officers |
 | `blogs` | News posts | Everyone if published, otherwise the author and reviewers |
 | `media` | Uploaded photos (served by `/api/media`) | Everyone |
-| `activity_responses` | Registration form answers | Curators, impact officers |
+| `activity_responses` | Registration and after-event answers (`formType`) | Curators, impact officers |
 | `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups | Curators |
 | `settings`, `charter_signatures` | Charter sign-off switch and signatures | Members / curators and impact officers |
 | `*_requests`, `notifications` | Proposals and membership requests | The requester and whoever reviews them |

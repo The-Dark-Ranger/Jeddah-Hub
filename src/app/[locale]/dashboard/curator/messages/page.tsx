@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Messages: messages sent through the Contact page. */
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

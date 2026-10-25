@@ -1,5 +1,5 @@
 declare global {
-  interface Window { grecaptcha: any; }
+  interface Window { grecaptcha: { ready: (cb: () => void) => void; execute: (siteKey: string, opts: { action: string }) => Promise<string> }; }
 }
 
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;

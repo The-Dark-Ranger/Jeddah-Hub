@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Join Initiatives: browse initiatives, request to join or leave,
+ * and propose a new one. */
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection, getDocs, addDoc, query, where, deleteDoc, doc
@@ -17,8 +19,13 @@ import { Link } from '@/i18n/routing';
 import { slugify } from '@/lib/slug';
 import InitiativeCover from '@/components/InitiativeCover';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
+import { errorCode, type MembershipRequest } from '@/lib/types';
 
 type Member = string | { userId?: string; role?: string };
+
+/** Id for an optimistic row until Firestore returns the real one. */
+let tmpSeq = 0;
+const tmpId = () => `tmp_${++tmpSeq}`;
 
 interface Initiative {
   id: string; title: string; description: string; status: string;
@@ -87,7 +94,7 @@ export default function JoinInitiatives() {
         where('userId', '==', user.uid),
         where('status', '==', 'pending'),
       ));
-      setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+      setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as MembershipRequest)));
 
       /* Fetch this user's own proposed-initiative requests, any status,
        * so they can see pending/approved/declined outcomes. */
@@ -103,6 +110,7 @@ export default function JoinInitiatives() {
     }
   }, [user]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const getRequestForInit = (initId: string) =>
@@ -127,7 +135,7 @@ export default function JoinInitiatives() {
         }
       }
     }
-    const optimistic: JoinRequest = { id: 'tmp_' + Date.now(), initiativeId: initId, status: 'pending' };
+    const optimistic: JoinRequest = { id: tmpId(), initiativeId: initId, status: 'pending' };
     setMyRequests(prev => [...prev, optimistic]);
     try {
       const ref = await addDoc(collection(db, 'join_requests'), {
@@ -162,7 +170,7 @@ export default function JoinInitiatives() {
   /* Leave request handlers */
   const handleLeaveRequest = async (init: Initiative) => {
     if (!user) return;
-    const optimisticId = 'tmp_' + Date.now();
+    const optimisticId = tmpId();
     setMyLeaveRequests(prev => [...prev, { id: optimisticId, initiativeId: init.id, status: 'pending' }]);
     try {
       const ref = await addDoc(collection(db, 'leave_requests'), {
@@ -212,8 +220,8 @@ export default function JoinInitiatives() {
       });
       setMyProposals(prev => [...prev, { id: docRef.id, title: proposeForm.title, status: 'pending' }]);
       closePropose();
-    } catch (err: any) {
-      alert(`${t('saveFailed')} ${err?.code || err?.message || ''}`);
+    } catch (err) {
+      alert(`${t('saveFailed')} ${errorCode(err)}`);
     } finally {
       setProposeSaving(false);
     }

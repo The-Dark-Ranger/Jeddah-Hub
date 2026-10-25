@@ -1,5 +1,7 @@
 'use client';
 
+/* Dashboard > Roster: every initiative's team, adding members and handling
+ * pending join requests. */
 import { useState, useEffect } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
@@ -12,6 +14,20 @@ import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import SearchSelect, { type SearchOption } from '@/components/dashboard/SearchSelect';
 import styles from './Roster.module.css';
+import type { InitiativeMember, MembershipRequest, UserDoc } from '@/lib/types';
+
+interface RosterInitiative {
+  id: string;
+  title: string;
+  titleAr?: string;
+  category?: string;
+  status?: string;
+  members?: InitiativeMember[];
+  leads?: string[];
+}
+
+/** A pending join request, with the initiative's title resolved for display. */
+type RosterJoinRequest = MembershipRequest & { initiativeTitle: string };
 
 /** Team members shown per initiative on phones before "View more". */
 const MOBILE_ROSTER_ROWS = 5;
@@ -22,9 +38,9 @@ export default function ManageRoster() {
   const { user } = useAuth();
   const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
-  const [initiatives, setInitiatives] = useState<any[]>([]);
-  const [users, setUsers]             = useState<any[]>([]);
-  const [joinRequests, setJoinRequests] = useState<any[]>([]);
+  const [initiatives, setInitiatives] = useState<RosterInitiative[]>([]);
+  const [users, setUsers]             = useState<UserDoc[]>([]);
+  const [joinRequests, setJoinRequests] = useState<RosterJoinRequest[]>([]);
   const [selectedInit, setSelectedInit] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
   const [tempRole, setTempRole]         = useState('');
@@ -45,12 +61,12 @@ export default function ManageRoster() {
       // Hub Activities (dashboard/curator/activities) are stored as
       // initiatives docs tagged type:'hub_activity', exclude them so they
       // don't show up as rosterable/team-having initiatives here.
-      const inits: any[] = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() }));
-      const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const inits = initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as RosterInitiative));
+      const usrs         = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserDoc));
       const reqs         = reqSnap.docs.map(d => {
         const data = d.data();
-        const init = inits.find((i: any) => i.id === data.initiativeId);
-        return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId };
+        const init = inits.find(i => i.id === data.initiativeId);
+        return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId } as RosterJoinRequest;
       });
       setInitiatives(inits);
       setUsers(usrs);
@@ -62,6 +78,7 @@ export default function ManageRoster() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchData(); }, []);
 
   const handleAddMember = async () => {
@@ -92,7 +109,7 @@ export default function ManageRoster() {
     }
   };
 
-  const handleAcceptJoinRequest = async (req: any) => {
+  const handleAcceptJoinRequest = async (req: RosterJoinRequest) => {
     try {
       await updateDoc(doc(db, 'initiatives', req.initiativeId), {
         members: arrayUnion({ userId: req.userId, role: 'Member' }),
@@ -125,8 +142,8 @@ export default function ManageRoster() {
     const init = initiatives.find(i => i.id === initiativeId);
     if (!init) return;
     try {
-      const removed = (init.members || []).find((m: any) => m.userId === userId);
-      const updated = (init.members || []).filter((m: any) => m.userId !== userId);
+      const removed = (init.members || []).find((m: InitiativeMember) => m.userId === userId);
+      const updated = (init.members || []).filter((m: InitiativeMember) => m.userId !== userId);
       const payload: Record<string, unknown> = { members: updated };
       // Keep `leads` in sync in the other direction too, a removed lead
       // should lose write access, not keep a stale entry in the array
@@ -146,7 +163,7 @@ export default function ManageRoster() {
    *  actually added to the initiative's `leads` array, the exact drift
    *  that causes a "Lead"-badged member to hit permission-denied trying to
    *  save their own initiative. */
-  const isDriftedLead = (init: any, m: any) =>
+  const isDriftedLead = (init: RosterInitiative, m: InitiativeMember) =>
     (m.role || '').toLowerCase().includes('lead') && !(init.leads || []).includes(m.userId);
 
   const handleFixLeadAccess = async (initiativeId: string, userId: string) => {
@@ -173,7 +190,7 @@ export default function ManageRoster() {
   // Searchable by name, Arabic name, email and role; anyone already on the
   // chosen initiative is listed but can't be picked again.
   const memberIds = new Set<string>(
-    (initiatives.find(i => i.id === selectedInit)?.members || []).map((m: any) => m.userId));
+    (initiatives.find(i => i.id === selectedInit)?.members || []).map((m: InitiativeMember) => m.userId));
   const userOptions: SearchOption[] = users
     .map(u => {
       const role = normalizeRole(u.role);
@@ -191,7 +208,7 @@ export default function ManageRoster() {
   // in which case only the matching members are shown.
   const visibleInitiatives = initiatives
     .map(init => {
-      const members: any[] = init.members || [];
+      const members: InitiativeMember[] = init.members || [];
       if (matchesQuery(search, init.title)) return { init, members };
       return { init, members: members.filter(m => matchesQuery(search, getUserLabel(m.userId), m.role)) };
     })
@@ -331,7 +348,7 @@ export default function ManageRoster() {
                         </tr>
                       </thead>
                       <tbody>
-                        {members.map((m: any, idx: number) => (
+                        {members.map((m, idx) => (
                           <tr key={m.userId + idx} className={idx >= MOBILE_ROSTER_ROWS && !expandedInits.has(init.id) ? styles.rowExtra : undefined}>
                             <td className={styles.memberEmail}>{getUserLabel(m.userId)}</td>
                             <td>

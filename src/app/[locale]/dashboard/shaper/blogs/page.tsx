@@ -1,5 +1,6 @@
 'use client';
 
+/* Dashboard > Write Blog: a member's own posts, submitted for review. */
 import { useEffect, useState } from 'react';
 import { subscribeToAuthChanges, UserProfile } from '@/lib/auth';
 import BlogManager from '@/components/BlogManager';

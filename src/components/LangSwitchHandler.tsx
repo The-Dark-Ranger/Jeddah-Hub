@@ -1,5 +1,6 @@
 'use client';
 
+/* After a language switch reloads the page, plays the short crossfade (see data-lang-switch in globals.css). */
 import { useEffect } from 'react';
 
 export default function LangSwitchHandler() {

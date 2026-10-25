@@ -1,5 +1,6 @@
 'use client';
 
+/* Profile photo picker: crops and compresses the image before saving it. */
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { compressToDataUrl, isDataUri, AVATAR_OPTIONS } from '@/lib/imageCompress';

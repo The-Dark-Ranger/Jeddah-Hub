@@ -27,8 +27,8 @@ export default function ThemeLogo({
   };
   return (
     <>
-      <span className="theme-light-only"><Image src="/logo.png" {...shared} /></span>
-      <span className="theme-dark-only"><Image src="/logo-dark.png" {...shared} /></span>
+      <span className="theme-light-only"><Image src="/logo.png" {...shared} alt={shared.alt} /></span>
+      <span className="theme-dark-only"><Image src="/logo-dark.png" {...shared} alt={shared.alt} /></span>
     </>
   );
 }

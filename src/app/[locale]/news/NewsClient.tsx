@@ -7,7 +7,7 @@
  * Shapers write posts from the dashboard; they appear here after publishing.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Link } from '@/i18n/routing';
@@ -58,7 +58,6 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
   const t = useTranslations('NewsPage');
   const locale = useLocale();
   const [posts, setPosts] = useState<NewsPost[]>(initial?.posts ?? []);
-  const [filtered, setFiltered] = useState<NewsPost[]>(initial?.posts ?? []);
   const [loading, setLoading] = useState(!initial);
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('');
@@ -89,7 +88,6 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
             .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
         }
         setPosts(data);
-        setFiltered(data);
         setLoading(false);
 
         // Match each post's initials avatar to its author's real profile
@@ -104,7 +102,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
           );
           const photos: Record<string, string> = {};
           snaps.forEach(s => s.docs.forEach(d => {
-            const url = (d.data() as any).photoURL;
+            const url = d.data().photoURL;
             if (url) photos[d.id] = url;
           }));
           setAuthorPhotos(photos);
@@ -118,14 +116,14 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
     fetchPosts();
   }, [initial]);
 
-  useEffect(() => {
+  const filtered = useMemo(() => {
     let result = posts;
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q));
     }
     if (activeTag) result = result.filter(p => p.tags?.includes(activeTag));
-    setFiltered(result);
+    return result;
   }, [search, activeTag, posts]);
 
   return (

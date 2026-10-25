@@ -89,7 +89,7 @@ export const emptyCustomForm = (): CustomForm => ({ enabled: false, questions: [
 
 /** A new after-event form: off, closed until the event is over, asks for a
  *  name (optional) but not an email. */
-export const emptyFeedbackForm = (): CustomForm => ({
+const emptyFeedbackForm = (): CustomForm => ({
   enabled: false, questions: [], closed: true, collectName: 'optional', collectEmail: 'off',
 });
 

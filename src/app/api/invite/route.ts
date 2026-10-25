@@ -6,7 +6,8 @@ import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody, asString } from '@/lib/http';
 import { isRateLimited } from '@/lib/rateLimit';
 import { normalizeRole } from '@/lib/role';
-import { DEFAULT_MEMBER_PASSWORD } from '@/lib/memberAccounts';
+import { getAuth } from 'firebase-admin/auth';
+import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
 
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
@@ -41,6 +42,21 @@ export async function POST(req: NextRequest) {
 
   if (!RESEND_API_KEY) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });
+  }
+
+  // A member who has never signed in gets a fresh one-time password with
+  // the invite (nothing is stored; this email is the only copy). Anyone who
+  // has signed in already has their own password and is just reminded.
+  let tempPassword: string | null = null;
+  const app = adminApp();
+  if (app) {
+    try {
+      const record = await getAuth(app).getUserByEmail(email);
+      if (!record.metadata.lastSignInTime) {
+        tempPassword = generateTempPassword();
+        await getAuth(app).updateUser(record.uid, { password: tempPassword });
+      }
+    } catch { /* no account yet: the email still invites them */ }
   }
 
   const roleLabel: Record<string, string> = {
@@ -97,9 +113,11 @@ export async function POST(req: NextRequest) {
                 <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Sign in with</p>
                 <p style="margin:0;font-size:14px;color:#475569;line-height:1.7;">
                   Email: <strong>${safeEmail}</strong><br />
-                  Temporary password: <strong>${DEFAULT_MEMBER_PASSWORD}</strong>
+                  ${tempPassword
+                    ? `One-time password: <strong style="font-family:Consolas,monospace;">${tempPassword}</strong>`
+                    : 'Your own password'}
                 </p>
-                <p style="margin:12px 0 0;font-size:13px;color:#b45309;">Please change your password after your first sign-in (Dashboard → My Profile).</p>
+                ${tempPassword ? '<p style="margin:12px 0 0;font-size:13px;color:#b45309;">You will be asked to choose your own password when you first sign in.</p>' : ''}
               </td></tr>
             </table>
           </td>

@@ -186,31 +186,6 @@
 .mobileLinkActive .mobileLinkIcon { background: var(--primary-blue); color: #fff; }
 .mobileLinkActive .mobileChevron { color: var(--primary-blue); opacity: 1; }
 
-/* Theme + language, labelled. */
-.mobileSettings {
-  display: flex; flex-direction: column; gap: .6rem;
-  margin: .25rem 1.5rem 0; padding: .9rem 1rem; border-radius: 16px;
-  background: var(--background-alt); border: 1px solid var(--border-color);
-}
-.settingRow { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.settingLabel { font-size: .85rem; font-weight: 600; color: var(--text-muted); }
-.settingSeg {
-  display: inline-flex; padding: 3px; border-radius: 11px;
-  background: var(--card-bg-solid); border: 1px solid var(--border-color);
-}
-.settingSeg .segBtn {
-  display: inline-flex; align-items: center; gap: .35rem;
-  min-height: 34px; padding: 0 .75rem; border: none; border-radius: 8px; cursor: pointer;
-  background: transparent; color: var(--text-muted); font: inherit; font-size: .82rem; font-weight: 700;
-  transition: background .15s ease, color .15s ease;
-}
-.settingSeg .segBtn svg { width: 14px; height: 14px; }
-/* Selected option: theme from <html data-theme>, language from the page. */
-.settingSeg .segOn,
-:global(html:not([data-theme="dark"])) .settingSeg .segLight,
-:global(html[data-theme="dark"]) .settingSeg .segDark { background: var(--primary-blue); color: #fff; }
-.settingSeg .segBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
-
 /* Auth section */
 .mobileFooter { display: flex; flex-direction: column; gap: .65rem; padding: 1rem 1.5rem 1.25rem; }
 .mobilePrimaryBtn {

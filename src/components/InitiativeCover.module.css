@@ -1,0 +1,16 @@
+/* Designed cover for an initiative without a (working) photo. */
+.cover {
+  --cover-accent: var(--primary-blue);
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  display: grid; place-items: center;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, .22), transparent 45%),
+    linear-gradient(135deg, var(--cover-accent), color-mix(in srgb, var(--cover-accent) 55%, #0b1630));
+}
+.ring1, .ring2 { position: absolute; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .16); }
+.ring1 { width: 220px; height: 220px; inset-inline-end: -60px; top: -70px; }
+.ring2 { width: 140px; height: 140px; inset-inline-start: -40px; bottom: -50px; border-width: 18px; border-color: rgba(255, 255, 255, .07); }
+.monogram {
+  position: relative; font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: .02em;
+  color: rgba(255, 255, 255, .95); text-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}

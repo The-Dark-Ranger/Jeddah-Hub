@@ -128,7 +128,12 @@
     "shareInitiative": "Share initiative",
     "moreInitiatives": "More initiatives",
     "viewAllInitiatives": "View all",
-    "spotlight": "Spotlight"
+    "spotlight": "Spotlight",
+    "statActive": "Active initiatives",
+    "statShapers": "Shapers involved",
+    "statAreas": "Focus areas",
+    "clearFilters": "Clear filters",
+    "filterByArea": "Filter by area"
   },
   "NewsPage": {
     "title": "Voices from the Hub",
@@ -969,7 +974,11 @@
     "fbBadgeClosed": "Feedback closed",
     "fbOpenAction": "Open feedback",
     "fbCloseAction": "Close feedback",
-    "ratingCount": "{n, plural, one {# rating} other {# ratings}}"
+    "ratingCount": "{n, plural, one {# rating} other {# ratings}}",
+    "searchInitiativesPh": "Search initiatives by name, area or result",
+    "joinedTab": "Joined",
+    "teamSize": "{n, plural, =0 {No team yet} one {# member} other {# members}}",
+    "viewPage": "View page"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

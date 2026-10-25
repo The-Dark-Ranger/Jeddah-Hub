@@ -128,7 +128,12 @@
     "shareInitiative": "مشاركة المبادرة",
     "moreInitiatives": "مبادرات أخرى",
     "viewAllInitiatives": "عرض الكل",
-    "spotlight": "في الواجهة"
+    "spotlight": "في الواجهة",
+    "statActive": "مبادرة نشطة",
+    "statShapers": "صانعًا مشاركًا",
+    "statAreas": "مجالات العمل",
+    "clearFilters": "مسح عوامل التصفية",
+    "filterByArea": "تصفية حسب المجال"
   },
   "NewsPage": {
     "title": "أصوات من المركز",
@@ -969,7 +974,11 @@
     "fbBadgeClosed": "التقييم مغلق",
     "fbOpenAction": "فتح التقييم",
     "fbCloseAction": "إغلاق التقييم",
-    "ratingCount": "{n, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
+    "ratingCount": "{n, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",
+    "searchInitiativesPh": "ابحث في المبادرات بالاسم أو المجال أو النتيجة",
+    "joinedTab": "انضممت إليها",
+    "teamSize": "{n, plural, =0 {لا فريق بعد} one {عضو واحد} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}",
+    "viewPage": "عرض الصفحة"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",

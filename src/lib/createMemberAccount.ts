@@ -55,3 +55,16 @@ export async function getSignInStatus(emails: string[]): Promise<Record<string, 
 export async function removePendingMember(email: string): Promise<void> {
   try { await post({ email, action: 'remove' }); } catch { /* best-effort */ }
 }
+
+/** Removes a member who already has an account from the Hub entirely
+ *  (sign-in, profiles, initiatives, requests). 'kept' means the server
+ *  refused (yourself, or a curator removed by a vice curator). */
+export async function deleteMember(uid: string): Promise<'removed' | 'kept' | 'not-found' | 'failed'> {
+  try {
+    const data = await post({ action: 'delete-member', uid });
+    const r = data?.result;
+    return r === 'removed' || r === 'kept' || r === 'not-found' ? r : 'failed';
+  } catch {
+    return 'failed';
+  }
+}

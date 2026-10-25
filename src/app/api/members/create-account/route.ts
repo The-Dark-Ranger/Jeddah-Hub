@@ -90,6 +90,55 @@ async function resetTempPassword(app: App, email: string, callerRole: string | u
   return { result: 'reset', tempPassword };
 }
 
+/** Removes a member from the Hub entirely: their sign-in account, private
+ *  and public profile, pending role assignment, charter signature, any
+ *  initiative they belong to or lead, and their open join/leave requests.
+ *  Never the caller themselves; only the Curator can remove a curator. */
+async function deleteMember(app: App, uid: string, caller: { uid: string; role?: string }): Promise<'removed' | 'kept' | 'not-found'> {
+  if (uid === caller.uid) return 'kept';
+  const db = getFirestore(app);
+  const userRef = db.doc(`users/${uid}`);
+  const user = (await userRef.get()).data();
+  let email = (user?.email as string | undefined)?.toLowerCase();
+  const auth = getAuth(app);
+  try {
+    email ??= (await auth.getUser(uid)).email?.toLowerCase();
+  } catch { /* no sign-in account */ }
+  if (!user && !email) return 'not-found';
+  if (user?.role === 'curator' && caller.role !== 'curator') return 'kept';
+
+  // Initiatives: drop them from `leads` and from the `members` list.
+  const initiatives = await db.collection('initiatives').get();
+  const batch = db.batch();
+  for (const d of initiatives.docs) {
+    const data = d.data();
+    const leads = Array.isArray(data.leads) ? data.leads as string[] : [];
+    const members = Array.isArray(data.members) ? data.members as { userId?: string }[] : [];
+    if (leads.includes(uid) || members.some(m => m?.userId === uid)) {
+      batch.update(d.ref, {
+        leads: leads.filter(l => l !== uid),
+        members: members.filter(m => m?.userId !== uid),
+      });
+    }
+  }
+  for (const coll of ['join_requests', 'leave_requests']) {
+    const reqs = await db.collection(coll).where('userId', '==', uid).get();
+    reqs.docs.forEach(r => batch.delete(r.ref));
+  }
+  batch.delete(userRef);
+  batch.delete(db.doc(`public_profiles/${uid}`));
+  batch.delete(db.doc(`charter_signatures/${uid}`));
+  if (email) batch.delete(db.doc(`role_assignments/${email}`));
+  await batch.commit();
+
+  try {
+    await auth.deleteUser(uid);
+  } catch (err) {
+    if ((err as { code?: string } | null)?.code !== 'auth/user-not-found') throw err;
+  }
+  return 'removed';
+}
+
 export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);
   if (!caller) return NextResponse.json({ result: 'failed', reason: 'unauthorized' }, { status: 401 });
@@ -121,6 +170,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ result: 'failed' }, { status: 500 });
     }
     return NextResponse.json({ result: 'ok', signedIn });
+  }
+
+  // Remove a member who already has an account (Members list).
+  if (body?.action === 'delete-member') {
+    const uid = typeof body.uid === 'string' && /^[A-Za-z0-9]{6,128}$/.test(body.uid) ? body.uid : '';
+    const app = adminApp();
+    if (!app) return NextResponse.json({ result: 'failed', reason: 'not-configured' }, { status: 503 });
+    if (!uid) return NextResponse.json({ result: 'failed', reason: 'invalid-uid' }, { status: 400 });
+    try {
+      return NextResponse.json({ result: await deleteMember(app, uid, caller) });
+    } catch (err) {
+      console.error('delete-member failed:', (err as { code?: string } | null)?.code);
+      return NextResponse.json({ result: 'failed' }, { status: 500 });
+    }
   }
 
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';

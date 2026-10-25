@@ -63,3 +63,26 @@
 @media (hover: none) {
   .segBtn { min-height: 40px; }
 }
+
+/* ── Row actions: status buttons (or role tag) + Remove ── */
+.actions { flex-shrink: 0; display: flex; align-items: center; gap: .5rem; }
+.roleTag {
+  padding: .35rem .75rem; border-radius: 999px; font-size: .78rem; font-weight: 700;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+}
+.removeBtn {
+  padding: .4rem .8rem; border-radius: 9px; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border-color); background: transparent;
+  color: var(--text-muted); font: inherit; font-size: .8rem; font-weight: 700;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.removeBtn:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
+.removeBtn:disabled { opacity: .6; cursor: wait; }
+.removeBtn:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
+/* Armed: waiting for the confirming click. */
+.removeArmed, .removeArmed:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+@media (max-width: 560px) {
+  .actions { justify-content: space-between; }
+  .actions .segment { flex: 1; }
+}

@@ -13,10 +13,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import styles from './JoinInitiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { Link } from '@/i18n/routing';
+import { slugify } from '@/lib/slug';
+import InitiativeCover from '@/components/InitiativeCover';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
+
+type Member = string | { userId?: string; role?: string };
 
 interface Initiative {
   id: string; title: string; description: string; status: string;
-  category?: string; stat?: string; members?: any[];
+  category?: string; stat?: string; members?: Member[];
+  imageUrl?: string; images?: string[]; color?: string; slug?: string;
 }
 interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
 interface InitiativeProposal { id: string; title: string; status: 'pending' | 'approved' | 'declined'; }
@@ -28,6 +35,8 @@ export default function JoinInitiatives() {
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [myRequests, setMyRequests]   = useState<JoinRequest[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [show, setShow]               = useState<'all' | 'mine'>('all');
 
 
   /* Leave request state */
@@ -56,15 +65,15 @@ export default function JoinInitiatives() {
       // initiatives docs tagged type:'hub_activity' — defensively excluded
       // in case one is ever also marked status:'active', so it can't leak
       // into a shaper's browsable/joinable initiatives list.
-      const inits = initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative));
+      const inits = initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as Initiative));
       const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
       // Initiatives this user leads are managed from the "Active Projects"
       // tab instead — excluded here so this page stays a pure browse/join
       // list, not mixed with a lead's own management tools.
       const leadIds = inits
-        .filter(i => (i.members || []).some((m: any) =>
-          (m.userId === user.uid || m === user.uid) &&
+        .filter(i => (i.members || []).some(m =>
+          typeof m === 'object' && m.userId === user.uid &&
           typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
         ))
         .map(i => i.id);
@@ -100,7 +109,7 @@ export default function JoinInitiatives() {
     myRequests.find(r => r.initiativeId === initId);
 
   const isAlreadyMember = (init: Initiative) =>
-    (init.members || []).some((m: any) => m.userId === user?.uid || m === user?.uid);
+    (init.members || []).some(m => (typeof m === 'object' ? m.userId : m) === user?.uid);
 
   const handleRequest = async (initId: string) => {
     if (!user) return;
@@ -214,6 +223,9 @@ export default function JoinInitiatives() {
     <div className={styles.loading}><div className={styles.spinner} /></div>
   );
 
+  const visible = initiatives.filter(i => (show === 'all' || isAlreadyMember(i))
+    && matchesQuery(search, i.title, i.description, i.category, i.stat));
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeaderRow}>
@@ -283,19 +295,49 @@ export default function JoinInitiatives() {
         </ModalPortal>
       )}
 
-      {/* Browsable initiatives grid — excludes the ones this user leads
-       * (those live on the Active Projects tab with full management tools) */}
+      {/* Search, and All / the ones I'm already in */}
+      <div className={styles.toolbar}>
+        <div className={styles.tabs} role="tablist">
+          {([['all', t('filterAll'), initiatives.length], ['mine', t('joinedTab'), initiatives.filter(isAlreadyMember).length]] as const).map(([key, label, count]) => (
+            <button key={key} type="button" role="tab" aria-selected={show === key}
+              className={styles.tab + (show === key ? ' ' + styles.tabActive : '')} onClick={() => setShow(key)}>
+              {label}<span className={styles.tabCount}>{count}</span>
+            </button>
+          ))}
+        </div>
+        <DashSearch value={search} onChange={setSearch} placeholder={t('searchInitiativesPh')}
+          resultLabel={t('resultsCount', { count: visible.length })} />
+      </div>
+
+      {/* Browsable initiatives grid. Excludes the ones this user leads
+       * (those live on the Active Projects tab with full management tools). */}
+      {visible.length === 0 && <p className={styles.emptyNote}>{t('noMatches')}</p>}
       <div className={styles.grid}>
-        {initiatives.map(init => {
+        {visible.map(init => {
           const req    = getRequestForInit(init.id);
           const member = isAlreadyMember(init);
+          const team   = (init.members || []).length;
           return (
             <div key={init.id} className={styles.card}>
+              <div className={styles.cardCover}>
+                <InitiativeCover src={init.imageUrl || init.images?.[0]} title={init.title} accent={init.color || '#0f5a9f'} />
+              </div>
               <div className={styles.cardBody}>
                 {init.category && <span className={styles.categoryPill}><CategoryLabel category={init.category} /></span>}
                 <h3 className={styles.cardTitle}>{init.title}</h3>
                 <p className={styles.cardDesc}>{init.description}</p>
                 {init.stat && <p className={styles.cardStat}>{init.stat}</p>}
+                <div className={styles.cardMetaRow}>
+                  <span className={styles.cardTeam}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    {t('teamSize', { n: team })}
+                  </span>
+                  <Link href={'/projects/' + (init.slug || slugify(init.title))} className={styles.viewLink} target="_blank">
+                    {t('viewPage')}
+                  </Link>
+                </div>
               </div>
               <div className={styles.cardFooter}>
                 {member ? (

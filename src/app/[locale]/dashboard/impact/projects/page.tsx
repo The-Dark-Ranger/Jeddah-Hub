@@ -9,6 +9,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import InitiativeCover from '@/components/InitiativeCover';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import ImageUploader from '@/components/ImageUploader';
 import ModalPortal from '@/components/ModalPortal';
 import { CATEGORIES } from '@/components/InitiativeFormFields';
@@ -25,6 +27,7 @@ interface Initiative {
   description: string;
   status: 'active' | 'archived';
   category?: string;
+  color?: string;
   startDate?: string;
   endDate?: string;
   imageUrl?: string;
@@ -129,6 +132,7 @@ export default function ImpactProjects() {
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
   const [filter, setFilter]           = useState<'all' | 'active' | 'archived'>('all');
+  const [search, setSearch]           = useState('');
 
   /* Modal state */
   const [modalMode, setModalMode]       = useState<'create' | 'edit' | null>(null);
@@ -384,7 +388,8 @@ export default function ImpactProjects() {
   const getMemberNames = (init: Initiative) =>
     Object.fromEntries((init.members || []).map(m => [m.userId, getUserLabel(m.userId)]));
 
-  const filtered      = initiatives.filter(i => filter === 'all' || i.status === filter);
+  const filtered      = initiatives.filter(i => (filter === 'all' || i.status === filter)
+    && matchesQuery(search, i.title, i.description, i.category, i.stat));
   const activeCount   = initiatives.filter(i => i.status === 'active').length;
   const archivedCount = initiatives.filter(i => i.status === 'archived').length;
 
@@ -445,7 +450,8 @@ export default function ImpactProjects() {
         </ModalPortal>
       )}
 
-      {/* Filter tabs */}
+      {/* Filter tabs + search */}
+      <div className={styles.filterRow}>
       <div className={styles.filterBar}>
         {([
           { key: 'all',      label: t('filterAll'),      count: initiatives.length },
@@ -461,6 +467,13 @@ export default function ImpactProjects() {
             <span className={styles.filterCount}>{f.count}</span>
           </button>
         ))}
+      </div>
+        <DashSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={t('searchInitiativesPh')}
+          resultLabel={t('resultsCount', { count: filtered.length })}
+        />
       </div>
 
       {/* Cards */}
@@ -492,18 +505,7 @@ export default function ImpactProjects() {
               <div key={init.id} className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}>
 
                 <div className={styles.cardImage}>
-                  {init.imageUrl
-                    ? (
-                      <img
-                        src={init.imageUrl}
-                        alt={init.title}
-                        loading="lazy"
-                        decoding="async"
-                        onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                      />
-                    )
-                    : <div className={styles.cardImageFallback} />
-                  }
+                  <InitiativeCover src={init.imageUrl} title={init.title} accent={init.color || '#0f5a9f'} />
                 </div>
 
                 <div className={styles.cardBody}>
@@ -541,9 +543,9 @@ export default function ImpactProjects() {
                   </div>
                 </div>
 
-                {/* Action bar */}
-                <div className={styles.cardActions}>
-                  {init.status === 'active' && (
+                {/* Spotlight toggle (active only), then Edit, Team and icon buttons */}
+                {init.status === 'active' && (
+                  <div className={styles.cardToggles}>
                     <button
                       type="button"
                       className={styles.spotlightBtn + (init.spotlight ? ' ' + styles.spotlightBtnOn : '')}
@@ -555,55 +557,58 @@ export default function ImpactProjects() {
                       </svg>
                       {init.spotlight ? t('removeSpotlight') : t('setSpotlight')}
                     </button>
-                  )}
-                  <button className={styles.editBtn} onClick={() => openEdit(init)}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  </div>
+                )}
+                <div className={styles.cardActions}>
+                  <button type="button" className={styles.editBtn} onClick={() => openEdit(init)}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                     {t('editLabel')}
                   </button>
-
                   <button
+                    type="button"
                     className={styles.teamBtn + (teamOpen ? ' ' + styles.teamBtnOpen : '')}
                     onClick={() => toggleTeam(init.id)}
+                    aria-expanded={teamOpen}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                       <circle cx="9" cy="7" r="4"/>
                       <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                     {t('teamLabel')} ({members.length})
                   </button>
-
                   <button
-                    className={styles.downloadBtn}
-                    onClick={() => void downloadInitiativeReport(init as any, getMemberNames(init))}
+                    type="button"
+                    className={styles.downloadBtn + ' ' + styles.iconOnly}
+                    onClick={() => void downloadInitiativeReport(init as Parameters<typeof downloadInitiativeReport>[0], getMemberNames(init))}
+                    title={t('downloadReport')}
+                    aria-label={t('downloadReport')}
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {t('downloadReport')}
                   </button>
-
                   {init.status === 'active' ? (
-                    <button className={styles.archiveBtn} onClick={() => handleArchive(init.id)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button type="button" className={styles.archiveBtn + ' ' + styles.iconOnly} onClick={() => handleArchive(init.id)}
+                      title={`${t('archiveLabel')} · ${t('notifyCurator')}`} aria-label={`${t('archiveLabel')} · ${t('notifyCurator')}`}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                         <polyline points="21 8 21 21 3 21 3 8"/>
                         <rect x="1" y="3" width="22" height="5"/>
                         <line x1="10" y1="12" x2="14" y2="12"/>
                       </svg>
-                      {t('archiveLabel')} · {t('notifyCurator')}
                     </button>
                   ) : (
-                    <button className={styles.restoreBtn} onClick={() => handleRestore(init.id)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button type="button" className={styles.restoreBtn + ' ' + styles.iconOnly} onClick={() => handleRestore(init.id)}
+                      title={`${t('restoreLabel')} · ${t('notifyCurator')}`} aria-label={`${t('restoreLabel')} · ${t('notifyCurator')}`}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                         <polyline points="1 4 1 10 7 10"/>
                         <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
                       </svg>
-                      {t('restoreLabel')} · {t('notifyCurator')}
                     </button>
                   )}
                 </div>

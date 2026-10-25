@@ -356,3 +356,19 @@
 .spotlightBtn:hover, .spotlightBtnOn { background: #7c3aed; color: #fff; border-color: #7c3aed; }
 :global([data-theme="dark"]) .spotlightBtnOn, :global([data-theme="dark"]) .spotlightBtn:hover { color: #fff; }
 .spotlightBtn:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
+
+/* ── Search beside the filter tabs ── */
+.filterRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1.25rem; }
+.filterRow .filterBar { margin: 0; }
+
+/* ── Card actions: spotlight toggle, then Edit, Team and icon buttons ── */
+.cardToggles { display: grid; padding: .75rem 1.2rem 0; border-top: 1px solid var(--border-color); background: var(--background); }
+.cardToggles .spotlightBtn { justify-content: center; }
+.cardToggles + .cardActions { border-top: none; }
+.cardActions { display: grid; grid-template-columns: 1fr 1fr auto auto; flex-wrap: nowrap; }
+.cardActions .editBtn, .cardActions .teamBtn { justify-content: center; }
+.cardActions .iconOnly { width: 36px; height: 36px; padding: 0; justify-content: center; margin: 0; }
+/* Long toggle labels wrap instead of being cut; Edit/Team stay on one line. */
+.cardToggles .featureBtn, .cardToggles .spotlightBtn { white-space: normal; text-align: center; line-height: 1.25; font-size: .78rem; padding: .4rem .55rem; }
+.cardActions { gap: .4rem; }
+.cardActions .editBtn, .cardActions .teamBtn { white-space: nowrap; padding: .4rem .55rem; min-width: 0; }

@@ -1,3 +1,5 @@
+/* Builds the .xlsx a curator downloads from an activity's responses
+ * (registration or after-event). Every cell is spreadsheet-safe. */
 import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 
@@ -18,6 +20,8 @@ export async function downloadActivityResponses(
   activityTitle: string,
   questions: Question[],
   responses: Response[],
+  /** Added to the file name, e.g. "Feedback". */
+  fileLabel = 'Responses',
 ) {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Responses');
@@ -59,7 +63,7 @@ export async function downloadActivityResponses(
   const a = document.createElement('a');
   const safeName = activityTitle.replace(/[^a-z0-9]/gi, '_').substring(0, 40);
   a.href = url;
-  a.download = `${safeName}_Responses.xlsx`;
+  a.download = `${safeName}_${fileLabel}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -174,7 +174,14 @@
     "linkCopied": "تم نسخ الرابط",
     "shareActivity": "مشاركة النشاط",
     "registrationClosedTitle": "التسجيل مغلق",
-    "registrationClosedBody": "شكراً لاهتمامك، تابع أخبارنا لتلحق بالنشاط القادم."
+    "registrationClosedBody": "شكراً لاهتمامك، تابع أخبارنا لتلحق بالنشاط القادم.",
+    "fbKicker": "بعد الفعالية",
+    "fbFormTitle": "كيف كانت تجربتك؟",
+    "fbSubmitBtn": "إرسال التقييم",
+    "fbThankYouTitle": "شكرًا على رأيك!",
+    "fbThankYouBody": "رأيك يساعدنا على جعل الفعالية القادمة أفضل.",
+    "fbCta": "شاركنا رأيك",
+    "ratingOf": "{n} من ٥"
   },
   "BecomeShaperPage": {
     "title": "كن صانعاً",
@@ -946,7 +953,19 @@
     "filterTeam": "فريق الإدارة",
     "memberRemoveConfirm": "اضغط مرة أخرى للحذف",
     "memberRemoveRefused": "لا يمكنك حذف هذا العضو.",
-    "memberRemoveFailed": "تعذّر حذف العضو. يُرجى المحاولة مرة أخرى."
+    "memberRemoveFailed": "تعذّر حذف العضو. يُرجى المحاولة مرة أخرى.",
+    "fbTitle": "بعد الفعالية",
+    "fbSubtitle": "اسأل الحضور عن انطباعهم. يبقى مخفيًا عن صفحة النشاط حتى تفتحه.",
+    "fbClosedNote": "مخفي عن صفحة النشاط. افتحه بعد انتهاء الفعالية.",
+    "fbStarterRating": "كيف تقيّم الفعالية بشكل عام؟",
+    "fbStarterBest": "ما أكثر ما أعجبك؟",
+    "fbStarterImprove": "ما الذي يمكننا تحسينه في المرة القادمة؟",
+    "qTypeRating": "تقييم (من ١ إلى ٥ نجوم)",
+    "fbBadgeOpen": "التقييم مفتوح",
+    "fbBadgeClosed": "التقييم مغلق",
+    "fbOpenAction": "فتح التقييم",
+    "fbCloseAction": "إغلاق التقييم",
+    "ratingCount": "{n, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
   },
   "CharterPage": {
     "eyebrow": "مجتمع صنّاع العالم",

@@ -9,7 +9,8 @@ export interface Highlight { name: string; tag: string; }
 export interface CustomFormQuestion {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'checkbox';
+  /** 'rating' is a 1 to 5 star score, stored as "1"…"5". */
+  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'rating';
   options?: string[];
   required: boolean;
 }
@@ -35,6 +36,10 @@ export const FORM_TEXT_MAX = { intro: 600, successMessage: 400 } as const;
 
 export type ActivityKind = 'activity' | 'workshop';
 
+/** Which of an activity's two forms a response answers: the registration
+ *  form before the event, or the feedback form after it. */
+export type FormType = 'registration' | 'feedback';
+
 export interface ActivityFormData {
   title: string;
   eyebrow: string;
@@ -48,6 +53,9 @@ export interface ActivityFormData {
   active: boolean;
   kind: ActivityKind;
   customForm: CustomForm;
+  /** The after-event form (feedback from attendees). Same shape as the
+   *  registration form; hidden from the page until it is opened. */
+  feedbackForm: CustomForm;
   /** Cover photo — a remote URL or a compressed data URI (ImageUploader). */
   imageUrl: string;
   /** Extra gallery photos shown on the activity's own page. */
@@ -63,7 +71,7 @@ export interface ActivityFormData {
  *  `slug`) past a curator who just clicks Approve. */
 const ACTIVITY_PAYLOAD_KEYS = [
   'title', 'eyebrow', 'subtitle', 'description', 'date', 'location',
-  'ctaText', 'ctaUrl', 'highlights', 'active', 'archived', 'kind', 'customForm',
+  'ctaText', 'ctaUrl', 'highlights', 'active', 'archived', 'kind', 'customForm', 'feedbackForm',
   'imageUrl', 'images', 'color',
 ] as const;
 
@@ -79,10 +87,17 @@ export function pickActivityFields(payload: Record<string, unknown>): Record<str
 
 export const emptyCustomForm = (): CustomForm => ({ enabled: false, questions: [] });
 
+/** A new after-event form: off, closed until the event is over, asks for a
+ *  name (optional) but not an email. */
+export const emptyFeedbackForm = (): CustomForm => ({
+  enabled: false, questions: [], closed: true, collectName: 'optional', collectEmail: 'off',
+});
+
 export const emptyActivityForm = (): ActivityFormData => ({
   title: '', eyebrow: '', subtitle: '', description: '',
   date: '', location: '', ctaText: '', ctaUrl: '',
   highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
+  feedbackForm: emptyFeedbackForm(),
   imageUrl: '', images: [], color: '',
 });
 
@@ -103,6 +118,7 @@ export function activityToForm(a: Partial<ActivityFormData>): ActivityFormData {
     active: a.active ?? base.active,
     kind: a.kind || base.kind,
     customForm: a.customForm || base.customForm,
+    feedbackForm: a.feedbackForm || base.feedbackForm,
     imageUrl: a.imageUrl ?? base.imageUrl,
     images: Array.isArray(a.images) ? a.images : base.images,
     color: safeColor(a.color) ?? '',

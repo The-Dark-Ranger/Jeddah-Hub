@@ -222,3 +222,23 @@
   .cardTop:not(:has(.cardThumb)) .cardInfo { flex-basis: 100%; }
   .cardActions > button { flex: 1 1 auto; min-height: 38px; }
 }
+/* ── Responses window: Registration / After the event tabs ── */
+.responseTabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.responseTab {
+  display: inline-flex; align-items: center; gap: .45rem; cursor: pointer;
+  padding: .45rem .9rem; border-radius: 999px; border: 1px solid var(--border-color);
+  background: var(--background); color: var(--text-muted); font: inherit; font-size: .84rem; font-weight: 600;
+}
+.responseTab:hover { color: var(--text-main); }
+.responseTabActive, .responseTabActive:hover { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.responseTabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
+.responseTabActive .responseTabCount { background: rgba(255, 255, 255, .22); }
+
+/* Average score of a star-rating question. */
+.ratingSummary {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .75rem;
+  padding: .7rem 1rem; border-radius: 12px; background: var(--background-alt);
+  font-size: .88rem; color: var(--text-main);
+}
+.ratingSummaryScore { font-size: 1.1rem; font-weight: 800; color: #d98a00; }
+.ratingSummaryCount { margin-inline-start: auto; font-size: .78rem; color: var(--text-muted); }

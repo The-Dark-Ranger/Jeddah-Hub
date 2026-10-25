@@ -174,7 +174,14 @@
     "linkCopied": "Link copied",
     "shareActivity": "Share activity",
     "registrationClosedTitle": "Registration is closed",
-    "registrationClosedBody": "Thank you for your interest — follow our news for the next one."
+    "registrationClosedBody": "Thank you for your interest — follow our news for the next one.",
+    "fbKicker": "After the event",
+    "fbFormTitle": "How was it?",
+    "fbSubmitBtn": "Send feedback",
+    "fbThankYouTitle": "Thank you for your feedback!",
+    "fbThankYouBody": "It helps us make the next one even better.",
+    "fbCta": "Share your feedback",
+    "ratingOf": "{n} out of 5"
   },
   "BecomeShaperPage": {
     "title": "Become a Shaper",
@@ -946,7 +953,19 @@
     "filterTeam": "Curatorship",
     "memberRemoveConfirm": "Click again to remove",
     "memberRemoveRefused": "This member can't be removed by you.",
-    "memberRemoveFailed": "Couldn't remove this member. Please try again."
+    "memberRemoveFailed": "Couldn't remove this member. Please try again.",
+    "fbTitle": "After the event",
+    "fbSubtitle": "Ask attendees how it went. Stays hidden from the activity page until you open it.",
+    "fbClosedNote": "Hidden from the activity page. Open it once the event is over.",
+    "fbStarterRating": "How would you rate the event overall?",
+    "fbStarterBest": "What did you enjoy most?",
+    "fbStarterImprove": "What could we do better next time?",
+    "qTypeRating": "Rating (1 to 5 stars)",
+    "fbBadgeOpen": "Feedback open",
+    "fbBadgeClosed": "Feedback closed",
+    "fbOpenAction": "Open feedback",
+    "fbCloseAction": "Close feedback",
+    "ratingCount": "{n, plural, one {# rating} other {# ratings}}"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
@@ -10,6 +10,7 @@ import WaveDivider from '@/components/WaveDivider';
 import { slugify } from '@/lib/slug';
 import { safeColor, type CustomForm } from '@/lib/activityTypes';
 import InitiativeGallery from '@/components/InitiativeGallery';
+import ActivityForm from './ActivityForm';
 import styles from './Activity.module.css';
 import { safeExternalUrl } from '@/lib/sanitize';
 
@@ -32,6 +33,7 @@ export interface Activity {
   type?: string;
   kind?: 'activity' | 'workshop';
   customForm?: CustomForm;
+  feedbackForm?: CustomForm;
   slug?: string;
 }
 
@@ -43,12 +45,6 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
   const router = useRouter();
 
   const [activity, setActivity] = useState<Activity | null | 'loading'>(initial === undefined ? 'loading' : initial);
-  const [answers, setAnswers]   = useState<Record<string, string>>({});
-  const [submitterName, setSubmitterName]   = useState('');
-  const [submitterEmail, setSubmitterEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted]   = useState(false);
-  const [error, setError]           = useState('');
   const [copied, setCopied]         = useState(false);
 
   useEffect(() => {
@@ -77,14 +73,14 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
         // match by computing the slug from the title on the fly.
         if (!data) {
           const allSnap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
-          const match = allSnap.docs.find(d => slugify((d.data() as any).title || '') === rawId);
+          const match = allSnap.docs.find(d => slugify(String(d.data().title || '')) === rawId);
           if (match) data = { id: match.id, ...(match.data() as Omit<Activity, 'id'>) };
         }
 
         // Legacy: a bare doc-ID link from before this page had slugs at all.
         if (!data) {
           const legacySnap = await getDoc(doc(db, 'initiatives', rawId));
-          if (legacySnap.exists() && (legacySnap.data() as any).type === 'hub_activity') {
+          if (legacySnap.exists() && legacySnap.data().type === 'hub_activity') {
             data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Activity, 'id'>) };
           }
         }
@@ -103,58 +99,6 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
     load();
   }, [rawId, initial, router]);
 
-  const setAnswer = (qid: string, value: string) => setAnswers(a => ({ ...a, [qid]: value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activity === 'loading' || !activity) return;
-    const questions = activity.customForm?.questions || [];
-    const missing = questions.find(q => {
-      if (!q.required) return false;
-      // A select question with no real options can never be answered —
-      // never let it block submission even if marked required.
-      if (q.type === 'select' && (q.options || []).filter(o => o.trim()).length === 0) return false;
-      return !answers[q.id]?.trim();
-    });
-    if (missing) {
-      setError(t('missingRequired', { field: missing.label }));
-      return;
-    }
-    const cf = activity.customForm;
-    if (cf?.collectName === 'required' && !submitterName.trim()) {
-      setError(t('missingRequired', { field: t('yourName') }));
-      return;
-    }
-    if (cf?.collectEmail === 'required' && !submitterEmail.trim()) {
-      setError(t('missingRequired', { field: t('yourEmail') }));
-      return;
-    }
-    if (cf?.closed) return;
-    setError('');
-    setSubmitting(true);
-    try {
-      const payload: Record<string, unknown> = {
-        activityId: activity.id,
-        answers,
-        submittedAt: new Date().toISOString(),
-        read: false,
-      };
-      if (submitterName.trim())  payload.submitterName  = submitterName.trim();
-      if (submitterEmail.trim()) payload.submitterEmail = submitterEmail.trim();
-      await addDoc(collection(db, 'activity_responses'), payload);
-      setSubmitted(true);
-    } catch (err: any) {
-      console.error('Activity response submit failed:', err?.code || err);
-      // permission-denied here almost always means the Firestore rules
-      // this collection needs haven't been deployed yet (a config/ops gap,
-      // not something the visitor can fix by retrying) — say so plainly
-      // instead of a generic message that reads like a transient failure.
-      setError(err?.code === 'permission-denied' ? t('submitFailedPermission') : t('submitFailed'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (activity === 'loading') {
     return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
   }
@@ -171,12 +115,15 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
 
   const hasHighlights = (activity.highlights?.length ?? 0) > 0;
   const cf = activity.customForm;
-  const askName = cf?.collectName ?? 'optional';
-  const askEmail = cf?.collectEmail ?? 'optional';
-  // A form is worth showing if it asks anything at all — custom questions,
-  // or just the registrant's name/email.
-  const hasForm = !!cf?.enabled && ((cf.questions?.length ?? 0) > 0 || askName !== 'off' || askEmail !== 'off');
+  // A form is worth showing if it asks anything at all: custom questions,
+  // or just the person's name/email.
+  const asksAnything = (f?: CustomForm) =>
+    !!f?.enabled && ((f.questions?.length ?? 0) > 0 || (f.collectName ?? 'optional') !== 'off' || (f.collectEmail ?? 'optional') !== 'off');
+  const hasForm = asksAnything(cf);
   const formOpen = hasForm && !cf?.closed;
+  // The after-event form only appears once a curator opens it.
+  const fb = activity.feedbackForm;
+  const feedbackOpen = asksAnything(fb) && !fb?.closed;
   const mapsUrl = activity.location
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.location)}`
     : '';
@@ -212,15 +159,18 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
             </div>
           )}
           <div className={styles.heroActions}>
+            {feedbackOpen && (
+              <a href="#feedback" className={styles.ctaBtn}>{t('fbCta')}</a>
+            )}
             {formOpen && (
-              <a href="#register" className={styles.ctaBtn}>{t('registerNow')}</a>
+              <a href="#register" className={feedbackOpen ? styles.ctaBtnGhost : styles.ctaBtn}>{t('registerNow')}</a>
             )}
             {activity.ctaText && safeExternalUrl(activity.ctaUrl) && (
               <a
                 href={safeExternalUrl(activity.ctaUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={formOpen ? styles.ctaBtnGhost : styles.ctaBtn}
+                className={formOpen || feedbackOpen ? styles.ctaBtnGhost : styles.ctaBtn}
               >
                 {activity.ctaText}
               </a>
@@ -294,98 +244,18 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
         </section>
       )}
 
-      {hasForm && (
+      {feedbackOpen && fb && (
+        <section className={styles.sectionAlt + ' ' + styles.registerSection + ' ' + styles.feedbackSection} id="feedback">
+          <div className={styles.containerNarrow}>
+            <ActivityForm activityId={activity.id} form={fb} formType="feedback" />
+          </div>
+        </section>
+      )}
+
+      {hasForm && cf && (
         <section className={styles.sectionAlt + ' ' + styles.registerSection} id="register">
           <div className={styles.containerNarrow}>
-            {!formOpen ? (
-              <div className={styles.closedBox}>
-                <h2>{t('registrationClosedTitle')}</h2>
-                <p>{t('registrationClosedBody')}</p>
-              </div>
-            ) : submitted ? (
-              <div className={styles.successBox}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
-                </svg>
-                <h2>{t('thankYouTitle')}</h2>
-                <p>{cf?.successMessage?.trim() || t('thankYouBody')}</p>
-              </div>
-            ) : (
-              <form className={styles.form} onSubmit={handleSubmit}>
-                <h2 className={styles.formTitle}>{t('formTitle')}</h2>
-                {cf?.intro?.trim() && <p className={styles.formIntro}>{cf.intro}</p>}
-
-                {(askName !== 'off' || askEmail !== 'off') && (
-                  <div className={styles.formRow}>
-                    {askName !== 'off' && (
-                      <div className={styles.field}>
-                        <label className={styles.label} htmlFor="reg-name">{t('yourName')} {askName === 'required' && '*'}</label>
-                        <input id="reg-name" className={styles.input} autoComplete="name" maxLength={200} required={askName === 'required'}
-                          value={submitterName} onChange={e => setSubmitterName(e.target.value)} placeholder={t('yourNamePh')} />
-                      </div>
-                    )}
-                    {askEmail !== 'off' && (
-                      <div className={styles.field}>
-                        <label className={styles.label} htmlFor="reg-email">{t('yourEmail')} {askEmail === 'required' && '*'}</label>
-                        <input id="reg-email" className={styles.input} type="email" autoComplete="email" inputMode="email" maxLength={200} required={askEmail === 'required'}
-                          value={submitterEmail} onChange={e => setSubmitterEmail(e.target.value)} placeholder={t('yourEmailPh')} />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(cf?.questions || []).map(q => (
-                  <div key={q.id} className={styles.field}>
-                    <label className={styles.label}>{q.label} {q.required && '*'}</label>
-                    {q.type === 'text' && (
-                      <input className={styles.input} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required} />
-                    )}
-                    {q.type === 'textarea' && (
-                      <textarea className={styles.textarea} rows={3} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required} />
-                    )}
-                    {q.type === 'select' && (() => {
-                      const opts = (q.options || []).filter(o => o.trim());
-                      return (
-                        <select className={styles.input} value={answers[q.id] || ''} onChange={e => setAnswer(q.id, e.target.value)} required={q.required && opts.length > 0} disabled={opts.length === 0}>
-                          <option value="">{opts.length === 0 ? t('selectNoOptions') : t('selectPrompt')}</option>
-                          {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      );
-                    })()}
-                    {q.type === 'checkbox' && (
-                      <div className={styles.yesNoRow}>
-                        <label className={styles.checkRow}>
-                          <input
-                            type="radio"
-                            name={`q-${q.id}`}
-                            checked={answers[q.id] === 'yes'}
-                            onChange={() => setAnswer(q.id, 'yes')}
-                            required={q.required}
-                          />
-                          {t('yes')}
-                        </label>
-                        <label className={styles.checkRow}>
-                          <input
-                            type="radio"
-                            name={`q-${q.id}`}
-                            checked={answers[q.id] === 'no'}
-                            onChange={() => setAnswer(q.id, 'no')}
-                            required={q.required}
-                          />
-                          {t('no')}
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {error && <p className={styles.errorMsg}>{error}</p>}
-
-                <button type="submit" className={styles.submitBtn} disabled={submitting}>
-                  {submitting ? t('submittingDots') : t('submitBtn')}
-                </button>
-              </form>
-            )}
+            <ActivityForm activityId={activity.id} form={cf} formType="registration" />
           </div>
         </section>
       )}

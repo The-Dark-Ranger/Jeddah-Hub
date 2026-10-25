@@ -155,11 +155,12 @@ export default function LeadActivitiesPage() {
   // inactive at the same time — same rule the curator's direct-write page
   // applies, so a lead can't archive-but-leave-live and forget to hide it.
   // Leads request the change like any other edit; a curator approves it.
-  async function handleRequestToggleRegistration(a: Activity) {
-    if (!a.customForm) return;
+  async function handleRequestToggleForm(a: Activity, key: 'customForm' | 'feedbackForm') {
+    const f = a[key];
+    if (!f) return;
     try {
       await submitRequest('update', a.id, a.initiativeId!, a.title, {
-        customForm: { ...a.customForm, closed: !a.customForm.closed },
+        [key]: { ...f, closed: !f.closed },
       });
       fetchAll();
     } catch (err) {
@@ -276,10 +277,15 @@ export default function LeadActivitiesPage() {
                   </span>
                   {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
                   {a.customForm?.enabled && (
-                  <span className={styles.badge + ' ' + (a.customForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
-                    {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
-                  </span>
-                )}
+                    <span className={styles.badge + ' ' + (a.customForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
+                      {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
+                    </span>
+                  )}
+                  {a.feedbackForm?.enabled && (
+                    <span className={styles.badge + ' ' + (a.feedbackForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
+                      {a.feedbackForm.closed ? t('fbBadgeClosed') : t('fbBadgeOpen')}
+                    </span>
+                  )}
                 </div>
                 {a.description && <p className={styles.cardDesc}>{a.description}</p>}
                 {pending ? (
@@ -288,13 +294,21 @@ export default function LeadActivitiesPage() {
                   <div className={styles.cardActions}>
                     <button className={styles.editBtn} onClick={() => openEdit(a)}>{t('editActivity')}</button>
                     {a.customForm?.enabled && (
-                  <button
-                    className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
-                    onClick={() => handleRequestToggleRegistration(a)}
-                  >
-                    {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
-                  </button>
-                )}
+                      <button
+                        className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
+                        onClick={() => handleRequestToggleForm(a, 'customForm')}
+                      >
+                        {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
+                      </button>
+                    )}
+                    {a.feedbackForm?.enabled && (
+                      <button
+                        className={styles.toggleBtn + ' ' + (a.feedbackForm.closed ? styles.toggleOn : styles.toggleOff)}
+                        onClick={() => handleRequestToggleForm(a, 'feedbackForm')}
+                      >
+                        {a.feedbackForm.closed ? t('fbOpenAction') : t('fbCloseAction')}
+                      </button>
+                    )}
                     <button
                       className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
                       onClick={() => handleRequestToggleActive(a)}
@@ -422,6 +436,11 @@ export default function LeadActivitiesPage() {
               <RegistrationFormBuilder
                 value={form.customForm}
                 onChange={customForm => setForm(f => ({ ...f, customForm }))}
+              />
+              <RegistrationFormBuilder
+                variant="feedback"
+                value={form.feedbackForm}
+                onChange={feedbackForm => setForm(f => ({ ...f, feedbackForm }))}
               />
             </div>
 

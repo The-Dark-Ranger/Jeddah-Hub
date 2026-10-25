@@ -71,7 +71,7 @@ const ChevronDownIcon = ({ expanded }: { expanded: boolean }) => (
 );
 
 // Long enough that a 3-line clamp at the card's font/width would visibly
-// cut it off — short of that, there's nothing to expand.
+// cut it off, short of that, there's nothing to expand.
 const BIO_CLAMP_THRESHOLD = 140;
 
 function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
@@ -199,7 +199,7 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
 }
 
 // Past this many cards, the grid gets a "View more" toggle instead of
-// rendering everyone at once — keeps the initial page short on both
+// rendering everyone at once, keeps the initial page short on both
 // mobile (where 10 cards is already several screens) and desktop.
 const VISIBLE_STEP = 10;
 
@@ -218,7 +218,7 @@ function PeopleGrid({ people, emptyLabel }: { people: LiveShaper[]; emptyLabel: 
   const handleToggle = () => {
     if (expanded) {
       // Collapsing can leave the viewport scrolled past the now-shorter
-      // grid — bring the section back into view instead of stranding the
+      // grid, bring the section back into view instead of stranding the
       // reader on empty space below the fold.
       gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -244,7 +244,7 @@ function PeopleGrid({ people, emptyLabel }: { people: LiveShaper[]; emptyLabel: 
 
 const ROLE_ORDER: Record<string, number> = { curator: 0, vice_curator: 1, impact_officer: 2 };
 
-/** Public profile docs (with `uid`) plus the number of real initiatives —
+/** Public profile docs (with `uid`) plus the number of real initiatives,
  *  what the page needs, loaded on the server (page.tsx) or in the browser. */
 export interface AboutData {
   profiles: Record<string, unknown>[];
@@ -317,7 +317,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
     // every casing/spacing variant the app has ever written to `role`
     // (Firestore rules' isCurator()/isImpactOfficer() already tolerate
     // both "vice_curator"/"vice curator" and "impact_officer"/"impact
-    // officer") — otherwise a vice curator or impact officer whose role
+    // officer"), otherwise a vice curator or impact officer whose role
     // happens to be stored in one of those variants would be silently
     // excluded from this query before it ever reaches the client.
     const roleVariants = [
@@ -328,7 +328,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
     // Fallback when the server couldn't load the data: reads the
     // public_profiles mirror (no email field, see firestore.rules) and uses
     // server-side counts instead of downloading every initiative doc.
-    // db can be undefined if Firebase failed to initialize — building the
+    // db can be undefined if Firebase failed to initialize, building the
     // queries inside this .then() turns that throw into a rejection the
     // .catch() below handles, keeping the page rendering.
     Promise.resolve()
@@ -336,7 +336,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
         getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
         getCountFromServer(collection(db, 'initiatives')),
         // Hub Activities are stored as initiatives docs tagged
-        // type:'hub_activity' — not real initiatives, so subtract them.
+        // type:'hub_activity', not real initiatives, so subtract them.
         getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
       ]))
       .then(([usersSnap, initCount, activityCount]) => {

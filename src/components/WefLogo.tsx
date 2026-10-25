@@ -1,7 +1,7 @@
 /** The World Economic Forum's official logo (public/wef-logo.svg, from
  *  Wikimedia Commons) with its all-white reverse for dark backgrounds.
  *  `variant="auto"` follows the site theme; "white" is for surfaces that
- *  are always dark. Plain <img> — next/image won't optimise SVGs. */
+ *  are always dark. Plain <img>, next/image won't optimise SVGs. */
 export default function WefLogo({
   alt,
   className,

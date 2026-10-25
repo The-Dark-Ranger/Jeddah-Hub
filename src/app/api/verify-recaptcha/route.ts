@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Missing token' }, { status: 400 });
   }
   if (!SECRET) {
-    console.warn('[verify-recaptcha] RECAPTCHA_SECRET_KEY not configured — rejecting request');
+    console.warn('[verify-recaptcha] RECAPTCHA_SECRET_KEY not configured, rejecting request');
     return NextResponse.json({ ok: false, error: 'reCAPTCHA not configured' }, { status: 503 });
   }
 

@@ -5,7 +5,7 @@ import { newsPath, slugify } from '@/lib/slug';
 import { SITE_URL, LOCALES } from '@/lib/seo';
 
 /** Public, indexable static routes. Dashboard and login are intentionally
- *  excluded — see robots.ts for the matching disallow rules. */
+ *  excluded, see robots.ts for the matching disallow rules. */
 const ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
   { path: '',                 changeFrequency: 'weekly',  priority: 1.0 },
   { path: '/about',           changeFrequency: 'monthly', priority: 0.8 },
@@ -31,7 +31,7 @@ function toEntries(path: string, lastModified: Date, changeFrequency: MetadataRo
 
 /** Individual initiative and Hub Activity pages both live in the
  *  `initiatives` collection (see firestore.rules), split by the `type`
- *  field — real initiatives never carry it, activities are tagged
+ *  field, real initiatives never carry it, activities are tagged
  *  type:'hub_activity'. Published blog posts are their own collection. */
 async function dynamicRoutes(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
@@ -57,7 +57,7 @@ async function dynamicRoutes(): Promise<MetadataRoute.Sitemap> {
     return [...initiatives, ...activities, ...posts];
   } catch {
     // Firestore unreachable at build time (e.g. no live credentials in this
-    // environment) — fall back to just the static routes below rather than
+    // environment), fall back to just the static routes below rather than
     // failing the whole sitemap/build.
     return [];
   }

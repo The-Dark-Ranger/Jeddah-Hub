@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 /* Serves a photo stored in the Firestore `media` collection (one document per
  * photo, see src/lib/media.ts) as a real image, so pages keep using a plain
- * <img src="/api/media/<id>">. Media documents are immutable — a new upload
- * always gets a new id — so responses are cached for a year at the CDN. */
+ * <img src="/api/media/<id>">. Media documents are immutable, a new upload
+ * always gets a new id, so responses are cached for a year at the CDN. */
 
 const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const ID_RE = /^[A-Za-z0-9]{20}$/;

@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
  * `position: fixed` is only viewport-relative while no ancestor establishes a
  * containing block. A `transform`, `filter`, `perspective`, `backdrop-filter`
  * or `contain` anywhere up the tree silently re-anchors the element to that
- * ancestor instead — which is how every modal on this site ended up rendering
+ * ancestor instead, which is how every modal on this site ended up rendering
  * at the top of the page content rather than centred on screen.
  *
  * Portalling to <body> makes popups immune to whatever the page wraps them in.

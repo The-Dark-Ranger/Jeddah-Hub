@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 
 /**
- * Reads a request's JSON body defensively. Returns null — instead of throwing
- * an unhandled 500 — for a missing/oversized body, malformed JSON, or anything
+ * Reads a request's JSON body defensively. Returns null, instead of throwing
+ * an unhandled 500, for a missing/oversized body, malformed JSON, or anything
  * that isn't a plain object, so every route can answer bad input with a 400.
  */
 export async function readJsonBody(

@@ -8,7 +8,7 @@ import PatternDivider from './PatternDivider';
 import styles from './Footer.module.css';
 
 // Computed at render time, and the page renders per-request rather than
-// being frozen into a static build, so this — and the current year below —
+// being frozen into a static build, so this, and the current year below,
 // never go stale.
 const FOUNDING_YEAR = 2011;
 
@@ -129,7 +129,7 @@ export default function Footer() {
 
       </div>
 
-      {/* Network strip — the hub's place in the Global Shapers / WEF family */}
+      {/* Network strip, the hub's place in the Global Shapers / WEF family */}
       <div className={styles.network}>
         <div className={styles.networkInner}>
           <a href="https://www.weforum.org" target="_blank" rel="noopener noreferrer" className={styles.networkLogo}>

@@ -7,7 +7,7 @@ import { usePathname } from '@/i18n/routing';
  *
  *  With the site-wide `scroll-behavior: smooth`, a navigation used to start
  *  wherever the previous page was scrolled (often the footer) and then glide
- *  up — and stop just short of the top, under the sticky navbar. Back/forward
+ *  up, and stop just short of the top, under the sticky navbar. Back/forward
  *  keeps the browser's own scroll restoration, and #anchor links are left
  *  alone. Uses the locale-free pathname, so switching language doesn't jump. */
 export default function ScrollToTop() {

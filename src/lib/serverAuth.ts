@@ -15,7 +15,7 @@ interface VerifiedCaller {
   role?: string;
 }
 
-/** Verifies a Firebase Auth ID token's signature/claims via Google's public JWKS — no firebase-admin/service-account needed. */
+/** Verifies a Firebase Auth ID token's signature/claims via Google's public JWKS, no firebase-admin/service-account needed. */
 async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
   if (!PROJECT_ID) return null;
   try {
@@ -37,7 +37,7 @@ async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
  *
  * users/{uid} is NOT publicly readable (firestore.rules: isOwner(uid) ||
  * isCuratorOrImpact()), so the read is made AS the caller by forwarding their
- * already-verified ID token — reading your own user doc is always allowed.
+ * already-verified ID token, reading your own user doc is always allowed.
  * An unauthenticated read here gets a 403, which used to make every role
  * check fail closed (curators could never send invite emails).
  */

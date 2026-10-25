@@ -65,7 +65,7 @@ const placeholderFor = (id: string) => (PLACEHOLDER_PROJECTS.find(p => p.id === 
  *  browser instead. */
 export default function ProjectClient({ initial }: { initial?: InitiativeData }) {
   const { id: rawId } = useParams() as { id: string };
-  // URLs read as "the-initiative-name" (see src/lib/slug.ts) — just the
+  // URLs read as "the-initiative-name" (see src/lib/slug.ts), just the
   // name, no ID. Resolved by querying for a matching `slug` field first;
   // older initiatives saved before that field existed are found by
   // computing the same slug from their title on the fly, and even older
@@ -99,7 +99,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
         let data: Initiative | null = null;
 
         // Hub Activities live in this same collection (tagged
-        // type:'hub_activity') but have their own /activities/[id] page —
+        // type:'hub_activity') but have their own /activities/[id] page,
         // excluded from every lookup below the same defensive way the
         // public listing does (absence of `type`, not a query filter,
         // since Firestore's `!=` would also exclude every real initiative
@@ -151,7 +151,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
 
           // Only fetch the specific member docs needed to resolve display
           // names, in chunks of 30 (Firestore 'in' query limit), from the
-          // public_profiles mirror (no email field, see firestore.rules) —
+          // public_profiles mirror (no email field, see firestore.rules),
           // this is a public page, so the private `users` collection isn't
           // readable here anyway.
           const memberIds = Array.from(new Set((data.members || []).map(m => m.userId).filter(Boolean)));
@@ -206,13 +206,13 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
   const description = locale === 'ar' && initiative.descriptionAr ? initiative.descriptionAr : initiative.description;
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
   const heroColor = initiative.color || categoryColor;
-  /* Cover image first, then the gallery photos, deduped — so the curator's
+  /* Cover image first, then the gallery photos, deduped, so the curator's
    * cover doubles as the faded hero backdrop without having to be re-added to
    * the photo list just to produce that effect. */
   const photos = [...new Set(
     [initiative.imageUrl, ...(initiative.images || [])].filter(Boolean),
   )] as string[];
-  /* The gallery grid below shows the extra photos, not the cover again —
+  /* The gallery grid below shows the extra photos, not the cover again,
    * it's already the hero backdrop just above, so repeating it there would
    * just be the same picture shown twice in a row. */
   const galleryPhotos = [...new Set((initiative.images || []).filter(Boolean))] as string[];

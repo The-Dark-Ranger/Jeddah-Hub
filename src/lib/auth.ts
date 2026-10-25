@@ -30,10 +30,10 @@ const PUBLIC_FIELDS = [
 
 /**
  * Mirrors only the public-safe subset of a user's profile into
- * public_profiles/{uid} — never `email`. Public pages (About, homepage,
+ * public_profiles/{uid}, never `email`. Public pages (About, homepage,
  * project member lists) read from that collection instead of `users`
  * directly, since firestore.rules has no way to redact a single field
- * from a doc read — the only way to keep email out of a publicly
+ * from a doc read, the only way to keep email out of a publicly
  * readable document is to not put it in that document at all.
  * Best-effort: a failure here must never block the caller's own
  * users/{uid} write from succeeding.
@@ -46,7 +46,7 @@ async function syncPublicProfile(uid: string, data: Partial<UserProfile>) {
   if (Object.keys(subset).length === 0) return;
   try {
     await setDoc(doc(db, 'public_profiles', uid), subset, { merge: true });
-  } catch { /* non-fatal — public listing just stays stale until next sync */ }
+  } catch { /* non-fatal, public listing just stays stale until next sync */ }
 }
 
 async function lookupRoleAssignment(email: string): Promise<RoleResult> {
@@ -97,7 +97,7 @@ export async function getUserProfile(uid: string, email?: string | null): Promis
       };
       // Self-healing: every existing member backfills their public_profiles
       // mirror the next time they load the site signed in, with no
-      // migration script needed — see syncPublicProfile().
+      // migration script needed, see syncPublicProfile().
       void syncPublicProfile(uid, profile);
       return profile;
     } else if (email) {

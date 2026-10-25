@@ -94,7 +94,7 @@ export default function MessagesPage() {
         await updateDoc(doc(db, 'contact_messages', msg.id), { read: true });
         setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
       } catch (err) {
-        // Best-effort — the expand itself already succeeded, so a failed
+        // Best-effort, the expand itself already succeeded, so a failed
         // read-flag write just leaves the unread badge stale rather than
         // blocking anything; an alert() here would be a false alarm for
         // an action the curator didn't explicitly take.
@@ -186,7 +186,7 @@ export default function MessagesPage() {
         </button>
       </div>
 
-      {/* At a glance — each count also filters the list */}
+      {/* At a glance, each count also filters the list */}
       <div className={styles.summary}>
         {([
           ['all', t('filterAll'), messages.length],

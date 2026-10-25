@@ -62,14 +62,14 @@ export default function JoinInitiatives() {
       ]);
 
       // Hub Activities (dashboard/curator/activities) are stored as
-      // initiatives docs tagged type:'hub_activity' — defensively excluded
+      // initiatives docs tagged type:'hub_activity', defensively excluded
       // in case one is ever also marked status:'active', so it can't leak
       // into a shaper's browsable/joinable initiatives list.
       const inits = initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as Initiative));
       const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
       // Initiatives this user leads are managed from the "Active Projects"
-      // tab instead — excluded here so this page stays a pure browse/join
+      // tab instead, excluded here so this page stays a pure browse/join
       // list, not mixed with a lead's own management tools.
       const leadIds = inits
         .filter(i => (i.members || []).some(m =>
@@ -97,7 +97,7 @@ export default function JoinInitiatives() {
       )).catch(() => null);
       setMyProposals(proposalsSnap ? proposalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as InitiativeProposal)) : []);
     } catch {
-      /* Firestore not configured or permission error — show empty state */
+      /* Firestore not configured or permission error, show empty state */
     } finally {
       setLoading(false);
     }
@@ -240,7 +240,7 @@ export default function JoinInitiatives() {
         </div>
       </div>
 
-      {/* My proposed initiatives — pending curator review */}
+      {/* My proposed initiatives, pending curator review */}
       {myProposals.length > 0 && (
         <div className={styles.incomingSection}>
           <h3 className={styles.sectionTitle}>{t('myProposals')}</h3>

@@ -38,7 +38,7 @@
   font-size: 0.82rem; font-weight: 600; color: var(--primary-blue);
 }
 
-/* ── Led project card — same shell as .card, but not itself a link since
+/* ── Led project card, same shell as .card, but not itself a link since
    it hosts multiple distinct actions (manage vs. view on the public site). ── */
 .leadCard {
   display: flex; flex-direction: column;

@@ -1,5 +1,5 @@
 /* Server-rendered on every page but hidden unless the pre-paint init script
-   (SPLASH_INIT_SCRIPT) flagged this load — first visit or reload. */
+   (SPLASH_INIT_SCRIPT) flagged this load, first visit or reload. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   /* No fade-in: it must be fully opaque on the first frame, or the page
-     shows through it — only the content inside animates in. */
+     shows through it, only the content inside animates in. */
 }
 
 :global(html[data-splash]) .overlay { display: flex; }
@@ -114,7 +114,7 @@
   line-height: 1.1;
 }
 
-/* Arabic / RTL — remove negative letter-spacing that looks cramped in Arabic */
+/* Arabic / RTL, remove negative letter-spacing that looks cramped in Arabic */
 [dir="rtl"] .wordmarkMain {
   letter-spacing: 0.01em;
 }

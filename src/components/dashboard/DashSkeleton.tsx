@@ -1,6 +1,6 @@
 import styles from './DashSkeleton.module.css';
 
-/** Placeholder rows shown while a dashboard page loads its data — keeps the
+/** Placeholder rows shown while a dashboard page loads its data, keeps the
  *  page's shape stable instead of a lone "Loading…" line popping into a list. */
 export default function DashSkeleton({ rows = 4, header = true, label }: { rows?: number; header?: boolean; label?: string }) {
   return (

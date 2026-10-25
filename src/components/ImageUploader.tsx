@@ -8,7 +8,7 @@ import {
 } from '@/lib/imageCompress';
 import { uploadMedia, isMediaUrl } from '@/lib/media';
 
-/** Gallery size cap — generous, but keeps a page from becoming a photo dump. */
+/** Gallery size cap, generous, but keeps a page from becoming a photo dump. */
 const MAX_PHOTOS = 24;
 import styles from './ImageUploader.module.css';
 
@@ -16,7 +16,7 @@ import styles from './ImageUploader.module.css';
  * form, so this drops into the curator, lead, and impact officer editors. */
 interface Props {
   coverUrl: string;
-  /** Gallery photos, newline-joined — the shape formToDoc() already splits on. */
+  /** Gallery photos, newline-joined, the shape formToDoc() already splits on. */
   photos: string;
   onChange: (key: 'imageUrl' | 'images', value: string) => void;
 }
@@ -110,7 +110,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
 
   const label = (value: string) => isDataUri(value) || isMediaUrl(value) ? t('uploadedLabel') : t('linkedLabel');
 
-  // Shared no-op-the-browser-default drag handlers — without preventDefault
+  // Shared no-op-the-browser-default drag handlers, without preventDefault
   // on dragover, the browser refuses to fire drop at all.
   const stopDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
 

@@ -4,7 +4,7 @@ import { auth, db } from '@/lib/firebase';
 /* Photos live one-per-document in the `media` collection and are served by
  * /api/media/<id>. Keeping them out of the initiative/activity document means
  * neither the 1 MiB Firestore document limit nor a shared photo budget caps
- * how many — or how sharp — the photos can be. */
+ * how many (or how sharp) the photos can be. */
 
 const MEDIA_PREFIX = '/api/media/';
 

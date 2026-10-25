@@ -114,7 +114,7 @@
 .retreatVenueName   { font-size:.83rem;font-weight:600;color:#fff; }
 .retreatVenueTag    { font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.15rem; }
 
-/* ── Activity slider controls — only rendered when there's more than one
+/* ── Activity slider controls, only rendered when there's more than one
    active Hub Activity/Workshop to page through. ── */
 .retreatSlider {
   display:flex; align-items:center; justify-content:center; gap:1.25rem;

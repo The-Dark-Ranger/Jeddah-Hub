@@ -92,7 +92,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
         const data = { id: snap.id, ...snap.data() } as any;
         setPost(data);
         // Real profile photo instead of the initials fallback, when the
-        // author has one set — same public mirror the projects/about pages
+        // author has one set, same public mirror the projects/about pages
         // already read from (no email field, safe to read publicly).
         if (data.authorId) {
           getDoc(doc(db, 'public_profiles', data.authorId))
@@ -118,7 +118,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
         }
         setRelated(docs.filter(d => d.id !== id).slice(0, 3)
           .map(d => ({ id: d.id, ...(d.data() as Omit<RelatedPost, 'id'>) })));
-      } catch { /* optional section — leave it out */ }
+      } catch { /* optional section, leave it out */ }
     })();
   }, [id, initial, urlId, router]);
 
@@ -128,7 +128,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard blocked — nothing to do */ }
+    } catch { /* clipboard blocked, nothing to do */ }
   };
 
   /* ── Like (works for both signed-in users and visitors) ── */

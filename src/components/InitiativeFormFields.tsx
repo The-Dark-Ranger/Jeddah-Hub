@@ -12,7 +12,7 @@ export const CATEGORIES = [
 
 /** Snaps free-text "Other" category input onto an existing canonical
  *  category (case-insensitively) so e.g. typing "economy" doesn't create a
- *  near-duplicate tab alongside the real "Economy" category — only text
+ *  near-duplicate tab alongside the real "Economy" category, only text
  *  that doesn't match anything becomes a genuinely new category. */
 function normalizeCategory(raw: string): string {
   const trimmed = raw.trim();
@@ -50,7 +50,7 @@ export function initiativeFormToDoc(f: InitiativeFormShape) {
 }
 
 /** Reverses initiativeFormToDoc() for pre-filling the form from an existing
- *  initiative doc — used by every "edit" entry point (curator, lead). */
+ *  initiative doc, used by every "edit" entry point (curator, lead). */
 export function initiativeToForm(init: {
   title: string; titleAr?: string; description?: string; descriptionAr?: string;
   category?: string; startDate?: string; endDate?: string;
@@ -58,7 +58,7 @@ export function initiativeToForm(init: {
   impact?: string; impactAreas?: string[]; color?: string;
 }): InitiativeFormShape {
   // A saved category that isn't one of the preset options only ever got
-  // there via the "Other" free-text box — re-select "Other" and restore
+  // there via the "Other" free-text box, re-select "Other" and restore
   // what was typed, instead of silently falling back to no selection.
   const isPreset = !init.category || CATEGORIES.includes(init.category);
   return {
@@ -84,14 +84,14 @@ export function initiativeToForm(init: {
 interface Props {
   form: InitiativeFormShape;
   onChange: (key: keyof InitiativeFormShape, value: string) => void;
-  /** CSS module supplying the shared field/input/label/etc. class names —
+  /** CSS module supplying the shared field/input/label/etc. class names,
    *  every caller already has near-identical styles for these, passed in
    *  rather than duplicated here so this stays a plain shared component. */
   styles: Record<string, string>;
 }
 
 /** Shared by the curator's initiative create/edit modal and a lead's own
- *  edit modal — same fields, same capability, just different callers with
+ *  edit modal, same fields, same capability, just different callers with
  *  different write targets (a real initiative doc vs a pending proposal). */
 export default function InitiativeFormFields({ form, onChange, styles }: Props) {
   const t = useTranslations('Dashboard');

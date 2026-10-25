@@ -11,7 +11,7 @@ export interface PlaceholderProject {
   objective?: string;
   impact?: string;
   impactAreas?: string[];
-  /** Cover image set by the curator — shown on the card and as the detail hero. */
+  /** Cover image set by the curator, shown on the card and as the detail hero. */
   imageUrl?: string;
   images?: string[];
   members?: { userId: string; role?: string }[];
@@ -51,10 +51,10 @@ export const PLACEHOLDER_PROJECTS: PlaceholderProject[] = [
     category: 'Community',
     status: 'active',
     stat: 'Deliver Basic Needs',
-    description: 'Safe spaces for youth to share ideas through storytelling, discussions, and creative expression — amplifying diverse voices across Saudi Arabia.',
+    description: 'Safe spaces for youth to share ideas through storytelling, discussions, and creative expression, amplifying diverse voices across Saudi Arabia.',
     problem: 'Many young people in Saudi Arabia feel their perspectives are overlooked in public dialogue, with few platforms available to express their views freely and contribute to social conversations.',
-    objective: 'Voices Unbound creates safe spaces for youth to share ideas through storytelling, discussions, and creative expression. The initiative amplifies diverse voices, encourages open dialogue, and fosters empathy across communities.',
-    impact: 'The project has empowered youth to speak up, built confidence in self-expression, and promoted inclusivity. By highlighting young perspectives, it strengthens civic engagement and contributes to a culture of open dialogue.',
+    objective: 'Voices Unbound creates safe spaces for youth to share ideas through storytelling, discussions, and creative expression. It gives more young people a voice and encourages open dialogue and empathy between communities.',
+    impact: 'Young people who took part speak up more and express themselves with more confidence. By putting their perspectives forward, the project strengthens civic engagement and open dialogue.',
     impactAreas: ['Community', 'Wellbeing', 'Youth', 'Education'],
   },
   {

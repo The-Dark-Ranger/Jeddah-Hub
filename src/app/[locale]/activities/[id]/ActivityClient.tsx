@@ -69,7 +69,7 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
           data = { id: d.id, ...(d.data() as Omit<Activity, 'id'>) };
         }
 
-        // Fallback: activities saved before the `slug` field existed —
+        // Fallback: activities saved before the `slug` field existed,
         // match by computing the slug from the title on the fly.
         if (!data) {
           const allSnap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));

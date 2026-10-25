@@ -64,7 +64,7 @@ const DEFAULT_INITIATIVES = [
     impact: 'Reached 4,000+ students across 12 schools. Trained 200+ student ambassadors.',
     impactAreas: ['Wellbeing', 'Education', 'Youth', 'Community'] },
   { title: 'Mindfulness for Peace', category: 'Wellbeing', stat: '85% stress reduction reported', status: 'active',
-    description: 'Empowering youth with mindfulness tools to build resilience, reduce stress, and foster inner peace.',
+    description: 'Mindfulness workshops and tools that help young people handle stress and build resilience.',
     problem: 'Academic pressure and social media are driving unprecedented stress levels among young people in Jeddah.',
     objective: 'Introduce evidence-based mindfulness practices through workshops and a free digital resource toolkit.',
     impact: 'Delivered 30+ workshops reaching 1,500+ participants. 85% reported reduced stress after a four-week program.',
@@ -263,7 +263,7 @@ export default function ManageInitiatives() {
       const slug = await uniqueInitiativeSlug(form.title);
       await addDoc(collection(db, 'initiatives'), {
         // leads starts empty (not omitted) so firestore.rules' lead-update
-        // branch — which requires 'leads' in resource.data — has something
+        // branch (which requires 'leads' in resource.data) has something
         // to check against from the moment the doc exists, rather than
         // failing outright on a brand-new initiative before anyone's
         // assigned as lead yet.
@@ -423,7 +423,7 @@ export default function ManageInitiatives() {
         const memberObj = (init.members as any[] || []).find((m: any) => m.userId === req.userId);
         if (memberObj) {
           const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
-          // A departing lead must also lose their `leads` entry — that's
+          // A departing lead must also lose their `leads` entry, that's
           // the array firestore.rules actually checks, so leaving it
           // behind would grant a former member permanent write access.
           if ((memberObj.role || '').toLowerCase().includes('lead')) {
@@ -461,7 +461,7 @@ export default function ManageInitiatives() {
       const { proposedBy } = proposal;
       const fields = omitKeys(proposal, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
       const slug = await uniqueInitiativeSlug(String(fields.title || ''));
-      // The proposer automatically becomes the new initiative's lead —
+      // The proposer automatically becomes the new initiative's lead,
       // they're the one who wants to run it, and this is what actually
       // lets them edit it afterward (leads is the array firestore.rules
       // checks, not the members[].role display text).

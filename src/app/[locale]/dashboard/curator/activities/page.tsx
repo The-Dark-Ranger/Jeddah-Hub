@@ -93,7 +93,7 @@ const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
 
 /** Renders every known activity field present in a proposal/change
  *  request so a curator or impact officer can see the full proposed
- *  content — not just its title — before approving or declining it.
+ *  content (not just its title) before approving or declining it.
  *  Shared between the legacy activity_requests and activity_change_requests
  *  details modals since both carry the same underlying activity shape. */
 function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: ReturnType<typeof useTranslations> }) {
@@ -171,17 +171,17 @@ export default function ActivitiesPage() {
   /* Lead-proposed activities/workshops awaiting review */
   const [activityProposals, setActivityProposals] = useState<any[]>([]);
 
-  /* Lead-submitted create/edit/archive requests on existing activities —
+  /* Lead-submitted create/edit/archive requests on existing activities,
      see activityTypes.ts and firestore.rules' activity_change_requests
      for why these can't just write to `initiatives` directly. */
   const [changeRequests, setChangeRequests] = useState<ActivityChangeRequest[]>([]);
   /* initiativeId -> title, resolved for whichever initiatives the pending
-     change requests reference — lets the review list and details modal
+     change requests reference, lets the review list and details modal
      name the initiative instead of just its id. */
   const [initiativeTitles, setInitiativeTitles] = useState<Record<string, string>>({});
 
   /* Full-detail view of a single pending proposal/change request, opened
-   * from its row's "View Details" button — a curator/impact officer needs
+   * from its row's "View Details" button, a curator/impact officer needs
    * the complete proposed content (not just the title) to decide whether
    * to approve or decline it. */
   const [viewingLegacy, setViewingLegacy] = useState<any | null>(null);
@@ -206,7 +206,7 @@ export default function ActivitiesPage() {
       setActivities(sorted);
 
       // So curators can see at a glance which activities have new (unread)
-      // responses to check, without opening each "View Responses" modal —
+      // responses to check, without opening each "View Responses" modal,
       // and so the badge actually clears once they've been viewed.
       const withForms = sorted.filter(a => a.customForm?.enabled || a.feedbackForm?.enabled);
       const counts = await Promise.all(withForms.map(a =>
@@ -222,7 +222,7 @@ export default function ActivitiesPage() {
       setLoading(false);
     }
 
-    // Non-critical — a lead's proposal fetch failing shouldn't blank the
+    // Non-critical, a lead's proposal fetch failing shouldn't blank the
     // main activities list above it.
     try {
       const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
@@ -257,7 +257,7 @@ export default function ActivitiesPage() {
 
   function openCreate(prefill?: Omit<Activity, 'id' | 'createdAt'>) {
     setEditing(null);
-    // activityToForm fills every field RETREAT_PREFILL leaves out — an
+    // activityToForm fills every field RETREAT_PREFILL leaves out, an
     // undefined field would be rejected by the Firestore SDK on save.
     const f = activityToForm(prefill ?? emptyForm());
     setForm(f);
@@ -304,13 +304,13 @@ export default function ActivitiesPage() {
     }
   }
 
-  // Archived is otherwise a separate axis from active/hidden — a past
+  // Archived is otherwise a separate axis from active/hidden, a past
   // retreat can be both "hidden" (not shown on the homepage) and
   // "archived" (tucked out of the default admin list) without those two
   // states fighting each other. The one direction that isn't independent:
   // archiving something that's still active also turns it inactive, so a
   // curator can't accidentally archive-but-leave-live an activity and
-  // forget to hide it — unarchiving never re-activates it automatically,
+  // forget to hide it, unarchiving never re-activates it automatically,
   // since bringing it back onto the homepage should be a deliberate step.
   // One click to open or close an activity's registration or after-event form.
   async function handleToggleForm(a: Activity, key: 'customForm' | 'feedbackForm') {
@@ -375,7 +375,7 @@ export default function ActivitiesPage() {
   }
 
   // Applies an explicit field allowlist (pickActivityFields) rather than
-  // spreading req.payload wholesale — the payload's shape is only checked
+  // spreading req.payload wholesale, the payload's shape is only checked
   // as "is a map" by firestore.rules (like activity_responses.answers, it's
   // curator/lead-defined and open-ended), so this is what actually keeps a
   // malicious payload from smuggling an unexpected field into `initiatives`
@@ -436,7 +436,7 @@ export default function ActivitiesPage() {
       const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityResponse, 'id'>) }));
       setResponses(docs);
 
-      // Viewing the modal is what "checking" a response means — clear its
+      // Viewing the modal is what "checking" a response means, clear its
       // unread badge here rather than requiring a separate action.
       const unread = docs.filter(r => r.read === false);
       if (unread.length > 0) {

@@ -7,7 +7,7 @@ import styles from './ColorPicker.module.css';
 
 interface Props {
   label: string;
-  /** '' means "no colour" — the page falls back to the site's default. */
+  /** '' means "no colour", the page falls back to the site's default. */
   value: string;
   onChange: (value: string) => void;
 }

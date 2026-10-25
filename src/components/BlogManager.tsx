@@ -44,7 +44,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   const normRole   = normalizeRole(user.role);
   const isCurator  = normRole === 'curator' || normRole === 'vice_curator';
   const isImpact   = normRole === 'impact_officer';
-  // Only curators/impact officers may publish directly — matches the
+  // Only curators/impact officers may publish directly, matches the
   // Firestore rule exactly, which has no way to verify initiative-lead
   // status server-side, so offering that shortcut here would just fail.
   const canPublishDirectly = isCurator || isImpact;
@@ -245,7 +245,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           {filtered.map(post => {
             const si = STATUS_LABELS[post.status] ?? { label: post.status, color: '#94a3b8' };
             const isOwn = post.authorId === user.uid;
-            // Own posts can only be edited while still unpublished — once a
+            // Own posts can only be edited while still unpublished, once a
             // curator/impact officer publishes it, firestore.rules rejects
             // further author-side edits (the update rule requires
             // resource.data.status in ['draft','pending_review']), so

@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
 
   // Rendered second-to-last in every role's nav list, right above Sign
-  // Out — a reference document every member should be able to find
+  // Out, a reference document every member should be able to find
   // regardless of role, not just the ones with management tools.
   const charterNavItem = (
     <li><Link href="/dashboard/shaper/charter" className={styles.navLink + (active('/dashboard/shaper/charter') ? ' ' + styles.navLinkActive : '')} aria-current={active('/dashboard/shaper/charter') ? 'page' : undefined}>
@@ -86,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Rendered as the last item of every role's nav list, right alongside the
   // rest of the management links, rather than as a separate button
-  // disconnected from the nav — one place to look for it regardless of role.
+  // disconnected from the nav, one place to look for it regardless of role.
   const signOutItem = (
     <li>
       <button onClick={handleLogout} className={styles.navLink + ' ' + styles.signOutLink}>
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <nav className={styles.nav} ref={navRef} aria-label={t('dashboardNav')}>
 
-          {/* Curator / Vice Curator — personal items first (My Profile, Active
+          {/* Curator / Vice Curator, personal items first (My Profile, Active
              Projects), then role-management tools, Sign Out last. Same
              ordering template as every other role's nav below. */}
           {isCurator && (
@@ -273,7 +273,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </ul>
             </div>
           )}
-          {/* Universal: Blog — visible to every signed-in user regardless of role */}
+          {/* Universal: Blog, visible to every signed-in user regardless of role */}
           {!isCurator && !isImpact && !isShaper && (
             <div className={styles.navGroup}>
               <span className={styles.navGroupTitle}>{t('myHub')}</span>

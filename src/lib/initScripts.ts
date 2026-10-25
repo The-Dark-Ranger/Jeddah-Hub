@@ -1,7 +1,7 @@
 /**
  * Inline scripts injected into <head> by the root layout, run synchronously
  * before the first paint. Kept in a plain (non-'use client') module so the
- * server layout receives the actual strings — exporting them from a client
+ * server layout receives the actual strings, exporting them from a client
  * module would hand the server an opaque client reference instead.
  */
 

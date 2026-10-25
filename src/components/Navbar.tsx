@@ -60,7 +60,7 @@ export default function Navbar() {
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
-  // Any navigation closes the drawer — including browser back/forward, which
+  // Any navigation closes the drawer, including browser back/forward, which
   // the per-link onClick handlers never see.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing UI to an external (URL) change
   useEffect(() => { setMobileOpen(false); }, [pathname]);
@@ -80,7 +80,7 @@ export default function Navbar() {
         lastScrollY.current = y;
         return;
       }
-      // iOS rubber-band overscroll reports positions past either end —
+      // iOS rubber-band overscroll reports positions past either end,
       // reacting to those made the bar flicker at the top and bottom.
       const max = document.documentElement.scrollHeight - window.innerHeight;
       if (y > max) return;
@@ -117,7 +117,7 @@ export default function Navbar() {
     };
   }, [mobileOpen]);
 
-  // Drawer is only reachable at mobile widths — close it if the window grows.
+  // Drawer is only reachable at mobile widths, close it if the window grows.
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 769px)');
     const onChange = () => { if (mq.matches) setMobileOpen(false); };
@@ -254,7 +254,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Reading progress — driven purely by CSS scroll timelines. */}
+        {/* Reading progress, driven purely by CSS scroll timelines. */}
         <span className={styles.progress} aria-hidden="true" />
       </nav>
 
@@ -265,7 +265,7 @@ export default function Navbar() {
         aria-hidden="true"
       />
 
-      {/* Mobile drawer — `inert` while closed so its links can't be tabbed
+      {/* Mobile drawer, `inert` while closed so its links can't be tabbed
           into or read by screen readers when it's off screen. */}
       <div
         id="mobile-nav-drawer"

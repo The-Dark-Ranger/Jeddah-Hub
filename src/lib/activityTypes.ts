@@ -1,7 +1,7 @@
 /** Shared between the curator's direct-write Activities dashboard and the
  *  lead's approval-gated one (dashboard/shaper/activities), plus the
  *  curator-side code that applies an approved activity_change_requests
- *  payload — one place for the Hub Activity shape so a lead's proposal and
+ *  payload, one place for the Hub Activity shape so a lead's proposal and
  *  a curator's own edit form always agree on what an activity is. */
 
 export interface Highlight { name: string; tag: string; }
@@ -21,7 +21,7 @@ export type ContactFieldMode = 'off' | 'optional' | 'required';
 export interface CustomForm {
   enabled: boolean;
   questions: CustomFormQuestion[];
-  /* Optional wording around the questions — the form's title and button
+  /* Optional wording around the questions, the form's title and button
      always use the site's defaults, so nothing here repeats the activity. */
   intro?: string;
   successMessage?: string;
@@ -56,7 +56,7 @@ export interface ActivityFormData {
   /** The after-event form (feedback from attendees). Same shape as the
    *  registration form; hidden from the page until it is opened. */
   feedbackForm: CustomForm;
-  /** Cover photo — a remote URL or a compressed data URI (ImageUploader). */
+  /** Cover photo, a remote URL or a compressed data URI (ImageUploader). */
   imageUrl: string;
   /** Extra gallery photos shown on the activity's own page. */
   images: string[];
@@ -65,7 +65,7 @@ export interface ActivityFormData {
 }
 
 /** The only fields a change request's `payload` may carry through to a
- *  live `initiatives` (hub_activity) doc — applied explicitly at approval
+ *  live `initiatives` (hub_activity) doc, applied explicitly at approval
  *  time rather than spreading `payload` wholesale, so a malicious payload
  *  can't smuggle an unexpected field (e.g. `type`, `initiativeId`, or
  *  `slug`) past a curator who just clicks Approve. */
@@ -131,7 +131,7 @@ export const ACCENT_SWATCHES = [
   '#CA8A04', '#EA580C', '#DC2626', '#DB2777', '#9333EA', '#475569',
 ] as const;
 
-/** Returns the colour only if it is a plain #rgb/#rrggbb hex — anything
+/** Returns the colour only if it is a plain #rgb/#rrggbb hex, anything
  *  else (stored by an old client or a hand-edited doc) is dropped rather
  *  than written into an inline style. */
 export function safeColor(value: unknown): string | undefined {
@@ -148,7 +148,7 @@ export function parseHighlights(raw: string): Highlight[] {
     .map(l => l.trim())
     .filter(Boolean)
     .map(l => {
-      // Accept the Arabic comma (،) too — Arabic keyboards type it by default.
+      // Accept the Arabic comma (،) too, Arabic keyboards type it by default.
       const [name, ...rest] = l.split(/[,،]/);
       return { name: name.trim(), tag: rest.join(', ').trim() };
     });

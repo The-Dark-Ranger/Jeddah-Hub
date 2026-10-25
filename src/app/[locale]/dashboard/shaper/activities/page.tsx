@@ -16,7 +16,7 @@ import {
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
 import RegistrationFormBuilder from '@/components/RegistrationFormBuilder';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
-// Same page structure/classes as the curator's Activities dashboard — a
+// Same page structure/classes as the curator's Activities dashboard, a
 // second lead-facing copy of ~250 lines of layout/form CSS would just be
 // this file's styles going stale the next time that one changes.
 import styles from '../../curator/activities/Activities.module.css';
@@ -152,7 +152,7 @@ export default function LeadActivitiesPage() {
   }
 
   // Archiving an activity that's still active also requests it be turned
-  // inactive at the same time — same rule the curator's direct-write page
+  // inactive at the same time, same rule the curator's direct-write page
   // applies, so a lead can't archive-but-leave-live and forget to hide it.
   // Leads request the change like any other edit; a curator approves it.
   async function handleRequestToggleForm(a: Activity, key: 'customForm' | 'feedbackForm') {

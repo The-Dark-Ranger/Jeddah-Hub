@@ -50,7 +50,7 @@ export default function Navbar() {
   const locale     = useLocale();
   const nextLocale = locale === 'en' ? 'ar' : 'en';
   const pathname   = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
   const { user, logout }       = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -308,47 +308,6 @@ export default function Navbar() {
             </li>
           ))}
         </ul>
-
-        {/* Theme and language, labelled: easier to find here than as the
-            small icons in the bar. Which option looks selected is decided
-            by CSS from <html data-theme>, so it is right before hydration. */}
-        <div className={styles.mobileSettings}>
-          <div className={styles.settingRow}>
-            <span className={styles.settingLabel}>{t('appearance')}</span>
-            <div className={styles.settingSeg}>
-              <button
-                type="button"
-                className={styles.segBtn + ' ' + styles.segLight}
-                aria-pressed={theme === 'light'}
-                suppressHydrationWarning
-                onClick={e => { if (theme !== 'light') toggleTheme(e); }}
-              >
-                <SunIcon />{t('themeLight')}
-              </button>
-              <button
-                type="button"
-                className={styles.segBtn + ' ' + styles.segDark}
-                aria-pressed={theme === 'dark'}
-                suppressHydrationWarning
-                onClick={e => { if (theme !== 'dark') toggleTheme(e); }}
-              >
-                <MoonIcon />{t('themeDark')}
-              </button>
-            </div>
-          </div>
-          <div className={styles.settingRow}>
-            <span className={styles.settingLabel}>{t('language')}</span>
-            <div className={styles.settingSeg}>
-              {(['en', 'ar'] as const).map(l => l === locale ? (
-                <span key={l} className={styles.segBtn + ' ' + styles.segOn} aria-current="true">{l === 'en' ? 'English' : 'العربية'}</span>
-              ) : (
-                <Link key={l} href={pathname} locale={l} hrefLang={l} onClick={handleLangSwitch} className={styles.segBtn}>
-                  {l === 'en' ? 'English' : 'العربية'}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
 
         <div className={styles.mobileFooter}>
           {user ? (

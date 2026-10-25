@@ -45,7 +45,6 @@
   width: 100%; height: 100%;
   object-fit: cover; display: block;
 }
-.cardImgFallback { width: 100%; height: 100%; }
 
 /* Container */
 .container { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
@@ -206,12 +205,29 @@
   .grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 400px) {
-  .header { padding: 3rem 0.75rem 2rem; }
+  .header { padding: 3rem 1rem 5rem; }
   .container { padding: 1.5rem 0.75rem 3rem; }
   .cardBody { padding: 1.1rem; }
 }
 
 /* ── Summary strip, category counts, card facts ── */
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem;
+  margin: 0 0 2rem; padding: 0;
+}
+.stat {
+  padding: 1rem 1.2rem; border-radius: 14px;
+  background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  display: flex; flex-direction: column-reverse; gap: .15rem;
+}
+.stat dt { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.stat dd { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--primary-blue); letter-spacing: -.02em; line-height: 1.1; }
+.clearBtn {
+  margin-top: 1rem; padding: .6rem 1.2rem; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--primary-blue); background: transparent; color: var(--primary-blue);
+  font: inherit; font-weight: 700; font-size: .9rem;
+}
+.clearBtn:hover { background: var(--primary-blue); color: #fff; }
 
 .catCount {
   display: inline-flex; align-items: center; justify-content: center;
@@ -249,7 +265,7 @@
 .spotlightMedia { position: relative; min-height: 320px; background: var(--background-alt); }
 .spotlightImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.16, 1, .3, 1); }
 .spotlight:hover .spotlightImg { transform: scale(1.04); }
-.spotlightFallback { position: absolute; inset: 0; background: linear-gradient(135deg, var(--spot-accent), color-mix(in srgb, var(--spot-accent) 45%, #0f172a)); }
+.spotlightCover { position: absolute; inset: 0; }
 .spotlightTag {
   position: absolute; top: 1rem; inset-inline-start: 1rem;
   display: inline-flex; align-items: center; gap: .35rem;
@@ -287,4 +303,26 @@
 @media (prefers-reduced-motion: reduce) {
   .headerGlobe, .spotlightImg { animation: none; transition: none; }
   .spotlight:hover { transform: none; }
+}
+
+/* ── Phones: one swipeable row of categories, shorter covers ── */
+@media (max-width: 640px) {
+  .filters { margin-bottom: 2rem; }
+  .searchWrap { max-width: none; }
+  .categoryTabs {
+    flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity;
+    margin-inline: -1rem; padding: .1rem 1rem .4rem; scrollbar-width: none;
+    mask-image: linear-gradient(90deg, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent);
+  }
+  .categoryTabs::-webkit-scrollbar { display: none; }
+  .catBtn { flex-shrink: 0; scroll-snap-align: start; white-space: nowrap; min-height: 40px; }
+  .cardSlider { height: 170px; }
+  .stats { grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1.5rem; }
+  .stat { padding: .75rem .7rem; text-align: center; }
+  .stat dt { font-size: .7rem; }
+  .stat dd { font-size: 1.3rem; }
+}
+@media (max-width: 400px) {
+  /* Match the narrower page gutter so the chip row doesn't overflow. */
+  .categoryTabs { margin-inline: -.75rem; padding-inline: .75rem; }
 }

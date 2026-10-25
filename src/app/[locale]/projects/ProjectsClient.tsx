@@ -12,6 +12,7 @@ import PatternDivider from '@/components/PatternDivider';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
+import InitiativeCover from '@/components/InitiativeCover';
 
 export interface Project extends PlaceholderProject { slug?: string; featured?: boolean; spotlight?: boolean; }
 
@@ -34,9 +35,7 @@ function Spotlight({ project, t, catLabel }: {
       style={{ '--spot-accent': accent } as React.CSSProperties}
     >
       <div className={styles.spotlightMedia}>
-        {cover
-          ? <img src={cover} alt="" className={styles.spotlightImg} />
-          : <div className={styles.spotlightFallback} />}
+        <InitiativeCover src={cover} title={title} accent={accent} imgClassName={styles.spotlightImg} className={styles.spotlightCover} eager />
         <span className={styles.spotlightTag}>{t('spotlight')}</span>
       </div>
       <div className={styles.spotlightBody}>
@@ -88,10 +87,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
       style={{ '--card-index': index } as React.CSSProperties}
     >
       <div className={styles.cardSlider}>
-        {coverImg
-          ? <img src={coverImg} alt={title} className={styles.cardSliderImg} loading="lazy" />
-          : <div className={styles.cardImgFallback} style={{ background: `linear-gradient(135deg, ${accentColor}dd, ${accentColor}88)` }} />
-        }
+        <InitiativeCover src={coverImg} title={title} accent={accentColor} imgClassName={styles.cardSliderImg} />
       </div>
       <div className={styles.cardAccent} style={{ background: accentColor }} />
       <div className={styles.cardBody}>
@@ -110,7 +106,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
         <p className={styles.cardDesc}>{description}</p>
         {project.stat && (
           <div className={styles.cardStat}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
               <polyline points="16 7 22 7 22 13"/>
             </svg>
@@ -139,7 +135,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
         )}
         <div className={styles.cardLink}>
           {t('exploreProject')}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12" />
             <polyline points="12 5 19 12 12 19" />
           </svg>
@@ -168,6 +164,7 @@ function SkeletonCard() {
 export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
+  const locale = useLocale();
   // Known categories get a translated label; custom ones show as typed.
   const catLabel = useCategoryLabel();
   const [projects, setProjects]     = useState<Project[]>(() =>
@@ -183,7 +180,7 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
         const snap = await getDocs(collection(db, 'initiatives'));
         const all = snap.docs
           .map(d => ({ id: d.id, ...d.data() } as Project))
-          .filter(p => !(p as any).type);
+          .filter(p => !(p as Project & { type?: string }).type);
         setProjects(all.length > 0 ? all : PLACEHOLDER_PROJECTS);
       } catch {
         setProjects(PLACEHOLDER_PROJECTS);
@@ -220,6 +217,16 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const active   = filtered.filter(p => (p.status === 'active' || !p.status) && p.id !== spotlight?.id);
   const archived = filtered.filter(p => p.status && p.status !== 'active');
 
+  // Summary strip under the header (whole list, not the current filter).
+  const activeCount = projects.filter(isActive).length;
+  const shaperCount = new Set(projects.flatMap(p => (Array.isArray(p.members) ? p.members : []).map(m => m.userId))).size;
+  const stats = [
+    { value: activeCount, label: t('statActive') },
+    { value: shaperCount, label: t('statShapers') },
+    { value: categoryTabs.length, label: t('statAreas') },
+  ].filter(s => s.value > 0);
+  const clearFilters = () => { setSearch(''); setActiveCategory('all'); };
+
   return (
     <main className={styles.page}>
       <section className={styles.header}>
@@ -234,6 +241,16 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
       <PatternDivider />
 
       <div className={styles.container}>
+        {!loading && stats.length > 0 && (
+          <dl className={styles.stats}>
+            {stats.map(s => (
+              <div key={s.label} className={styles.stat}>
+                <dt>{s.label}</dt>
+                <dd>{s.value.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -249,8 +266,10 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className={styles.categoryTabs}>
+          <div className={styles.categoryTabs} role="group" aria-label={t('filterByArea')}>
             <button
+              type="button"
+              aria-pressed={activeCategory === 'all'}
               className={styles.catBtn + (activeCategory === 'all' ? ' ' + styles.catBtnActive : '')}
               onClick={() => setActiveCategory('all')}
             >
@@ -260,6 +279,8 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
             {categoryTabs.map(cat => (
               <button
                 key={cat}
+                type="button"
+                aria-pressed={activeCategory === cat}
                 className={styles.catBtn + (activeCategory === cat ? ' ' + styles.catBtnActive : '')}
                 onClick={() => setActiveCategory(cat)}
               >
@@ -277,6 +298,7 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
         ) : filtered.length === 0 ? (
           <div className={styles.empty}>
             <h3>{t('noResults')}</h3>
+            <button type="button" className={styles.clearBtn} onClick={clearFilters}>{t('clearFilters')}</button>
           </div>
         ) : (
           <>

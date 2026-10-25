@@ -367,3 +367,26 @@
 }
 .addMemberSubmitBtn:hover:not(:disabled) { opacity: 0.9; }
 .addMemberSubmitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Toolbar: All / Joined tabs + search ── */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1.25rem; }
+.tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+.tab {
+  display: inline-flex; align-items: center; gap: .45rem; cursor: pointer;
+  padding: .45rem .9rem; border-radius: 999px; border: 1px solid var(--border-color);
+  background: var(--background); color: var(--text-muted); font: inherit; font-size: .84rem; font-weight: 600;
+}
+.tab:hover { color: var(--text-main); }
+.tabActive, .tabActive:hover { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.tabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
+.tabActive .tabCount { background: rgba(255, 255, 255, .22); }
+.emptyNote { padding: 2rem 0; text-align: center; color: var(--text-muted); }
+
+/* ── Card: cover, three-line description, team + page link ── */
+.cardCover { height: 120px; overflow: hidden; background: var(--background-alt); }
+.cardCover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cardDesc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cardMetaRow { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: auto; padding-top: .35rem; }
+.cardTeam { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.viewLink { font-size: .8rem; font-weight: 700; color: var(--primary-blue); }
+.viewLink:hover { text-decoration: underline; }

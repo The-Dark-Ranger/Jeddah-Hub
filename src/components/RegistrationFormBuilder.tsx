@@ -11,6 +11,9 @@ import styles from './RegistrationFormBuilder.module.css';
 interface Props {
   value: CustomForm;
   onChange: (next: CustomForm) => void;
+  /** 'feedback' edits the after-event form instead of registration: other
+   *  wording, and turning it on adds three starter questions. */
+  variant?: 'registration' | 'feedback';
 }
 
 type QType = CustomFormQuestion['type'];
@@ -23,11 +26,12 @@ const NEXT_MODE: Record<ContactFieldMode, ContactFieldMode> = { off: 'optional',
 const NAME_RE = /\b(full\s*)?name\b|الاسم|اسمك/i;
 const EMAIL_RE = /e-?mail|البريد/i;
 
-/** Registration form editor shared by the curator's and a lead's activity
- *  editors. Only what the activity itself doesn't already say lives here:
- *  open/closed, which contact details to ask, the questions, and two
- *  optional messages. Titles and button text use the site's defaults. */
-export default function RegistrationFormBuilder({ value, onChange }: Props) {
+/** Form editor shared by the curator's and a lead's activity editors, for
+ *  both the registration form and the after-event (feedback) form. Only
+ *  what the activity itself doesn't already say lives here: open/closed,
+ *  which contact details to ask, the questions, and two optional messages.
+ *  Titles and button text use the site's defaults. */
+export default function RegistrationFormBuilder({ value, onChange, variant = 'registration' }: Props) {
   const t = useTranslations('Dashboard');
   const uid = useId();
   const form = value;
@@ -35,7 +39,25 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
   const askName = form.collectName ?? 'optional';
   const askEmail = form.collectEmail ?? 'optional';
 
+  const isFeedback = variant === 'feedback';
   const set = (patch: Partial<CustomForm>) => onChange({ ...form, ...patch });
+
+  // Turning the after-event form on for the first time starts it with the
+  // usual three questions (a rating and two open ones), all editable.
+  const toggleEnabled = () => {
+    if (!form.enabled && isFeedback && questions.length === 0) {
+      set({
+        enabled: true,
+        questions: [
+          { id: newQuestionId(), label: t('fbStarterRating'), type: 'rating', options: [], required: true },
+          { id: newQuestionId(), label: t('fbStarterBest'), type: 'textarea', options: [], required: false },
+          { id: newQuestionId(), label: t('fbStarterImprove'), type: 'textarea', options: [], required: false },
+        ],
+      });
+    } else {
+      set({ enabled: !form.enabled });
+    }
+  };
   const setQuestions = (qs: CustomFormQuestion[]) => set({ questions: qs });
   const updateQuestion = (id: string, patch: Partial<CustomFormQuestion>) =>
     setQuestions(questions.map(q => (q.id === id ? { ...q, ...patch } : q)));
@@ -63,8 +85,8 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
       {/* ── On/off ── */}
       <div className={styles.head}>
         <div>
-          <h3 id={uid + '-title'} className={styles.title}>{t('regTitle')}</h3>
-          <p className={styles.sub}>{t('regSubtitle')}</p>
+          <h3 id={uid + '-title'} className={styles.title}>{isFeedback ? t('fbTitle') : t('regTitle')}</h3>
+          <p className={styles.sub}>{isFeedback ? t('fbSubtitle') : t('regSubtitle')}</p>
         </div>
         <button
           type="button"
@@ -72,7 +94,7 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
           aria-checked={!!form.enabled}
           aria-labelledby={uid + '-title'}
           className={styles.switch + (form.enabled ? ' ' + styles.switchOn : '')}
-          onClick={() => set({ enabled: !form.enabled })}
+          onClick={toggleEnabled}
         >
           <span className={styles.knob} />
         </button>
@@ -99,7 +121,7 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
             </div>
           </div>
 
-          {form.closed && <p className={styles.closedNote}>{t('regClosedNote')}</p>}
+          {form.closed && <p className={styles.closedNote}>{isFeedback ? t('fbClosedNote') : t('regClosedNote')}</p>}
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t('regAskFor')}</span>
@@ -144,6 +166,7 @@ export default function RegistrationFormBuilder({ value, onChange }: Props) {
                       <option value="textarea">{t('qTypeTextarea')}</option>
                       <option value="select">{t('qTypeSelect')}</option>
                       <option value="checkbox">{t('qTypeCheckbox')}</option>
+                      <option value="rating">{t('qTypeRating')}</option>
                     </select>
                   </div>
 

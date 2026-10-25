@@ -933,8 +933,8 @@
     "searchMemberPh": "Search by name or email…",
     "clearSelection": "Clear selection",
     "alreadyOnInitiative": "Already on this initiative",
-    "statusTitle": "Shaper status",
-    "statusHint": "Keep a member as an active Shaper or move them to Alumni. Who We Are, the homepage and the member counts update within a minute; alumni aren't asked to sign the Charter.",
+    "statusTitle": "Members",
+    "statusHint": "Everyone with an account. Switch a member between Shaper and Alumni, or remove them from the Hub completely (their login, profile and initiative memberships). Who We Are, the homepage and the member counts update within a minute.",
     "statusLoadFailed": "Couldn't load members.",
     "statusSaveFailed": "Couldn't change the status. Please try again.",
     "viewMoreCount": "View {count} more ({total} hidden)",
@@ -942,7 +942,11 @@
     "viewMoreMembers": "View {count} more members",
     "tempPassword": "One-time password:",
     "copy": "Copy",
-    "newTempPassword": "New one-time password"
+    "newTempPassword": "New one-time password",
+    "filterTeam": "Curatorship",
+    "memberRemoveConfirm": "Click again to remove",
+    "memberRemoveRefused": "This member can't be removed by you.",
+    "memberRemoveFailed": "Couldn't remove this member. Please try again."
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",

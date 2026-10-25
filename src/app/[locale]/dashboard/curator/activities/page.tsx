@@ -14,7 +14,8 @@ import {
   pickActivityFields, emptyActivityForm as emptyForm, emptyCustomForm,
   parseHighlights, highlightsToText, activityToForm, safeColor,
 } from '@/lib/activityTypes';
-import type { Highlight, CustomForm, ActivityKind } from '@/lib/activityTypes';
+import type { Highlight, CustomForm, ActivityKind, FormType } from '@/lib/activityTypes';
+import { refreshPublicPages } from '@/lib/spotlight';
 import { normalizeRole } from '@/lib/role';
 import { omitKeys } from '@/lib/omitKeys';
 import ActivityAppearanceFields from '@/components/ActivityAppearanceFields';
@@ -37,6 +38,7 @@ interface Activity {
   archived?: boolean;
   kind?: ActivityKind;
   customForm?: CustomForm;
+  feedbackForm?: CustomForm;
   imageUrl?: string;
   images?: string[];
   color?: string;
@@ -64,6 +66,8 @@ interface ActivityResponse {
   submitterName?: string;
   submitterEmail?: string;
   read?: boolean;
+  /** Missing on responses sent before the after-event form existed. */
+  formType?: FormType;
 }
 
 const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
@@ -118,7 +122,7 @@ function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: Ret
       {!!fields.ctaUrl && row('activityCtaUrlLabel', fields.ctaUrl as string)}
       {!!highlights?.length && row('activityHighlightsLabel',
         <ul className={styles.detailHighlightList}>
-          {highlights.map((h, i) => <li key={i}>{h.name}{h.tag ? ` — ${h.tag}` : ''}</li>)}
+          {highlights.map((h, i) => <li key={i}>{h.name}{h.tag ? `: ${h.tag}` : ''}</li>)}
         </ul>
       )}
       {color && row('activityAccentColor',
@@ -131,10 +135,14 @@ function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: Ret
       )}
       {typeof fields.active === 'boolean' && row('activityActiveLabel', fields.active ? t('yes') : t('no'))}
       {typeof fields.archived === 'boolean' && row('filterArchived', fields.archived ? t('yes') : t('no'))}
-      {customForm && row('regTitle',
-        customForm.enabled
-          ? `${customForm.closed ? t('regClosed') : t('regOpen')} · ${t('customFormQuestionCount', { n: customForm.questions?.length || 0 })}`
-          : t('no')
+      {([['regTitle', customForm], ['fbTitle', fields.feedbackForm as CustomForm | undefined]] as const).map(([label, f]) =>
+        f ? (
+          <div key={label}>{row(label,
+            f.enabled
+              ? `${f.closed ? t('regClosed') : t('regOpen')} · ${t('customFormQuestionCount', { n: f.questions?.length || 0 })}`
+              : t('no'))}
+          </div>
+        ) : null
       )}
     </>
   );
@@ -158,6 +166,7 @@ export default function ActivitiesPage() {
   const [responsesFor, setResponsesFor] = useState<Activity | null>(null);
   const [responses, setResponses] = useState<ActivityResponse[]>([]);
   const [loadingResponses, setLoadingResponses] = useState(false);
+  const [responsesTab, setResponsesTab] = useState<FormType>('registration');
 
   /* Lead-proposed activities/workshops awaiting review */
   const [activityProposals, setActivityProposals] = useState<any[]>([]);
@@ -199,7 +208,7 @@ export default function ActivitiesPage() {
       // So curators can see at a glance which activities have new (unread)
       // responses to check, without opening each "View Responses" modal —
       // and so the badge actually clears once they've been viewed.
-      const withForms = sorted.filter(a => a.customForm?.enabled);
+      const withForms = sorted.filter(a => a.customForm?.enabled || a.feedbackForm?.enabled);
       const counts = await Promise.all(withForms.map(a =>
         getCountFromServer(query(collection(db, 'activity_responses'),
           where('activityId', '==', a.id), where('read', '==', false)))
@@ -303,15 +312,17 @@ export default function ActivitiesPage() {
   // curator can't accidentally archive-but-leave-live an activity and
   // forget to hide it — unarchiving never re-activates it automatically,
   // since bringing it back onto the homepage should be a deliberate step.
-  // One click to open or close an activity's registration form.
-  async function handleToggleRegistration(a: Activity) {
-    if (!a.customForm) return;
+  // One click to open or close an activity's registration or after-event form.
+  async function handleToggleForm(a: Activity, key: 'customForm' | 'feedbackForm') {
+    const f = a[key];
+    if (!f) return;
     try {
-      const closed = !a.customForm.closed;
-      await updateDoc(doc(db, 'initiatives', a.id), { 'customForm.closed': closed });
-      setActivities(prev => prev.map(x => x.id === a.id && x.customForm ? { ...x, customForm: { ...x.customForm, closed } } : x));
+      const closed = !f.closed;
+      await updateDoc(doc(db, 'initiatives', a.id), { [`${key}.closed`]: closed });
+      setActivities(prev => prev.map(x => x.id === a.id && x[key] ? { ...x, [key]: { ...x[key], closed } } : x));
+      void refreshPublicPages();
     } catch (err) {
-      console.error('Failed to toggle registration:', err);
+      console.error('Failed to open/close form:', err);
       alert(t('saveFailed'));
     }
   }
@@ -416,8 +427,9 @@ export default function ActivitiesPage() {
     }
   }
 
-  async function openResponses(a: Activity) {
+  async function openResponses(a: Activity, tab: FormType) {
     setResponsesFor(a);
+    setResponsesTab(tab);
     setLoadingResponses(true);
     try {
       const snap = await getDocs(query(collection(db, 'activity_responses'), where('activityId', '==', a.id)));
@@ -448,8 +460,13 @@ export default function ActivitiesPage() {
   async function handleDownloadResponses() {
     if (!responsesFor) return;
     const { downloadActivityResponses } = await import('@/lib/exportActivityResponses');
-    downloadActivityResponses(responsesFor.title, responsesFor.customForm?.questions || [], responses);
+    downloadActivityResponses(responsesFor.title, tabQuestions, tabResponses,
+      responsesTab === 'feedback' ? 'Feedback' : 'Registrations');
   }
+
+  // Responses for the open tab; older ones without formType are registrations.
+  const tabResponses = responses.filter(r => (r.formType ?? 'registration') === responsesTab);
+  const tabQuestions = (responsesTab === 'feedback' ? responsesFor?.feedbackForm : responsesFor?.customForm)?.questions || [];
 
   if (!canEdit) {
     return <p style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</p>;
@@ -668,6 +685,11 @@ export default function ActivitiesPage() {
                     {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
                   </span>
                 )}
+                {a.feedbackForm?.enabled && (
+                  <span className={styles.badge + ' ' + (a.feedbackForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
+                    {a.feedbackForm.closed ? t('fbBadgeClosed') : t('fbBadgeOpen')}
+                  </span>
+                )}
               </div>
               {a.description && <p className={styles.cardDesc}>{a.description}</p>}
               <div className={styles.cardActions}>
@@ -675,15 +697,23 @@ export default function ActivitiesPage() {
                 {a.customForm?.enabled && (
                   <button
                     className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
-                    onClick={() => handleToggleRegistration(a)}
+                    onClick={() => handleToggleForm(a, 'customForm')}
                   >
                     {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
                   </button>
                 )}
-                {a.customForm?.enabled && (
+                {a.feedbackForm?.enabled && (
+                  <button
+                    className={styles.toggleBtn + ' ' + (a.feedbackForm.closed ? styles.toggleOn : styles.toggleOff)}
+                    onClick={() => handleToggleForm(a, 'feedbackForm')}
+                  >
+                    {a.feedbackForm.closed ? t('fbOpenAction') : t('fbCloseAction')}
+                  </button>
+                )}
+                {(a.customForm?.enabled || a.feedbackForm?.enabled) && (
                   <button
                     className={styles.responsesBtn + (responseCounts[a.id] > 0 ? ' ' + styles.responsesBtnHasNew : '')}
-                    onClick={() => openResponses(a)}
+                    onClick={() => openResponses(a, a.customForm?.enabled ? 'registration' : 'feedback')}
                   >
                     {responseCounts[a.id] > 0
                       ? t('viewResponsesCount', { n: responseCounts[a.id] })
@@ -806,6 +836,11 @@ export default function ActivitiesPage() {
                 value={form.customForm}
                 onChange={customForm => setForm(f => ({ ...f, customForm }))}
               />
+              <RegistrationFormBuilder
+                variant="feedback"
+                value={form.feedbackForm}
+                onChange={feedbackForm => setForm(f => ({ ...f, feedbackForm }))}
+              />
             </div>
 
             <div className={styles.modalFooter}>
@@ -828,37 +863,71 @@ export default function ActivitiesPage() {
               <button className={styles.closeBtn} onClick={closeResponses} aria-label={t('closeModal')}>✕</button>
             </div>
             <div className={styles.modalBody}>
+              {responsesFor.customForm?.enabled && responsesFor.feedbackForm?.enabled && (
+                <div className={styles.responseTabs} role="tablist">
+                  {(['registration', 'feedback'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={responsesTab === tab}
+                      className={styles.responseTab + (responsesTab === tab ? ' ' + styles.responseTabActive : '')}
+                      onClick={() => setResponsesTab(tab)}
+                    >
+                      {tab === 'feedback' ? t('fbTitle') : t('regTitle')}
+                      <span className={styles.responseTabCount}>
+                        {responses.filter(r => (r.formType ?? 'registration') === tab).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {loadingResponses ? (
                 <DashSkeleton rows={3} header={false} label={t('loading')} />
-              ) : responses.length === 0 ? (
+              ) : tabResponses.length === 0 ? (
                 <p className={styles.empty}>{t('noResponsesYet')}</p>
               ) : (
-                <div className={styles.responsesTableWrap}>
-                  <table className={styles.responsesTable}>
-                    <thead>
-                      <tr>
-                        <th>{t('submittedAtCol')}</th>
-                        <th>{t('submitterNameCol')}</th>
-                        <th>{t('submitterEmailCol')}</th>
-                        {(responsesFor.customForm?.questions || []).map(q => (
-                          <th key={q.id}>{q.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {responses.map(r => (
-                        <tr key={r.id}>
-                          <td>{new Date(r.submittedAt).toLocaleString()}</td>
-                          <td>{r.submitterName || ''}</td>
-                          <td>{r.submitterEmail || ''}</td>
-                          {(responsesFor.customForm?.questions || []).map(q => (
-                            <td key={q.id}>{r.answers?.[q.id] ?? ''}</td>
-                          ))}
+                <>
+                  {/* Average of each star-rating question. */}
+                  {tabQuestions.filter(q => q.type === 'rating').map(q => {
+                    const scores = tabResponses.map(r => Number(r.answers?.[q.id])).filter(n => n >= 1 && n <= 5);
+                    if (!scores.length) return null;
+                    const avg = scores.reduce((x, y) => x + y, 0) / scores.length;
+                    return (
+                      <div key={q.id} className={styles.ratingSummary}>
+                        <span className={styles.ratingSummaryScore}>★ {avg.toFixed(1)}</span>
+                        <span>{q.label}</span>
+                        <span className={styles.ratingSummaryCount}>{t('ratingCount', { n: scores.length })}</span>
+                      </div>
+                    );
+                  })}
+                  <div className={styles.responsesTableWrap}>
+                    <table className={styles.responsesTable}>
+                      <thead>
+                        <tr>
+                          <th>{t('submittedAtCol')}</th>
+                          <th>{t('submitterNameCol')}</th>
+                          <th>{t('submitterEmailCol')}</th>
+                          {tabQuestions.map(q => <th key={q.id}>{q.label}</th>)}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {tabResponses.map(r => (
+                          <tr key={r.id}>
+                            <td>{new Date(r.submittedAt).toLocaleString()}</td>
+                            <td>{r.submitterName || ''}</td>
+                            <td>{r.submitterEmail || ''}</td>
+                            {tabQuestions.map(q => (
+                              <td key={q.id}>
+                                {q.type === 'rating' && r.answers?.[q.id] ? `★ ${r.answers[q.id]}` : r.answers?.[q.id] ?? ''}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
             <div className={styles.modalFooter}>
@@ -866,7 +935,7 @@ export default function ActivitiesPage() {
               <button
                 className={styles.saveBtn}
                 onClick={handleDownloadResponses}
-                disabled={responses.length === 0}
+                disabled={tabResponses.length === 0}
               >
                 {t('downloadResponses')}
               </button>

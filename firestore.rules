@@ -529,7 +529,8 @@ service cloud.firestore {
     // to just that field, so opening the "View Responses" modal can mark
     // them seen without a curator write being able to touch anything else.
     match /activity_responses/{docId} {
-      allow create: if request.resource.data.keys().hasOnly(['activityId', 'answers', 'submittedAt', 'submitterName', 'submitterEmail', 'read'])
+      allow create: if request.resource.data.keys().hasOnly(['activityId', 'formType', 'answers', 'submittedAt', 'submitterName', 'submitterEmail', 'read'])
+                    && request.resource.data.get('formType', 'registration') in ['registration', 'feedback']
                     && request.resource.data.activityId is string
                     && request.resource.data.answers is map && request.resource.data.answers.size() <= 50
                     && request.resource.data.submittedAt is string

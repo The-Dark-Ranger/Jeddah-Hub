@@ -62,7 +62,7 @@ sequenceDiagram
     C->>D: Name, email, role
     D->>A: POST with the curator's ID token
     A->>A: Curator or vice curator?<br/>(otherwise 401)
-    A->>Auth: Create user, temporary password [removed]
+    A->>Auth: Create user with a random one-time password
     A->>DB: users/{uid}: role and name
     A->>DB: public_profiles/{uid}: name and role only
     D->>DB: role_assignments/{email}

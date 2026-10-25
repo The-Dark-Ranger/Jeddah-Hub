@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import styles from './DefaultPasswordBanner.module.css';
 
 /** Shown across the dashboard while the member is still signed in with the
@@ -14,7 +14,7 @@ export default function DefaultPasswordBanner() {
 
   useEffect(() => {
     const read = () => {
-      try { setShow(sessionStorage.getItem(DEFAULT_PASSWORD_FLAG) === '1'); } catch { setShow(false); }
+      try { setShow(sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'); } catch { setShow(false); }
     };
     read();
     window.addEventListener('jh-password-changed', read);

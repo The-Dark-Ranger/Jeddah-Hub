@@ -1,3 +1,5 @@
+/* Browser helpers for Role Assignments. Each one calls the curator-only
+ * /api/members/create-account route with the signed-in curator's ID token. */
 import { auth } from '@/lib/firebase';
 import type { CreateAccountResult, MemberRole } from '@/lib/memberAccounts';
 
@@ -9,19 +11,31 @@ async function post(body: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
     body: JSON.stringify(body),
   });
-  return await res.json().catch(() => null) as { result?: string; reason?: string } | null;
+  return await res.json().catch(() => null) as { result?: string; reason?: string; tempPassword?: string } | null;
 }
 
-/** Asks the server (curators only) to create this member's sign-in account
- *  with the temporary password, and to list them on the Who We Are page
- *  under `role` with `displayName`. See /api/members/create-account. */
-export async function createMemberAccount(email: string, displayName: string, role: MemberRole): Promise<CreateAccountResult> {
+/** Creates this member's sign-in account and lists them on the Who We Are
+ *  page under `role` with `displayName`. A new account comes back with its
+ *  one-time password, which the curator sees once. */
+export async function createMemberAccount(email: string, displayName: string, role: MemberRole): Promise<{ result: CreateAccountResult; tempPassword?: string }> {
   try {
     const data = await post({ email, displayName, role });
-    if (data?.reason === 'not-configured') return 'not-configured';
-    return data?.result === 'created' || data?.result === 'exists' ? data.result : 'failed';
+    if (data?.reason === 'not-configured') return { result: 'not-configured' };
+    const result = data?.result === 'created' || data?.result === 'exists' ? data.result : 'failed';
+    return { result, tempPassword: data?.tempPassword };
   } catch {
-    return 'failed';
+    return { result: 'failed' };
+  }
+}
+
+/** A new one-time password for a member who has never signed in; null when
+ *  they already have (they keep their own) or on any failure. */
+export async function resetTempPassword(email: string): Promise<string | null> {
+  try {
+    const data = await post({ email, action: 'reset-temp' });
+    return data?.result === 'reset' && data.tempPassword ? data.tempPassword : null;
+  } catch {
+    return null;
   }
 }
 

@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
-import { DEFAULT_MEMBER_PASSWORD, DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import styles from './Login.module.css';
 
 /* Bot/brute-force deterrents on top of reCAPTCHA and Firebase's own
@@ -97,8 +97,8 @@ export default function LoginPage() {
       // Remember (for this tab only) that the temporary password was used,
       // so the dashboard can ask the member to change it.
       try {
-        if (password === DEFAULT_MEMBER_PASSWORD) sessionStorage.setItem(DEFAULT_PASSWORD_FLAG, '1');
-        else sessionStorage.removeItem(DEFAULT_PASSWORD_FLAG);
+        if (isTemporaryPassword(password)) sessionStorage.setItem(MUST_CHANGE_PASSWORD_FLAG, '1');
+        else sessionStorage.removeItem(MUST_CHANGE_PASSWORD_FLAG);
       } catch { /* storage blocked */ }
       const profile = await getUserProfile(cred.user.uid);
 

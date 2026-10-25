@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { DEFAULT_MEMBER_PASSWORD, DEFAULT_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG, PASSWORD_MIN } from '@/lib/memberAccounts';
 import { normalizeRole } from '@/lib/role';
 import { useAuth } from '@/context/AuthContext';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
@@ -36,7 +36,6 @@ const empty: ProfileForm = {
 // Long enough for a real bio, short enough that shaper/curator cards
 // across the site (About page, homepage) stay a reasonable, consistent size.
 const BIO_MAX_LENGTH = 600;
-const PASSWORD_MIN = 8;
 
 const ICONS = {
   account: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
@@ -72,13 +71,13 @@ function ChangePassword() {
     const u = auth?.currentUser;
     if (!u?.email) return;
     if (next.length < PASSWORD_MIN) return setMsg({ ok: false, text: t('pwTooShort', { n: PASSWORD_MIN }) });
-    if (next === DEFAULT_MEMBER_PASSWORD || next === current) return setMsg({ ok: false, text: t('pwNotNew') });
+    if (isTemporaryPassword(next) || next === current) return setMsg({ ok: false, text: t('pwNotNew') });
     if (next !== confirmPw) return setMsg({ ok: false, text: t('pwMismatch') });
     setBusy(true);
     try {
       await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, current));
       await updatePassword(u, next);
-      try { sessionStorage.removeItem(DEFAULT_PASSWORD_FLAG); } catch { /* ignore */ }
+      try { sessionStorage.removeItem(MUST_CHANGE_PASSWORD_FLAG); } catch { /* ignore */ }
       window.dispatchEvent(new Event('jh-password-changed'));
       setCurrent(''); setNext(''); setConfirmPw('');
       setMsg({ ok: true, text: t('pwChanged') });

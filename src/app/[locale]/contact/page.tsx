@@ -23,7 +23,7 @@ export default function ContactPage() {
     if (!isValidEmail(formData.email)) { setStatus('invalid-email'); return; }
     setStatus('loading');
     try {
-      // Check the domain can actually receive mail — a curator replies to
+      // Check the domain can actually receive mail, a curator replies to
       // this address later, so a fake domain would just bounce silently.
       const emailCheck = await fetch('/api/validate-email', {
         method: 'POST',

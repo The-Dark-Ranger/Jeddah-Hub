@@ -30,7 +30,7 @@
 
 .headerSubtitle { font-size: 1.05rem; color: rgba(255,255,255,.75); line-height: 1.65; }
 
-/* Card cover image — every card gets this same block at the same height,
+/* Card cover image, every card gets this same block at the same height,
    whether it has a real photo or not, so cards never differ in shape
    depending on what content a given initiative happens to have. */
 .cardSlider {
@@ -73,7 +73,7 @@
 .catBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
 /* The selected pill already has a solid blue fill, so the hover colour above
    would render blue text on blue. Keep it white. Must stay after .catBtn:hover
-   — equal specificity, so source order decides. */
+  , equal specificity, so source order decides. */
 .catBtnActive:hover { color: white; }
 
 /* Section label */
@@ -92,7 +92,7 @@
   font-size: 0.72rem; color: var(--text-muted);
 }
 
-/* Grid — stretch (the default, stated explicitly) so every card in a row
+/* Grid, stretch (the default, stated explicitly) so every card in a row
    matches the tallest one's height regardless of title/description length,
    instead of each card sizing to only its own content. */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.75rem; align-items: stretch; }

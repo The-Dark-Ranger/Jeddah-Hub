@@ -23,7 +23,7 @@
   color: var(--primary-blue);
   font-variant-numeric: tabular-nums;
 }
-/* Dash-bullet items (unacceptable behaviors, cancellation grounds, etc. —
+/* Dash-bullet items (unacceptable behaviors, cancellation grounds, etc.,
    the source document leaves these unnumbered) get a plain bullet instead
    of a numeric marker, but stay visually aligned with numbered items. */
 .itemBullet { flex-shrink: 0; min-width: 2.4rem; color: var(--primary-blue); text-align: center; }

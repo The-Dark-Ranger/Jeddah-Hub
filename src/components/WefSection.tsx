@@ -12,8 +12,8 @@ const FOCUS_AREAS = [
   { key: 'civic', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8' },
 ] as const;
 
-/** Homepage band in the World Economic Forum's visual language — a hairline
- *  grid, oversized figures, topic tiles and the Forum's arc motif —
+/** Homepage band in the World Economic Forum's visual language, a hairline
+ *  grid, oversized figures, topic tiles and the Forum's arc motif,
  *  placing the hub inside the Global Shapers / WEF network. */
 export default function WefSection() {
   const t = useTranslations('Wef');

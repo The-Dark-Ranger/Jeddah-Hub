@@ -19,7 +19,7 @@ export interface Shaper {
 // Firestore 'in' matching is exact-string, so this has to enumerate every
 // casing/spacing variant the app has ever written to `role` (Firestore
 // rules' isCurator()/isImpactOfficer() already tolerate both
-// "vice_curator"/"vice curator" and "impact_officer"/"impact officer") —
+// "vice_curator"/"vice curator" and "impact_officer"/"impact officer"),
 // otherwise a vice curator or impact officer stored in one of those
 // variants would be silently excluded from this query.
 const SHAPER_ROLES = [
@@ -39,11 +39,11 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
 
   useEffect(() => {
     if (initial) return;
-    // Public homepage — reads the public_profiles mirror (no email field,
+    // Public homepage, reads the public_profiles mirror (no email field,
     // see firestore.rules) rather than the private `users` collection, and
     // scopes to shaper-family roles with a capped download.
     // db can be undefined if Firebase failed to initialize (missing env
-    // vars) — collection()/query() throw synchronously in that case. Building
+    // vars), collection()/query() throw synchronously in that case. Building
     // the query inside this initial .then() turns that throw into a normal
     // promise rejection, so the .catch() below handles it the same way it
     // already handles a getDocs() failure, keeping the homepage rendering.

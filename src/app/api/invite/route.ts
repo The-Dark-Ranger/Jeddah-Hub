@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   // Even authenticated curators can only fire a bounded number of invite
-  // emails — protects the Resend quota if a session is ever misused.
+  // emails, protects the Resend quota if a session is ever misused.
   if (isRateLimited(`invite:${caller.uid}`, 20, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }

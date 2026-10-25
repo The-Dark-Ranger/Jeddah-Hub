@@ -129,7 +129,7 @@ export default function MembersPage() {
     setSaving(true); setError('');
     try {
       // Check the domain can actually receive mail before creating a
-      // pending assignment for it — a regex alone accepts gibberish like
+      // pending assignment for it, a regex alone accepts gibberish like
       // someone@dfgdf.com, and the invite email would just bounce.
       const check = await fetch('/api/validate-email', {
         method: 'POST',
@@ -443,7 +443,7 @@ export default function MembersPage() {
         <DashSkeleton rows={4} header={false} label={t('loading')} />
       ) : (
         <>
-          {/* Recently Joined — needs acknowledgement */}
+          {/* Recently Joined, needs acknowledgement */}
           {joined.length > 0 && (
             <div className={styles.tableWrap}>
               <div className={styles.tableHeader}>

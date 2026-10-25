@@ -158,7 +158,7 @@
 .editLeadBtn:hover { background: var(--primary-blue); color: white; }
 
 /* Secondary action next to Edit. Needs its own class rather than inline
-   styles on .editLeadBtn — inline styles outrank the :hover rule, which
+   styles on .editLeadBtn, inline styles outrank the :hover rule, which
    left the button with no hover feedback at all. */
 .downloadLeadBtn {
   display: inline-flex; align-items: center; gap: 0.4rem;

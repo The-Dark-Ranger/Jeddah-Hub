@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 
 // Covers both the /projects listing and /projects/[id] detail route with the
-// same generic metadata — both are Client Components (live Firestore data),
+// same generic metadata, both are Client Components (live Firestore data),
 // so metadata has to live in this sibling Server Component layout instead.
 // Per-initiative titles would need a server-side Firestore read at request
 // time for a marginal gain, so this stays intentionally generic.

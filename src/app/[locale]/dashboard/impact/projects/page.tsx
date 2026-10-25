@@ -140,7 +140,7 @@ export default function ImpactProjects() {
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
 
-  /* Team panel state — tracks which card has the team panel open */
+  /* Team panel state, tracks which card has the team panel open */
   const [teamOpenId, setTeamOpenId]     = useState<string | null>(null);
   const [assignUser, setAssignUser]     = useState('');
   const [assignRole, setAssignRole]     = useState('');
@@ -161,7 +161,7 @@ export default function ImpactProjects() {
         getDocs(collection(db, 'users')),
       ]);
       // Hub Activities (dashboard/curator/activities) are stored as
-      // initiatives docs tagged type:'hub_activity' — exclude them, same as
+      // initiatives docs tagged type:'hub_activity', exclude them, same as
       // the curator Initiatives page, so they don't appear in this list/
       // count or become editable through the initiative form here.
       setInitiatives(initSnap.docs.filter(d => !(d.data() as any).type).map(d => ({ id: d.id, ...d.data() } as Initiative)));
@@ -260,7 +260,7 @@ export default function ImpactProjects() {
   const notifyCurators = async (type: 'archive_request' | 'restore_request', initiativeId: string, initiativeTitle: string, message: string) => {
     try {
       // Query actual curator accounts directly rather than role_assignments'
-      // status=='joined' flag — that transition requires an update Firestore
+      // status=='joined' flag, that transition requires an update Firestore
       // rule for role_assignments that this app deliberately doesn't grant,
       // so it never fires and that query would always return zero curators.
       const usersSnap = await getDocs(

@@ -28,7 +28,7 @@ const tajawal = Tajawal({
 });
 
 // Browser chrome (mobile address bar, PWA title bar) follows the theme, and
-// color-scheme lets native controls — scrollbars, date pickers, selects —
+// color-scheme lets native controls, scrollbars, date pickers, selects,
 // render in the matching palette instead of staying light in dark mode.
 export const viewport: Viewport = {
   themeColor: [
@@ -48,8 +48,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     ? '\u0635\u0646\u0627\u0639 \u062c\u062f\u0629 | \u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645'
     : 'Jeddah Hub | Global Shapers Community';
   const description = locale === 'ar'
-    ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645 \— \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
-    : 'Global Shapers Community \— Jeddah Hub. A network of young leaders driving positive change in Jeddah.';
+    ? '\u0645\u062c\u062a\u0645\u0639 \u0635\u0646\u0627\u0639 \u0627\u0644\u0639\u0627\u0644\u0645\u060c \u0635\u0646\u0627\u0639 \u062c\u062f\u0629. \u0634\u0628\u0643\u0629 \u0645\u0646 \u0627\u0644\u0634\u0628\u0627\u0628 \u0644\u062a\u062d\u0642\u064a\u0642 \u062a\u0623\u062b\u064a\u0631 \u0625\u064a\u062c\u0627\u0628\u064a \u0641\u064a \u062c\u062f\u0629.'
+    : 'Global Shapers Community, Jeddah Hub. A network of young leaders driving positive change in Jeddah.';
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -80,7 +80,7 @@ export default async function LocaleLayout({
   const messages = await getMessages({ locale });
   const isRtl    = locale === 'ar';
 
-  // Read theme from cookie set by ThemeProvider \— eliminates client-side flash.
+  // Read theme from cookie set by ThemeProvider, eliminates client-side flash.
   const cookieStore = await cookies();
   const savedTheme  = cookieStore.get('jh-theme')?.value;
   const themeAttr   = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : undefined;

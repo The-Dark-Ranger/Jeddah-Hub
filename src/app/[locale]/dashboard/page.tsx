@@ -83,7 +83,7 @@ export default function DashboardHome() {
     await Promise.all([
       safe(async () => {
         // Hub Activities (dashboard/curator/activities) are stored as
-        // initiatives docs tagged type:'hub_activity' — excluded from every
+        // initiatives docs tagged type:'hub_activity', excluded from every
         // count/list below the same way HomeFeaturedInitiatives, /projects,
         // and the curator Initiatives page already do.
         const activityCount = (await getCountFromServer(
@@ -105,7 +105,7 @@ export default function DashboardHome() {
             if (user && data.members?.some((m: any) => m.userId === user.uid)) next.myProjects++;
           });
         } else {
-          // Nobody else needs the documents — count them server-side instead.
+          // Nobody else needs the documents, count them server-side instead.
           const [total, active, activeActivityCount] = await Promise.all([
             getCountFromServer(collection(db, 'initiatives')),
             getCountFromServer(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
@@ -126,7 +126,7 @@ export default function DashboardHome() {
         next.blogs = (await getCountFromServer(target)).data().count;
       }),
 
-      // Every real initiative (public read) — feeds the category chart, a
+      // Every real initiative (public read), feeds the category chart, a
       // Shaper's "your initiatives" list and the "needs attention" list.
       safe(async () => {
         const snap = await getDocs(collection(db, 'initiatives'));
@@ -135,7 +135,7 @@ export default function DashboardHome() {
           .map(d => ({ id: d.id, ...(d.data() as Omit<InitiativeLite, 'id'>) })));
       }),
 
-      // What visitors see right now — shown to every role.
+      // What visitors see right now, shown to every role.
       safe(async () => {
         const snap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
         setLiveActivities(snap.docs
@@ -149,7 +149,7 @@ export default function DashboardHome() {
         try {
           docs = (await getDocs(query(collection(db, 'blogs'), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(3)))).docs;
         } catch {
-          // Composite index missing — sort client-side instead.
+          // Composite index missing, sort client-side instead.
           docs = (await getDocs(query(collection(db, 'blogs'), where('status', '==', 'published')))).docs
             .sort((a, b) => String(b.data().createdAt ?? '').localeCompare(String(a.data().createdAt ?? '')))
             .slice(0, 3);
@@ -157,7 +157,7 @@ export default function DashboardHome() {
         setLatestPosts(docs.map(d => ({ id: d.id, ...(d.data() as Omit<LatestPost, 'id'>) })));
       }),
 
-      // Curator-only collections — never queried by other roles, so they no
+      // Curator-only collections, never queried by other roles, so they no
       // longer fail the whole dashboard with a permission error.
       ...(isCurator ? [
         safe(async () => {
@@ -703,7 +703,7 @@ function NeedsAttention({ items, statsLoading, t, initTitle, href }: {
   );
 }
 
-/** Nudges every member toward a complete public profile — the fields the
+/** Nudges every member toward a complete public profile, the fields the
  *  "Our Shapers" page and initiative member lists actually show. */
 function ProfileCompleteness({ user, t }: { user: UserProfile; t: ReturnType<typeof useTranslations> }) {
   const checks = [

@@ -9,9 +9,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
 
 export async function POST(req: NextRequest) {
-  // This route sends a real outbound email per request — a token-farmed or
+  // This route sends a real outbound email per request, a token-farmed or
   // replayed recaptcha pass shouldn't translate into unbounded email volume
-  // to arbitrary addresses. Best-effort, single-instance limiter — see
+  // to arbitrary addresses. Best-effort, single-instance limiter, see
   // src/lib/rateLimit.ts for its limits.
   if (isRateLimited(`newsletter-welcome:${clientIp(req)}`, 5, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
@@ -25,18 +25,18 @@ export async function POST(req: NextRequest) {
   }
   // Defense in depth: the client is expected to pre-check via
   // /api/validate-email before ever reaching this route, but that's a
-  // client-side gate a direct call can skip — so check again here, right
+  // client-side gate a direct call can skip, so check again here, right
   // before actually sending anything.
   if (!(await hasDeliverableDomainWithTimeout(email))) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 
   // Fail closed (matches /api/verify-recaptcha): a misconfigured/missing
-  // secret must reject the request, not silently skip verification — this
+  // secret must reject the request, not silently skip verification, this
   // is a public, unauthenticated route with no other abuse control, so a
   // skipped check would turn it into an open relay for arbitrary email.
   if (!process.env.RECAPTCHA_SECRET_KEY) {
-    console.warn('[newsletter/welcome] RECAPTCHA_SECRET_KEY not configured — rejecting request');
+    console.warn('[newsletter/welcome] RECAPTCHA_SECRET_KEY not configured, rejecting request');
     return NextResponse.json({ error: 'reCAPTCHA not configured' }, { status: 503 });
   }
   const passed = await verifyRecaptchaToken(recaptchaToken, { action: 'newsletter_subscribe' });

@@ -54,7 +54,7 @@ export default function MyProjects() {
   const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<any[]>([]);
   const [pendingRemovals, setPendingRemovals] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
   const [pendingAdds, setPendingAdds] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
-  /* Candidate shapers a lead can pick from to request adding — sourced from
+  /* Candidate shapers a lead can pick from to request adding, sourced from
    * public_profiles (leads can't read the private `users` collection, only
    * curators/impact officers can) rather than a per-member lookup. */
   const [directory, setDirectory] = useState<{ id: string; displayName?: string }[]>([]);
@@ -264,7 +264,7 @@ export default function MyProjects() {
     }
   };
 
-  // Adding a member is request+approve, same as removal — a lead can't
+  // Adding a member is request+approve, same as removal, a lead can't
   // unilaterally add someone who never asked to join (that's what
   // join_requests + handleAcceptRequest above already covers); this is for
   // a lead-initiated invite of someone specific, reviewed by the
@@ -409,7 +409,7 @@ export default function MyProjects() {
             const nonLeadMembers = (p.members || []).filter((m: any) => m.userId !== user?.uid);
 
             if (!isLead) {
-              // Plain member — unchanged from the original simple clickable card.
+              // Plain member, unchanged from the original simple clickable card.
               return (
                 <Link key={p.id} href={`/projects/${p.slug || slugify(p.title)}`} className={styles.card}>
                   <div
@@ -435,7 +435,7 @@ export default function MyProjects() {
               );
             }
 
-            // Led project — full management card.
+            // Led project, full management card.
             return (
               <div key={p.id} className={styles.leadCard}>
                 <div

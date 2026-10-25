@@ -18,7 +18,7 @@ import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
  * curator or vice curator.
  *
  * Alongside the account it writes users/{uid} (role + name) and the public
- * mirror public_profiles/{uid} (name + role only, never email — see
+ * mirror public_profiles/{uid} (name + role only, never email, see
  * firestore.rules), so the member appears under their role without having
  * to fill in their own profile first. A member who already has a users doc
  * keeps their role and any name they set themselves; only blanks are filled.
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
   const body = await readJsonBody(req);
 
-  // Which of these assignment emails have signed in, and when — so Role
+  // Which of these assignment emails have signed in, and when, so Role
   // Assignments can move them out of Pending. Only the sign-in time is
   // returned, nothing else about the account.
   if (body?.action === 'signin-status') {

@@ -43,7 +43,7 @@ export default function HomePage() {
 
   return (
     <main className={styles.main}>
-      {/* Fixed, hand-authored object below — never interpolates request or
+      {/* Fixed, hand-authored object below, never interpolates request or
           user-supplied data. */}
       <script
         type="application/ld+json"
@@ -78,7 +78,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Jeddah landmarks in a Hijazi arch — desktop only */}
+        {/* Jeddah landmarks in a Hijazi arch, desktop only */}
         <div className={styles.heroVisual} aria-hidden="true">
           <div className={styles.heroArch}>
             <Image src="/jeddah-building.png" alt="" width={575} height={1184} className={styles.heroTower} sizes="230px" />
@@ -191,7 +191,7 @@ export default function HomePage() {
           {/* next/image serves this as AVIF/WebP sized to the viewport
               instead of the full 412KB PNG on every visit. */}
           {/* Partner logos keep their brand colours, several of them black on
-              transparent — so they always sit on a light card, which keeps
+              transparent, so they always sit on a light card, which keeps
               them visible in dark mode too. */}
           <div className={styles.partnersCard + ' reveal'}>
             <Image

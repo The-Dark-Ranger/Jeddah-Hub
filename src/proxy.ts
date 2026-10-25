@@ -6,8 +6,8 @@ const intl = createMiddleware(routing);
 
 // Paths vulnerability scanners probe for (leaked secrets, source control,
 // other platforms' admin panels, server-side scripts). None exist on this
-// site; answering them with a bare, cacheable 404 — no page, no framework
-// markup — gives a scanner nothing to fingerprint and costs no render.
+// site; answering them with a bare, cacheable 404, no page, no framework
+// markup, gives a scanner nothing to fingerprint and costs no render.
 const SCANNER_PATH =
   /(?:^|\/)(?:\.(?:env|git|svn|hg|aws|ssh|vscode|idea|htaccess|htpasswd|DS_Store)|wp-[a-z]+|wordpress|xmlrpc|phpmyadmin|pma|cgi-bin|vendor|server-status|actuator|boaform|HNAP1|administrator|backup)(?:$|[/.?])/i;
 const SCANNER_EXT = /\.(?:php\d?|aspx?|jsp|cgi|env|ini|bak|sql|old|swp|ya?ml|log|conf|config)$/i;

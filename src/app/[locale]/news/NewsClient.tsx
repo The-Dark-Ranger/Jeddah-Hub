@@ -8,8 +8,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { Link } from '@/i18n/routing';
 import { newsPath } from '@/lib/slug';
 import { RoleLabel } from '@/lib/roleLabel';
@@ -69,6 +68,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
     if (initial) return;
     const fetchPosts = async () => {
       try {
+        const { collection, getDocs, query, orderBy, where, documentId, db } = await loadFirestore();
         let data: NewsPost[] = [];
         try {
           const snap = await getDocs(query(

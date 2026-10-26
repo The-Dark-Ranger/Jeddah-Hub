@@ -2,8 +2,7 @@
 
 /* Home page: the curator-featured initiatives. */
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
@@ -85,8 +84,8 @@ export default function HomeFeaturedInitiatives({ initial }: { initial?: Initiat
     // already handles a getDocs() failure, keeping the homepage rendering.
     // A single-field query (no composite index needed); featuring and
     // newest-first ordering are decided client-side by pickFeatured().
-    Promise.resolve()
-      .then(() => getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))))
+    loadFirestore()
+      .then(({ collection, getDocs, query, where, db }) => getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))))
       .then(snap => setItems(pickFeatured(snap.docs.map(d => ({ id: d.id, ...d.data() } as Initiative)))))
       .catch(() => {})
       .finally(() => setLoaded(true));

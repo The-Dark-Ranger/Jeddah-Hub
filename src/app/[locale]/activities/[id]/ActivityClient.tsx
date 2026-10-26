@@ -4,8 +4,7 @@
  * its registration and after-event forms (ActivityForm). */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import WaveDivider from '@/components/WaveDivider';
@@ -60,6 +59,7 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
     }
     const load = async () => {
       try {
+        const { collection, getDocs, getDoc, doc, query, where, db } = await loadFirestore();
         let data: Activity | null = null;
 
         // Fast path: a matching `slug` field, scoped to Hub Activities.

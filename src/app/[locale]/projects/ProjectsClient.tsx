@@ -4,8 +4,7 @@
  * spotlight card and the grid of active and past initiatives. */
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { Link } from '@/i18n/routing';
 import styles from './Projects.module.css';
 import Image from 'next/image';
@@ -179,6 +178,7 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
     if (initial) return;
     const fetchProjects = async () => {
       try {
+        const { collection, getDocs, db } = await loadFirestore();
         const snap = await getDocs(collection(db, 'initiatives'));
         const all = snap.docs
           .map(d => ({ id: d.id, ...d.data() } as Project))

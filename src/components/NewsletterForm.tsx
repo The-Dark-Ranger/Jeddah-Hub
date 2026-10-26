@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import styles from './NewsletterForm.module.css';
@@ -40,6 +39,7 @@ export default function NewsletterForm() {
       }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
       if (!check.ok) { setStatus('invalid-email'); return; }
 
+      const { addDoc, collection, db } = await loadFirestore();
       await addDoc(collection(db, 'newsletter_subscribers'), {
         email: email.toLowerCase().trim(),
         subscribedAt: new Date().toISOString(),

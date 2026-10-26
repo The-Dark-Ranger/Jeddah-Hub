@@ -1,5 +1,4 @@
-import { collection, getDocs, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 
 /** Turns a title into a URL-safe slug. Non-Latin/Arabic characters (emoji,
  *  punctuation) collapse to hyphens rather than being dropped silently. */
@@ -33,6 +32,7 @@ export async function uniqueInitiativeSlug(title: string, excludeId?: string): P
   // all and comparing client-side is simpler and less fragile than a
   // Firestore prefix-range query, and this only runs on create/edit saves,
   // not on every page view.
+  const { collection, getDocs, query, db } = await loadFirestore();
   const snap = await getDocs(query(collection(db, 'initiatives')));
   const taken = new Set(
     snap.docs.filter(d => d.id !== excludeId).map(d => d.data().slug).filter(Boolean)

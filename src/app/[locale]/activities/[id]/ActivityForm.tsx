@@ -3,9 +3,8 @@
 /* One of an activity's public forms (registration or after-event feedback),
  * saved to activity_responses. */
 import { useState } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import type { CustomForm, FormType } from '@/lib/activityTypes';
 import styles from './Activity.module.css';
 
@@ -59,6 +58,7 @@ export default function ActivityForm({ activityId, form, formType }: Props) {
       };
       if (name.trim()) payload.submitterName = name.trim();
       if (email.trim()) payload.submitterEmail = email.trim();
+      const { addDoc, collection, db } = await loadFirestore();
       await addDoc(collection(db, 'activity_responses'), payload);
       setSubmitted(true);
     } catch (err) {

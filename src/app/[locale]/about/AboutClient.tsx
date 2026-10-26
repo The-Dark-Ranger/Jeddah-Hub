@@ -4,8 +4,7 @@
  * each with bio, photo and social links. Data arrives from page.tsx or loads
  * in the browser as a fallback. */
 import { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, getCountFromServer, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
@@ -340,8 +339,8 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
     // db can be undefined if Firebase failed to initialize, building the
     // queries inside this .then() turns that throw into a rejection the
     // .catch() below handles, keeping the page rendering.
-    Promise.resolve()
-      .then(() => Promise.all([
+    loadFirestore()
+      .then(({ collection, getDocs, getCountFromServer, query, where, db }) => Promise.all([
         getDocs(query(collection(db, 'public_profiles'), where('role', 'in', roleVariants))),
         getCountFromServer(collection(db, 'initiatives')),
         // Hub Activities are stored as initiatives docs tagged

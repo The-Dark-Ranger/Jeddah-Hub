@@ -4,8 +4,7 @@
  * initiatives. */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { Link, useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Initiative.module.css';
@@ -110,6 +109,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
         // render as an initiative, showing its description under
         // "Objective" since activities have no problem/objective/impact
         // fields of their own.
+        const { collection, getDocs, getDoc, doc, query, where, documentId, db } = await loadFirestore();
         const slugSnap = await getDocs(query(collection(db, 'initiatives'), where('slug', '==', rawId)));
         if (!slugSnap.empty) {
           const d = slugSnap.docs.find(d => !d.data().type);

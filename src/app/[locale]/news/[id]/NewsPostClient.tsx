@@ -3,11 +3,7 @@
 /* A news post: article, likes (members and guests), sharing and related posts. */
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import {
-  doc, getDoc, updateDoc, arrayUnion, arrayRemove,
-  collection, getDocs, query, where, orderBy, limit,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useRouter } from '@/i18n/routing';
 import { newsPath } from '@/lib/slug';
@@ -96,13 +92,14 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
       if (`/news/${decodeURIComponent(urlId)}` !== decodeURIComponent(canonical)) router.replace(canonical);
       // The server copy can be up to a minute old: refresh just the post
       // in the background so the like count is current.
-      Promise.resolve()
-        .then(() => getDoc(doc(db, 'blogs', id)))
+      loadFirestore()
+        .then(({ getDoc, doc, db }) => getDoc(doc(db, 'blogs', id)))
         .then(snap => { if (snap.exists()) setPost({ id: snap.id, ...snap.data() } as BlogPost); })
         .catch(() => {});
       return;
     }
-    getDoc(doc(db, 'blogs', id)).then(snap => {
+    loadFirestore().then(async ({ getDoc, doc, db }) => {
+      const snap = await getDoc(doc(db, 'blogs', id));
       if (snap.exists()) {
         const data = { id: snap.id, ...snap.data() } as BlogPost;
         setPost(data);
@@ -124,6 +121,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
     // "More stories": the latest few other published posts.
     (async () => {
       try {
+        const { collection, getDocs, query, where, orderBy, limit, db } = await loadFirestore();
         let docs;
         try {
           docs = (await getDocs(query(collection(db, 'blogs'), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(4)))).docs;
@@ -150,9 +148,10 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
   const handleLike = async () => {
     if (liking) return;
     setLiking(true);
-    const ref = doc(db, 'blogs', id);
 
     try {
+      const { doc, updateDoc, arrayUnion, arrayRemove, db } = await loadFirestore();
+      const ref = doc(db, 'blogs', id);
       if (user) {
         if (liked) {
           await updateDoc(ref, { likedBy: arrayRemove(user.uid) });

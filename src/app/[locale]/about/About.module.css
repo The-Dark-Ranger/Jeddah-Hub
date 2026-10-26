@@ -244,17 +244,6 @@
 .wefStat span { display: block; font-size: 2rem; font-weight: 800; color: var(--primary-blue); }
 .wefStat p    { font-size: .82rem; color: var(--text-muted); margin-top: .1rem; }
 
-/* ── CTA ── */
-.ctaSection { padding: 5rem 1.25rem; background: var(--card-bg); }
-.cta        { text-align: center; max-width: 640px; margin-inline: auto; }
-.cta h2     { font-size: 2rem; font-weight: 700; color: var(--text-main); margin-bottom: .65rem; }
-.cta p      { color: var(--text-muted); font-size: 1.05rem; margin-bottom: 1.75rem; }
-.ctaButtons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-.ctaBtn     { display: inline-block; background: var(--primary-blue); color: #fff; padding: .9rem 1.9rem; border-radius: 30px; font-weight: 600; font-size: 1rem; transition: transform .2s ease, box-shadow .2s ease; box-shadow: 0 4px 14px var(--primary-blue-glow); }
-.ctaBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-blue-glow); }
-.ctaSecondary { display: inline-block; color: var(--primary-blue); border: 2px solid var(--primary-blue); padding: .85rem 1.75rem; border-radius: 30px; font-weight: 600; font-size: 1rem; transition: all .2s ease; }
-.ctaSecondary:hover { background: var(--primary-blue); color: #fff; transform: translateY(-2px); }
-
 /* ── Shapers loading / empty ── */
 .shapersLoading {
   display: flex; justify-content: center; padding: 4rem 0;
@@ -299,7 +288,6 @@
 @media (max-width: 640px) {
   .hero       { padding: 3.5rem 1rem 5.5rem; }
   .section, .sectionAlt { padding: 3.5rem 1rem; }
-  .ctaSection { padding: 3.5rem 1rem; }
   .statsBar   { padding: 1rem; }
   .statItem   { padding: .4rem 1.1rem; }
   .statDivider{ display: none; }
@@ -312,8 +300,6 @@
 @media (max-width: 400px) {
   .hero { padding: 3rem 1rem 5rem; }
   .section, .sectionAlt { padding: 2.5rem 0.75rem; }
-  .ctaSection { padding: 2.5rem 0.75rem; }
   .statsBar { padding: 0.75rem; }
   .statItem { padding: .35rem .75rem; }
-  .cta h2 { font-size: 1.6rem; }
 }

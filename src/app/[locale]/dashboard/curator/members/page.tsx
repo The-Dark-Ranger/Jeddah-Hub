@@ -16,6 +16,7 @@ import { createMemberAccount, getSignInStatus, removePendingMember, resetTempPas
 import ShaperStatusPanel from './ShaperStatusPanel';
 import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './Members.module.css';
+import { ROLE_ACCENT } from '@/lib/roleColors';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
 
@@ -34,13 +35,6 @@ interface RoleAssignment {
 
 interface KnownUser { email: string; displayName?: string; }
 
-const ROLE_COLORS: Record<string, string> = {
-  curator:        'var(--primary-blue)',
-  vice_curator:   '#7c3aed',
-  impact_officer: '#10b981',
-  shaper:         '#f59e0b',
-  alumni:         '#94a3b8',
-};
 
 export default function MembersPage() {
   const { user } = useAuth();
@@ -313,7 +307,7 @@ export default function MembersPage() {
           )}
         </td>
         <td className={styles.roleCell}>
-          <span className={styles.roleBadge} style={{ color: ROLE_COLORS[a.role], borderColor: ROLE_COLORS[a.role] }}>
+          <span className={styles.roleBadge} style={{ color: ROLE_ACCENT[a.role], borderColor: ROLE_ACCENT[a.role] }}>
             {ROLES.find(r => r.value === a.role)?.label ?? a.role}
           </span>
         </td>

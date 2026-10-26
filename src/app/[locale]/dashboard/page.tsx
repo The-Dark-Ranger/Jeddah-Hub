@@ -16,7 +16,7 @@ import { newsPath, slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
 import type { UserProfile } from '@/lib/auth';
 import styles from './DashboardHome.module.css';
-import { roleStyle } from '@/lib/roleColors';
+import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import { memberId, type MemberEntry } from '@/lib/types';
 
 interface Stats {
@@ -290,25 +290,13 @@ export default function DashboardHome() {
     <div className={styles.page}>
 
       {/* Welcome banner, in the member's role colour */}
-      <div className={styles.welcomeHero} style={roleStyle(role)}>
-        <span className={styles.heroRing1} aria-hidden="true" />
-        <span className={styles.heroRing2} aria-hidden="true" />
-        <div className={styles.heroAvatar} aria-hidden="true">
-          {user.photoURL
-            ? <img src={user.photoURL} alt="" />
-            : <span>{(name || '?').trim().charAt(0).toUpperCase()}</span>}
-        </div>
-        <div className={styles.heroText}>
-          <p className={styles.today}>{today}</p>
-          <h1 className={styles.greeting}>
-            {greeting()}{name ? `, ${name}` : ''}!
-          </h1>
-          <p className={styles.roleLine}>
-            {t('loggedInAs')}{' '}
-            <span className={styles.heroBadge}>{roleLabel}</span>
-          </p>
-        </div>
-      </div>
+      <RoleHero
+        as="h1" role={role} photoURL={user.photoURL} name={name}
+        eyebrow={today}
+        title={<>{greeting()}{name ? `, ${name}` : ''}!</>}
+      >
+        <HeroLine>{t('loggedInAs')} <HeroBadge>{roleLabel}</HeroBadge></HeroLine>
+      </RoleHero>
 
       <ProfileCompleteness user={user} t={t} />
 

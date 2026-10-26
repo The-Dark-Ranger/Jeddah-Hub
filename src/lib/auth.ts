@@ -67,49 +67,61 @@ async function lookupRoleAssignment(email: string): Promise<RoleResult> {
   return { role: null };
 }
 
+/** Loads the member's profile, retrying twice on a failed read so a brief
+ *  network drop at sign-in doesn't show a curator the "pending" screen. */
 export async function getUserProfile(uid: string, email?: string | null): Promise<UserProfile | null> {
-  try {
-    const docRef = doc(db, 'users', uid);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      let role = (normalizeRole(data.role as string) as UserRole) || null;
-
-      if (!role && (email || data.email)) {
-        const target = (email || data.email) as string;
-        const result = await lookupRoleAssignment(target);
-        if (result.role) {
-          role = result.role;
-          await setDoc(docRef, { role }, { merge: true });
-        }
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await readUserProfile(uid, email);
+    } catch (error) {
+      if (attempt >= 2) {
+        console.error('Error fetching user profile:', error);
+        return null;
       }
-
-      const profile = {
-        uid, email: data.email || email || null, role,
-        displayName:   data.displayName   || null,
-        displayNameAr: data.displayNameAr || undefined,
-        photoURL:  data.photoURL  || undefined,
-        bio:       data.bio       || undefined,
-        bioAr:     data.bioAr     || undefined,
-        linkedin:  data.linkedin  || undefined,
-        twitter:   data.twitter   || undefined,
-        instagram: data.instagram || undefined,
-      };
-      // Self-healing: every existing member backfills their public_profiles
-      // mirror the next time they load the site signed in, with no
-      // migration script needed, see syncPublicProfile().
-      void syncPublicProfile(uid, profile);
-      return profile;
-    } else if (email) {
-      const result = await lookupRoleAssignment(email);
-      const profile: UserProfile = { uid, email, role: result.role, displayName: null };
-      await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
-      void syncPublicProfile(uid, profile);
-      return profile;
+      await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
     }
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
+  }
+}
+
+async function readUserProfile(uid: string, email?: string | null): Promise<UserProfile | null> {
+  const docRef = doc(db, 'users', uid);
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    let role = (normalizeRole(data.role as string) as UserRole) || null;
+
+    if (!role && (email || data.email)) {
+      const target = (email || data.email) as string;
+      const result = await lookupRoleAssignment(target);
+      if (result.role) {
+        role = result.role;
+        await setDoc(docRef, { role }, { merge: true });
+      }
+    }
+
+    const profile = {
+      uid, email: data.email || email || null, role,
+      displayName:   data.displayName   || null,
+      displayNameAr: data.displayNameAr || undefined,
+      photoURL:  data.photoURL  || undefined,
+      bio:       data.bio       || undefined,
+      bioAr:     data.bioAr     || undefined,
+      linkedin:  data.linkedin  || undefined,
+      twitter:   data.twitter   || undefined,
+      instagram: data.instagram || undefined,
+    };
+    // Self-healing: every existing member backfills their public_profiles
+    // mirror the next time they load the site signed in, with no
+    // migration script needed, see syncPublicProfile().
+    void syncPublicProfile(uid, profile);
+    return profile;
+  } else if (email) {
+    const result = await lookupRoleAssignment(email);
+    const profile: UserProfile = { uid, email, role: result.role, displayName: null };
+    await setDoc(docRef, { ...profile, createdAt: new Date().toISOString() });
+    void syncPublicProfile(uid, profile);
+    return profile;
   }
   return null;
 }

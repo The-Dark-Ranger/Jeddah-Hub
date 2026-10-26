@@ -2,8 +2,7 @@
 
 /* Home page: a selection of current Shapers. */
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useLocale, useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
@@ -48,8 +47,8 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
     // the query inside this initial .then() turns that throw into a normal
     // promise rejection, so the .catch() below handles it the same way it
     // already handles a getDocs() failure, keeping the homepage rendering.
-    Promise.resolve()
-      .then(() => getDocs(query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30))))
+    loadFirestore()
+      .then(({ collection, getDocs, query, where, limit, db }) => getDocs(query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30))))
       .then(snap => {
         const list = snap.docs
           .map(d => ({ uid: d.id, ...d.data() } as { uid: string; displayName?: string; displayNameAr?: string; role?: string; photoURL?: string }))

@@ -12,11 +12,6 @@
   margin-bottom: 1.25rem; padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
 }
-.roleBadge {
-  display: inline-block; padding: 0.22rem 0.7rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-  background: var(--primary-blue-glow); color: var(--primary-blue);
-}
 
 .formFields { display: flex; flex-direction: column; gap: 1.1rem; }
 
@@ -73,30 +68,6 @@
   .card        { padding: 1.25rem; }
 }
 
-/* ── Identity header ── */
-.hero {
-  position: relative; overflow: hidden;
-  display: flex; align-items: center; gap: 1.25rem;
-  padding: 1.6rem 1.75rem; border-radius: 18px;
-  background:
-    radial-gradient(ellipse 60% 120% at 100% 0%, rgba(94, 163, 224, .3), transparent 60%),
-    linear-gradient(120deg, #051535 0%, #0a3272 60%, #0f5a9f 100%);
-  color: #fff;
-}
-.heroAvatar {
-  flex-shrink: 0; width: 76px; height: 76px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center;
-  background: rgba(255, 255, 255, .15); border: 3px solid rgba(255, 255, 255, .85);
-  font-size: 1.8rem; font-weight: 800;
-}
-.heroAvatar img { width: 100%; height: 100%; object-fit: cover; }
-.heroText { min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
-.heroName { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.heroNameAr { margin: 0; font-size: 1rem; color: rgba(255, 255, 255, .8); }
-.heroMeta { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .35rem; }
-.heroEmail { font-size: .85rem; color: rgba(255, 255, 255, .78); overflow-wrap: anywhere; }
-.hero .roleBadge { background: rgba(255, 255, 255, .18); color: #fff; }
-
 .formStack { display: flex; flex-direction: column; gap: 1.5rem; }
 
 /* Section titles with an icon */
@@ -135,7 +106,5 @@
   .pwGrid { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
-  .hero { flex-direction: column; text-align: center; padding: 1.4rem 1.1rem; }
-  .heroMeta { justify-content: center; }
   .footer { margin: 0; }
 }

@@ -408,3 +408,15 @@
   .postItem { flex-direction: column; }
   .postActions { flex-direction: row; flex-wrap: wrap; }
 }
+
+/* Note shown when an unsaved draft was brought back */
+.draftNote {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  padding: .7rem 1rem; border-radius: 10px;
+  background: var(--primary-blue-glow); color: var(--primary-blue);
+  font-size: .85rem; font-weight: 600;
+}
+.draftNote button {
+  padding: 0; background: none; border: none; cursor: pointer;
+  color: inherit; font: inherit; text-decoration: underline;
+}

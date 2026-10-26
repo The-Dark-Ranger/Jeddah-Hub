@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/auth';
 import { normalizeRole } from '@/lib/role';
 import { RoleLabel } from '@/lib/roleLabel';
+import { readDraft, clearDraft, useDraftAutosave } from '@/lib/drafts';
 import styles from './BlogManager.module.css';
 
 interface BlogPost {
@@ -62,6 +63,27 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   const [status, setStatus]     = useState<BlogPost['status']>(canPublishDirectly ? 'published' : 'draft');
   const [saving, setSaving]     = useState(false);
   const [filter, setFilter]     = useState('all');
+  const [restored, setRestored] = useState(false);
+
+  // A new post's text is kept on this device until it is saved.
+  const draftKey = `blog:${user.uid}`;
+  type BlogDraft = { title: string; content: string; excerpt: string; tagsInput: string };
+  useDraftAutosave(view === 'write' ? draftKey : null,
+    { title, content, excerpt, tagsInput } satisfies BlogDraft,
+    !title.trim() && !content.trim() && !excerpt.trim() && !tagsInput.trim());
+
+  const startWriting = () => {
+    resetForm();
+    const d = readDraft<BlogDraft>(draftKey);
+    if (d) {
+      setTitle(d.title || ''); setContent(d.content || '');
+      setExcerpt(d.excerpt || ''); setTagsInput(d.tagsInput || '');
+    }
+    setRestored(!!d);
+    setView('write');
+  };
+
+  const discardDraft = () => { clearDraft(draftKey); resetForm(); setRestored(false); };
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -121,6 +143,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           createdAt: new Date().toISOString(),
           likedBy: [],
         });
+        clearDraft(draftKey);
       }
       resetForm(); setView('list');
       await fetchPosts();
@@ -167,6 +190,12 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           <h2>{view === 'edit' ? t('editPostTitle') : t('newPostTitle')}</h2>
         </div>
         <form onSubmit={handleSave} className={styles.form}>
+          {view === 'write' && restored && (
+            <p className={styles.draftNote} role="status">
+              {t('draftRestored')}
+              <button type="button" onClick={discardDraft}>{t('draftDiscard')}</button>
+            </p>
+          )}
           <div className={styles.formGroup}>
             <label className={styles.label}>{t('titleLabel')}</label>
             <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
@@ -215,7 +244,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
             {canSeeAll ? t('subtitleAll') : t('subtitleOwn')}
           </p>
         </div>
-        <button className={styles.newBtn} onClick={() => { resetForm(); setView('write'); }}>
+        <button className={styles.newBtn} onClick={startWriting}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           {t('newPostBtn')}
         </button>
@@ -238,7 +267,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>✍️</div>
           <p>{t('emptyText')}</p>
-          <button className={styles.newBtn} style={{ marginTop: '1rem' }} onClick={() => { resetForm(); setView('write'); }}>
+          <button className={styles.newBtn} style={{ marginTop: '1rem' }} onClick={startWriting}>
             {t('writeFirstPost')}
           </button>
         </div>

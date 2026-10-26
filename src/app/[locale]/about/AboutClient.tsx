@@ -6,7 +6,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { loadFirestore } from '@/lib/loadFirestore';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
 import styles from './About.module.css';
 import WaveDivider from '@/components/WaveDivider';
 import WefLogo from '@/components/WefLogo';
@@ -503,20 +502,6 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
               <div className={styles.wefStat}><span>500+</span><p>{t('wefCities')}</p></div>
               <div className={styles.wefStat}><span>10K+</span><p>{t('wefShapers')}</p></div>
               <div className={styles.wefStat}><span>10+</span><p>{t('wefYears')}</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className={styles.ctaSection}>
-        <div className={styles.container}>
-          <div className={styles.cta}>
-            <h2>{t('ctaTitle')}</h2>
-            <p>{t('ctaDesc')}</p>
-            <div className={styles.ctaButtons}>
-              <Link href="/become-a-shaper" className={styles.ctaBtn}>{t('ctaApply')}</Link>
-              <Link href="/projects" className={styles.ctaSecondary}>{t('ctaProjects')} &rarr;</Link>
             </div>
           </div>
         </div>

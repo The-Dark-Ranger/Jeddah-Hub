@@ -15,6 +15,7 @@ import { avatarGradient, initials } from '@/lib/avatarUtils';
 import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteStats';
 import { normalizeRole as normRole } from '@/lib/role';
 import { safeExternalUrl } from '@/lib/sanitize';
+import { roleStyle } from '@/lib/roleColors';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -76,7 +77,7 @@ const ChevronDownIcon = ({ expanded }: { expanded: boolean }) => (
 // cut it off, short of that, there's nothing to expand.
 const BIO_CLAMP_THRESHOLD = 140;
 
-function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }) {
+function LiveShaperCard({ shaper, index, roleLabel }: { shaper: LiveShaper; index: number; roleLabel: string }) {
   const gradient = avatarGradient(shaper.uid, index);
   const locale   = useLocale();
   const t        = useTranslations('AboutPage');
@@ -85,7 +86,7 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
   const [expanded, setExpanded] = useState(false);
   const isLong = (bioText?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
-    <div className={styles.shaperCard}>
+    <div className={styles.shaperCard + (shaper.role === 'alumni' ? ' ' + styles.shaperCardAlumni : '')} style={roleStyle(shaper.role)}>
       <div className={styles.shaperTop}>
         <div className={styles.shaperAvatarWrap}>
           {shaper.photoURL
@@ -99,7 +100,9 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
         </div>
         <div className={styles.shaperMeta}>
           <h3 className={styles.shaperName}>{name}</h3>
-          <div className={styles.shaperActions}>
+          <p className={styles.shaperRole}>{roleLabel}</p>
+        </div>
+        <div className={styles.shaperActions}>
             {shaper.linkedin && (
               <a href={shaper.linkedin} target="_blank" rel="noopener noreferrer"
                 className={styles.shaperIconLink} aria-label="LinkedIn">
@@ -118,7 +121,6 @@ function LiveShaperCard({ shaper, index }: { shaper: LiveShaper; index: number }
                 <InstagramIcon />
               </a>
             )}
-          </div>
         </div>
       </div>
       {bioText && (
@@ -147,7 +149,8 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
   const [expanded, setExpanded] = useState(false);
   const isLong = (bioText?.length ?? 0) > BIO_CLAMP_THRESHOLD;
   return (
-    <div className={styles.curatorCard}>
+    <div className={styles.curatorCard} style={roleStyle(curator.role)}>
+      <div className={styles.curatorBanner} aria-hidden="true" />
       <div className={styles.curatorAvatarWrap}>
         {curator.photoURL
           ? <img src={curator.photoURL} alt={name} className={styles.curatorAvatarImg}
@@ -207,6 +210,7 @@ const VISIBLE_STEP = 10;
 
 function PeopleGrid({ people, emptyLabel }: { people: LiveShaper[]; emptyLabel: string }) {
   const t = useTranslations('AboutPage');
+  const tr = useTranslations('Role');
   const [expanded, setExpanded] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -230,7 +234,10 @@ function PeopleGrid({ people, emptyLabel }: { people: LiveShaper[]; emptyLabel: 
   return (
     <>
       <div className={styles.shapersList} ref={gridRef}>
-        {visible.map((s, i) => <LiveShaperCard key={s.uid} shaper={s} index={i} />)}
+        {visible.map((s, i) => (
+          <LiveShaperCard key={s.uid} shaper={s} index={i}
+            roleLabel={tr.has(s.role as 'shaper') ? tr(s.role as 'shaper') : tr('shaper')} />
+        ))}
       </div>
       {hasMore && (
         <div className={styles.viewMoreWrap}>
@@ -424,7 +431,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
         <PatternDivider />
         <section className={styles.section}>
           <div className={styles.container}>
-            <h2 className={styles.sectionTitle + ' reveal'}>{t('curatorship')}</h2>
+            <h2 className={styles.sectionTitle + ' reveal'}>{t('curatorship')}<span className={styles.titleCount}>{curators.length}</span></h2>
             <div className={styles.divider} />
             <div className={styles.curatorshipGrid}>
               {curators.map((c, i) => (
@@ -446,7 +453,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
       {/* Shapers (live from Firestore */}
       <section className={styles.sectionAlt}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle + ' reveal'}>{t('shapers')}</h2>
+          <h2 className={styles.sectionTitle + ' reveal'}>{t('shapers')}{!loadingShapers && shapers.length > 0 && <span className={styles.titleCount}>{shapers.length}</span>}</h2>
           <p className={styles.sectionSubtitle}>{t('shapersSubtitle')}</p>
           <div className={styles.divider} />
           {loadingShapers ? (
@@ -465,7 +472,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
         <PatternDivider />
         <section className={styles.section}>
           <div className={styles.container}>
-            <h2 className={styles.sectionTitle + ' reveal'}>{t('alumni')}</h2>
+            <h2 className={styles.sectionTitle + ' reveal'}>{t('alumni')}{!loadingShapers && alumni.length > 0 && <span className={styles.titleCount}>{alumni.length}</span>}</h2>
             <p className={styles.sectionSubtitle}>{t('alumniSubtitle')}</p>
             <div className={styles.divider} />
             {loadingShapers ? (

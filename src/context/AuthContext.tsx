@@ -9,6 +9,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { UserProfile } from '@/lib/auth';
+import { clearAllDrafts } from '@/lib/drafts';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { logout: firebaseLogout } = await import('@/lib/auth');
     await firebaseLogout();
     rememberMemberSession(false);
+    clearAllDrafts(); // unsaved writing must not outlive the session on a shared device
     setUser(null);
   };
 

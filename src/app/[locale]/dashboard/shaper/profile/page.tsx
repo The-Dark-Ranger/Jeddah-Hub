@@ -13,6 +13,7 @@ import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import AvatarUploader from '@/components/AvatarUploader';
 import PasswordInput from '@/components/PasswordInput';
+import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import styles from './Profile.module.css';
 import { safeExternalUrl } from '@/lib/sanitize';
 
@@ -134,24 +135,28 @@ export default function MyProfile() {
 
   useEffect(() => {
     if (!user) return;
-
-    getDoc(doc(db, 'users', user.uid)).then(snap => {
-      if (snap.exists()) {
-        const d = snap.data();
-        setForm({
-          displayName:   d.displayName   || '',
-          displayNameAr: d.displayNameAr || '',
-          photoURL:      d.photoURL      || '',
-          bio:           d.bio           || '',
-          bioAr:         d.bioAr         || '',
-          linkedin:      d.linkedin      || '',
-          twitter:       d.twitter       || '',
-          instagram:     d.instagram     || '',
-        });
-      }
-      setLoaded(true);
+    let cancelled = false;
+    const fill = (d: Partial<Record<keyof ProfileForm, unknown>>) => setForm({
+      displayName:   String(d.displayName   || ''),
+      displayNameAr: String(d.displayNameAr || ''),
+      photoURL:      String(d.photoURL      || ''),
+      bio:           String(d.bio           || ''),
+      bioAr:         String(d.bioAr         || ''),
+      linkedin:      String(d.linkedin      || ''),
+      twitter:       String(d.twitter       || ''),
+      instagram:     String(d.instagram     || ''),
     });
-  }, [user]);
+
+    // Read the latest saved profile; if that fails (weak connection), fall
+    // back to the copy loaded at sign-in so the form never hangs on loading.
+    getDoc(doc(db, 'users', user.uid))
+      .then(snap => { if (!cancelled) fill(snap.exists() ? snap.data() : user); })
+      .catch(() => { if (!cancelled) fill(user); })
+      .finally(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+    // Only reload when the signed-in member changes, not on every name patch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   const set = (k: keyof ProfileForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -206,21 +211,13 @@ export default function MyProfile() {
     <div className={styles.page}>
 
       {/* Identity header */}
-      <div className={styles.hero}>
-        <div className={styles.heroAvatar}>
-          {form.photoURL
-            ? <img src={form.photoURL} alt="" />
-            : <span aria-hidden="true">{shownName.charAt(0).toUpperCase()}</span>}
-        </div>
-        <div className={styles.heroText}>
-          <h2 className={styles.heroName}>{shownName}</h2>
-          {form.displayNameAr && <p className={styles.heroNameAr} dir="rtl">{form.displayNameAr}</p>}
-          <div className={styles.heroMeta}>
-            {roleLabel && <span className={styles.roleBadge}>{roleLabel}</span>}
-            <span className={styles.heroEmail}>{user.email}</span>
-          </div>
-        </div>
-      </div>
+      <RoleHero role={role} photoURL={form.photoURL} name={shownName} eyebrow={t('myProfile')} title={shownName}>
+        {form.displayNameAr && <HeroLine><span dir="rtl">{form.displayNameAr}</span></HeroLine>}
+        <HeroLine>
+          {roleLabel && <HeroBadge>{roleLabel}</HeroBadge>}
+          <span>{user.email}</span>
+        </HeroLine>
+      </RoleHero>
       <p className={styles.pageSubtitle}>{t('editProfileSubtitle')}</p>
 
     <form className={styles.formStack} onSubmit={handleSave}>

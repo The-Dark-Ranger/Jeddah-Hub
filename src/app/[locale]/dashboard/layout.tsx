@@ -13,6 +13,8 @@ import CharterSignBanner from '@/components/dashboard/CharterSignBanner';
 import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
+import { roleStyle } from '@/lib/roleColors';
+import { RoleLabel } from '@/lib/roleLabel';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -106,14 +108,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         {/* User card */}
-        <div className={styles.userCard}>
+        <div className={styles.userCard} style={roleStyle(user.role)}>
           {user.photoURL
             ? <img src={user.photoURL} alt="" className={styles.avatarImg} />
             : <div className={styles.avatar}>{(user.displayName || user.email || '?')[0].toUpperCase()}</div>
           }
           <div className={styles.userInfo}>
             <p className={styles.userName}>{user.displayName || t('member')}</p>
-            <span className="badge badge-blue">{user.role?.replace(/_/g, ' ') || t('pending')}</span>
+            <span className={styles.roleBadge}>{role ? <RoleLabel role={role} /> : t('pending')}</span>
           </div>
         </div>
 

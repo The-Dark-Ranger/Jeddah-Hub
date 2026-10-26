@@ -2,8 +2,7 @@
 
 /* Home page: the current Hub Activities, one at a time with arrows. */
 import { useEffect, useRef, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { loadFirestore } from '@/lib/loadFirestore';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from '@/app/[locale]/Home.module.css';
@@ -142,8 +141,8 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
     // the query inside this initial .then() turns that throw into a normal
     // promise rejection, so the final .catch() below handles it the same way
     // it already handles a getDocs() failure, keeping the homepage rendering.
-    Promise.resolve()
-      .then(() => getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))))
+    loadFirestore()
+      .then(({ collection, getDocs, query, where, db }) => getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))))
       .then(snap => setActivities(activeActivities(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) })))))
       .catch(() => setActivities([]));
   }, [initial]);

@@ -1174,5 +1174,12 @@
     "suggestProjects": "Our initiatives",
     "suggestNews": "Latest news",
     "suggestContact": "Contact us"
+  },
+  "ErrorPage": {
+    "title": "This part didn't load",
+    "body": "Something went wrong on your device or connection. Try again, and if it keeps happening, reload the page.",
+    "retry": "Try again",
+    "reload": "Reload page",
+    "code": "Reference: {code}"
   }
 }

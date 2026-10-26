@@ -79,14 +79,30 @@ function externalizeImages(collection: string, d: Doc): Doc {
 }
 
 type RestDoc = { name: string; fields?: Record<string, Value> };
+
+/** Firestore over the network from the server occasionally stalls (logged as
+ *  "operation was aborted due to timeout" / ETIMEDOUT). Each request gets
+ *  20 s, and a failed or timed-out request is tried once more after a short
+ *  pause. If both fail, the cached copy keeps being served. */
+async function fetchWithRetry(url: string, init: RequestInit = {}): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
+      if (res.ok || attempt >= 1 || res.status < 500) return res;
+    } catch (err) {
+      if (attempt >= 1) throw err;
+    }
+    await new Promise(r => setTimeout(r, 750));
+  }
+}
 const toDoc = (d: RestDoc): Doc => ({ id: d.name.split('/').pop()!, ...fromFields(d.fields) });
 
 async function listCollection(collection: string): Promise<Doc[]> {
   const docs: Doc[] = [];
   let pageToken = '';
   do {
-    const res = await fetch(`${BASE}/${collection}?pageSize=300${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, {
-      cache: 'no-store', signal: AbortSignal.timeout(10_000),
+    const res = await fetchWithRetry(`${BASE}/${collection}?pageSize=300${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, {
+      cache: 'no-store',
     });
     if (!res.ok) throw new Error(`list ${collection}: ${res.status}`);
     const body = await res.json() as { documents?: RestDoc[]; nextPageToken?: string };
@@ -98,7 +114,7 @@ async function listCollection(collection: string): Promise<Doc[]> {
 
 /** For collections whose rules only allow a filtered read (published blogs). */
 async function queryEquals(collection: string, field: string, value: string): Promise<Doc[]> {
-  const res = await fetch(`${BASE}:runQuery`, {
+  const res = await fetchWithRetry(`${BASE}:runQuery`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -108,7 +124,6 @@ async function queryEquals(collection: string, field: string, value: string): Pr
       },
     }),
     cache: 'no-store',
-    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`query ${collection}: ${res.status}`);
   const rows = await res.json() as { document?: RestDoc }[];

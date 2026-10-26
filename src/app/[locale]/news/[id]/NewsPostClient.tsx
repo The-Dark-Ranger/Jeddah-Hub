@@ -69,8 +69,14 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
 
   /* Generate / load persistent guest ID for visitor likes */
   useEffect(() => {
-    let gid = localStorage.getItem('jh_guest_id');
-    if (!gid) { gid = genGuestId(); localStorage.setItem('jh_guest_id', gid); }
+    // Storage can be blocked (private mode, in-app browsers): then the guest
+    // id lasts for this visit only instead of breaking the page.
+    let gid: string | null = null;
+    try { gid = localStorage.getItem('jh_guest_id'); } catch { /* storage blocked */ }
+    if (!gid) {
+      gid = genGuestId();
+      try { localStorage.setItem('jh_guest_id', gid); } catch { /* storage blocked */ }
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read the guest id from browser storage
     setVisitorId(gid);
   }, []);

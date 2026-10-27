@@ -46,6 +46,16 @@ export default function ContactPage() {
         submittedAt: new Date().toISOString(),
         read: false,
       });
+      // Email the hub inbox a copy. Best effort: the message is already
+      // saved in the dashboard, so a failed email must not show an error.
+      const sent = { ...formData, email: formData.email.trim() };
+      getRecaptchaToken('contact_notify').then(recaptchaToken =>
+        fetch('/api/contact/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...sent, recaptchaToken }),
+        }),
+      ).catch(() => {});
       setStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err) {

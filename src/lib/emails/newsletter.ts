@@ -22,7 +22,6 @@ const COPY = {
       ['🌱', 'New initiatives', 'Projects our Shapers launch across Jeddah, and how you can support them.'],
       ['🎉', 'Events and opportunities', 'Workshops, gatherings and calls for volunteers, as soon as they open.'],
       ['📰', 'Hub stories', 'Stories, reflections and updates written by our Shapers.'],
-      ['🌍', 'Global updates', 'Highlights from the Global Shapers Community and the World Economic Forum.'],
     ],
     startTitle: 'Start exploring',
     start: [
@@ -46,7 +45,6 @@ const COPY = {
       ['🌱', 'مبادرات جديدة', 'المشاريع التي يطلقها صنّاعنا في جدة، وكيف يمكنك دعمها.'],
       ['🎉', 'فعاليات وفرص', 'ورش العمل واللقاءات وفرص التطوع فور الإعلان عنها.'],
       ['📰', 'قصص المركز', 'قصص وتأملات وأخبار يكتبها صنّاعنا.'],
-      ['🌍', 'أخبار عالمية', 'أبرز مستجدات مجتمع صنّاع العالم والمنتدى الاقتصادي العالمي.'],
     ],
     startTitle: 'ابدأ الاستكشاف',
     start: [

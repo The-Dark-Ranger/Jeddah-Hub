@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { loadFirestore } from '@/lib/loadFirestore';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
@@ -15,6 +15,7 @@ const MESSAGE_MAX = 5000;
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
+  const locale = useLocale();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,15 +41,16 @@ export default function ContactPage() {
       if (!verify.ok) { setStatus('error'); return; }
 
       const { addDoc, collection, db } = await loadFirestore();
-      await addDoc(collection(db, 'contact_messages'), {
+      const saved = await addDoc(collection(db, 'contact_messages'), {
         ...formData,
         email: formData.email.trim(),
         submittedAt: new Date().toISOString(),
         read: false,
       });
-      // Email the hub inbox a copy. Best effort: the message is already
-      // saved in the dashboard, so a failed email must not show an error.
-      const sent = { ...formData, email: formData.email.trim() };
+      // Email the hub a copy and the visitor a receipt, in this page's
+      // language. Best effort: the message is already saved in the
+      // dashboard, so a failed email must not show an error.
+      const sent = { ...formData, email: formData.email.trim(), locale, ref: saved.id };
       getRecaptchaToken('contact_notify').then(recaptchaToken =>
         fetch('/api/contact/notify', {
           method: 'POST',

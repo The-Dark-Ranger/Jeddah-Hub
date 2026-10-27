@@ -10,14 +10,10 @@ import { isRateLimited } from '@/lib/rateLimit';
 import { normalizeRole } from '@/lib/role';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
+import { sendEmail, emailConfigured } from '@/lib/email';
 
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-// Same verified sender as the newsletter. (Resend's onboarding@resend.dev
-// test sender only delivers to the account owner, so invites sent from it
-// never reached anyone else.)
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Jeddah Hub <newsletter@jeddahhub.org>';
 
 export async function POST(req: NextRequest) {
   const caller = await requireRole(req, ['curator', 'vice_curator']);
@@ -42,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 
-  if (!RESEND_API_KEY) {
+  if (!emailConfigured()) {
     return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });
   }
 
@@ -142,30 +138,7 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [email],
-        subject: `You've been invited to Jeddah Hub as ${roleName}`,
-        html,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Resend error:', err);
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error('Invite email error:', err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-  }
+  const result = await sendEmail({ to: email, subject: `You've been invited to Jeddah Hub as ${roleName}`, html });
+  if (!result.ok) return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
+  return NextResponse.json({ ok: true });
 }

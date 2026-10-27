@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { loadFirestore } from '@/lib/loadFirestore';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
@@ -14,6 +14,7 @@ const SUCCESS_RESET_MS = 6000;
 
 export default function NewsletterForm() {
   const t = useTranslations('HomePage');
+  const locale = useLocale();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
 
@@ -49,7 +50,7 @@ export default function NewsletterForm() {
         fetch('/api/newsletter/welcome', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, recaptchaToken }),
+          body: JSON.stringify({ email, recaptchaToken, locale }),
         }).catch(() => {});
       });
 

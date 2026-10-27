@@ -266,3 +266,10 @@
   .messagePreview { padding-inline-start: 1rem; }
   .senderAvatar { width: 32px; height: 32px; font-size: .85rem; }
 }
+
+/* Replies the visitor sent to their emailed receipt */
+.visitorReply { margin-inline-start: 1.25rem; }
+.visitorReplyMeta {
+  font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--primary-blue); margin-bottom: .4rem;
+}

@@ -506,6 +506,7 @@
     "messagesCount": "{count, plural, one {# message} other {# messages}}",
     "unreadSuffix": "unread",
     "repliedLabel": "Replied",
+    "visitorReplyLabel": "Visitor replied by email · {date}",
     "repliedOnLabel": "Replied on {date}",
     "replyModalTitle": "Reply",
     "newMessageModalTitle": "New Message",

@@ -23,6 +23,8 @@ interface ContactMessage {
   read?: boolean;
   replied?: boolean;
   repliedAt?: string;
+  /** Replies the visitor sent to their emailed receipt (api/email/inbound). */
+  replies?: { from: string; text: string; at: string }[];
 }
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -289,6 +291,14 @@ export default function MessagesPage() {
                       {msg.email}
                     </a>
                     <p className={styles.messageBody}>{msg.message}</p>
+                    {msg.replies?.map((r, i) => (
+                      <div key={i} className={styles.visitorReply}>
+                        <p className={styles.visitorReplyMeta}>
+                          {t('visitorReplyLabel', { date: formatDate(r.at, locale) })}
+                        </p>
+                        <p className={styles.messageBody} dir="auto">{r.text}</p>
+                      </div>
+                    ))}
                     {msg.repliedAt && (
                       <p className={styles.repliedNote}>
                         {t('repliedOnLabel', { date: new Date(msg.repliedAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}

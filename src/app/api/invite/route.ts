@@ -10,7 +10,7 @@ import { isRateLimited } from '@/lib/rateLimit';
 import { normalizeRole } from '@/lib/role';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
-import { sendEmail, emailConfigured } from '@/lib/email';
+import { sendEmail, emailConfigured, MEMBERS_FROM } from '@/lib/email';
 
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-  const result = await sendEmail({ to: email, subject: `You've been invited to Jeddah Hub as ${roleName}`, html });
+  const result = await sendEmail({ from: MEMBERS_FROM, to: email, subject: `You've been invited to Jeddah Hub as ${roleName}`, html });
   if (!result.ok) return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
   return NextResponse.json({ ok: true });
 }

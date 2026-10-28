@@ -3,12 +3,11 @@
  * runs BotID's challenge and attaches its result to requests to the routes
  * in botidRoutes.ts; checkBotId() verifies that result here, on the server.
  *
- * BOTID_ENFORCE says whether a detected bot is refused or only logged. It
- * starts in watch mode so the live rollout can be checked without risking
- * real visitors, then is switched on. */
+ * BOTID_ENFORCE says whether a detected bot is refused or only logged; set
+ * it to false to go back to watching if real visitors are ever refused. */
 import { checkBotId } from 'botid/server';
 
-const BOTID_ENFORCE = false;
+const BOTID_ENFORCE = true;
 
 /** True when the request should be refused as a bot. Never throws: if
  *  BotID itself can't be reached, the other checks still apply. */

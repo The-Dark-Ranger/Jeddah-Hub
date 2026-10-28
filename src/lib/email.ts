@@ -25,6 +25,8 @@ export async function sendEmail(msg: {
   text?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  /** Inline images (content_id) or files, base64-encoded. */
+  attachments?: { filename: string; content: string; content_id?: string; content_type?: string }[];
 }): Promise<SendResult> {
   if (!RESEND_API_KEY) return { ok: false, skipped: true, error: 'No RESEND_API_KEY configured' };
   try {
@@ -40,6 +42,7 @@ export async function sendEmail(msg: {
         ...(msg.text ? { text: msg.text } : {}),
         ...(msg.replyTo ? { reply_to: msg.replyTo } : {}),
         ...(msg.headers ? { headers: msg.headers } : {}),
+        ...(msg.attachments?.length ? { attachments: msg.attachments } : {}),
       }),
       signal: AbortSignal.timeout(10_000),
     });

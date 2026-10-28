@@ -1,8 +1,10 @@
 /* The shared look of every email (header, footer, building blocks), in
  * English or Arabic. Email apps only understand simple tables and inline
  * styles, so everything here is built that way. No remote images: the
- * site's bot protection can block email apps from loading them. */
+ * site's bot protection can block email apps from loading them, so the two
+ * logos are attached inline (logos.ts). */
 import { escapeHtml } from '@/lib/escapeHtml';
+import { HUB_LOGO_CID, WEF_LOGO_CID } from './logos';
 
 export type Lang = 'en' | 'ar';
 export const SITE = 'https://jeddahhub.org';
@@ -119,6 +121,14 @@ export const linkCards = (lang: Lang, items: readonly (readonly [string, string,
 
 /* ── Frame ── */
 
+/** A header logo. Shown at its display size from a 2x image; styled so it
+ *  can't be dragged or selected where mail apps allow that, and its alt
+ *  text stays readable on the blue header when images are turned off. */
+const logo = (cid: string, width: number, height: number, alt: string) =>
+  `<img src="cid:${cid}" width="${width}" height="${height}" alt="${alt}" draggable="false" ` +
+  `style="display:block;width:${width}px;height:${height}px;border:0;outline:none;color:#ffffff;font-size:12px;font-weight:700;` +
+  `-webkit-user-drag:none;user-select:none;-webkit-user-select:none;pointer-events:none;">`;
+
 export function emailLayout({ lang, title, preheader, body, footerNote }: {
   lang: Lang; title: string; preheader: string; body: string; footerNote: string;
 }): string {
@@ -139,10 +149,13 @@ export function emailLayout({ lang, title, preheader, body, footerNote }: {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" dir="${dir}" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(15,23,42,0.08);text-align:${start(lang)};">
         <tr>
-          <td style="background:${BLUE};background:linear-gradient(135deg,#0a3272 0%,${BLUE} 55%,#1a73e8 100%);padding:34px 40px 30px;">
-            <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.72);">${b.network}</p>
-            <p style="margin:0;font-size:30px;font-weight:800;color:#ffffff;">${b.name}</p>
-            <p style="margin:6px 0 0;font-size:14px;color:rgba(255,255,255,0.8);">${b.tagline}</p>
+          <td style="background:${BLUE};background:linear-gradient(135deg,#0a3272 0%,${BLUE} 55%,#1a73e8 100%);padding:28px 40px 26px;">
+            <table cellpadding="0" cellspacing="0" dir="ltr"><tr>
+              <td style="vertical-align:middle;">${logo(HUB_LOGO_CID, 71, 68, `${b.network}, ${b.name}`)}</td>
+              <td style="vertical-align:middle;padding:0 18px;"><div style="width:1px;height:46px;background:rgba(255,255,255,0.35);"></div></td>
+              <td style="vertical-align:middle;">${logo(WEF_LOGO_CID, 74, 46, lang === 'ar' ? 'المنتدى الاقتصادي العالمي' : 'World Economic Forum')}</td>
+            </tr></table>
+            <p style="margin:16px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">${b.name} · ${b.tagline}</p>
           </td>
         </tr>
         <tr><td style="height:4px;background:#5ea3e0;font-size:0;line-height:0;">&nbsp;</td></tr>

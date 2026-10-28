@@ -26,10 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
-  // Signed in with the shared temporary password: nothing else in the
-  // dashboard until they've set their own (My Profile → Change password
-  // clears the flag). Narrows the window in which someone who only knows a
-  // member's email and the default password could use their account.
+  // Signed in with a one-time password: nothing else in the dashboard until
+  // they've chosen their own (My Profile → Change password clears the flag).
   useEffect(() => {
     if (loading || !user) return;
     let mustChange = false;

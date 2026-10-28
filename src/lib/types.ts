@@ -18,9 +18,20 @@ export function memberId(m: MemberEntry | null | undefined): string {
   return typeof m === 'string' ? m : m?.userId ?? '';
 }
 
+/** The roles a person can hold on an initiative's team. Lead and Co-Lead
+ *  have the same rights (their uid goes in the initiative's `leads` array). */
+export const TEAM_ROLES = ['Member', 'Lead', 'Co-Lead'] as const;
+export type TeamRole = typeof TEAM_ROLES[number];
+
+/** True for a team role that carries lead rights: Lead, Co-Lead, and older
+ *  free-text roles such as "Initiative Lead". */
+export function isLeadRole(role: string | null | undefined): boolean {
+  return typeof role === 'string' && /\b(co-?)?lead\b/i.test(role);
+}
+
 /** True for a members[] entry whose display role marks a lead. */
 export function isLeadEntry(m: MemberEntry): boolean {
-  return typeof m !== 'string' && typeof m.role === 'string' && m.role.toLowerCase().includes('lead');
+  return typeof m !== 'string' && isLeadRole(m.role);
 }
 
 /** join_requests / leave_requests: a member asking to join or leave. */

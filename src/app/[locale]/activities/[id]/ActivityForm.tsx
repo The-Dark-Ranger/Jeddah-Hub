@@ -1,10 +1,12 @@
 'use client';
 
-/* One of an activity's public forms (registration or after-event feedback),
- * saved to activity_responses. */
+/* One of an activity's public forms (registration or after-event feedback).
+ * Sent to /api/activities/respond, which checks it for bots, validates every
+ * answer against this form's questions and saves it to activity_responses. */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { loadFirestore } from '@/lib/loadFirestore';
+import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
+import Honeypot from '@/components/Honeypot';
 import type { CustomForm, FormType } from '@/lib/activityTypes';
 import styles from './Activity.module.css';
 
@@ -27,6 +29,8 @@ export default function ActivityForm({ activityId, form, formType }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const [openedAt] = useState(() => Date.now());
 
   const askName = form.collectName ?? 'optional';
   const askEmail = form.collectEmail ?? 'optional';
@@ -49,22 +53,30 @@ export default function ActivityForm({ activityId, form, formType }: Props) {
     setError('');
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = {
-        activityId,
-        formType,
-        answers,
-        submittedAt: new Date().toISOString(),
-        read: false,
-      };
-      if (name.trim()) payload.submitterName = name.trim();
-      if (email.trim()) payload.submitterEmail = email.trim();
-      const { addDoc, collection, db } = await loadFirestore();
-      await addDoc(collection(db, 'activity_responses'), payload);
-      setSubmitted(true);
-    } catch (err) {
-      const code = (err as { code?: string } | null)?.code;
-      console.error('Activity response submit failed:', code || err);
-      setError(code === 'permission-denied' ? t('submitFailedPermission') : t('submitFailed'));
+      const recaptchaToken = await getRecaptchaToken('activity_form');
+      const res = await fetch('/api/activities/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityId, formType, answers, name: name.trim(), email: email.trim(),
+          recaptchaToken, website: honeypot, elapsedMs: Date.now() - openedAt,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError(
+          data.error === 'missing' && data.field ? t('missingRequired', { field: data.field })
+          : data.error === 'invalid_email' ? t('invalidEmailFormat')
+          : data.error === 'closed' ? t('submitFailedPermission')
+          : res.status === 429 ? t('tooManyAttempts')
+          : data.error === 'bot_check_failed' ? t('verifyFailed')
+          : t('submitFailed'),
+        );
+      }
+    } catch {
+      setError(t('submitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -93,7 +105,8 @@ export default function ActivityForm({ activityId, form, formType }: Props) {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form className={styles.form} onSubmit={handleSubmit} onFocus={preloadRecaptcha}>
+      <Honeypot id={`${idPrefix}-website`} value={honeypot} onChange={setHoneypot} />
       {isFeedback && <span className={styles.formKicker}>{t('fbKicker')}</span>}
       <h2 className={styles.formTitle}>{isFeedback ? t('fbFormTitle') : t('formTitle')}</h2>
       {form.intro?.trim() && <p className={styles.formIntro}>{form.intro}</p>}

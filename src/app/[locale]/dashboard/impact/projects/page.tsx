@@ -22,8 +22,9 @@ import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
 import { setSpotlight } from '@/lib/spotlight';
 import styles from './Projects.module.css';
+import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { CategoryLabel } from '@/lib/categoryLabel';
-import { errorCode } from '@/lib/types';
+import { errorCode, isLeadRole, type TeamRole } from '@/lib/types';
 
 interface Member { userId: string; role: string; }
 
@@ -75,7 +76,7 @@ export default function ImpactProjects() {
   /* Team panel state, tracks which card has the team panel open */
   const [teamOpenId, setTeamOpenId]     = useState<string | null>(null);
   const [assignUser, setAssignUser]     = useState('');
-  const [assignRole, setAssignRole]     = useState('');
+  const [assignRole, setAssignRole]     = useState<TeamRole>('Member');
   const [assigning, setAssigning]       = useState(false);
 
   const role      = normalizeRole(user?.role);
@@ -252,7 +253,7 @@ export default function ImpactProjects() {
   const toggleTeam = (id: string) => {
     setTeamOpenId(prev => prev === id ? null : id);
     setAssignUser('');
-    setAssignRole('');
+    setAssignRole('Member');
   };
 
   const handleAssign = async (initiativeId: string) => {
@@ -260,10 +261,12 @@ export default function ImpactProjects() {
     setAssigning(true);
     try {
       await updateDoc(doc(db, 'initiatives', initiativeId), {
-        members: arrayUnion({ userId: assignUser, role: assignRole.trim() || 'Member' }),
+        members: arrayUnion({ userId: assignUser, role: assignRole }),
+        // Lead rights come from the `leads` array, not the role text.
+        ...(isLeadRole(assignRole) ? { leads: arrayUnion(assignUser) } : {}),
       });
       setAssignUser('');
-      setAssignRole('');
+      setAssignRole('Member');
       await fetchAll();
     } catch (err) {
       console.error(err);
@@ -540,12 +543,7 @@ export default function ImpactProjects() {
                           <option key={u.id} value={u.id}>{u.displayName || u.email || u.id}</option>
                         ))}
                       </select>
-                      <input
-                        value={assignRole}
-                        onChange={e => setAssignRole(e.target.value)}
-                        placeholder={t('tempRolePlaceholder')}
-                        className={styles.teamRoleInput}
-                      />
+                      <TeamRoleSelect value={assignRole} onChange={setAssignRole} className={styles.teamRoleInput} />
                       <button
                         className={styles.assignBtn}
                         onClick={() => handleAssign(init.id)}
@@ -563,7 +561,7 @@ export default function ImpactProjects() {
                         {members.map((m, idx) => (
                           <div key={m.userId + idx} className={styles.memberRow}>
                             <span className={styles.memberName}>{getUserLabel(m.userId)}</span>
-                            <span className={styles.memberRole}>{m.role || 'Member'}</span>
+                            <span className={styles.memberRole}>{teamRoleLabel(t, m.role)}</span>
                             <button
                               className={styles.removeBtn}
                               onClick={() => handleRemoveMember(init.id, m.userId)}

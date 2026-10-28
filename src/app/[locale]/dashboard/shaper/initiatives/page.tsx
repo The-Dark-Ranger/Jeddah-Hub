@@ -19,7 +19,7 @@ import { Link } from '@/i18n/routing';
 import { slugify } from '@/lib/slug';
 import InitiativeCover from '@/components/InitiativeCover';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
-import { errorCode, type MembershipRequest } from '@/lib/types';
+import { errorCode, isLeadRole, type MembershipRequest } from '@/lib/types';
 
 type Member = string | { userId?: string; role?: string };
 
@@ -81,7 +81,7 @@ export default function JoinInitiatives() {
       const leadIds = inits
         .filter(i => (i.members || []).some(m =>
           typeof m === 'object' && m.userId === user.uid &&
-          typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+          isLeadRole(m.role)
         ))
         .map(i => i.id);
 

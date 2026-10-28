@@ -353,7 +353,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
                           )}
                           <div className={styles.teamInfo}>
                             <span className={styles.teamName}>{name}</span>
-                            {(isLead || m.role) && <span className={styles.teamRole}>{isLead ? t('leadBadge') : m.role}</span>}
+                            {(isLead || m.role) && <span className={styles.teamRole}>{isLead ? t(/^co-?lead$/i.test(m.role || '') ? 'coLeadBadge' : 'leadBadge') : m.role}</span>}
                           </div>
                         </div>
                       );

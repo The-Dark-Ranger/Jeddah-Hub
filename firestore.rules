@@ -236,6 +236,19 @@ service cloud.firestore {
     // `featured`/`featuredAt` pick what the homepage's Featured
     // Initiatives section shows, a curatorship decision, so impact
     // officers (who can otherwise edit initiatives) can't set them.
+    // A lead's change to the team: unchanged, one person removed (an
+    // approved leave), or one plain Member added (an accepted join request).
+    // Adding leads/co-leads or several people at once stays with curators.
+    function leadTeamStep() {
+      let before = resource.data.get('members', []);
+      let after = request.resource.data.get('members', []);
+      return after == before
+             || (after.size() == before.size() - 1 && before.hasAll(after))
+             || (after.size() == before.size() + 1 && after.hasAll(before)
+                 && (after[after.size() - 1] is string
+                     || after[after.size() - 1].get('role', 'Member') == 'Member'));
+    }
+
     match /initiatives/{docId} {
       allow read: if true;
       // Every write: an activity's button link must be a real http(s) URL.
@@ -255,7 +268,8 @@ service cloud.firestore {
                                'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
                                'impact', 'impactAreas', 'color', 'members', 'slug',
-                             ])));
+                             ])
+                        && leadTeamStep()));
     }
 
     // ── join_requests ─────────────────────────────────────────
@@ -489,7 +503,7 @@ service cloud.firestore {
                     && request.resource.data.role in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']
                     && (request.resource.data.role != 'curator' || isFullCurator())
                     && request.resource.data.keys().hasOnly(
-                         ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt', 'dismissed', 'dismissedAt'])
+                         ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt', 'dismissed', 'dismissedAt', 'lastInvitedAt', 'inviteCount'])
                     && optStr(request.resource.data, 'displayName', 100)
                     && optStr(request.resource.data, 'note', 300);
       allow delete: if isCurator() || isAssignee(resource.data);
@@ -511,26 +525,14 @@ service cloud.firestore {
     }
 
     // ── activity_responses ───────────────────────────────────
-    // Hub Activities' custom-form submissions. Public create (activities
-    // are open community events, not member-only, matching
-    // contact_messages' precedent for unauthenticated public submissions)
-    // `answers` can't be validated more granularly than "is a map" since
-    // each activity's question set is curator-defined and dynamic, unlike
-    // contact_messages' fixed fields. Reads are curator/impact-officer
-    // only so individual respondents' answers are never publicly listable,
-    // only the activity doc itself (which never contains responses) is.
-    // `read` starts false (contact_messages' pattern) and update is capped
-    // to just that field, so opening the "View Responses" modal can mark
-    // them seen without a curator write being able to touch anything else.
+    // Responses to an activity's registration and after-event forms only
+    // arrive through /api/activities/respond (server, Admin SDK), which
+    // checks reCAPTCHA, rate limits, that the form is open, and every
+    // answer against that form's questions. Browsers can't write them
+    // directly, so none of that can be skipped. Curators and impact
+    // officers read them; the only change allowed is marking them read.
     match /activity_responses/{docId} {
-      allow create: if request.resource.data.keys().hasOnly(['activityId', 'formType', 'answers', 'submittedAt', 'submitterName', 'submitterEmail', 'read'])
-                    && request.resource.data.get('formType', 'registration') in ['registration', 'feedback']
-                    && request.resource.data.activityId is string
-                    && request.resource.data.answers is map && request.resource.data.answers.size() <= 50
-                    && request.resource.data.submittedAt is string
-                    && (!('submitterName' in request.resource.data)  || (request.resource.data.submitterName  is string && request.resource.data.submitterName.size()  <= 200))
-                    && (!('submitterEmail' in request.resource.data) || (request.resource.data.submitterEmail is string && request.resource.data.submitterEmail.size() <= 200))
-                    && request.resource.data.read == false;
+      allow create: if false;
       allow read, delete: if isCuratorOrImpact();
       allow update: if isCuratorOrImpact()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);

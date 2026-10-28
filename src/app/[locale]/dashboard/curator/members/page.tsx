@@ -34,6 +34,9 @@ interface RoleAssignment {
   /** Set aside by a curator (alumni): kept under Dismissed to review later. */
   dismissed?: boolean;
   dismissedAt?: string;
+  /** Set by /api/invite each time an invite is emailed. */
+  lastInvitedAt?: string;
+  inviteCount?: number;
 }
 
 interface KnownUser { email: string; displayName?: string; }
@@ -258,6 +261,10 @@ export default function MembersPage() {
         body: JSON.stringify({ email: a.email, displayName: resolveName(a), role: a.role, locale }),
       });
       setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.lastInvitedAt) setAssignments(prev => prev.map(x => x.id === a.id ? { ...x, lastInvitedAt: data.lastInvitedAt, inviteCount: data.inviteCount } : x));
+      }
       // The invite carries a fresh one-time password, so any shown here is now old.
       if (res.ok) setTempPasswords(m => { const next = { ...m }; delete next[a.id]; return next; });
       // reset after 3s
@@ -310,6 +317,14 @@ export default function MembersPage() {
         <td className={styles.emailCell}>
           {displayName && <div className={styles.memberName}>{displayName}</div>}
           <div className={styles.memberEmail}>{a.email}</div>
+          {a.lastInvitedAt && (
+            <div className={styles.invitedNote}>
+              {t('lastInvited', {
+                date: new Date(a.lastInvitedAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                count: a.inviteCount ?? 1,
+              })}
+            </div>
+          )}
           {!isJoined && (
             tempPasswords[a.id] ? (
               <div className={styles.accountChip + ' ' + styles.accountReady}>

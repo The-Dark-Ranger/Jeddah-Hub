@@ -28,7 +28,7 @@ import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
  * delete a real member's account or profile. */
 
 /** Fills in users/{uid} and public_profiles/{uid} for a newly added member. */
-async function upsertProfile(app: App, uid: string, email: string, displayName: string, role: MemberRole) {
+async function upsertProfile(app: App, uid: string, email: string, displayName: string, role: MemberRole, hidden: boolean) {
   const db = getFirestore(app);
   const userRef = db.doc(`users/${uid}`);
   const publicRef = db.doc(`public_profiles/${uid}`);
@@ -47,8 +47,11 @@ async function upsertProfile(app: App, uid: string, email: string, displayName: 
       if (Object.keys(fill).length) tx.set(userRef, fill, { merge: true });
     }
 
-    const pub: Record<string, string> = { role: effectiveRole };
+    const pub: Record<string, string | boolean> = { role: effectiveRole };
     if (!publicSnap.data()?.displayName && name) pub.displayName = name;
+    // "Incoming" members stay off public pages until their first sign-in,
+    // which clears this (src/lib/auth.ts).
+    if (hidden) pub.hidden = true;
     tx.set(publicRef, pub, { merge: true });
   });
 }
@@ -212,6 +215,7 @@ export async function POST(req: NextRequest) {
 
   const displayName = typeof body?.displayName === 'string' ? body.displayName.trim().slice(0, 100) : '';
   const role = MEMBER_ROLES.find(r => r === body?.role);
+  const wantsHidden = body?.hideUntilSignIn === true;
   if (!role) return NextResponse.json({ result: 'failed', reason: 'invalid-role' }, { status: 400 });
   // Only the Curator can make someone a curator (matches firestore.rules).
   if (role === 'curator' && caller.role !== 'curator') {
@@ -223,6 +227,7 @@ export async function POST(req: NextRequest) {
   let result: 'created' | 'exists';
   // Shown once to the curator (and sent with the invite); never stored.
   let tempPassword: string | undefined = generateTempPassword();
+  let hiddenAllowed = true;
   try {
     uid = (await auth.createUser({ email, password: tempPassword, emailVerified: false })).uid;
     result = 'created';
@@ -232,16 +237,19 @@ export async function POST(req: NextRequest) {
       console.error('create-account failed:', code);
       return NextResponse.json({ result: 'failed', reason: code ?? 'unknown' }, { status: 500 });
     }
-    uid = (await auth.getUserByEmail(email)).uid;
+    const existing = await auth.getUserByEmail(email);
+    uid = existing.uid;
     result = 'exists';
     tempPassword = undefined;
+    // Someone who has already signed in is never hidden again.
+    if (existing.metadata.lastSignInTime) hiddenAllowed = false;
   }
 
   // The account exists either way; a profile failure is reported but
   // doesn't undo it (the member's own first sign-in also fills these in).
   let listed = true;
   try {
-    await upsertProfile(app, uid, email, displayName, role);
+    await upsertProfile(app, uid, email, displayName, role, wantsHidden && hiddenAllowed);
   } catch (err) {
     listed = false;
     console.error('create-account: profile write failed:', (err as { code?: string } | null)?.code);

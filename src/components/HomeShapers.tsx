@@ -51,8 +51,8 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
       .then(({ collection, getDocs, query, where, limit, db }) => getDocs(query(collection(db, 'public_profiles'), where('role', 'in', SHAPER_ROLES), limit(30))))
       .then(snap => {
         const list = snap.docs
-          .map(d => ({ uid: d.id, ...d.data() } as { uid: string; displayName?: string; displayNameAr?: string; role?: string; photoURL?: string }))
-          .filter(u => u.displayName)
+          .map(d => ({ uid: d.id, ...d.data() } as { uid: string; displayName?: string; displayNameAr?: string; role?: string; photoURL?: string; hidden?: boolean }))
+          .filter(u => u.displayName && !u.hidden)
           .map((u): Shaper => ({
             uid:           u.uid,
             displayName:   u.displayName ?? '',

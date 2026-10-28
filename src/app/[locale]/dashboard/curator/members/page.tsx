@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
-import type { CreateAccountResult } from '@/lib/memberAccounts';
+import { hideUntilSignIn, type CreateAccountResult } from '@/lib/memberAccounts';
 import { createMemberAccount, getSignInStatus, removePendingMember, resetTempPassword } from '@/lib/createMemberAccount';
 import ShaperStatusPanel from './ShaperStatusPanel';
 import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
@@ -147,7 +147,7 @@ export default function MembersPage() {
       // Create their sign-in account (temporary password) so they can log
       // in right away, already holding this role and listed under it on
       // the Who We Are page with this name.
-      const { result: account, tempPassword } = await createMemberAccount(emailLower, name.trim(), role);
+      const { result: account, tempPassword } = await createMemberAccount(emailLower, name.trim(), role, hideUntilSignIn(note));
       if (tempPassword) setTempPasswords(m => ({ ...m, [emailLower]: tempPassword }));
       if (account === 'not-configured') setError(t('accountNotConfigured'));
       else if (account === 'failed') setError(t('accountCreateFailed'));
@@ -206,7 +206,7 @@ export default function MembersPage() {
   const handleCreateLogin = async (a: RoleAssignment): Promise<boolean> => {
     setCreatingLogin(a.id); setError('');
     try {
-      const { result: account, tempPassword } = await createMemberAccount(a.email, resolveName(a) ?? '', a.role);
+      const { result: account, tempPassword } = await createMemberAccount(a.email, resolveName(a) ?? '', a.role, hideUntilSignIn(a.note));
       if (account === 'not-configured') { setError(t('accountNotConfigured')); return false; }
       if (account === 'failed') { setError(t('accountCreateFailed')); return false; }
       const { id, ...data } = a;

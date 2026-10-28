@@ -209,7 +209,8 @@ service cloud.firestore {
       allow create, update: if (isOwner(uid) || isCurator())
                    && request.resource.data.keys().hasOnly(
                         ['displayName', 'displayNameAr', 'photoURL', 'bio', 'bioAr',
-                         'linkedin', 'twitter', 'instagram', 'role'])
+                         'linkedin', 'twitter', 'instagram', 'role', 'hidden'])
+                   && (!('hidden' in request.resource.data) || request.resource.data.hidden is bool)
                    && validProfile(request.resource.data)
                    && (isCurator()
                        || !('role' in request.resource.data)

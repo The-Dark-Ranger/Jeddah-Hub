@@ -145,8 +145,10 @@ const cached = <T>(key: string, fn: () => Promise<T>) =>
 const loadInitiatives = cached('initiatives', async () =>
   (await listCollection('initiatives')).map(d => externalizeImages('initiatives', d)));
 
+// Hidden profiles ("incoming" members who haven't signed in yet) are left
+// out of every public list and count.
 const loadProfiles = cached('public_profiles', async () =>
-  (await listCollection('public_profiles')).map(d => externalizeImages('public_profiles', d)));
+  (await listCollection('public_profiles')).filter(d => d.hidden !== true).map(d => externalizeImages('public_profiles', d)));
 
 const loadBlogs = cached('blogs', () => queryEquals('blogs', 'status', 'published'));
 

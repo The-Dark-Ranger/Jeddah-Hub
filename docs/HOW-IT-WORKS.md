@@ -84,6 +84,9 @@ sequenceDiagram
   never signed in; anyone who has keeps their own password.
 - Removing a **pending** assignment also deletes the unused login and the
   public listing, but only if the person has never signed in.
+- A note containing **"Incoming"** (e.g. "Incoming Shaper") keeps the member
+  off Who We Are, the homepage and the member counts until their first
+  sign-in, which lists them automatically.
 - **Alumni** in Pending can be **dismissed**: set aside in a collapsible
   *Dismissed Alumni* section to review later, where a curator can still send
   an invite, restore them to Pending, or remove them.

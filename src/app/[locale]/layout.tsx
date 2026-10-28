@@ -19,6 +19,7 @@ import { SITE_URL, alternateLanguages } from '@/lib/seo';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Tajawal } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Self-hosted by next/font: no request to Google at runtime, and size-matched
 // fallback fonts so text doesn't reflow (jump) when the real font arrives.
@@ -112,9 +113,11 @@ export default async function LocaleLayout({
             </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
-        {/* Vercel Web Analytics: page views and visitor counts, without
-            cookies or personal data; it only reports from the live site. */}
+        {/* Vercel Web Analytics and Speed Insights: page views, and how fast
+            pages load for real visitors, without cookies or personal data;
+            they only report from the live site. */}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -1,8 +1,10 @@
 'use client';
 
+/* Newsletter signup. Everything (bot checks, saving each address once and
+ * the welcome email) happens in /api/newsletter/subscribe; this form only
+ * collects the address and shows the outcome. */
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { loadFirestore } from '@/lib/loadFirestore';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import styles from './NewsletterForm.module.css';
@@ -12,50 +14,41 @@ import styles from './NewsletterForm.module.css';
  *  message with no way to subscribe another address. */
 const SUCCESS_RESET_MS = 6000;
 
+type Status = 'idle' | 'loading' | 'success' | 'already' | 'error' | 'invalid-email' | 'too-many';
+
 export default function NewsletterForm() {
   const t = useTranslations('HomePage');
   const locale = useLocale();
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
+  const [honeypot, setHoneypot] = useState('');
+  const [openedAt] = useState(() => Date.now());
+  const [status, setStatus] = useState<Status>('idle');
 
   useEffect(() => {
-    if (status !== 'success') return;
+    if (status !== 'success' && status !== 'already') return;
     const timer = setTimeout(() => setStatus('idle'), SUCCESS_RESET_MS);
     return () => clearTimeout(timer);
   }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidEmail(email)) { setStatus('invalid-email'); return; }
+    if (!isValidEmail(email.trim())) { setStatus('invalid-email'); return; }
 
     setStatus('loading');
     try {
-      // Check the domain can actually receive mail before writing/showing
-      // success, a regex alone accepts syntactically-valid gibberish like
-      // someone@dfgdf.com.
-      const check = await fetch('/api/validate-email', {
+      const recaptchaToken = await getRecaptchaToken('newsletter_subscribe');
+      const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
-      if (!check.ok) { setStatus('invalid-email'); return; }
-
-      const { addDoc, collection, db } = await loadFirestore();
-      await addDoc(collection(db, 'newsletter_subscribers'), {
-        email: email.toLowerCase().trim(),
-        subscribedAt: new Date().toISOString(),
+        body: JSON.stringify({ email: email.trim(), recaptchaToken, locale, website: honeypot, elapsedMs: Date.now() - openedAt }),
       });
-
-      getRecaptchaToken('newsletter_subscribe').then(recaptchaToken => {
-        fetch('/api/newsletter/welcome', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, recaptchaToken, locale }),
-        }).catch(() => {});
-      });
-
-      setStatus('success');
-      setEmail('');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setStatus(data.status === 'already' ? 'already' : 'success');
+        setEmail('');
+      } else {
+        setStatus(data.error === 'invalid_email' ? 'invalid-email' : res.status === 429 ? 'too-many' : 'error');
+      }
     } catch {
       setStatus('error');
     }
@@ -66,12 +59,20 @@ export default function NewsletterForm() {
       <h3 className={styles.title}>{t('newsletter')}</h3>
       <p className={styles.subtitle}>{t('newsletterSubtitle')}</p>
       <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
+        {/* Honeypot: hidden from people and screen readers; bots fill it. */}
+        <div aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none' }}>
+          <label htmlFor="newsletter-website">Website</label>
+          <input id="newsletter-website" name="website" type="text" tabIndex={-1} autoComplete="off"
+            value={honeypot} onChange={e => setHoneypot(e.target.value)} />
+        </div>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your.email@example.com"
           className={styles.input}
+          maxLength={254}
+          autoComplete="email"
           required
           disabled={status === 'loading'}
         />
@@ -79,18 +80,19 @@ export default function NewsletterForm() {
           {status === 'loading' ? t('newsletterSubscribing') : t('subscribe')}
         </button>
       </form>
-      {status === 'success' && (
+      {(status === 'success' || status === 'already') && (
         <div className={styles.successBox} role="status">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
             <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
           </svg>
           <div>
-            <p className={styles.successTitle}>{t('newsletterSuccessTitle')}</p>
-            <p className={styles.successDetail}>{t('newsletterSuccessDetail')}</p>
+            <p className={styles.successTitle}>{t(status === 'already' ? 'newsletterAlreadyTitle' : 'newsletterSuccessTitle')}</p>
+            <p className={styles.successDetail}>{t(status === 'already' ? 'newsletterAlreadyDetail' : 'newsletterSuccessDetail')}</p>
           </div>
         </div>
       )}
       {status === 'invalid-email' && <p className={styles.errorMessage}>{t('newsletterInvalidEmail')}</p>}
+      {status === 'too-many' && <p className={styles.errorMessage}>{t('newsletterTooMany')}</p>}
       {status === 'error' && <p className={styles.errorMessage}>{t('newsletterError')}</p>}
     </div>
   );

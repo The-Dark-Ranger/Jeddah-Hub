@@ -9,7 +9,6 @@ import {
   type Lang, emailLayout, heading, paragraph, sectionTitle, infoTable, quote, steps, linkCards, button,
   siteUrl, jeddahTime, SITE,
 } from './layout';
-import { replyAddress } from './replies';
 
 const ADDRESS = process.env.CONTACT_EMAIL || 'contact@jeddahhub.org';
 /** Where contact-form messages are delivered. */
@@ -166,10 +165,8 @@ export function senderCopy(m: ContactMessage) {
   return {
     from: sender(c.from, ADDRESS),
     to: m.email,
-    // Replies to the receipt come back through the site, which forwards
-    // just the new text to the hub (replies.ts); without that set up, they
-    // go straight to the hub inbox.
-    replyTo: replyAddress(m.ref) ?? CONTACT_INBOX,
+    // Replies to the receipt reach the hub, not an unattended mailbox.
+    replyTo: CONTACT_INBOX,
     subject: c.subject(ref),
     html,
     text: [

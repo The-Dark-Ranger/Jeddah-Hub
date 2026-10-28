@@ -1,69 +1,73 @@
 'use client';
 
+/* Contact page. Everything (bot checks, saving the message, the hub copy
+ * and the visitor's receipt) happens in /api/contact/send; this form only
+ * collects the message and shows the outcome. */
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { loadFirestore } from '@/lib/loadFirestore';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import styles from './Contact.module.css';
 import WaveDivider from '@/components/WaveDivider';
 
-// Mirrors the size caps firestore.rules enforces on contact_messages, so the
-// form stops the user at the limit instead of the write failing on submit.
+// The same limits /api/contact/send enforces, so the form stops the visitor
+// at the limit instead of the send failing.
 const NAME_MAX    = 200;
+const MESSAGE_MIN = 10;
 const MESSAGE_MAX = 5000;
+
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'invalid-email' | 'invalid-name' | 'invalid-message' | 'too-many-links' | 'too-many' | 'verify-failed';
+
+/** Server error codes -> what the form shows. */
+const ERROR_STATUS: Record<string, Status> = {
+  invalid_email: 'invalid-email', invalid_name: 'invalid-name', invalid_message: 'invalid-message',
+  too_many_links: 'too-many-links', too_many: 'too-many', bot_check_failed: 'verify-failed',
+};
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
   const locale = useLocale();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'invalid-email'>('idle');
+  const [honeypot, setHoneypot] = useState('');
+  const [openedAt] = useState(() => Date.now());
+  const [status, setStatus] = useState<Status>('idle');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidEmail(formData.email)) { setStatus('invalid-email'); return; }
+    if (!isValidEmail(formData.email.trim())) { setStatus('invalid-email'); return; }
+    if (formData.message.trim().length < MESSAGE_MIN) { setStatus('invalid-message'); return; }
     setStatus('loading');
     try {
-      // Check the domain can actually receive mail, a curator replies to
-      // this address later, so a fake domain would just bounce silently.
-      const emailCheck = await fetch('/api/validate-email', {
+      const recaptchaToken = await getRecaptchaToken('contact');
+      const res = await fetch('/api/contact/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email }),
-      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
-      if (!emailCheck.ok) { setStatus('invalid-email'); return; }
-
-      const token = await getRecaptchaToken('contact');
-      const verify = await fetch('/api/verify-recaptcha', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, action: 'contact' }),
-      });
-      if (!verify.ok) { setStatus('error'); return; }
-
-      const { addDoc, collection, db } = await loadFirestore();
-      const saved = await addDoc(collection(db, 'contact_messages'), {
-        ...formData,
-        email: formData.email.trim(),
-        submittedAt: new Date().toISOString(),
-        read: false,
-      });
-      // Email the hub a copy and the visitor a receipt, in this page's
-      // language. Best effort: the message is already saved in the
-      // dashboard, so a failed email must not show an error.
-      const sent = { ...formData, email: formData.email.trim(), locale, ref: saved.id };
-      getRecaptchaToken('contact_notify').then(recaptchaToken =>
-        fetch('/api/contact/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...sent, recaptchaToken }),
+        body: JSON.stringify({
+          ...formData, email: formData.email.trim(), locale, recaptchaToken,
+          website: honeypot, elapsedMs: Date.now() - openedAt,
         }),
-      ).catch(() => {});
-      setStatus('success');
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (err) {
-      console.error(err);
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setStatus('success');
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        setStatus(ERROR_STATUS[data.error] ?? (res.status === 429 ? 'too-many' : 'error'));
+      }
+    } catch {
       setStatus('error');
     }
+  };
+
+  /** The message shown under the form for each problem. */
+  const problem: Partial<Record<Status, string>> = {
+    'invalid-email': t('invalidEmail'),
+    'invalid-name': t('invalidName'),
+    'invalid-message': t('invalidMessage', { n: MESSAGE_MIN }),
+    'too-many-links': t('tooManyLinks'),
+    'too-many': t('tooMany'),
+    'verify-failed': t('verifyFailed'),
+    error: t('error'),
   };
 
   return (
@@ -99,6 +103,13 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
+                {/* Honeypot: hidden from people and screen readers; bots fill it.
+                    Clipped in place so it adds no scrollable space in Arabic. */}
+                <div aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none' }}>
+                  <label htmlFor="contact-website">Website</label>
+                  <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off"
+                    value={honeypot} onChange={e => setHoneypot(e.target.value)} />
+                </div>
                 <div className={styles.formCardHeader}>
                   <span className={styles.formCardIcon}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -188,21 +199,12 @@ export default function ContactPage() {
                   {status === 'loading' ? '' : t('submit')}
                 </button>
 
-                {status === 'invalid-email' && (
-                  <p className={styles.errorMsg}>
+                {problem[status] && (
+                  <p className={styles.errorMsg} role="alert">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
-                    {t('invalidEmail')}
-                  </p>
-                )}
-
-                {status === 'error' && (
-                  <p className={styles.errorMsg}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    {t('error')}
+                    {problem[status]}
                   </p>
                 )}
               </form>

@@ -354,7 +354,7 @@ export default function AboutClient({ initial }: { initial?: AboutData }) {
         getCountFromServer(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))),
       ]))
       .then(([usersSnap, initCount, activityCount]) => {
-        const p = peopleFrom(usersSnap.docs.map(d => ({ uid: d.id, ...d.data() })));
+        const p = peopleFrom(usersSnap.docs.filter(d => d.get('hidden') !== true).map(d => ({ uid: d.id, ...d.data() })));
         setShapers(p.shapers);
         setAlumni(p.alumni);
         setCurators(p.curators);

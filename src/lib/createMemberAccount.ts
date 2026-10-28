@@ -17,9 +17,9 @@ async function post(body: Record<string, unknown>) {
 /** Creates this member's sign-in account and lists them on the Who We Are
  *  page under `role` with `displayName`. A new account comes back with its
  *  one-time password, which the curator sees once. */
-export async function createMemberAccount(email: string, displayName: string, role: MemberRole): Promise<{ result: CreateAccountResult; tempPassword?: string }> {
+export async function createMemberAccount(email: string, displayName: string, role: MemberRole, hideUntilSignIn = false): Promise<{ result: CreateAccountResult; tempPassword?: string }> {
   try {
-    const data = await post({ email, displayName, role });
+    const data = await post({ email, displayName, role, hideUntilSignIn });
     if (data?.reason === 'not-configured') return { result: 'not-configured' };
     const result = data?.result === 'created' || data?.result === 'exists' ? data.result : 'failed';
     return { result, tempPassword: data?.tempPassword };

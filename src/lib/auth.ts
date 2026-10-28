@@ -2,7 +2,7 @@
 import { auth, db } from './firebase';
 import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
-  doc, getDoc, setDoc,
+  doc, getDoc, setDoc, deleteField,
   collection, query, where, getDocs,
 } from 'firebase/firestore';
 import { normalizeRole } from './role';
@@ -45,6 +45,9 @@ async function syncPublicProfile(uid: string, data: Partial<UserProfile>) {
     if (data[key] !== undefined) subset[key] = data[key];
   }
   if (Object.keys(subset).length === 0) return;
+  // Signing in is what makes an "incoming" member public: clear the flag
+  // that kept them off Who We Are (see hideUntilSignIn).
+  subset.hidden = deleteField();
   try {
     await setDoc(doc(db, 'public_profiles', uid), subset, { merge: true });
   } catch { /* non-fatal, public listing just stays stale until next sync */ }

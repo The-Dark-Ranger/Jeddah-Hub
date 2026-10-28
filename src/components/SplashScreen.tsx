@@ -1,7 +1,8 @@
 'use client';
 
 /* The loading screen shown on a visitor's first page in a session and on
- * every full reload (decided before first paint by SPLASH_INIT_SCRIPT).
+ * every full reload (decided before first paint by SPLASH_INIT_SCRIPT), in
+ * the site's light or dark theme.
  * It stays until the page has loaded and its fonts are ready, never less
  * than SPLASH_MIN_VISIBLE_MS (so it doesn't flicker) and never more than
  * SPLASH_MAX_VISIBLE_MS (so a slow network can't trap anyone behind it). */
@@ -112,9 +113,9 @@ export default function SplashScreen({ locale }: { locale: string }) {
           <span className={styles.halo} />
           <span className={styles.ring} />
           <span className={styles.glass}>
-            {/* The splash is always dark navy, so it always uses the
-                light-on-dark logo whatever the site theme. */}
-            <img src="/logo-dark.png" alt="" className={styles.logo} fetchPriority="high" decoding="async" draggable={false} />
+            {/* The logo for the current theme, set in CSS so only that one
+                (a small copy) is downloaded. */}
+            <span className={styles.logo} />
           </span>
         </div>
 
@@ -133,7 +134,7 @@ export default function SplashScreen({ locale }: { locale: string }) {
       </div>
 
       <div className={styles.footer}>
-        <img src="/wef-logo-white.svg" alt="" className={styles.wefLogo} width={39} height={24} decoding="async" draggable={false} />
+        <span className={styles.wefLogo} />
         <span className={styles.footerRule} />
         <span>{isRtl ? 'مبادرة من المنتدى الاقتصادي العالمي' : 'An initiative of the World Economic Forum'}</span>
       </div>

@@ -7,7 +7,7 @@
  * so a second signup (even two at the same moment) finds it already there.
  * New subscribers then get the welcome email in the language they used. */
 import { createHash } from 'node:crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
@@ -15,6 +15,7 @@ import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
+import { json, isBotSubmission } from '@/lib/formGuard';
 import { sendEmail } from '@/lib/email';
 import { newsletterWelcome } from '@/lib/emails/newsletter';
 
@@ -22,8 +23,6 @@ import { newsletterWelcome } from '@/lib/emails/newsletter';
 const MIN_FILL_MS = 2500;
 /** Stricter than the site default (0.5): this form is a common bot target. */
 const MIN_SCORE = 0.6;
-
-const json = (body: unknown, status = 200) => NextResponse.json(body, { status });
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
@@ -33,10 +32,8 @@ export async function POST(req: NextRequest) {
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
   const lang = body?.locale === 'ar' ? 'ar' : 'en';
 
-  // Bot traps: a filled hidden field, or a form sent faster than a person
-  // could. Answer like a success so the bot learns nothing, but save nothing.
-  const elapsed = Number(body?.elapsedMs);
-  if (body?.website || !Number.isFinite(elapsed) || elapsed < MIN_FILL_MS) return json({ ok: true, status: 'subscribed' });
+  // Bot traps: answer like a success so the bot learns nothing, save nothing.
+  if (isBotSubmission(body, MIN_FILL_MS)) return json({ ok: true, status: 'subscribed' });
 
   if (!email || email.length > 254 || !isValidEmail(email)) return json({ error: 'invalid_email' }, 400);
 
@@ -71,8 +68,8 @@ export async function POST(req: NextRequest) {
     return json({ error: 'save_failed' }, 500);
   }
 
-  // The subscription stands even if the welcome email can't be sent.
-  const sent = await sendEmail(newsletterWelcome(lang, email));
-  if (!sent.ok && !('skipped' in sent && sent.skipped)) console.error('[newsletter] welcome email failed');
+  // The subscription stands even if the welcome email can't be sent
+  // (sendEmail logs its own failures).
+  await sendEmail(newsletterWelcome(lang, email));
   return json({ ok: true, status: 'subscribed' });
 }

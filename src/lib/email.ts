@@ -11,7 +11,7 @@ export const MEMBERS_FROM = process.env.FROM_EMAIL || 'Jeddah Hub <members@jedda
 /** Whether outgoing email is set up at all (checked before side effects). */
 export const emailConfigured = () => !!RESEND_API_KEY;
 
-export type SendResult = { ok: true; id?: string } | { ok: false; skipped?: true; error: string };
+type SendResult = { ok: true; id?: string } | { ok: false; skipped?: true; error: string };
 
 /** "Name <address>" with the display name quoted when needed. */
 export const sender = (name: string, address: string) => `${/[",<>@]/.test(name) ? JSON.stringify(name) : name} <${address}>`;

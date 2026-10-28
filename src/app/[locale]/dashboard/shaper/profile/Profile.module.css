@@ -45,7 +45,7 @@
 .saveBtn {
   display: flex; align-items: center; gap: 6px;
   padding: 0.65rem 1.5rem; border-radius: 10px; font-size: 0.88rem; font-weight: 600;
-  background: var(--primary-blue); color: white; border: none; cursor: pointer;
+  background: var(--primary-fill); color: white; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .saveBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
@@ -98,7 +98,7 @@
   border: 1.5px solid var(--primary-blue); background: var(--primary-blue-glow); color: var(--primary-blue);
   font-size: .88rem; font-weight: 700;
 }
-.secondaryBtn:hover:not(:disabled) { background: var(--primary-blue); color: #fff; }
+.secondaryBtn:hover:not(:disabled) { background: var(--primary-fill); color: #fff; }
 .secondaryBtn:disabled { opacity: .6; cursor: wait; }
 .errorMsg { font-size: .85rem; font-weight: 600; color: var(--danger); }
 

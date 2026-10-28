@@ -16,7 +16,7 @@
 .proposalsBadge {
   display:inline-flex;align-items:center;justify-content:center;
   min-width:20px;height:20px;padding:0 .4rem;border-radius:10px;
-  background:var(--primary-blue);color:#fff;font-size:.72rem;font-weight:700;
+  background:var(--primary-fill);color:#fff;font-size:.72rem;font-weight:700;
 }
 .proposalsList { display:flex;flex-direction:column;gap:.5rem; }
 .proposalRow {
@@ -62,12 +62,12 @@
   cursor:pointer;transition:all .18s ease;
 }
 .archiveTab:hover { border-color:var(--primary-blue);color:var(--primary-blue); }
-.archiveTabActive { background:var(--primary-blue);color:#fff;border-color:var(--primary-blue); }
+.archiveTabActive { background:var(--primary-fill);color:#fff;border-color:var(--primary-blue); }
 
 /* ── New activity button ── */
 .newBtn {
   display:flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;
-  background:var(--primary-blue);color:#fff;border:none;border-radius:8px;
+  background:var(--primary-fill);color:#fff;border:none;border-radius:8px;
   font-size:.875rem;font-weight:600;cursor:pointer;white-space:nowrap;
   transition:background .2s;
 }
@@ -86,7 +86,7 @@
   border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;
   transition:background .2s,color .2s;
 }
-.prefillBtn:hover { background:var(--primary-blue);color:#fff; }
+.prefillBtn:hover { background:var(--primary-fill);color:#fff; }
 
 /* ── Activity list ── */
 .list { display:flex;flex-direction:column;gap:1rem; }
@@ -124,8 +124,8 @@
 .editBtn   { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-size:.8rem;cursor:pointer;transition:background .18s; }
 .editBtn:hover { background:var(--card-bg); }
 .responsesBtn { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--primary-blue);background:transparent;color:var(--primary-blue);font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s,color .18s; }
-.responsesBtn:hover { background:var(--primary-blue);color:#fff; }
-.responsesBtnHasNew { background:var(--primary-blue);color:#fff; }
+.responsesBtn:hover { background:var(--primary-fill);color:#fff; }
+.responsesBtnHasNew { background:var(--primary-fill);color:#fff; }
 .responsesBtnHasNew:hover { opacity:.9; }
 .toggleBtn { padding:.35rem .8rem;border-radius:6px;border:none;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s; }
 .toggleOn  { background:rgba(16,185,129,.12);color:#059669; }
@@ -190,7 +190,7 @@
 
 /* ── Footer buttons ── */
 .cancelBtn { padding:.5rem 1rem;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-size:.875rem;cursor:pointer; }
-.saveBtn   { padding:.5rem 1.2rem;border-radius:7px;border:none;background:var(--primary-blue);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s; }
+.saveBtn   { padding:.5rem 1.2rem;border-radius:7px;border:none;background:var(--primary-fill);color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s; }
 .saveBtn:hover:not(:disabled) { background:var(--primary-blue-dark,#0052a3); }
 .saveBtn:disabled { opacity:.55;cursor:not-allowed; }
 
@@ -230,7 +230,7 @@
   background: var(--background); color: var(--text-muted); font: inherit; font-size: .84rem; font-weight: 600;
 }
 .responseTab:hover { color: var(--text-main); }
-.responseTabActive, .responseTabActive:hover { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.responseTabActive, .responseTabActive:hover { background: var(--primary-fill); border-color: var(--primary-blue); color: #fff; }
 .responseTabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
 .responseTabActive .responseTabCount { background: rgba(255, 255, 255, .22); }
 

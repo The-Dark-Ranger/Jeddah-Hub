@@ -2,6 +2,7 @@
    oversized figures, numbered topic tiles and the Forum's open arc. */
 .section {
   --wef-blue: #004b86;
+  --wef-fill: #004b86;
   --wef-ink: var(--text-main);
   position: relative;
   overflow: hidden;
@@ -9,9 +10,9 @@
   background: var(--background);
   border-top: 1px solid var(--border-color);
 }
-:global([data-theme="dark"]) .section { --wef-blue: #5ea3e0; }
+:global([data-theme="dark"]) .section { --wef-blue: #5ea3e0; --wef-fill: #1f6fc4; }
 @media (prefers-color-scheme: dark) {
-  :global(html:not([data-theme])) .section { --wef-blue: #5ea3e0; }
+  :global(html:not([data-theme])) .section { --wef-blue: #5ea3e0; --wef-fill: #1f6fc4; }
 }
 
 /* The Forum's signature open arc, drawn as a single stroked circle. */
@@ -56,7 +57,7 @@
 .links { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; margin-top: 2rem; }
 .primaryLink {
   display: inline-flex; align-items: center; gap: .5rem;
-  background: var(--wef-blue); color: #fff;
+  background: var(--wef-fill); color: #fff;
   padding: .85rem 1.6rem; border-radius: 999px;
   font-weight: 700; font-size: .92rem;
   transition: transform .2s ease, box-shadow .2s ease;

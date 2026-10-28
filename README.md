@@ -188,7 +188,9 @@ flowchart LR
     MAIN -->|firestore.rules changed| RULES[GitHub Action<br/>publishes the rules]
 ```
 
-- **Website:** every push to `main` deploys to Vercel automatically. The
+- **Website:** every push to `main` deploys to Vercel automatically. Server
+  code runs in Vercel's Mumbai region (`vercel.json`), the closest to our
+  visitors and to the Firestore database. The
   environment variables from `.env.example` are set in the Vercel project,
   including `FIREBASE_SERVICE_ACCOUNT` for member account creation.
 - **Firestore rules:** the

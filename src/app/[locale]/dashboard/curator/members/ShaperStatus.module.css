@@ -14,7 +14,7 @@
   color: var(--text-muted); font: inherit; font-size: .84rem; font-weight: 600;
 }
 .tab:hover { color: var(--text-main); }
-.tabActive { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.tabActive { background: var(--primary-fill); border-color: var(--primary-blue); color: #fff; }
 .tabActive:hover { color: #fff; }
 .tabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
 .tabActive .tabCount { background: rgba(255, 255, 255, .22); }

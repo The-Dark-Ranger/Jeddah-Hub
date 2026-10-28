@@ -1,0 +1,23 @@
+/* The initiative form fields (InitiativeFormFields.tsx), used by the
+   curator, impact officer, initiative lead and propose forms. */
+.formField { display: flex; flex-direction: column; gap: 0.4rem; }
+.label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
+.fieldHint { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; margin-inline-start: 0.3rem; }
+
+.input,
+.textarea {
+  padding: 0.65rem 1rem; border-radius: 9px;
+  border: 1px solid var(--border-color); background: var(--input-bg);
+  color: var(--text-main); font-size: 0.9rem; outline: none;
+  transition: border-color 0.2s ease; width: 100%; box-sizing: border-box;
+}
+.textarea { resize: vertical; font-family: inherit; }
+.input:focus,
+.textarea:focus { border-color: var(--primary-blue); }
+
+.editRow  { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.editRow3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 560px) {
+  .editRow,
+  .editRow3 { grid-template-columns: 1fr; }
+}

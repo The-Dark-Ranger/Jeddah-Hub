@@ -290,7 +290,7 @@ export default function JoinInitiatives() {
             </div>
             <div className={styles.modalBody}>
               <p className={styles.proposeHint}>{t('proposeInitiativeHint')}</p>
-              <InitiativeFormFields form={proposeForm} onChange={handleProposeFormChange} styles={styles} />
+              <InitiativeFormFields form={proposeForm} onChange={handleProposeFormChange} />
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.modalCancelBtn} onClick={closePropose}>{t('cancel')}</button>

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
+import Honeypot from '@/components/Honeypot';
 import styles from './NewsletterForm.module.css';
 
 /** How long the confirmation stays up before the form resets itself, so a
@@ -59,12 +60,7 @@ export default function NewsletterForm() {
       <h3 className={styles.title}>{t('newsletter')}</h3>
       <p className={styles.subtitle}>{t('newsletterSubtitle')}</p>
       <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
-        {/* Honeypot: hidden from people and screen readers; bots fill it. */}
-        <div aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none' }}>
-          <label htmlFor="newsletter-website">Website</label>
-          <input id="newsletter-website" name="website" type="text" tabIndex={-1} autoComplete="off"
-            value={honeypot} onChange={e => setHoneypot(e.target.value)} />
-        </div>
+        <Honeypot id="newsletter-website" value={honeypot} onChange={setHoneypot} />
         <input
           type="email"
           value={email}

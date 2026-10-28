@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
+import Honeypot from '@/components/Honeypot';
 import styles from './Contact.module.css';
 import WaveDivider from '@/components/WaveDivider';
 
@@ -103,13 +104,7 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
-                {/* Honeypot: hidden from people and screen readers; bots fill it.
-                    Clipped in place so it adds no scrollable space in Arabic. */}
-                <div aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none' }}>
-                  <label htmlFor="contact-website">Website</label>
-                  <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off"
-                    value={honeypot} onChange={e => setHoneypot(e.target.value)} />
-                </div>
+                <Honeypot id="contact-website" value={honeypot} onChange={setHoneypot} />
                 <div className={styles.formCardHeader}>
                   <span className={styles.formCardIcon}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

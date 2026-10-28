@@ -5,10 +5,11 @@
  * module would hand the server an opaque client reference instead.
  */
 
-/** Floor, so the splash reads as a deliberate load (and its entrance plays
- *  out) rather than a flicker. */
-export const SPLASH_MIN_VISIBLE_MS = 850;
-/** Never hold the user back longer than this, however slow the page is. */
+/** The splash stays a full second, so its entrance plays out and it reads
+ *  as a deliberate load rather than a flicker. */
+export const SPLASH_MIN_VISIBLE_MS = 1000;
+/** Never hold the user back longer than this, however slow the page is
+ *  (only reached on a slow network; normally it leaves at one second). */
 export const SPLASH_MAX_VISIBLE_MS = 1500;
 /** Matches the curtain-lift exit in SplashScreen.module.css (delay + duration). */
 export const SPLASH_DISMISS_MS = 560;
@@ -30,5 +31,7 @@ export const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement
  * what stops the page from painting first and the splash popping over it
  * after hydration. A hard timeout clears the flag even if React never
  * hydrates, so a script error can never strand the overlay on screen.
+ * The attribute's value is the page's resolved theme ("light" or "dark"),
+ * which the splash uses for its colours.
  */
-export const SPLASH_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];var r=n&&n.type==='reload';var f=!sessionStorage.getItem('jh-visited');if(f)sessionStorage.setItem('jh-visited','1');if(f||r){d.setAttribute('data-splash','');setTimeout(function(){d.removeAttribute('data-splash')},${SPLASH_MAX_VISIBLE_MS + SPLASH_DISMISS_MS + 1500});}}catch(e){}})();`;
+export const SPLASH_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];var r=n&&n.type==='reload';var f=!sessionStorage.getItem('jh-visited');if(f)sessionStorage.setItem('jh-visited','1');if(f||r){var t=d.getAttribute('data-theme');if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.setAttribute('data-splash',t);setTimeout(function(){d.removeAttribute('data-splash')},${SPLASH_MAX_VISIBLE_MS + SPLASH_DISMISS_MS + 1500});}}catch(e){}})();`;

@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 28 October
+- Vercel Speed Insights: real visitors' page-load speed (Core Web Vitals), anonymous; Privacy Policy updated.
 - Vercel Web Analytics: anonymous visit statistics (no cookies); Privacy Policy updated to say so.
 - Members whose Role Assignments note says "Incoming" stay off Who We Are and the member counts until their first sign-in.
 - Every invite is recorded: an email to the hub inbox (who, role, by whom, when; never the password) and an "Invited" note with a count in Role Assignments; the invite's role and name come from the saved assignment.

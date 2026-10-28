@@ -1046,11 +1046,11 @@
       },
       {
         "heading": "Cookies and Browser Storage",
-        "body": "We use only functional storage, not tracking or advertising cookies: your language and theme choice; a note that the welcome animation has already played; and the random identifier for likes. Our host's bot protection may set a short-lived cookie after verifying your browser. None of this is used to follow you across other websites.\n\nWe count visits with Vercel Web Analytics, which uses no cookies and does not identify you: it records, in aggregate, which pages are viewed, the site that linked to us, and the country, device type and browser."
+        "body": "We use only functional storage, not tracking or advertising cookies: your language and theme choice; a note that the welcome animation has already played; and the random identifier for likes. Our host's bot protection may set a short-lived cookie after verifying your browser. None of this is used to follow you across other websites.\n\nWe count visits with Vercel Web Analytics, which uses no cookies and does not identify you: it records, in aggregate, which pages are viewed, the site that linked to us, and the country, device type and browser. Vercel Speed Insights likewise measures, anonymously, how quickly pages load for visitors."
       },
       {
         "heading": "Service Providers",
-        "body": "We rely on a few providers to run the site, each processing data on our behalf under its own privacy and security practices: Google Firebase (database and site data); Vercel (hosting, delivery, bot protection and anonymous visit statistics); Google reCAPTCHA (abuse prevention); and Resend (our emails, such as the newsletter welcome and contact-form copies)."
+        "body": "We rely on a few providers to run the site, each processing data on our behalf under its own privacy and security practices: Google Firebase (database and site data); Vercel (hosting, delivery, bot protection and anonymous visit and speed statistics); Google reCAPTCHA (abuse prevention); and Resend (our emails, such as the newsletter welcome and contact-form copies)."
       },
       {
         "heading": "Become a Shaper Applications",

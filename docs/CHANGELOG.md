@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 28 October
+- Roster: team roles are editable in place. Curators change them directly; initiative leads get the Roster for their own teams and their role changes wait for Curator or Vice Curator approval (count on the dashboard's Roster card).
 - Vercel BotID: an invisible bot check on the contact, newsletter and activity forms and the login; automated requests are refused. (#191)
 - Vercel Speed Insights: real visitors' page-load speed (Core Web Vitals), anonymous; Privacy Policy updated.
 - Vercel Web Analytics: anonymous visit statistics (no cookies); Privacy Policy updated to say so.

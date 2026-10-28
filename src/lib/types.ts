@@ -34,6 +34,19 @@ export function isLeadEntry(m: MemberEntry): boolean {
   return typeof m !== 'string' && isLeadRole(m.role);
 }
 
+/** The closest team role to a stored role text (older free-text lead roles
+ *  read as Lead, anything else as Member). */
+export function toTeamRole(role: string | null | undefined): TeamRole {
+  if (typeof role === 'string' && /^co-?lead$/i.test(role.trim())) return 'Co-Lead';
+  return isLeadRole(role) ? 'Lead' : 'Member';
+}
+
+/** An initiative's team with one person's role changed (a bare-id entry is
+ *  written back as an object). */
+export function withTeamRole(members: MemberEntry[], userId: string, role: TeamRole): MemberEntry[] {
+  return members.map(m => memberId(m) === userId ? { userId, role } : m);
+}
+
 /** join_requests / leave_requests: a member asking to join or leave. */
 export interface MembershipRequest {
   id: string;
@@ -57,6 +70,13 @@ export interface LeadRequest {
   requestedByName?: string;
   status: 'pending' | 'approved' | 'declined';
   requestedAt?: string;
+}
+
+/** role_change_requests: a lead asking the Curator or Vice Curator to change
+ *  a teammate's role. */
+export interface RoleChangeRequest extends LeadRequest {
+  fromRole?: string;
+  toRole: TeamRole;
 }
 
 /** initiative_requests / activity_requests: a proposal awaiting review.

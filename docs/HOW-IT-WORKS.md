@@ -118,7 +118,7 @@ flowchart TD
 | Role | Can |
 |---|---|
 | Shaper / Alumni | Edit their profile, join or leave initiatives, propose initiatives and activities, write posts, sign the Charter |
-| Initiative lead | Everything above, plus edit their own initiative and handle its join, add and remove requests |
+| Initiative lead | Everything above, plus edit their own initiative, handle its join, add and remove requests, and ask for teammates' role changes in the Roster |
 | Impact Officer | Manage initiatives and activities, publish posts, pick the spotlight |
 | Curator / Vice Curator | Everything: roles and accounts, featured initiatives, messages, exports, Charter sign-off |
 
@@ -141,6 +141,8 @@ flowchart LR
         L1[Member asks to leave] --> L2[(leave_requests)] --> L3[removed from members]
         A1[Lead asks to add<br/>or remove someone] --> A2[(member_add_requests /<br/>removal_requests)]
         A2 -->|curator or impact<br/>officer approves| J3
+        R1[Lead changes a teammate's<br/>role in the Roster] --> R2[(role_change_requests)]
+        R2 -->|Curator or Vice<br/>Curator approves| R3[role and leads updated]
     end
 ```
 
@@ -150,6 +152,11 @@ Leads and Co-Leads have the same rights: their uid is in the initiative's
 the team only one person at a time: accept a join request (adding a plain
 Member) or approve a leave. Adding leads, or several people at once, stays
 with curators and impact officers.
+
+In the **Roster**, curators change anyone's team role directly. Leads see
+only the teams they lead; a role they pick there (never their own) becomes a
+`role_change_requests` entry that only the Curator or Vice Curator can
+approve, which then updates the role and the `leads` array together.
 
 On the public Initiatives page, curators **feature** up to 3 initiatives on the
 homepage. Curators and impact officers put one in the **Spotlight** card.

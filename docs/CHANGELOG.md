@@ -6,6 +6,10 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 29 October
+- Every invite is recorded: an email to the hub inbox (who, role, by whom, when; never the password) and an "Invited" note with a count in Role Assignments; the invite's role and name come from the saved assignment.
+- Co-Lead team role with the same rights as a Lead; team roles are picked from a list; the Impact Officer team panel now grants lead rights; leads can change the team one plain member at a time.
+- Activity registration and feedback forms now go through a protected server route (reCAPTCHA, limits, answers validated, one response per email); direct database writes are refused.
+- Rate limits that hold across every server instance, a daily budget for visitor-triggered email, and stricter email address checks.
 - Branded invite email with the sign-in address and one-time password, in the dashboard language; logins are created automatically before inviting.
 - Alumni can be dismissed from Pending Assignments and reviewed later (invite, restore or remove).
 - Loading screen stays one second and follows the light or dark theme; only that theme's small logo is downloaded.

@@ -16,6 +16,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
 import { json, isBotSubmission } from '@/lib/formGuard';
+import { withinLimit, withinEmailBudget, DAY } from '@/lib/persistentLimit';
 import { sendEmail } from '@/lib/email';
 import { newsletterWelcome } from '@/lib/emails/newsletter';
 
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
   // A few tries per address an hour, so the form can't be used to probe
   // which addresses are subscribed.
   if (isRateLimited(`newsletter-to:${email}`, 3, 60 * 60_000)) return json({ error: 'too_many' }, 429);
+  if (!(await withinLimit(`newsletter-ip:${ip}`, 10, DAY))) return json({ error: 'too_many' }, 429);
   if (!(await hasDeliverableDomainWithTimeout(email))) return json({ error: 'invalid_email' }, 400);
 
   const app = adminApp();
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
   }
 
   // The subscription stands even if the welcome email can't be sent
-  // (sendEmail logs its own failures).
-  await sendEmail(newsletterWelcome(lang, email));
+  // (sendEmail logs its own failures) or the day's email budget is used up.
+  if (await withinEmailBudget()) await sendEmail(newsletterWelcome(lang, email));
   return json({ ok: true, status: 'subscribed' });
 }

@@ -14,7 +14,8 @@ import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import SearchSelect, { type SearchOption } from '@/components/dashboard/SearchSelect';
 import styles from './Roster.module.css';
-import type { InitiativeMember, MembershipRequest, UserDoc } from '@/lib/types';
+import { isLeadRole, type InitiativeMember, type MembershipRequest, type TeamRole, type UserDoc } from '@/lib/types';
+import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 
 interface RosterInitiative {
   id: string;
@@ -43,7 +44,7 @@ export default function ManageRoster() {
   const [joinRequests, setJoinRequests] = useState<RosterJoinRequest[]>([]);
   const [selectedInit, setSelectedInit] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
-  const [tempRole, setTempRole]         = useState('');
+  const [tempRole, setTempRole]         = useState<TeamRole>('Member');
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const [saving, setSaving]   = useState(false);
@@ -85,7 +86,7 @@ export default function ManageRoster() {
     if (!selectedInit || !selectedUser) return;
     setSaving(true);
     try {
-      const role = tempRole.trim() || 'Member';
+      const role = tempRole;
       // The `leads` array (not this display role text) is what
       // firestore.rules actually checks to grant a member edit rights on
       // their own initiative, writing role text alone without also
@@ -94,11 +95,11 @@ export default function ManageRoster() {
       const payload: Record<string, unknown> = {
         members: arrayUnion({ userId: selectedUser, role }),
       };
-      if (role.toLowerCase().includes('lead')) {
+      if (isLeadRole(role)) {
         payload.leads = arrayUnion(selectedUser);
       }
       await updateDoc(doc(db, 'initiatives', selectedInit), payload);
-      setTempRole('');
+      setTempRole('Member');
       setSelectedUser('');
       await fetchData();
     } catch (err) {
@@ -148,7 +149,7 @@ export default function ManageRoster() {
       // Keep `leads` in sync in the other direction too, a removed lead
       // should lose write access, not keep a stale entry in the array
       // firestore.rules actually checks.
-      if (removed?.role?.toLowerCase().includes('lead')) {
+      if (isLeadRole(removed?.role)) {
         payload.leads = arrayRemove(userId);
       }
       await updateDoc(doc(db, 'initiatives', initiativeId), payload);
@@ -164,7 +165,7 @@ export default function ManageRoster() {
    *  that causes a "Lead"-badged member to hit permission-denied trying to
    *  save their own initiative. */
   const isDriftedLead = (init: RosterInitiative, m: InitiativeMember) =>
-    (m.role || '').toLowerCase().includes('lead') && !(init.leads || []).includes(m.userId);
+    isLeadRole(m.role) && !(init.leads || []).includes(m.userId);
 
   const handleFixLeadAccess = async (initiativeId: string, userId: string) => {
     try {
@@ -286,12 +287,7 @@ export default function ManageRoster() {
             noResults={t('noMatches')}
             clearLabel={t('clearSelection')}
           />
-          <input
-            value={tempRole}
-            onChange={e => setTempRole(e.target.value)}
-            placeholder={t('tempRolePlaceholder')}
-            className={styles.input}
-          />
+          <TeamRoleSelect value={tempRole} onChange={setTempRole} className={styles.input} />
         </div>
         <button
           onClick={handleAddMember}
@@ -352,7 +348,7 @@ export default function ManageRoster() {
                           <tr key={m.userId + idx} className={idx >= MOBILE_ROSTER_ROWS && !expandedInits.has(init.id) ? styles.rowExtra : undefined}>
                             <td className={styles.memberEmail}>{getUserLabel(m.userId)}</td>
                             <td>
-                              <span className={styles.rolePill}>{m.role || t('memberDefaultRole')}</span>
+                              <span className={styles.rolePill}>{teamRoleLabel(t, m.role)}</span>
                             </td>
                             <td className={styles.actionsTd}>
                               <div className={styles.rowActions}>

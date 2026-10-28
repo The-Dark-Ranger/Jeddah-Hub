@@ -11,7 +11,9 @@ import { normalizeRole } from '@/lib/role';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
 import { sendEmail, emailConfigured } from '@/lib/email';
-import { memberInvite } from '@/lib/emails/invite';
+import { memberInvite, inviteRecord } from '@/lib/emails/invite';
+import { getFirestore } from 'firebase-admin/firestore';
+import { withinLimit, DAY } from '@/lib/persistentLimit';
 
 const KNOWN_ROLES = new Set(['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']);
 
@@ -31,10 +33,13 @@ export async function POST(req: NextRequest) {
   if (typeof email !== 'string' || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
-  const displayName = asString(body?.displayName, 120);
+  let displayName = asString(body?.displayName, 120);
   // Only known roles ever reach the email subject/body.
   const rawRole = typeof body?.role === 'string' ? normalizeRole(body.role) : '';
-  const role = KNOWN_ROLES.has(rawRole) ? rawRole : 'shaper';
+  let role = KNOWN_ROLES.has(rawRole) ? rawRole : 'shaper';
+  if (!(await withinLimit(`invite:${caller.uid}`, 100, DAY))) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
   if (!(await hasDeliverableDomainWithTimeout(email))) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
@@ -48,6 +53,14 @@ export async function POST(req: NextRequest) {
   // has signed in already has their own password and is just reminded.
   const app = adminApp();
   if (!app) return NextResponse.json({ error: 'Accounts not configured' }, { status: 503 });
+  // The saved assignment decides the role and name the email shows, not
+  // what the browser sent.
+  const assignment = await getFirestore(app).doc(`role_assignments/${email.toLowerCase()}`).get().catch(() => null);
+  if (assignment?.exists) {
+    const saved = normalizeRole(String(assignment.get('role') ?? ''));
+    if (KNOWN_ROLES.has(saved)) role = saved;
+    displayName = asString(assignment.get('displayName'), 120) ?? displayName;
+  }
   let tempPassword: string | null = null;
   try {
     const record = await getAuth(app).getUserByEmail(email);
@@ -64,5 +77,32 @@ export async function POST(req: NextRequest) {
   const lang = body?.locale === 'ar' ? 'ar' : 'en';
   const result = await sendEmail(memberInvite({ lang, email, name: displayName, role, tempPassword }));
   if (!result.ok) return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
-  return NextResponse.json({ ok: true, withPassword: !!tempPassword });
+
+  // Record it: on the assignment (shown in Role Assignments) and as an
+  // email to the hub inbox. Best effort; the invite itself has gone out.
+  const at = new Date();
+  let inviteCount = 1;
+  let sentBy = caller.email || caller.uid;
+  try {
+    const db = getFirestore(app);
+    const ref = db.doc(`role_assignments/${email.toLowerCase()}`);
+    const [me, count] = await Promise.all([
+      db.doc(`users/${caller.uid}`).get(),
+      db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return 1;
+        const n = (Number(snap.get('inviteCount')) || 0) + 1;
+        tx.update(ref, { lastInvitedAt: at.toISOString(), inviteCount: n });
+        return n;
+      }),
+    ]);
+    inviteCount = count;
+    const name = me.get('displayName');
+    if (typeof name === 'string' && name) sentBy = `${name} (${caller.email ?? caller.uid})`;
+  } catch (err) {
+    console.error('[invite] could not record the invite', err);
+  }
+  await sendEmail(inviteRecord({ email, name: displayName, role, lang, withPassword: !!tempPassword, sentBy, inviteCount, at }));
+
+  return NextResponse.json({ ok: true, withPassword: !!tempPassword, lastInvitedAt: at.toISOString(), inviteCount });
 }

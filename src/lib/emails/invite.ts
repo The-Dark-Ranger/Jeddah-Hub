@@ -5,7 +5,7 @@
 import { escapeHtml } from '@/lib/escapeHtml';
 import { sender } from '@/lib/email';
 import {
-  type Lang, emailLayout, heading, paragraph, sectionTitle, infoTable, steps, button, siteUrl,
+  type Lang, emailLayout, heading, paragraph, sectionTitle, infoTable, steps, button, siteUrl, jeddahTime, SITE,
 } from './layout';
 import { CONTACT_INBOX } from './contact';
 import { LOGO_ATTACHMENTS } from './logos';
@@ -109,6 +109,49 @@ export function memberInvite(m: { lang: Lang; email: string; name?: string | nul
       ...(m.tempPassword ? [c.tempNote, ''] : []),
       `${c.cta}: ${siteUrl(m.lang, '/login')}`, '',
       c.footer(m.email),
+    ].join('\n'),
+  };
+}
+
+/** The hub's own record that an invite went out (who, to whom, when), kept
+ *  in the hub inbox for reference. Never contains the password. */
+export function inviteRecord(r: {
+  email: string; name?: string | null; role: string; lang: Lang; withPassword: boolean;
+  sentBy: string; inviteCount: number; at?: Date;
+}) {
+  const role = ROLES.en[r.role] ?? ROLES.en.shaper;
+  const who = r.name || r.email;
+  const html = emailLayout({
+    lang: 'en',
+    title: 'Invite sent',
+    preheader: `${who} was invited as ${role}.`,
+    footerNote: "Sent automatically each time a curator sends an invite from Role Assignments, for the hub's records. The password itself is never included.",
+    body:
+      heading(`Invite sent: ${escapeHtml(who)}`) +
+      paragraph('A member invitation was emailed from Role Assignments.') +
+      infoTable('en', [
+        ['Invited', `${r.name ? `${escapeHtml(r.name)}<br>` : ''}<span dir="ltr">${escapeHtml(r.email)}</span>`],
+        ['Role', escapeHtml(role)],
+        ['Sign-in details', r.withPassword ? 'A new one-time password (replaces any earlier one)' : 'Already signed in before; reminded to use their own password'],
+        ['Email language', r.lang === 'ar' ? 'Arabic' : 'English'],
+        ['Sent by', escapeHtml(r.sentBy)],
+        ['Sent at', escapeHtml(jeddahTime('en', r.at))],
+        ['Invites so far', String(r.inviteCount)],
+      ]) +
+      `<div style="height:14px"></div>` +
+      button(`${SITE}/en/dashboard/curator/members`, 'Open Role Assignments'),
+  });
+  return {
+    from: sender('Jeddah Hub Records', ADDRESS),
+    to: CONTACT_INBOX,
+    subject: `[Invite sent] ${who} (${role})`,
+    html,
+    attachments: LOGO_ATTACHMENTS,
+    text: [
+      `Invite sent: ${who}`, `Email: ${r.email}`, `Role: ${role}`,
+      `Sign-in details: ${r.withPassword ? 'new one-time password' : 'own password (already signed in)'}`,
+      `Email language: ${r.lang === 'ar' ? 'Arabic' : 'English'}`, `Sent by: ${r.sentBy}`,
+      `Sent at: ${jeddahTime('en', r.at)}`, `Invites so far: ${r.inviteCount}`,
     ].join('\n'),
   };
 }

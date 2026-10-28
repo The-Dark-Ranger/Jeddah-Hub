@@ -231,3 +231,6 @@
 }
 [dir="rtl"] .dismissedSummary::before { transform: rotate(135deg); }
 .dismissedWrap[open] .dismissedSummary::before { transform: rotate(45deg); }
+
+/* When the last invite went out (set by /api/invite) */
+.invitedNote { margin-top: .2rem; font-size: .72rem; color: var(--text-muted); }

@@ -115,6 +115,7 @@ boundary. The flows behind each feature are drawn out in
 - **CSS Modules**: no UI framework, a hand-built design system
 - **[Resend](https://resend.com)** for email, from the verified `jeddahhub.org` domain, with a separate sender for the newsletter, the contact form and member invites
 - **Google reCAPTCHA v3** on the public forms, loaded only when a form is used
+- **[Vercel BotID](https://vercel.com/docs/botid)**, an invisible bot check on the public forms and the login
 - **[ExcelJS](https://github.com/exceljs/exceljs)** for `.xlsx` exports
 - **[jose](https://github.com/panva/jose)** to verify Firebase ID tokens in API routes
 - Hosted on **[Vercel](https://vercel.com)**
@@ -213,7 +214,7 @@ flowchart LR
   feedback) can only be submitted through server routes; the database
   refuses direct writes from browsers. Each route applies rate limits that
   hold across every server instance, a honeypot and minimum fill time,
-  reCAPTCHA (refusing everything if it isn't configured), input checks and
+  Vercel BotID, reCAPTCHA (refusing everything if it isn't configured), input checks and
   duplicate protection before saving or sending anything.
 - **Initiative teams**: Lead and Co-Lead rights come only from the
   initiative's `leads` array, which only curators and impact officers can

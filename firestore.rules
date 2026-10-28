@@ -459,15 +459,12 @@ service cloud.firestore {
     }
 
     // ── newsletter_subscribers ────────────────────────────────
-    // Anyone can subscribe (src/components/NewsletterForm.tsx). Field-capped
-    // and size-bounded for the same reason as contact_messages, a direct
-    // SDK write shouldn't be able to smuggle extra fields or oversized
-    // strings past the client form. Only curators can read the list.
+    // Signups only go through /api/newsletter/subscribe (server, Admin SDK),
+    // which checks reCAPTCHA and stores each address once. Browsers can't
+    // add to the list directly, so a bot can't skip those checks. Only
+    // curators can read or manage the list.
     match /newsletter_subscribers/{docId} {
-      allow create: if request.resource.data.keys().hasOnly(['email', 'subscribedAt'])
-                    && request.resource.data.email is string && request.resource.data.email.size() <= 200
-                    && request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
-                    && request.resource.data.subscribedAt is string;
+      allow create: if false;
       allow read, update, delete: if isCurator();
     }
 

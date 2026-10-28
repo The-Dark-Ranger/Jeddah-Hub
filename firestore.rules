@@ -496,20 +496,12 @@ service cloud.firestore {
     }
 
     // ── contact_messages ──────────────────────────────────────
-    // Anyone can submit (the reCAPTCHA check on the contact form is
-    // client-side only (Firestore rules can't verify a token) so this
-    // caps what a direct SDK write can contain instead: no extra/spoofed
-    // fields like a pre-set `read:true`, and bounded string sizes so the
-    // form can't be used to write arbitrarily large documents). Only
-    // curators can read + manage.
+    // Messages only arrive through /api/contact/send (server, Admin SDK),
+    // which runs the bot and spam checks first. Browsers can't add messages
+    // directly, so those checks can't be skipped. Only curators can read
+    // and manage them.
     match /contact_messages/{docId} {
-      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'subject', 'message', 'submittedAt', 'read'])
-                    && request.resource.data.read == false
-                    && request.resource.data.name is string    && request.resource.data.name.size()    <= 200
-                    && request.resource.data.email is string   && request.resource.data.email.size()   <= 254
-                    && request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
-                    && request.resource.data.subject is string && request.resource.data.subject.size() <= 300
-                    && request.resource.data.message is string && request.resource.data.message.size() <= 5000;
+      allow create: if false;
       allow read, update, delete: if isCurator();
     }
 

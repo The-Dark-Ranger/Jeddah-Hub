@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 28 October
+- Vercel BotID: an invisible bot check on the contact, newsletter and activity forms and the login; automated requests are refused. (#191)
 - Vercel Speed Insights: real visitors' page-load speed (Core Web Vitals), anonymous; Privacy Policy updated.
 - Vercel Web Analytics: anonymous visit statistics (no cookies); Privacy Policy updated to say so.
 - Members whose Role Assignments note says "Incoming" stay off Who We Are and the member counts until their first sign-in.

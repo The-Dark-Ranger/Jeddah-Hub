@@ -182,7 +182,7 @@ responses window shows each rating question's average.
 
 Responses only reach the database through
 [`/api/activities/respond`](../src/app/api/activities/respond/route.ts): rate
-limits, a hidden bot-trap field and minimum fill time, reCAPTCHA, a check
+limits, a hidden bot-trap field and minimum fill time, Vercel BotID, reCAPTCHA, a check
 that the activity and form are on and open, every answer checked against
 that form's own questions (type, options, 1 to 5 ratings, lengths, required
 ones), and one response per email per form.

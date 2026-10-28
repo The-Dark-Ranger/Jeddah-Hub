@@ -209,14 +209,19 @@ flowchart LR
 - **Accounts** start with a random one-time password that must be changed at
   first sign-in. The login form adds a honeypot, a minimum fill time, reCAPTCHA
   and a lockout after repeated failures.
-- **Public forms** (contact and newsletter) can only be submitted through
-  server routes; the database refuses direct writes from browsers. Each route
-  applies rate limits, a honeypot and minimum fill time, reCAPTCHA (refusing
-  everything if it isn't configured), a real-mail-domain check and duplicate
-  protection before saving or sending anything.
+- **Public forms** (contact, newsletter, and activity registration and
+  feedback) can only be submitted through server routes; the database
+  refuses direct writes from browsers. Each route applies rate limits that
+  hold across every server instance, a honeypot and minimum fill time,
+  reCAPTCHA (refusing everything if it isn't configured), input checks and
+  duplicate protection before saving or sending anything.
+- **Initiative teams**: Lead and Co-Lead rights come only from the
+  initiative's `leads` array, which only curators and impact officers can
+  change; a lead can change the team one plain member at a time.
 - **Email** only ever goes to the hub's own inbox or to the address that was
-  typed into the form, with per-address limits; everything a visitor typed is
-  escaped first.
+  typed into the form, with per-address limits and a daily budget; everything
+  a visitor typed is escaped first. Every member invite is also recorded in
+  the hub inbox (never with the password).
 - **Links and exports**: only http(s) links are saved or shown, and spreadsheet
   exports neutralise formula-like values.
 - **At the edge**: Vercel Bot Protection challenges non-browser traffic, common

@@ -17,6 +17,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
 import { json, isBotSubmission } from '@/lib/formGuard';
+import { withinLimit, withinEmailBudget, DAY, HOUR } from '@/lib/persistentLimit';
 import { sendEmail } from '@/lib/email';
 import { hubNotification, senderCopy, isTopic, type ContactMessage } from '@/lib/emails/contact';
 
@@ -63,6 +64,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (isRateLimited(`contact-from:${email}`, 3, 60 * 60_000)) return json({ error: 'too_many' }, 429);
+  // The same limits across every server instance, per day.
+  if (!(await withinLimit(`contact-ip:${ip}`, 10, DAY)) || !(await withinLimit(`contact-from:${email}`, 5, DAY))) {
+    return json({ error: 'too_many' }, 429);
+  }
   if (!(await hasDeliverableDomainWithTimeout(email))) return json({ error: 'invalid_email' }, 400);
 
   const app = adminApp();
@@ -91,7 +96,8 @@ export async function POST(req: NextRequest) {
   const msg: ContactMessage = { name, email, message, topic: body!.subject as ContactMessage['topic'], lang, ref, at: new Date() };
   // (sendEmail logs its own failures.)
   await sendEmail(hubNotification(msg));
-  // The visitor's receipt: a couple per address an hour at most.
-  if (!isRateLimited(`contact-copy:${email}`, 2, 60 * 60_000)) await sendEmail(senderCopy(msg));
+  // The visitor's receipt: two per address an hour at most (on every
+  // instance), within the day's budget for visitor-triggered email.
+  if (await withinLimit(`contact-copy:${email}`, 2, HOUR) && await withinEmailBudget()) await sendEmail(senderCopy(msg));
   return json({ ok: true, status: 'sent' });
 }

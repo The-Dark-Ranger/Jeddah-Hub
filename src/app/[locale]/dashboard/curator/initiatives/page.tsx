@@ -21,8 +21,9 @@ import InitiativeFormFields, {
   type InitiativeFormShape as FormShape,
 } from '@/components/InitiativeFormFields';
 import styles from './Initiatives.module.css';
+import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { CategoryLabel } from '@/lib/categoryLabel';
-import { errorCode, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal } from '@/lib/types';
+import { errorCode, isLeadRole, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal, type TeamRole } from '@/lib/types';
 
 interface Initiative {
   id: string;
@@ -154,7 +155,7 @@ export default function ManageInitiatives() {
   /* Team panel state */
   const [teamOpenId, setTeamOpenId] = useState<string | null>(null);
   const [assignUser, setAssignUser] = useState('');
-  const [assignRole, setAssignRole] = useState('');
+  const [assignRole, setAssignRole] = useState<TeamRole>('Member');
   const [assigning, setAssigning]   = useState(false);
 
   const role      = normalizeRole(user?.role);
@@ -376,20 +377,20 @@ export default function ManageInitiatives() {
   /* ── Team helpers ── */
   const toggleTeam = (id: string) => {
     setTeamOpenId(prev => prev === id ? null : id);
-    setAssignUser(''); setAssignRole('');
+    setAssignUser(''); setAssignRole('Member');
   };
 
   const handleAssign = async (initiativeId: string) => {
     if (!assignUser) return;
     setAssigning(true);
     try {
-      const role = assignRole.trim() || 'Member';
-      const isLead = role.toLowerCase().includes('lead');
+      const role = assignRole;
+      const isLead = isLeadRole(role);
       await updateDoc(doc(db, 'initiatives', initiativeId), {
         members: arrayUnion({ userId: assignUser, role }),
         ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
       });
-      setAssignUser(''); setAssignRole('');
+      setAssignUser(''); setAssignRole('Member');
       await fetchAll();
     } catch (err) {
       console.error(err);
@@ -405,7 +406,7 @@ export default function ManageInitiatives() {
     if (!init) return;
     try {
       const wasLead = (init.members || []).some(
-        (m: InitiativeMember) => m.userId === userId && typeof m.role === 'string' && m.role.toLowerCase().includes('lead')
+        (m: InitiativeMember) => m.userId === userId && isLeadRole(m.role)
       );
       const updated = (init.members || []).filter((m: InitiativeMember) => m.userId !== userId);
       await updateDoc(doc(db, 'initiatives', initiativeId), {
@@ -430,7 +431,7 @@ export default function ManageInitiatives() {
           // A departing lead must also lose their `leads` entry, that's
           // the array firestore.rules actually checks, so leaving it
           // behind would grant a former member permanent write access.
-          if ((memberObj.role || '').toLowerCase().includes('lead')) {
+          if (isLeadRole(memberObj.role)) {
             payload.leads = arrayRemove(req.userId);
           }
           await updateDoc(doc(db, 'initiatives', req.initiativeId), payload);
@@ -506,7 +507,7 @@ export default function ManageInitiatives() {
     try {
       if (init) {
         const memberObj = (init.members || []).find((m: InitiativeMember) => m.userId === req.targetUserId);
-        const wasLead = memberObj && typeof memberObj.role === 'string' && memberObj.role.toLowerCase().includes('lead');
+        const wasLead = memberObj && isLeadRole(memberObj.role);
         if (memberObj) {
           await updateDoc(doc(db, 'initiatives', req.initiativeId), {
             members: arrayRemove(memberObj),
@@ -992,12 +993,7 @@ export default function ManageInitiatives() {
                       noResults={t('noMatches')}
                       clearLabel={t('clearSelection')}
                     />
-                    <input
-                      value={assignRole}
-                      onChange={e => setAssignRole(e.target.value)}
-                      placeholder={t('tempRolePlaceholder')}
-                      className={styles.teamRoleInput}
-                    />
+                    <TeamRoleSelect value={assignRole} onChange={setAssignRole} className={styles.teamRoleInput} />
                     <button className={styles.assignBtn} onClick={() => handleAssign(init.id)} disabled={!assignUser || assigning}>
                       {assigning ? '…' : t('addToTeam')}
                     </button>
@@ -1009,7 +1005,7 @@ export default function ManageInitiatives() {
                       {(init.members || []).map((m, idx) => (
                         <div key={m.userId + idx} className={styles.memberRow}>
                           <span className={styles.memberName}>{getUserLabel(m.userId)}</span>
-                          <span className={styles.memberRole}>{m.role || 'Member'}</span>
+                          <span className={styles.memberRole}>{teamRoleLabel(t, m.role)}</span>
                           <button className={styles.removeBtn} onClick={() => handleRemoveMember(init.id, m.userId)}>
                             {t('removeMember')}
                           </button>

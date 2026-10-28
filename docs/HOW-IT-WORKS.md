@@ -71,7 +71,9 @@ sequenceDiagram
     D->>DB: role_assignments/{email}
     A-->>D: The one-time password, shown once
     C->>D: Send Invite
-    D->>M: Invite email with a fresh one-time password
+    D->>M: Invite (creates the login first if needed)
+    M-->>M: Member gets sign-in details + one-time password
+    M-->>M: Hub inbox gets a record: who, role, by whom, when
 ```
 
 - Account creation needs admin rights, so it runs on the server with the
@@ -139,6 +141,13 @@ flowchart LR
     end
 ```
 
+Team roles are **Member**, **Lead** and **Co-Lead** (picked from a list).
+Leads and Co-Leads have the same rights: their uid is in the initiative's
+`leads` array, which is what `firestore.rules` checks. A lead can change
+the team only one person at a time: accept a join request (adding a plain
+Member) or approve a leave. Adding leads, or several people at once, stays
+with curators and impact officers.
+
 On the public Initiatives page, curators **feature** up to 3 initiatives on the
 homepage. Curators and impact officers put one in the **Spotlight** card.
 
@@ -154,10 +163,10 @@ flowchart TD
     I --> H[Homepage activity section<br/>in the activity's colour,<br/>arrows when there are several]
     I --> P[/activities/name page/]
     P --> F{Registration<br/>open?}
-    F -->|yes| V[Visitor fills the<br/>registration form] --> AR[(activity_responses<br/>formType: registration)]
+    F -->|yes| V[Visitor fills the<br/>registration form] --> API[/api/activities/respond<br/>bot checks + answers validated/] --> AR[(activity_responses<br/>formType: registration)]
     F -->|no| X[Closed notice]
     P --> FB{After-event form<br/>opened?}
-    FB -->|yes| FV[Attendee rates the event<br/>and answers questions] --> FR[(activity_responses<br/>formType: feedback)]
+    FB -->|yes| FV[Attendee rates the event<br/>and answers questions] --> API2[/api/activities/respond/] --> FR[(activity_responses<br/>formType: feedback)]
     AR --> E[Curator views responses<br/>by tab and exports to Excel]
     FR --> E
 ```
@@ -167,6 +176,13 @@ Each activity has two forms built with the same editor: **Registration**
 and only appears on the activity page once a curator clicks **Open feedback**.
 It starts with three editable questions, including a 1 to 5 star rating; the
 responses window shows each rating question's average.
+
+Responses only reach the database through
+[`/api/activities/respond`](../src/app/api/activities/respond/route.ts): rate
+limits, a hidden bot-trap field and minimum fill time, reCAPTCHA, a check
+that the activity and form are on and open, every answer checked against
+that form's own questions (type, options, 1 to 5 ratings, lengths, required
+ones), and one response per email per form.
 
 ## 6. News posts
 
@@ -292,6 +308,7 @@ flowchart LR
 | Contact: hub copy | `contact@` | English (notes when the visitor wrote in Arabic) | The visitor |
 | Contact: visitor's copy | `contact@` | The site language the visitor used | Hub inbox |
 | Member invite | `members@` | The curator's dashboard language | Hub inbox |
+| Invite record | `members@` | English, to the hub inbox; never contains the password | n/a |
 
 - Every email has a plain-text version, and the welcome email has a
   `List-Unsubscribe` header.
@@ -300,7 +317,12 @@ flowchart LR
   site, so email apps always show them and they don't appear as separate
   downloadable attachments in most apps.
 - Anything a visitor typed is escaped before it goes into an email, and
-  subjects are always a single line.
+  subjects are always a single line. Addresses with commas, angle brackets
+  or quotes are refused, so one address can never become several.
+- Limits that hold across every server instance live in the `rate_limits`
+  collection (hashed keys, no IPs or emails stored, browsers can't access
+  it): per visitor and per address per day, plus a daily budget for the
+  emails visitors can trigger (`EMAIL_DAILY_LIMIT`, default 200).
 
 ## 11. Loading screen
 
@@ -352,7 +374,8 @@ with `npx firebase-tools deploy --only firestore:rules`.
 | `role_assignments` | Pending roles, keyed by email | The invitee, curators, impact officers |
 | `blogs` | News posts | Everyone if published, otherwise the author and reviewers |
 | `media` | Uploaded photos (served by `/api/media`) | Everyone |
-| `activity_responses` | Registration and after-event answers (`formType`) | Curators, impact officers |
+| `activity_responses` | Registration and after-event answers (`formType`), written only by the server after its checks | Curators, impact officers |
+| `rate_limits` | Server-side counters for the public forms and email (hashed keys) | Nobody (server only) |
 | `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups, written only by the server after its checks | Curators |
 | `settings`, `charter_signatures` | Charter sign-off switch and signatures | Members / curators and impact officers |
 | `*_requests`, `notifications` | Proposals and membership requests | The requester and whoever reviews them |

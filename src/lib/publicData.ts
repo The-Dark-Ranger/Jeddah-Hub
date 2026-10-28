@@ -21,7 +21,7 @@ const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/
 /** How long public data is cached before the next visit refreshes it. */
 const REVALIDATE = 60;
 
-export type Doc = Record<string, unknown> & { id: string };
+type Doc = Record<string, unknown> & { id: string };
 
 type Value = {
   nullValue?: null; booleanValue?: boolean; integerValue?: string; doubleValue?: number;

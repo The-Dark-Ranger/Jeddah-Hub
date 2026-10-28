@@ -31,7 +31,7 @@
 .ctaButton:hover  { transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.3); }
 .ctaButton:active { transform:none; }
 .secondaryButton { display:inline-flex;align-items:center;gap:.4rem;background:transparent;color:var(--primary-blue);border:1.5px solid var(--primary-blue);padding:.9rem 2rem;border-radius:8px;font-weight:600;font-size:1rem;transition:all .2s ease;-webkit-tap-highlight-color:transparent; }
-.secondaryButton:hover  { background:var(--primary-blue);color:#fff;transform:translateY(-2px); }
+.secondaryButton:hover  { background:var(--primary-fill);color:#fff;transform:translateY(-2px); }
 .secondaryButton:active { transform:none; }
 /* Inside the dark hero, override to white ghost */
 .hero .secondaryButton { color:#fff;border-color:rgba(255,255,255,.55); }
@@ -275,7 +275,7 @@
   background: var(--primary-blue-glow); color: var(--primary-blue);
   transition: background .25s ease, color .25s ease;
 }
-.pillar:hover .pillarIcon { background: var(--primary-blue); color: #fff; }
+.pillar:hover .pillarIcon { background: var(--primary-fill); color: #fff; }
 
 /* ── Partners: logos on a light card in both themes ── */
 .partnersCard {

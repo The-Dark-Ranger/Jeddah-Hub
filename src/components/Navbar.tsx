@@ -217,12 +217,12 @@ export default function Navbar() {
             locale={nextLocale}
             className={styles.langPill}
             onClick={handleLangSwitch}
-            aria-label={t('switchLanguage')}
             hrefLang={nextLocale}
           >
             <span className={locale === 'en' ? styles.langActive : styles.langInactive}>EN</span>
             <span className={styles.langDivider} aria-hidden="true" />
             <span className={locale === 'ar' ? styles.langActive : styles.langInactive}>ع</span>
+            <span className="sr-only">{t('switchLanguage')}</span>
           </Link>
 
           {user ? (

@@ -8,7 +8,7 @@
  * copy and the visitor a receipt in their language (src/lib/emails/contact.ts).
  * Emails only ever go to the hub inbox and to the sender's own address. */
 import { createHash } from 'node:crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
@@ -16,6 +16,7 @@ import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
+import { json, isBotSubmission } from '@/lib/formGuard';
 import { sendEmail } from '@/lib/email';
 import { hubNotification, senderCopy, isTopic, type ContactMessage } from '@/lib/emails/contact';
 
@@ -28,8 +29,6 @@ const NAME_MAX = 200, EMAIL_MAX = 254, MESSAGE_MIN = 10, MESSAGE_MAX = 5000;
 const MAX_LINKS = 3;
 /** The same message from the same address within this window counts once. */
 const DUPLICATE_WINDOW_MS = 24 * 60 * 60_000;
-
-const json = (body: unknown, status = 200) => NextResponse.json(body, { status });
 
 /** Trimmed text without invisible control characters (newlines and tabs kept). */
 const clean = (v: unknown, max: number) =>
@@ -47,10 +46,8 @@ export async function POST(req: NextRequest) {
   const message = clean(body?.message, MESSAGE_MAX);
   const lang    = body?.locale === 'ar' ? 'ar' : 'en';
 
-  // Bot traps: a filled hidden field, or a form sent faster than a person
-  // could. Answer like a success so the bot learns nothing, but keep nothing.
-  const elapsed = Number(body?.elapsedMs);
-  if (body?.website || !Number.isFinite(elapsed) || elapsed < MIN_FILL_MS) return json({ ok: true });
+  // Bot traps: answer like a success so the bot learns nothing, keep nothing.
+  if (isBotSubmission(body, MIN_FILL_MS)) return json({ ok: true });
 
   // Field checks.
   if (!email || email.length > EMAIL_MAX || !isValidEmail(email)) return json({ error: 'invalid_email' }, 400);
@@ -92,12 +89,9 @@ export async function POST(req: NextRequest) {
 
   // The message is saved; emails are best effort from here.
   const msg: ContactMessage = { name, email, message, topic: body!.subject as ContactMessage['topic'], lang, ref, at: new Date() };
-  const hub = await sendEmail(hubNotification(msg));
-  if (!hub.ok && !('skipped' in hub && hub.skipped)) console.error('[contact] hub email failed');
+  // (sendEmail logs its own failures.)
+  await sendEmail(hubNotification(msg));
   // The visitor's receipt: a couple per address an hour at most.
-  if (!isRateLimited(`contact-copy:${email}`, 2, 60 * 60_000)) {
-    const copy = await sendEmail(senderCopy(msg));
-    if (!copy.ok && !('skipped' in copy && copy.skipped)) console.error('[contact] receipt failed');
-  }
+  if (!isRateLimited(`contact-copy:${email}`, 2, 60 * 60_000)) await sendEmail(senderCopy(msg));
   return json({ ok: true, status: 'sent' });
 }

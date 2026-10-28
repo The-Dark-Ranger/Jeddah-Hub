@@ -635,7 +635,7 @@ export default function ManageInitiatives() {
 
             {/* Modal body */}
             <div className={styles.modalBody}>
-              <InitiativeFormFields form={form} onChange={handleFormChange} styles={styles} />
+              <InitiativeFormFields form={form} onChange={handleFormChange} />
             </div>
 
             {/* Modal footer */}

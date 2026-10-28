@@ -46,7 +46,7 @@
   min-height: 32px; padding: 0 .9rem; border-radius: 7px; border: none; cursor: pointer;
   background: none; color: var(--text-muted); font-size: .82rem; font-weight: 600;
 }
-.segmentOn { background: var(--primary-blue); color: #fff; }
+.segmentOn { background: var(--primary-fill); color: #fff; }
 .segmentBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 1px; }
 
 /* Name / Email chips cycling off → optional → required */
@@ -106,7 +106,7 @@
   border: 1.5px dashed var(--primary-blue); background: var(--primary-blue-glow);
   color: var(--primary-blue); font-size: .85rem; font-weight: 600;
 }
-.addQuestionBtn:hover { background: var(--primary-blue); color: #fff; border-style: solid; }
+.addQuestionBtn:hover { background: var(--primary-fill); color: #fff; border-style: solid; }
 .customFormHint { font-size: .78rem; color: var(--text-muted); margin: 0; }
 .addOptionBtn {
   align-self: flex-start; margin-top: .1rem;

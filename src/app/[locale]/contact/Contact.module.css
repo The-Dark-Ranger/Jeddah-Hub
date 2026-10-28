@@ -181,7 +181,7 @@
 .submitBtn {
   width: 100%;
   padding: 0.95rem;
-  background: var(--primary-blue);
+  background: var(--primary-fill);
   color: #fff;
   font-weight: 700;
   font-size: 1rem;

@@ -280,7 +280,7 @@
 .quoteAvatar {
   width: 36px; height: 36px;
   border-radius: 50%;
-  background: var(--primary-blue);
+  background: var(--primary-fill);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 700;

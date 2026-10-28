@@ -16,6 +16,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
 import { json, isBotSubmission } from '@/lib/formGuard';
+import { isBlockedBot } from '@/lib/botCheck';
 import { withinLimit, withinEmailBudget, DAY } from '@/lib/persistentLimit';
 import { sendEmail } from '@/lib/email';
 import { newsletterWelcome } from '@/lib/emails/newsletter';
@@ -28,6 +29,7 @@ const MIN_SCORE = 0.6;
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   if (isRateLimited(`newsletter:${ip}`, 5, 10 * 60_000)) return json({ error: 'too_many' }, 429);
+  if (await isBlockedBot('newsletter')) return json({ error: 'bot_check_failed' }, 403);
 
   const body = await readJsonBody(req);
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';

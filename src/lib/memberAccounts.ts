@@ -18,6 +18,10 @@ export function isTemporaryPassword(pw: string): boolean {
   return /^Tmp-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(pw) || pw.length < PASSWORD_MIN;
 }
 
+/** A Role Assignments note such as "Incoming Shaper": the member stays off
+ *  Who We Are (and the member counts) until they sign in for the first time. */
+export const hideUntilSignIn = (note: string | null | undefined) => /\bincoming\b/i.test(note ?? '');
+
 /** Roles a curator can assign; also the role a new member is listed under on Who We Are. */
 export const MEMBER_ROLES = ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'] as const;
 export type MemberRole = typeof MEMBER_ROLES[number];

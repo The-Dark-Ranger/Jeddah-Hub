@@ -299,7 +299,9 @@ flowchart LR
 ## 11. Loading screen
 
 A branded loading screen covers the page on a visitor's first page in a
-session and on every full reload, so the site never appears half-drawn.
+session and on every full reload, so the site never appears half-drawn. It
+uses the site's theme: light, or dark when the visitor chose dark or their
+device prefers it.
 
 ```mermaid
 flowchart TD
@@ -307,15 +309,16 @@ flowchart TD
     Q -->|no| PAGE[Page shows directly]
     Q -->|yes| SP[Loading screen on the first frame:<br/>logo, name, progress bar]
     SP --> R{Page loaded<br/>and fonts ready?}
-    R -->|yes| MIN[Stay at least 0.85 s]
+    R -->|yes| MIN[Stay one second]
     R -->|still waiting at 1.5 s| GO
     MIN --> GO[Bar completes, screen lifts away]
     GO --> PAGE
 ```
 
-The decision is made by a tiny script before the first paint
-([`initScripts.ts`](../src/lib/initScripts.ts)), so the screen never flashes
-in late. Visitors who prefer reduced motion get a still version that simply
+The decision, and the theme, are settled by a tiny script before the first
+paint ([`initScripts.ts`](../src/lib/initScripts.ts)), so the screen never
+flashes in late or in the wrong colours. Only the logo for that theme is
+downloaded. Visitors who prefer reduced motion get a still version that simply
 fades.
 
 ## 12. Shipping a change

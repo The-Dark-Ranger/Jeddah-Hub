@@ -41,7 +41,7 @@
 }
 
 .addBtn {
-  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-blue);
+  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-fill);
   color: white; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
@@ -146,7 +146,7 @@
   font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
   white-space: nowrap;
 }
-.inviteBtn:hover:not(:disabled) { background: var(--primary-blue); color: white; }
+.inviteBtn:hover:not(:disabled) { background: var(--primary-fill); color: white; }
 .inviteBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 .inviteBtn.inviteSent { background: rgba(16,185,129,0.1); color: var(--success); border-color: rgba(16,185,129,0.25); cursor: default; }
 .inviteBtn.inviteFailed { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); cursor: default; }
@@ -187,7 +187,7 @@
   border: 1px solid var(--primary-blue); background: var(--primary-blue-glow); color: var(--primary-blue);
   font-size: .74rem; font-weight: 700;
 }
-.createLoginBtn:hover:not(:disabled) { background: var(--primary-blue); color: #fff; }
+.createLoginBtn:hover:not(:disabled) { background: var(--primary-fill); color: #fff; }
 .createLoginBtn:disabled { opacity: .6; cursor: wait; }
 
 /* Phones: each assignment becomes a card (name, email and login status on

@@ -13,9 +13,12 @@ import { useTranslations, useLocale } from 'next-intl';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
 import InitiativeCover from '@/components/InitiativeCover';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
-import ImageUploader from '@/components/ImageUploader';
 import ModalPortal from '@/components/ModalPortal';
-import { CATEGORIES } from '@/components/InitiativeFormFields';
+import InitiativeFormFields, {
+  emptyInitiativeForm as emptyForm, initiativeFormToDoc as formToDoc, initiativeToForm,
+  type InitiativeFormShape as FormShape,
+} from '@/components/InitiativeFormFields';
+import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
 import { setSpotlight } from '@/lib/spotlight';
 import styles from './Projects.module.css';
@@ -27,7 +30,9 @@ interface Member { userId: string; role: string; }
 interface Initiative {
   id: string;
   title: string;
+  titleAr?: string;
   description: string;
+  descriptionAr?: string;
   status: 'active' | 'archived';
   category?: string;
   color?: string;
@@ -47,82 +52,6 @@ interface Initiative {
 }
 
 interface UserRecord { id: string; displayName?: string; email?: string; }
-
-const emptyForm = {
-  title: '', description: '', category: '', startDate: '', endDate: '',
-  imageUrl: '', images: '', stat: '', problem: '', objective: '', impact: '', impactAreas: '',
-};
-type FormShape = typeof emptyForm;
-
-/* ── Form fields (defined outside to prevent re-mount) ── */
-function FormFields({ form, onChange }: { form: FormShape; onChange: (k: keyof FormShape, v: string) => void }) {
-  const t  = useTranslations('Dashboard');
-  const mk = (k: keyof FormShape) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      onChange(k, e.target.value);
-
-  return (
-    <>
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldTitle')} *</label>
-        <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
-      </div>
-
-      <div className={styles.editRow3}>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldCategory')}</label>
-          <select className={styles.input} value={form.category} onChange={mk('category')}>
-            <option value="">{t('categorySelectPrompt')}</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldStartDate')}</label>
-          <input className={styles.input} type="date" value={form.startDate} onChange={mk('startDate')} />
-        </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldEndDate')}</label>
-          <input className={styles.input} type="date" value={form.endDate} onChange={mk('endDate')} />
-        </div>
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldKeyStat')}</label>
-        <input className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldDescription')} *</label>
-        <textarea className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldProblem')}</label>
-        <textarea className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldObjective')}</label>
-        <textarea className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldImpact')}</label>
-        <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
-      </div>
-
-      <div className={styles.formField}>
-        <label className={styles.label}>
-          {t('fieldImpactAreas')}
-          <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
-        </label>
-        <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
-      </div>
-
-      <ImageUploader coverUrl={form.imageUrl} photos={form.images} onChange={onChange} />
-    </>
-  );
-}
 
 /* ── Main page ── */
 export default function ImpactProjects() {
@@ -187,20 +116,7 @@ export default function ImpactProjects() {
   const openEdit = (init: Initiative) => {
     setEditingId(init.id);
     setEditingTitle(init.title);
-    setForm({
-      title:       init.title,
-      description: init.description,
-      category:    init.category    || '',
-      startDate:   init.startDate   || '',
-      endDate:     init.endDate     || '',
-      imageUrl:    init.imageUrl    || '',
-      images:      (init.images     || []).join('\n'),
-      stat:        init.stat        || '',
-      problem:     init.problem     || '',
-      objective:   init.objective   || '',
-      impact:      init.impact      || '',
-      impactAreas: (init.impactAreas || []).join(', '),
-    });
+    setForm(initiativeToForm(init));
     setModalMode('edit');
   };
 
@@ -217,26 +133,15 @@ export default function ImpactProjects() {
     return () => { document.body.style.overflow = ''; };
   }, [modalMode]);
 
-  /* ── Serialise form → Firestore doc ── */
-  const formToDoc = (f: FormShape) => ({
-    title: f.title, description: f.description, category: f.category,
-    startDate: f.startDate, endDate: f.endDate, imageUrl: f.imageUrl,
-    images:      f.images      ? f.images.split('\n').map(s => s.trim()).filter(Boolean) : [],
-    stat:        f.stat,
-    problem:     f.problem,
-    objective:   f.objective,
-    impact:      f.impact,
-    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
-  });
-
   /* ── CRUD ── */
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title) return;
     setSaving(true);
     try {
+      const slug = await uniqueInitiativeSlug(form.title);
       await addDoc(collection(db, 'initiatives'), {
-        ...formToDoc(form), status: 'active', members: [], createdAt: new Date().toISOString(),
+        ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(), slug,
       });
       closeModal(); fetchAll();
     } catch (err) {
@@ -251,7 +156,8 @@ export default function ImpactProjects() {
     if (!editingId || !form.title) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'initiatives', editingId), formToDoc(form));
+      const slug = await uniqueInitiativeSlug(form.title, editingId);
+      await updateDoc(doc(db, 'initiatives', editingId), { ...formToDoc(form), slug });
       closeModal(); fetchAll();
     } catch (err) {
       alert(`${t('saveFailed')} ${errorCode(err)}`);
@@ -438,7 +344,7 @@ export default function ImpactProjects() {
               </button>
             </div>
             <div className={styles.modalBody}>
-              <FormFields form={form} onChange={handleFormChange} />
+              <InitiativeFormFields form={form} onChange={handleFormChange} />
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.cancelBtn} onClick={closeModal}>{t('cancel')}</button>

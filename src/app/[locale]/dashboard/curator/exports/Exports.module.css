@@ -49,7 +49,7 @@
 }
 .copyBtn { border: 1px solid var(--border-color); background: var(--card-bg-solid); color: var(--text-main); }
 .copyBtn:hover:not(:disabled) { border-color: var(--primary-blue); color: var(--primary-blue); }
-.downloadBtn { border: none; background: var(--primary-blue); color: #fff; }
+.downloadBtn { border: none; background: var(--primary-fill); color: #fff; }
 .downloadBtn:hover:not(:disabled) { filter: brightness(1.08); }
 .copyBtn:disabled, .downloadBtn:disabled { opacity: .5; cursor: not-allowed; }
 .copyBtn:focus-visible, .downloadBtn:focus-visible, .refreshBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }

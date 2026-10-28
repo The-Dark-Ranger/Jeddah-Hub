@@ -5,6 +5,12 @@ which has the full description and how it was tested.
 
 ## October 2026
 
+### 29 October
+- Loading screen stays one second and follows the light or dark theme; only that theme's small logo is downloaded.
+- Server code moved to Vercel's Mumbai region, next to our visitors and the database (it ran in the US).
+- Readable filled buttons in dark mode and an accessible language switch (accessibility score 100).
+- Cleanup: one shared activity editor and initiative form (Impact Officers now get the full form, and their new initiatives get readable addresses), a data-driven dashboard menu, one legal-page template, a shared bot-trap field, and unused styles and strings removed.
+
 ### 28 October
 - Premium loading screen on reload: frosted logo, ring of light, live progress, smoother exit. (#183)
 - Jeddah Hub and World Economic Forum logos in every email. (#182)

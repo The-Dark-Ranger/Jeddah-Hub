@@ -75,7 +75,7 @@
   color: var(--text-muted);
   transition: color .2s ease, border-color .2s ease, transform .2s ease, background .2s ease;
 }
-.backToTop:hover { color: #fff; background: var(--primary-blue); border-color: var(--primary-blue); transform: translateY(-2px); }
+.backToTop:hover { color: #fff; background: var(--primary-fill); border-color: var(--primary-blue); transform: translateY(-2px); }
 
 /* ── Bottom bar ── */
 .bottomBar {

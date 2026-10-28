@@ -37,7 +37,7 @@
 .composeBtn {
   display: flex; align-items: center; gap: 6px;
   padding: 0.65rem 1.25rem; border-radius: 10px;
-  background: var(--primary-blue); color: white;
+  background: var(--primary-fill); color: white;
   font-weight: 600; font-size: 0.88rem; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
@@ -55,7 +55,7 @@
   cursor: pointer; transition: all 0.18s ease; white-space: nowrap;
 }
 .filterBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); background: var(--primary-blue-glow); }
-.filterBtnActive { background: var(--primary-blue); color: white !important; border-color: var(--primary-blue); }
+.filterBtnActive { background: var(--primary-fill); color: white !important; border-color: var(--primary-blue); }
 .filterBtnActive .filterCount { background: rgba(255,255,255,0.25); color: white; }
 .filterCount {
   display: inline-flex; align-items: center; justify-content: center;
@@ -139,7 +139,7 @@
 .replyBtn {
   display: flex; align-items: center; gap: 5px;
   padding: 0.45rem 1rem; border-radius: 8px; font-size: 0.84rem; font-weight: 600;
-  background: var(--primary-blue); color: white; border: none; cursor: pointer;
+  background: var(--primary-fill); color: white; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .replyBtn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px var(--primary-blue-glow); }
@@ -214,7 +214,7 @@
 .sendBtn {
   display: flex; align-items: center; gap: 6px;
   padding: 0.6rem 1.25rem; border-radius: 9px; font-size: 0.88rem; font-weight: 600;
-  background: var(--primary-blue); color: white; border: none; cursor: pointer;
+  background: var(--primary-fill); color: white; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .sendBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }

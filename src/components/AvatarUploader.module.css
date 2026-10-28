@@ -27,7 +27,7 @@
   border: 1px solid rgba(37,99,235,0.25); cursor: pointer;
   transition: all 0.15s ease;
 }
-.uploadBtn:hover:not(:disabled) { background: var(--primary-blue); color: white; }
+.uploadBtn:hover:not(:disabled) { background: var(--primary-fill); color: white; }
 .uploadBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .clearBtn {

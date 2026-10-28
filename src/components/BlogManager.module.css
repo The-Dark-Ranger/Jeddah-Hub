@@ -30,7 +30,7 @@
   gap: 0.4rem;
   padding: 0.65rem 1.4rem;
   border-radius: 10px;
-  background: var(--primary-blue);
+  background: var(--primary-fill);
   color: white;
   font-weight: 600;
   font-size: 0.9rem;
@@ -67,7 +67,7 @@
 }
 
 .filterBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
-.filterBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
+.filterBtnActive { background: var(--primary-fill); border-color: var(--primary-blue); color: white; }
 /* Selected filter is filled blue, keep its label white instead of inheriting
    the blue hover colour above, which would make it unreadable. */
 .filterBtnActive:hover { color: white; }
@@ -384,7 +384,7 @@
 .saveBtn {
   padding: 0.65rem 1.75rem;
   border-radius: 10px;
-  background: var(--primary-blue);
+  background: var(--primary-fill);
   color: white;
   border: none;
   font-weight: 600;

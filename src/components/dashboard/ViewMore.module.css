@@ -8,7 +8,7 @@
   font: inherit; font-size: .86rem; font-weight: 700;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.more { background: var(--primary-blue); color: #fff; border: 1px solid var(--primary-blue); }
+.more { background: var(--primary-fill); color: #fff; border: 1px solid var(--primary-blue); }
 .more:hover { filter: brightness(1.08); }
 .less { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); }
 .less:hover { color: var(--text-main); border-color: var(--text-muted); }

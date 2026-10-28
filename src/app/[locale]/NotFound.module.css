@@ -43,7 +43,7 @@
   font-weight: 700; font-size: .92rem;
   transition: transform .2s ease, background .2s ease, color .2s ease;
 }
-.primary { background: var(--primary-blue); color: #fff; }
+.primary { background: var(--primary-fill); color: #fff; }
 .secondary { border: 1.5px solid var(--border-color); color: var(--text-main); }
 .primary:hover, .secondary:hover { transform: translateY(-2px); }
 .secondary:hover { border-color: var(--primary-blue); color: var(--primary-blue); }

@@ -22,7 +22,7 @@
 .input:focus { border-color: var(--primary-blue); }
 
 .assignBtn {
-  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-blue);
+  padding: 0.7rem 1.5rem; border-radius: 9px; background: var(--primary-fill);
   color: white; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }

@@ -383,7 +383,7 @@ export default function MyProjects() {
               </button>
             </div>
             <div className={jiStyles.modalBody}>
-              <InitiativeFormFields form={leadForm} onChange={handleFormChange} styles={jiStyles} />
+              <InitiativeFormFields form={leadForm} onChange={handleFormChange} />
             </div>
             <div className={jiStyles.modalFooter}>
               <button type="button" className={jiStyles.modalCancelBtn} onClick={closeLeadEdit}>{t('cancel')}</button>

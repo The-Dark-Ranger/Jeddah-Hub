@@ -70,7 +70,7 @@
   display: inline-flex; align-items: center;
 }
 .catBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
-.catBtnActive { background: var(--primary-blue); border-color: var(--primary-blue); color: white; }
+.catBtnActive { background: var(--primary-fill); border-color: var(--primary-blue); color: white; }
 /* The selected pill already has a solid blue fill, so the hover colour above
    would render blue text on blue. Keep it white. Must stay after .catBtn:hover
   , equal specificity, so source order decides. */
@@ -227,7 +227,7 @@
   border: 1px solid var(--primary-blue); background: transparent; color: var(--primary-blue);
   font: inherit; font-weight: 700; font-size: .9rem;
 }
-.clearBtn:hover { background: var(--primary-blue); color: #fff; }
+.clearBtn:hover { background: var(--primary-fill); color: #fff; }
 
 .catCount {
   display: inline-flex; align-items: center; justify-content: center;

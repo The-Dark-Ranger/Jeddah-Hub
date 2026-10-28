@@ -50,7 +50,7 @@
   align-self: flex-start;
   font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
   padding: 0.18rem 0.55rem; border-radius: 20px;
-  background: var(--primary-blue); color: #fff;
+  background: var(--primary-fill); color: #fff;
 }
 
 .leadActions {
@@ -72,7 +72,7 @@
   padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 700;
   background: var(--background-alt); color: var(--text-main); border: 1px solid var(--border-color);
 }
-.summaryLead { background: var(--primary-blue); color: #fff; border-color: var(--primary-blue); }
+.summaryLead { background: var(--primary-fill); color: #fff; border-color: var(--primary-blue); }
 
 .grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 .card, .leadCard { box-shadow: 0 6px 20px rgba(15, 23, 42, .04); }
@@ -116,5 +116,5 @@
 }
 .empty p { margin: 0; }
 .emptyIcon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--primary-blue-glow); color: var(--primary-blue); }
-.emptyCta { padding: .55rem 1.1rem; border-radius: 10px; background: var(--primary-blue); color: #fff; font-weight: 700; font-size: .86rem; }
+.emptyCta { padding: .55rem 1.1rem; border-radius: 10px; background: var(--primary-fill); color: #fff; font-weight: 700; font-size: .86rem; }
 .emptyCta:hover { filter: brightness(1.08); }

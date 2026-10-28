@@ -38,7 +38,7 @@
   cursor: pointer; transition: all .2s ease; display: inline-flex; align-items: center;
 }
 .tag:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
-.tagActive  { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.tagActive  { background: var(--primary-fill); border-color: var(--primary-blue); color: #fff; }
 /* Selected tag is filled blue, keep its label white instead of inheriting
    the blue hover colour above, which would make it unreadable. */
 .tagActive:hover { color: #fff; }
@@ -68,7 +68,7 @@
 
 .cardMeta { display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: auto; }
 .cardAuthor { display: flex; align-items: center; gap: .6rem; }
-.cardAvatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-blue); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cardAvatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-fill); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cardAvatarImg { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .cardAuthorName { font-size: .82rem; font-weight: 600; color: var(--text-main); }
 .cardAuthorRole { font-size: .72rem; color: var(--text-muted); text-transform: capitalize; }

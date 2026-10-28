@@ -11,32 +11,11 @@
 .createBtn {
   display: flex; align-items: center; gap: 6px;
   padding: 0.65rem 1.25rem; border-radius: 10px;
-  background: var(--primary-blue); color: white;
+  background: var(--primary-fill); color: white;
   font-weight: 600; font-size: 0.88rem; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .createBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
-
-/* Form fields */
-.formField { display: flex; flex-direction: column; gap: 0.4rem; }
-.label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
-.fieldHint { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; margin-inline-start: 0.3rem; }
-
-.input {
-  padding: 0.65rem 1rem; border-radius: 9px;
-  border: 1px solid var(--border-color); background: var(--input-bg);
-  color: var(--text-main); font-size: 0.9rem; outline: none;
-  transition: border-color 0.2s ease; width: 100%; box-sizing: border-box;
-}
-.input:focus { border-color: var(--primary-blue); }
-
-.textarea {
-  padding: 0.65rem 1rem; border-radius: 9px;
-  border: 1px solid var(--border-color); background: var(--input-bg);
-  color: var(--text-main); font-size: 0.9rem; outline: none; resize: vertical;
-  transition: border-color 0.2s ease; font-family: inherit; width: 100%; box-sizing: border-box;
-}
-.textarea:focus { border-color: var(--primary-blue); }
 
 .cancelBtn {
   padding: 0.6rem 1.25rem; border-radius: 9px; font-size: 0.88rem; font-weight: 600;
@@ -48,17 +27,11 @@
 .submitBtn {
   display: flex; align-items: center; gap: 6px;
   padding: 0.6rem 1.25rem; border-radius: 9px; font-size: 0.88rem; font-weight: 600;
-  background: var(--primary-blue); color: white; border: none; cursor: pointer;
+  background: var(--primary-fill); color: white; border: none; cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .submitBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px var(--primary-blue-glow); }
 .submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Form grid */
-.editRow3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
-@media (max-width: 560px) {
-  .editRow3 { grid-template-columns: 1fr; }
-}
 
 /* Modal */
 .modalOverlay {
@@ -137,7 +110,7 @@
   cursor: pointer; transition: all 0.18s ease;
 }
 .filterBtn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
-.filterBtnActive { background: var(--primary-blue); color: white !important; border-color: var(--primary-blue); }
+.filterBtnActive { background: var(--primary-fill); color: white !important; border-color: var(--primary-blue); }
 .filterBtnActive .filterCount { background: rgba(255,255,255,0.25); color: white; }
 .filterCount {
   display: inline-flex; align-items: center; justify-content: center;
@@ -231,7 +204,7 @@
   background: var(--primary-blue-glow); color: var(--primary-blue);
   border: 1px solid rgba(37,99,235,0.25); cursor: pointer; transition: all 0.15s ease;
 }
-.editBtn:hover { background: var(--primary-blue); color: white; }
+.editBtn:hover { background: var(--primary-fill); color: white; }
 
 .teamBtn {
   display: flex; align-items: center; gap: 5px;
@@ -303,7 +276,7 @@
 
 .assignBtn {
   padding: 0.5rem 0.9rem; border-radius: 8px;
-  background: var(--primary-blue); color: white;
+  background: var(--primary-fill); color: white;
   font-size: 0.85rem; font-weight: 600; border: none; cursor: pointer;
   white-space: nowrap; transition: opacity 0.2s ease;
 }

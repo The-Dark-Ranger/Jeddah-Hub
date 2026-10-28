@@ -13,6 +13,7 @@ import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
 import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import Honeypot from '@/components/Honeypot';
 import styles from './Login.module.css';
 
 /* Bot/brute-force deterrents on top of reCAPTCHA and Firebase's own
@@ -151,14 +152,7 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} onFocus={preloadRecaptcha} className={styles.form}>
-          {/* Honeypot: hidden from people and screen readers; bots fill it.
-              Clipped in place rather than pushed off-screen: an off-screen
-              offset becomes scrollable space in Arabic (right-to-left). */}
-          <div aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none' }}>
-            <label htmlFor="login-website">Website</label>
-            <input id="login-website" name="website" type="text" tabIndex={-1} autoComplete="off"
-              value={honeypot} onChange={e => setHoneypot(e.target.value)} />
-          </div>
+          <Honeypot id="login-website" value={honeypot} onChange={setHoneypot} />
           <div className={styles.field}>
             <label className="form-label" htmlFor="login-email">{t('email')}</label>
             <input

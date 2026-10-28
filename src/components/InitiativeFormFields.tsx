@@ -5,8 +5,9 @@ import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';
 import { useCategoryLabel } from '@/lib/categoryLabel';
+import styles from './InitiativeFormFields.module.css';
 
-export const CATEGORIES = [
+const CATEGORIES = [
   'Environment', 'Education', 'Health', 'Technology',
   'Arts & Culture', 'Economic Empowerment', 'Community', 'Wellbeing', 'Economy', 'Other',
 ];
@@ -85,16 +86,12 @@ export function initiativeToForm(init: {
 interface Props {
   form: InitiativeFormShape;
   onChange: (key: keyof InitiativeFormShape, value: string) => void;
-  /** CSS module supplying the shared field/input/label/etc. class names,
-   *  every caller already has near-identical styles for these, passed in
-   *  rather than duplicated here so this stays a plain shared component. */
-  styles: Record<string, string>;
 }
 
 /** Shared by the curator's initiative create/edit modal and a lead's own
  *  edit modal, same fields, same capability, just different callers with
  *  different write targets (a real initiative doc vs a pending proposal). */
-export default function InitiativeFormFields({ form, onChange, styles }: Props) {
+export default function InitiativeFormFields({ form, onChange }: Props) {
   const t = useTranslations('Dashboard');
   const catLabel = useCategoryLabel();
   const mk = (k: keyof InitiativeFormShape) =>

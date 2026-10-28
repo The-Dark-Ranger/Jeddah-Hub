@@ -27,7 +27,7 @@
 .metaDot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.5); }
 .ctaBtn {
   display: inline-block; margin-top: 1.75rem;
-  background: var(--primary-blue); color: #fff; padding: .85rem 2rem; border-radius: 30px;
+  background: var(--primary-fill); color: #fff; padding: .85rem 2rem; border-radius: 30px;
   font-weight: 600; font-size: .95rem; border: 2px solid transparent;
 }
 
@@ -95,7 +95,7 @@
 @media (hover: none) { .rating .star { padding: .35rem; } }
 .submitBtn {
   padding: .85rem 1.5rem; border-radius: 10px; border: none;
-  background: var(--primary-blue); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer;
+  background: var(--primary-fill); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer;
   transition: transform .15s ease;
 }
 .submitBtn:hover:not(:disabled) { transform: translateY(-1px); }

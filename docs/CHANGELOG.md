@@ -5,7 +5,8 @@ which has the full description and how it was tested.
 
 ## October 2026
 
-### 29 October
+### 28 October
+- Vercel Web Analytics: anonymous visit statistics (no cookies); Privacy Policy updated to say so.
 - Members whose Role Assignments note says "Incoming" stay off Who We Are and the member counts until their first sign-in.
 - Every invite is recorded: an email to the hub inbox (who, role, by whom, when; never the password) and an "Invited" note with a count in Role Assignments; the invite's role and name come from the saved assignment.
 - Co-Lead team role with the same rights as a Lead; team roles are picked from a list; the Impact Officer team panel now grants lead rights; leads can change the team one plain member at a time.
@@ -18,7 +19,6 @@ which has the full description and how it was tested.
 - Readable filled buttons in dark mode and an accessible language switch (accessibility score 100).
 - Cleanup: one shared activity editor and initiative form (Impact Officers now get the full form, and their new initiatives get readable addresses), a data-driven dashboard menu, one legal-page template, a shared bot-trap field, and unused styles and strings removed.
 
-### 28 October
 - Premium loading screen on reload: frosted logo, ring of light, live progress, smoother exit. (#183)
 - Jeddah Hub and World Economic Forum logos in every email. (#182)
 - Contact form checked for bots and spam on the server; browsers can no longer write messages directly. (#181)

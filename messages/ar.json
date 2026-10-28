@@ -506,7 +506,6 @@
     "messagesCount": "{count, plural, zero {لا رسائل} one {رسالة واحدة} two {رسالتان} few {# رسائل} many {# رسالة} other {# رسالة}}",
     "unreadSuffix": "غير مقروءة",
     "repliedLabel": "تم الرد",
-    "visitorReplyLabel": "ردّ الزائر عبر البريد · {date}",
     "repliedOnLabel": "تم الرد بتاريخ {date}",
     "replyModalTitle": "الرد",
     "newMessageModalTitle": "رسالة جديدة",

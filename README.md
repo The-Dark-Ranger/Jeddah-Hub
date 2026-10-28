@@ -29,7 +29,7 @@ flowchart LR
     subgraph Vercel["Vercel: Next.js 16"]
         PUB[Public pages<br/>server-rendered, cached 60 s]
         DASH[Dashboard<br/>role-gated]
-        API[API routes<br/>accounts · email · images · reCAPTCHA]
+        API[API routes<br/>accounts · forms · email · images]
     end
     subgraph Firebase
         AUTH[Authentication]
@@ -45,8 +45,10 @@ flowchart LR
     DASH --> AUTH
     DASH --> API
     API -->|admin: create accounts| AUTH
+    V -->|contact form,<br/>newsletter| API
     API --> FS
     API --> RS
+    RS -->|welcome, receipts,<br/>hub copies, invites| E([Inboxes])
 ```
 
 ## What's on the site
@@ -71,9 +73,14 @@ flowchart LR
   related stories.
 - **Become a Shaper**: the recruitment page, with a live member count, linking
   to the World Economic Forum's own application platform.
-- **Contact**: a reCAPTCHA-protected message form, plus a newsletter signup
-  with a real welcome email.
+- **Contact**: a message form checked for bots and spam on the server. The hub
+  gets a copy by email and the visitor gets a receipt in their language. Plus a
+  newsletter signup that keeps each address once and sends a welcome email in
+  the visitor's language.
 - **Privacy Policy** and **Terms of Use**.
+
+A branded loading screen covers the page on the first visit and on every
+reload, so the site never appears half-drawn.
 
 Everything is available in English and Arabic (with full right-to-left layout)
 and in light and dark themes. Every URL is a readable name: `/en/projects/tech-j-shore`,
@@ -102,10 +109,11 @@ boundary. The flows behind each feature are drawn out in
 - **[Next.js 16](https://nextjs.org)** (App Router), React 19 and TypeScript
 - **[next-intl](https://next-intl.dev)** for English/Arabic with RTL layout
 - **Firebase**: Authentication and Firestore (client SDK in the browser;
-  Firestore REST for cached public pages; **Admin SDK** on the server only to
-  create and remove member accounts and issue one-time passwords)
+  Firestore REST for cached public pages; **Admin SDK** on the server to
+  create and remove member accounts, issue one-time passwords, and save
+  contact messages and newsletter signups after their checks)
 - **CSS Modules**: no UI framework, a hand-built design system
-- **[Resend](https://resend.com)** for transactional email
+- **[Resend](https://resend.com)** for email, from the verified `jeddahhub.org` domain, with a separate sender for the newsletter, the contact form and member invites
 - **Google reCAPTCHA v3** on the public forms, loaded only when a form is used
 - **[ExcelJS](https://github.com/exceljs/exceljs)** for `.xlsx` exports
 - **[jose](https://github.com/panva/jose)** to verify Firebase ID tokens in API routes
@@ -125,7 +133,8 @@ src/
 │   └── api/
 │       ├── members/         # create-account: logins for new members (Admin SDK)
 │       ├── invite/          # invite emails
-│       ├── newsletter/      # welcome emails
+│       ├── contact/send/    # contact form: checks, save, hub copy + receipt
+│       ├── newsletter/subscribe/ # newsletter: checks, save once, welcome email
 │       ├── img/ · media/    # cached photo delivery
 │       └── verify-recaptcha/ · validate-email/
 ├── components/              # Shared UI (navbar, footer, home sections,
@@ -133,6 +142,7 @@ src/
 ├── context/                 # Auth and theme providers
 ├── i18n/                    # next-intl routing and config
 └── lib/                     # Firebase client, public data loader, shared helpers
+    └── emails/              # Email templates: layout + logos, newsletter, contact
 
 messages/
 ├── en.json                  # Every English string
@@ -197,19 +207,27 @@ flowchart LR
 - **Accounts** start with a random one-time password that must be changed at
   first sign-in. The login form adds a honeypot, a minimum fill time, reCAPTCHA
   and a lockout after repeated failures.
+- **Public forms** (contact and newsletter) can only be submitted through
+  server routes; the database refuses direct writes from browsers. Each route
+  applies rate limits, a honeypot and minimum fill time, reCAPTCHA (refusing
+  everything if it isn't configured), a real-mail-domain check and duplicate
+  protection before saving or sending anything.
+- **Email** only ever goes to the hub's own inbox or to the address that was
+  typed into the form, with per-address limits; everything a visitor typed is
+  escaped first.
 - **Links and exports**: only http(s) links are saved or shown, and spreadsheet
   exports neutralise formula-like values.
 - **At the edge**: Vercel Bot Protection challenges non-browser traffic, common
   scanner probes (`/.env`, `/wp-admin`, `*.php`, …) are refused, and the
   dashboard, login and API are kept out of search engines.
 - **Secrets** (service account, reCAPTCHA and Resend keys) are Vercel
-  environment variables only; none are in the code or its history.
+  environment variables only, never in the code.
 
 ## A note on privacy
 
 Shapers' names, photos, bios and event sign-ups live in Firestore, not in this
-repository; nothing in the code or its history contains anyone's private
-information or credentials. Public pages only ever read `public_profiles`,
+repository; the code contains no one's private information or
+credentials. Public pages only ever read `public_profiles`,
 which never contains an email address. What each role can see and do is
 governed by `firestore.rules`, and the site's Privacy Policy and Terms of Use
 describe what is collected and why.

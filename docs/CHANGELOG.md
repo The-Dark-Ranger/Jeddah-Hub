@@ -5,6 +5,27 @@ which has the full description and how it was tested.
 
 ## October 2026
 
+### 28 October
+- Premium loading screen on reload: frosted logo, ring of light, live progress, smoother exit. (#183)
+- Jeddah Hub and World Economic Forum logos in every email. (#182)
+- Contact form checked for bots and spam on the server; browsers can no longer write messages directly. (#181)
+- Newsletter keeps each address once, with server-side bot checks. (#180)
+
+### 27 October
+- Contact form emails: a copy to the hub and a receipt to the visitor, in their language; separate senders per email type; richer bilingual templates. (#176, #177)
+- Newsletter welcome no longer lists "Global updates"; reply forwarding tried and removed. (#178, #179)
+- Sending domain jeddahhub.org verified with Resend.
+
+### 26 October
+- One shared role-coloured banner for the dashboard home and My Profile; blog drafts kept on the device until saved. (#175)
+- Each role has its own colour on Who We Are and the dashboards. (#174)
+- Faster for visitors: Firebase only loads when needed; initiative photos moved out of the records. (#173)
+- Error screens instead of crashes; dashboards checked on every device. (#172)
+
+### 25 October (later)
+- Privacy Policy and Terms of Use rewritten for visitors. (#169 to #171)
+- Mobile menu tidied. (#168)
+
 ### 25 October
 - Code cleanup: typed Firestore records, zero lint warnings, header comments on every file, unused code removed, dependencies updated (Next.js 16.4.3, Firebase 13). (#167)
 - Removed em dashes and machine-sounding wording; one Arabic spelling throughout. (#166)

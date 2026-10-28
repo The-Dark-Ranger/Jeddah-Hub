@@ -82,6 +82,12 @@ sequenceDiagram
   never signed in; anyone who has keeps their own password.
 - Removing a **pending** assignment also deletes the unused login and the
   public listing, but only if the person has never signed in.
+- **Alumni** in Pending can be **dismissed**: set aside in a collapsible
+  *Dismissed Alumni* section to review later, where a curator can still send
+  an invite, restore them to Pending, or remove them.
+- **Send Invite** emails the member their sign-in address and a fresh
+  one-time password (creating their login first if needed), in the
+  curator's dashboard language.
 - **Members** (below Role Assignments) lists everyone with an account. Shaper
   and Alumni switch with one click; **Remove** (click, then click again to
   confirm) deletes the member everywhere: login, profiles, role assignment,
@@ -285,7 +291,7 @@ flowchart LR
 | Newsletter welcome | `newsletter@` | The site language the visitor used | Hub inbox |
 | Contact: hub copy | `contact@` | English (notes when the visitor wrote in Arabic) | The visitor |
 | Contact: visitor's copy | `contact@` | The site language the visitor used | Hub inbox |
-| Member invite | `members@` | English | n/a |
+| Member invite | `members@` | The curator's dashboard language | Hub inbox |
 
 - Every email has a plain-text version, and the welcome email has a
   `List-Unsubscribe` header.

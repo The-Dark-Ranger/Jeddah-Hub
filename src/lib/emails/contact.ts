@@ -9,6 +9,7 @@ import {
   type Lang, emailLayout, heading, paragraph, sectionTitle, infoTable, quote, steps, linkCards, button,
   siteUrl, jeddahTime, SITE,
 } from './layout';
+import { LOGO_ATTACHMENTS } from './logos';
 
 const ADDRESS = process.env.CONTACT_EMAIL || 'contact@jeddahhub.org';
 /** Where contact-form messages are delivered. */
@@ -72,6 +73,7 @@ export function hubNotification(m: ContactMessage) {
     replyTo: m.email,
     subject: `[Contact] ${topic}: ${m.name}${ref ? ` (${ref})` : ''}`,
     html,
+    attachments: LOGO_ATTACHMENTS,
     text: [
       `New contact message: ${topic}`, `From: ${m.name} <${m.email}>`,
       `Site language: ${m.lang === 'ar' ? 'Arabic' : 'English'}`, `Received: ${jeddahTime('en', m.at)}`,
@@ -169,6 +171,7 @@ export function senderCopy(m: ContactMessage) {
     replyTo: CONTACT_INBOX,
     subject: c.subject(ref),
     html,
+    attachments: LOGO_ATTACHMENTS,
     text: [
       c.heading(m.name), '', c.intro, '',
       ...(ref ? [`${c.rows.ref}: ${ref}`] : []),

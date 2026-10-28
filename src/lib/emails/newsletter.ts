@@ -6,6 +6,7 @@ import {
   type Lang, emailLayout, heading, paragraph, sectionTitle, featureList, linkCards, button, siteUrl,
 } from './layout';
 import { CONTACT_INBOX } from './contact';
+import { LOGO_ATTACHMENTS } from './logos';
 
 const ADDRESS = process.env.NEWSLETTER_EMAIL || 'newsletter@jeddahhub.org';
 
@@ -92,5 +93,6 @@ export function newsletterWelcome(lang: Lang, email: string) {
     text,
     replyTo: CONTACT_INBOX,
     headers: { 'List-Unsubscribe': `<mailto:${CONTACT_INBOX}?subject=unsubscribe>` },
+    attachments: LOGO_ATTACHMENTS,
   };
 }

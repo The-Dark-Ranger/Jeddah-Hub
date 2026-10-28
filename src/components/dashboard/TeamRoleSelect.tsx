@@ -5,14 +5,18 @@
 import { useTranslations } from 'next-intl';
 import { TEAM_ROLES, type TeamRole } from '@/lib/types';
 
-export default function TeamRoleSelect({ value, onChange, className }: {
+export default function TeamRoleSelect({ value, onChange, className, disabled, label }: {
   value: TeamRole;
   onChange: (role: TeamRole) => void;
   className?: string;
+  disabled?: boolean;
+  /** Accessible name, e.g. "Team role of Sara" (default "Team role"). */
+  label?: string;
 }) {
   const t = useTranslations('Dashboard');
   return (
-    <select className={className} value={value} onChange={e => onChange(e.target.value as TeamRole)} aria-label={t('teamRoleLabel')}>
+    <select className={className} value={value} onChange={e => onChange(e.target.value as TeamRole)}
+      disabled={disabled} aria-label={label ?? t('teamRoleLabel')}>
       {TEAM_ROLES.map(r => <option key={r} value={r}>{teamRoleLabel(t, r)}</option>)}
     </select>
   );

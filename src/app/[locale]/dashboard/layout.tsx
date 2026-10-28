@@ -2,7 +2,9 @@
 
 /* Dashboard shell: sign-in guard, the role-based sidebar, the one-time
  * password redirect and the charter banner. */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
@@ -58,6 +60,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [loading, user, pathname, router]);
 
+  // Initiative leads (Lead or Co-Lead) who aren't curators also get the
+  // Roster, scoped there to their own teams.
+  const [leadsATeam, setLeadsATeam] = useState(false);
+  const uid = user?.uid;
+  const curatorRole = ['curator', 'vice_curator'].includes(normalizeRole(user?.role));
+  useEffect(() => {
+    if (!uid || curatorRole) return;
+    let live = true;
+    getDocs(query(collection(db, 'initiatives'), where('leads', 'array-contains', uid), limit(1)))
+      .then(s => { if (live) setLeadsATeam(!s.empty); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [uid, curatorRole]);
+
   const handleLogout = async () => { await logout(); router.push('/'); };
 
   // On phones the nav is a horizontal strip of pills; bring the current page's
@@ -100,6 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const ownPages: NavItem[] = [
     { href: '/dashboard/shaper/profile', label: 'myProfile', icon: 'profile' },
     { href: '/dashboard/shaper/my-projects', label: 'profileActiveProjects', icon: 'folder' },
+    ...(!isCurator && leadsATeam ? [{ href: '/dashboard/curator/roster', label: 'roster', icon: 'people' } as NavItem] : []),
   ];
   const charter: NavItem = { href: '/dashboard/shaper/charter', label: 'communityCharter', icon: 'book' };
   const nav: { title: string; items: NavItem[] } =

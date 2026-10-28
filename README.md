@@ -218,7 +218,8 @@ flowchart LR
   duplicate protection before saving or sending anything.
 - **Initiative teams**: Lead and Co-Lead rights come only from the
   initiative's `leads` array, which only curators and impact officers can
-  change; a lead can change the team one plain member at a time.
+  change; a lead can change the team one plain member at a time, and asks
+  for role changes, which only the Curator or Vice Curator approves.
 - **Email** only ever goes to the hub's own inbox or to the address that was
   typed into the form, with per-address limits and a daily budget; everything
   a visitor typed is escaped first. Every member invite is also recorded in

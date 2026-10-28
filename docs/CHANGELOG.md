@@ -6,6 +6,8 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 29 October
+- Branded invite email with the sign-in address and one-time password, in the dashboard language; logins are created automatically before inviting.
+- Alumni can be dismissed from Pending Assignments and reviewed later (invite, restore or remove).
 - Loading screen stays one second and follows the light or dark theme; only that theme's small logo is downloaded.
 - Server code moved to Vercel's Mumbai region, next to our visitors and the database (it ran in the US).
 - Readable filled buttons in dark mode and an accessible language switch (accessibility score 100).

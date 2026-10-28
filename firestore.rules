@@ -489,10 +489,15 @@ service cloud.firestore {
                     && request.resource.data.role in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']
                     && (request.resource.data.role != 'curator' || isFullCurator())
                     && request.resource.data.keys().hasOnly(
-                         ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt'])
+                         ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt', 'dismissed', 'dismissedAt'])
                     && optStr(request.resource.data, 'displayName', 100)
                     && optStr(request.resource.data, 'note', 300);
       allow delete: if isCurator() || isAssignee(resource.data);
+      // Curators can set an assignment aside (Dismissed, for alumni) and
+      // bring it back; nothing else about an assignment can be edited.
+      allow update: if isCurator()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissed', 'dismissedAt'])
+                    && (!('dismissed' in request.resource.data) || request.resource.data.dismissed is bool);
     }
 
     // ── contact_messages ──────────────────────────────────────

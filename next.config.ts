@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withBotId } from 'botid/next/config';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -83,4 +84,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// withBotId adds the same-origin paths Vercel BotID's invisible challenge
+// loads through (with their own framing headers, which override the strict
+// ones above for those paths only); see src/lib/botCheck.ts.
+export default withBotId(withNextIntl(nextConfig));

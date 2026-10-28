@@ -15,6 +15,7 @@ import { withinLimit, DAY } from '@/lib/persistentLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { readJsonBody } from '@/lib/http';
 import { json, isBotSubmission } from '@/lib/formGuard';
+import { isBlockedBot } from '@/lib/botCheck';
 import type { CustomForm, CustomFormQuestion } from '@/lib/activityTypes';
 
 const MIN_FILL_MS = 3000;
@@ -28,6 +29,7 @@ const clean = (v: unknown, max: number) =>
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   if (isRateLimited(`activity:${ip}`, 6, 10 * 60_000)) return json({ error: 'too_many' }, 429);
+  if (await isBlockedBot('activity')) return json({ error: 'bot_check_failed' }, 403);
 
   const body = await readJsonBody(req, 64 * 1024);
   if (isBotSubmission(body, MIN_FILL_MS)) return json({ ok: true });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { readJsonBody } from '@/lib/http';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
+import { isBlockedBot } from '@/lib/botCheck';
 
 const SECRET = process.env.RECAPTCHA_SECRET_KEY;
 
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   // tries a minute at most.
   if (isRateLimited(`verify-recaptcha:${clientIp(req)}`, 20, 60_000)) {
     return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429 });
+  }
+  if (await isBlockedBot('verify-recaptcha')) {
+    return NextResponse.json({ ok: false, error: 'Access denied' }, { status: 403 });
   }
 
   const body = await readJsonBody(req);

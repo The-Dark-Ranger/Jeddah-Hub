@@ -1,16 +1,20 @@
 /* Server-rendered on every page but hidden unless the pre-paint init script
-   (SPLASH_INIT_SCRIPT) flagged this load, first visit or reload. */
+   (SPLASH_INIT_SCRIPT) flagged this load, first visit or reload.
+   Everything here is CSS (no extra downloads besides the logo and the tiny
+   Hijazi tile already used across the site), so it paints immediately. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
   overflow: hidden;
-  background: linear-gradient(160deg, #041029 0%, #08275a 55%, #0d4f8f 100%);
+  background:
+    radial-gradient(120% 85% at 50% 0%, #0e3d7c 0%, #072050 48%, #030b1f 100%);
   display: none;
   align-items: center;
   justify-content: center;
+  color: #fff;
   /* No fade-in: it must be fully opaque on the first frame, or the page
-     shows through it, only the content inside animates in. */
+     shows through it; only the content inside animates in. */
 }
 
 :global(html[data-splash]) .overlay { display: flex; }
@@ -18,174 +22,230 @@
 /* Lock scrolling underneath while the splash is up. */
 :global(html[data-splash]) { overflow: hidden; }
 
-/* Exit: content fades first, then the panel lifts like a curtain. */
-.overlay.dismissing {
-  animation: curtainUp 0.38s cubic-bezier(0.7, 0, 0.3, 1) 0.06s both;
-  pointer-events: none;
+/* ── Backdrop ── */
+
+/* Two slow, blurred pools of brand light drifting across the navy. */
+.aurora { position: absolute; inset: -20%; pointer-events: none; }
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: .55;
 }
-.overlay.dismissing .inner,
-.overlay.dismissing .footer {
-  animation: contentOut 0.2s ease-in both;
+.aurora::before {
+  width: 55vmax; height: 55vmax; top: 4%; left: 6%;
+  background: radial-gradient(circle, #1a73e8 0%, transparent 65%);
+  animation: driftA 9s ease-in-out infinite alternate;
 }
-@keyframes curtainUp {
-  from { clip-path: inset(0 0 0 0); }
-  to   { clip-path: inset(0 0 100% 0); }
+.aurora::after {
+  width: 48vmax; height: 48vmax; bottom: 2%; right: 4%;
+  background: radial-gradient(circle, #5ea3e0 0%, rgba(34, 211, 238, .35) 35%, transparent 68%);
+  animation: driftB 11s ease-in-out infinite alternate;
 }
-@keyframes contentOut {
-  to { opacity: 0; transform: translateY(-10px); }
+@keyframes driftA { to { transform: translate(12vmax, 8vmax) scale(1.12); } }
+@keyframes driftB { to { transform: translate(-10vmax, -7vmax) scale(.92); } }
+
+/* The Hijazi lattice (as on the rest of the site), faded out from the centre. */
+.pattern {
+  position: absolute; inset: 0;
+  background: rgba(255, 255, 255, .035);
+  -webkit-mask:
+    url('/hijazi-tile.png') repeat center / 44px auto,
+    radial-gradient(circle at 50% 46%, transparent 0 16%, #000 30%, transparent 58%);
+  -webkit-mask-composite: source-in;
+          mask:
+    url('/hijazi-tile.png') repeat center / 44px auto,
+    radial-gradient(circle at 50% 46%, transparent 0 16%, #000 30%, transparent 58%);
+          mask-composite: intersect;
+  animation: patternIn 1.2s ease .1s both;
+}
+@keyframes patternIn { from { opacity: 0; transform: scale(1.04); } }
+
+.vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(2, 8, 24, .55) 100%);
 }
 
-/* Hairline grid + slow glow: the quiet backdrop of Forum report covers. */
-.grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
-}
-.glow {
-  position: absolute;
-  width: 640px; height: 640px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(94, 163, 224, .28), transparent 65%);
-  animation: glowPulse 3.2s ease-in-out infinite;
-}
-@keyframes glowPulse {
-  0%, 100% { transform: scale(0.92); opacity: .75; }
-  50%      { transform: scale(1.06); opacity: 1; }
-}
+/* ── Centre ── */
 
 .inner {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.9rem;
-  animation: logoIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  gap: 2rem;
+  padding: 0 1.25rem;
 }
 
-@keyframes logoIn {
-  from { opacity: 0; transform: scale(0.92) translateY(10px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.logoRing {
+/* Logo in a frosted glass disc, circled by a rotating ring of light. */
+.emblem {
   position: relative;
-  width: 116px;
-  height: 116px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 148px; height: 148px;
+  display: grid; place-items: center;
+  animation: emblemIn .8s cubic-bezier(.16, 1, .3, 1) both;
 }
-
-.arc {
-  position: absolute; inset: -6px;
-  width: calc(100% + 12px); height: calc(100% + 12px);
-  transform: rotate(110deg);
-  overflow: visible;
+@keyframes emblemIn {
+  from { opacity: 0; transform: scale(.82); filter: blur(6px); }
+  to   { opacity: 1; transform: scale(1); filter: blur(0); }
 }
-.arcTrack { fill: none; stroke: rgba(255, 255, 255, .1); stroke-width: 1.5; }
-.arcStroke {
-  fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round;
-  stroke-dasharray: 72 100;
-  stroke-dashoffset: 72;
-  transform-origin: 60px 60px;
-  animation:
-    arcDraw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards,
-    arcSpin 2.4s linear 1.05s infinite;
+.halo {
+  position: absolute; inset: -18px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(94, 163, 224, .45), transparent 66%);
+  animation: haloPulse 2.8s ease-in-out infinite;
 }
-@keyframes arcDraw { to { stroke-dashoffset: 0; } }
-@keyframes arcSpin { to { transform: rotate(360deg); } }
-
-.wordmark {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  text-align: center;
+@keyframes haloPulse {
+  0%, 100% { opacity: .55; transform: scale(.94); }
+  50%      { opacity: 1;   transform: scale(1.04); }
 }
-
-.wordmarkMain {
-  font-size: clamp(2.3rem, 8vw, 3.4rem);
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+.ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 52%, rgba(94, 163, 224, .5) 70%, #fff 88%, transparent 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  animation: spin 1.6s linear infinite;
 }
-
-/* Arabic / RTL, remove negative letter-spacing that looks cramped in Arabic */
-[dir="rtl"] .wordmarkMain {
-  letter-spacing: 0.01em;
+.ring::after {
+  /* the faint full circle the light travels along */
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .14);
 }
-
-.wordmarkSub {
-  display: inline-flex; align-items: center; gap: .7rem;
-  font-size: clamp(0.78rem, 2.4vw, 0.92rem);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.62);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+@keyframes spin { to { transform: rotate(360deg); } }
+.glass {
+  position: relative;
+  width: 122px; height: 122px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .03));
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .25),
+    0 24px 60px rgba(0, 0, 0, .45);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-.wordmarkSub::before,
-.wordmarkSub::after {
-  content: ''; width: 22px; height: 1px; background: rgba(255, 255, 255, .35);
-}
-
-[dir="rtl"] .wordmarkSub {
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
 .logo {
-  width: 88px;
-  height: 88px;
-  object-fit: contain;
-  border-radius: 22px;
-  filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
-  position: relative;
-  z-index: 1;
+  width: 84px; height: 84px; object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .35));
+  user-select: none; -webkit-user-drag: none; pointer-events: none;
 }
 
-.progressTrack {
-  width: 168px;
-  height: 2px;
-  background: rgba(255,255,255,0.16);
-  border-radius: 99px;
+/* Name, with a single sweep of light across it as it rises in. */
+.wordmark {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .55rem; text-align: center;
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: .75rem;
+  font-size: clamp(.72rem, 2.2vw, .82rem); font-weight: 700;
+  letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .62);
+  animation: rise .7s cubic-bezier(.16, 1, .3, 1) .18s both;
+}
+.eyebrow::before,
+.eyebrow::after { content: ''; width: 26px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55)); }
+.eyebrow::after { transform: scaleX(-1); }
+.name {
+  font-size: clamp(2.5rem, 9vw, 3.8rem); font-weight: 800; line-height: 1.08;
+  letter-spacing: -.035em;
+  background: linear-gradient(100deg, #ffffff 0%, #ffffff 40%, #9fd0ff 50%, #ffffff 60%, #ffffff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation:
+    rise .8s cubic-bezier(.16, 1, .3, 1) .26s both,
+    sheen 1.6s cubic-bezier(.4, 0, .2, 1) .55s both;
+}
+@keyframes sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.tagline {
+  font-size: clamp(.85rem, 2.6vw, .98rem); font-weight: 500;
+  color: rgba(255, 255, 255, .7);
+  letter-spacing: .02em;
+  animation: rise .7s cubic-bezier(.16, 1, .3, 1) .38s both;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+[dir="rtl"] .eyebrow { letter-spacing: .02em; text-transform: none; font-size: clamp(.82rem, 2.6vw, .95rem); }
+[dir="rtl"] .name { letter-spacing: 0; line-height: 1.3; }
+
+/* Progress: a hairline with a glowing head, and a live percentage. */
+.progress {
+  display: flex; flex-direction: column; align-items: center; gap: .7rem;
+  animation: rise .5s ease .32s both;
+}
+.track {
+  position: relative;
+  width: 220px; height: 3px; border-radius: 99px;
+  background: rgba(255, 255, 255, .12);
   overflow: hidden;
 }
-
 /* Determinate: SplashScreen.tsx eases it toward 90% while loading and
    sweeps it to 100% the moment the page is ready. */
-.progressFill {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, .7), #fff);
+.fill {
+  position: absolute; inset: 0;
   border-radius: 99px;
-  transform: scaleX(0.08);
+  background: linear-gradient(90deg, rgba(94, 163, 224, .35), #8cc4f5 70%, #fff);
+  box-shadow: 0 0 14px rgba(140, 196, 245, .8);
+  transform: scaleX(.06);
   transform-origin: left center;
-  box-shadow: 0 0 12px rgba(255, 255, 255, .6);
 }
-[dir="rtl"] .progressFill { transform-origin: right center; }
+[dir="rtl"] .fill {
+  transform-origin: right center;
+  background: linear-gradient(270deg, rgba(94, 163, 224, .35), #8cc4f5 70%, #fff);
+}
+.percent {
+  min-width: 4ch; text-align: center;
+  font-size: .74rem; font-weight: 700; letter-spacing: .14em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, .55);
+}
 
+/* ── Footer ── */
 .footer {
   position: absolute;
   bottom: max(1.75rem, env(safe-area-inset-bottom));
   inset-inline: 1rem;
-  display: flex; align-items: center; justify-content: center; gap: .75rem;
+  display: flex; align-items: center; justify-content: center; gap: .85rem;
   font-size: .72rem; font-weight: 600; letter-spacing: .06em;
-  color: rgba(255, 255, 255, .55);
+  color: rgba(255, 255, 255, .58);
   text-align: center;
-  animation: footerIn .6s ease .35s both;
+  animation: fadeIn .5s ease .25s both;
 }
-.wefLogo { height: 24px; width: auto; opacity: .85; flex-shrink: 0; }
-@keyframes footerIn { from { opacity: 0; } to { opacity: 1; } }
+.footerRule { width: 1px; height: 18px; background: rgba(255, 255, 255, .25); flex-shrink: 0; }
+.wefLogo { height: 24px; width: auto; opacity: .9; flex-shrink: 0; user-select: none; -webkit-user-drag: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Exit: the content lifts and fades, then the panel rises away. ── */
+.overlay.dismissing {
+  animation: curtainUp .46s cubic-bezier(.7, 0, .25, 1) .08s both;
+  pointer-events: none;
+}
+.overlay.dismissing .inner { animation: contentOut .32s cubic-bezier(.4, 0, 1, 1) both; }
+.overlay.dismissing .footer { animation: fadeOut .2s ease both; }
+@keyframes curtainUp {
+  from { clip-path: inset(0 0 0 0 round 0); }
+  to   { clip-path: inset(0 0 100% 0 round 0 0 48px 48px); }
+}
+@keyframes contentOut {
+  to { opacity: 0; transform: translateY(-18px) scale(1.03); filter: blur(4px); }
+}
+@keyframes fadeOut { to { opacity: 0; } }
+
+@media (max-width: 480px) {
+  .emblem { width: 128px; height: 128px; }
+  .glass { width: 106px; height: 106px; }
+  .logo { width: 72px; height: 72px; }
+  .track { width: 180px; }
+  .footer { font-size: .66rem; gap: .6rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .inner, .footer, .glow, .arcStroke,
+  .aurora::before, .aurora::after, .pattern, .emblem, .halo, .ring,
+  .eyebrow, .name, .tagline, .progress, .footer,
   .overlay.dismissing .inner, .overlay.dismissing .footer { animation: none !important; }
+  .ring { opacity: .6; }
   .overlay.dismissing { animation: fadeOnly .25s ease both !important; }
-  .arcStroke { stroke-dashoffset: 0; }
-  .progressFill { transform: scaleX(1); }
+  .fill { transform: scaleX(1); }
 }
 @keyframes fadeOnly { to { opacity: 0; } }

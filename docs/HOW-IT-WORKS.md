@@ -10,8 +10,11 @@ tech stack and setup, see the [README](../README.md).
 - [5. Hub Activities: registration and feedback](#5-hub-activities-registration-and-feedback)
 - [6. News posts](#6-news-posts)
 - [7. Community Charter sign-off](#7-community-charter-sign-off)
-- [8. Contact form and newsletter](#8-contact-form-and-newsletter)
-- [9. Shipping a change](#9-shipping-a-change)
+- [8. Contact form](#8-contact-form)
+- [9. Newsletter signup](#9-newsletter-signup)
+- [10. Emails](#10-emails)
+- [11. Loading screen](#11-loading-screen)
+- [12. Shipping a change](#12-shipping-a-change)
 - [Where data lives](#where-data-lives)
 
 ---
@@ -192,20 +195,130 @@ flowchart TD
     P -->|new term| R[Start a new signing round<br/>clears all signatures]
 ```
 
-## 8. Contact form and newsletter
+## 8. Contact form
+
+Visitors can't write to the database themselves (`firestore.rules` refuses it),
+so every message goes through one server route,
+[`/api/contact/send`](../src/app/api/contact/send/route.ts), which checks it
+before anything is saved or emailed.
+
+```mermaid
+flowchart TD
+    V([Visitor sends a message]) --> RL{Rate limits<br/>per connection and<br/>per email address}
+    RL -->|over the limit| E429[Too many attempts]
+    RL --> TR{Bot traps:<br/>hidden field filled, or<br/>sent faster than a person?}
+    TR -->|yes| FAKE[Answer 'sent',<br/>keep nothing]
+    TR -->|no| CK{Name, topic, length,<br/>number of links OK?}
+    CK -->|no| E400[Clear message<br/>in the visitor's language]
+    CK -->|yes| RC{reCAPTCHA passes?}
+    RC -->|no| E400
+    RC -->|yes| MX{Email domain<br/>can receive mail?}
+    MX -->|no| E400
+    MX -->|yes| DUP{Same message from the<br/>same address in 24 h?}
+    DUP -->|yes| OK[Answer 'sent']
+    DUP -->|no| SAVE[(contact_messages)]
+    SAVE --> MSG[Dashboard → Messages]
+    SAVE --> HUB[Email to the hub inbox<br/>reply goes to the visitor]
+    SAVE --> COPY[Copy to the visitor<br/>in their language]
+```
+
+- The checks: a hidden "website" field and a minimum fill time catch simple bots;
+  the name can't contain links or `<` `>`; the topic must be one of the five on the
+  form; the message must be 10 to 5,000 characters with at most 3 links;
+  reCAPTCHA must pass (a missing key refuses everything rather than letting
+  messages through).
+- The visitor's copy is limited per address, so the form can't be used to send
+  mail to someone else.
+
+## 9. Newsletter signup
+
+Same idea: [`/api/newsletter/subscribe`](../src/app/api/newsletter/subscribe/route.ts)
+is the only way onto the list, and each address is kept once.
+
+```mermaid
+flowchart TD
+    V([Visitor subscribes]) --> CHECKS[Rate limits, bot traps,<br/>reCAPTCHA, real mail domain]
+    CHECKS -->|fails| ERR[Message in the<br/>visitor's language]
+    CHECKS -->|passes| HAS{Address already<br/>on the list?}
+    HAS -->|yes| AL["Already subscribed message,<br/>no second email"]
+    HAS -->|no| ADD[(newsletter_subscribers<br/>id = hash of the address)]
+    ADD --> W[Welcome email<br/>in their language]
+    ADD --> X[Curator: Export Emails]
+```
+
+The record's id is a hash of the lowercased address, and the save fails if
+that id already exists, so even two signups at the same moment end up as one.
+
+## 10. Emails
+
+All email is sent through [Resend](https://resend.com) from the verified
+`jeddahhub.org` domain. Each kind of email has its own module and sender.
 
 ```mermaid
 flowchart LR
-    V([Visitor]) -->|starts typing| RC[reCAPTCHA loads]
-    V -->|sends message| VR[/api/verify-recaptcha/] -->|passes| CM[(contact_messages)] --> CU[Curator: Messages]
-    V -->|subscribes| NS[(newsletter_subscribers)] --> W[/api/newsletter/welcome/] --> E[Welcome email<br/>via Resend]
-    NS --> X[Curator: Export Emails]
+    subgraph Site["Server routes"]
+        NS[/api/newsletter/subscribe/]
+        CS[/api/contact/send/]
+        IN[/api/invite/]
+    end
+    subgraph Templates["src/lib/emails"]
+        NL[newsletter.ts<br/>welcome]
+        CT[contact.ts<br/>hub copy + visitor copy]
+        LY[layout.ts<br/>header with both logos,<br/>footer, EN/AR, RTL]
+    end
+    NS --> NL
+    CS --> CT
+    IN --> MB[invite email]
+    NL --> LY
+    CT --> LY
+    LY --> SE[email.ts<br/>sendEmail]
+    MB --> SE
+    SE --> RS[Resend]
+    RS -->|newsletter@| SUB([Subscriber])
+    RS -->|contact@| HUBI([Hub inbox])
+    RS -->|contact@| VIS([Visitor])
+    RS -->|members@| MEM([New member])
 ```
 
-reCAPTCHA (around 350 KB) loads only when someone starts using a form, not on
-every page.
+| Email | Sender | Language | Replies go to |
+|---|---|---|---|
+| Newsletter welcome | `newsletter@` | The site language the visitor used | Hub inbox |
+| Contact: hub copy | `contact@` | English (notes when the visitor wrote in Arabic) | The visitor |
+| Contact: visitor's copy | `contact@` | The site language the visitor used | Hub inbox |
+| Member invite | `members@` | English | n/a |
 
-## 9. Shipping a change
+- Every email has a plain-text version, and the welcome email has a
+  `List-Unsubscribe` header.
+- The Jeddah Hub and World Economic Forum logos travel **inside** each email as
+  inline images ([`logos.ts`](../src/lib/emails/logos.ts)), not as links to the
+  site, so email apps always show them and they don't appear as separate
+  downloadable attachments in most apps.
+- Anything a visitor typed is escaped before it goes into an email, and
+  subjects are always a single line.
+
+## 11. Loading screen
+
+A branded loading screen covers the page on a visitor's first page in a
+session and on every full reload, so the site never appears half-drawn.
+
+```mermaid
+flowchart TD
+    L([Page starts loading]) --> Q{First page this session,<br/>or a reload?}
+    Q -->|no| PAGE[Page shows directly]
+    Q -->|yes| SP[Loading screen on the first frame:<br/>logo, name, progress bar]
+    SP --> R{Page loaded<br/>and fonts ready?}
+    R -->|yes| MIN[Stay at least 0.85 s]
+    R -->|still waiting at 1.5 s| GO
+    MIN --> GO[Bar completes, screen lifts away]
+    GO --> PAGE
+```
+
+The decision is made by a tiny script before the first paint
+([`initScripts.ts`](../src/lib/initScripts.ts)), so the screen never flashes
+in late. Visitors who prefer reduced motion get a still version that simply
+fades.
+
+## 12. Shipping a change
 
 ```mermaid
 flowchart LR
@@ -231,7 +344,7 @@ with `npx firebase-tools deploy --only firestore:rules`.
 | `blogs` | News posts | Everyone if published, otherwise the author and reviewers |
 | `media` | Uploaded photos (served by `/api/media`) | Everyone |
 | `activity_responses` | Registration and after-event answers (`formType`) | Curators, impact officers |
-| `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups | Curators |
+| `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups, written only by the server after its checks | Curators |
 | `settings`, `charter_signatures` | Charter sign-off switch and signatures | Members / curators and impact officers |
 | `*_requests`, `notifications` | Proposals and membership requests | The requester and whoever reviews them |
 

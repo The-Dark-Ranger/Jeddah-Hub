@@ -17,6 +17,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
 import { json, isBotSubmission } from '@/lib/formGuard';
+import { isBlockedBot } from '@/lib/botCheck';
 import { withinLimit, withinEmailBudget, DAY, HOUR } from '@/lib/persistentLimit';
 import { sendEmail } from '@/lib/email';
 import { hubNotification, senderCopy, isTopic, type ContactMessage } from '@/lib/emails/contact';
@@ -40,6 +41,7 @@ const LINK_RE = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|io|ru|x
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   if (isRateLimited(`contact:${ip}`, 3, 10 * 60_000)) return json({ error: 'too_many' }, 429);
+  if (await isBlockedBot('contact')) return json({ error: 'bot_check_failed' }, 403);
 
   const body = await readJsonBody(req, 24 * 1024);
   const name    = clean(body?.name, NAME_MAX);

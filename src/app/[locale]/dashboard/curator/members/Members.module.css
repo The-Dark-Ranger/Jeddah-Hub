@@ -213,3 +213,21 @@
   .actionsCell { flex-wrap: wrap; }
   .actionsCell > button { flex: 1; min-height: 38px; }
 }
+
+/* ── Dismiss / Restore (alumni set aside for later) ── */
+.dismissBtn {
+  padding: 0.35rem 0.75rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--border-color); background: var(--background-alt); color: var(--text-muted);
+  cursor: pointer; white-space: nowrap; transition: border-color .15s ease, color .15s ease;
+}
+.dismissBtn:hover { border-color: var(--text-main); color: var(--text-main); }
+.dismissedWrap { opacity: .95; }
+.dismissedSummary { cursor: pointer; list-style: none; }
+.dismissedSummary::-webkit-details-marker { display: none; }
+.dismissedSummary::before {
+  content: ''; width: 7px; height: 7px; flex-shrink: 0;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); transition: transform .2s ease; margin-inline-end: .2rem;
+}
+[dir="rtl"] .dismissedSummary::before { transform: rotate(135deg); }
+.dismissedWrap[open] .dismissedSummary::before { transform: rotate(45deg); }

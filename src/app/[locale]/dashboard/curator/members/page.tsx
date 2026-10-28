@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
-import { collection, getDocs, setDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, setDoc, deleteDoc, updateDoc, deleteField, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -31,6 +31,9 @@ interface RoleAssignment {
   joinedAt?: string;
   /** Result of creating this member's Firebase sign-in account. */
   account?: CreateAccountResult;
+  /** Set aside by a curator (alumni): kept under Dismissed to review later. */
+  dismissed?: boolean;
+  dismissedAt?: string;
 }
 
 interface KnownUser { email: string; displayName?: string; }
@@ -196,20 +199,23 @@ export default function MembersPage() {
   /* For assignments made before accounts were created automatically.
    * role_assignments has no update rule, so the doc is rewritten. */
   const [creatingLogin, setCreatingLogin] = useState<string | null>(null);
-  const handleCreateLogin = async (a: RoleAssignment) => {
+  /** Creates the member's login; true when they have one afterwards. */
+  const handleCreateLogin = async (a: RoleAssignment): Promise<boolean> => {
     setCreatingLogin(a.id); setError('');
     try {
       const { result: account, tempPassword } = await createMemberAccount(a.email, resolveName(a) ?? '', a.role);
-      if (account === 'not-configured') { setError(t('accountNotConfigured')); return; }
-      if (account === 'failed') { setError(t('accountCreateFailed')); return; }
+      if (account === 'not-configured') { setError(t('accountNotConfigured')); return false; }
+      if (account === 'failed') { setError(t('accountCreateFailed')); return false; }
       const { id, ...data } = a;
       await deleteDoc(doc(db, 'role_assignments', id));
       await setDoc(doc(db, 'role_assignments', id), { ...data, account });
       setAssignments(prev => prev.map(x => x.id === id ? { ...x, account } : x));
       if (tempPassword) setTempPasswords(m => ({ ...m, [id]: tempPassword }));
+      return true;
     } catch (err) {
       console.error(err);
       setError(t('saveFailed'));
+      return false;
     } finally {
       setCreatingLogin(null);
     }
@@ -236,6 +242,12 @@ export default function MembersPage() {
   const handleSendInvite = async (a: RoleAssignment) => {
     setInviteState(s => ({ ...s, [a.id]: 'sending' }));
     try {
+      // The invite carries their sign-in details, so they need a login first.
+      if (!a.account && !(await handleCreateLogin(a))) {
+        setInviteState(s => ({ ...s, [a.id]: 'failed' }));
+        setTimeout(() => setInviteState(s => ({ ...s, [a.id]: 'idle' })), 3000);
+        return;
+      }
       const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch('/api/invite', {
         method: 'POST',
@@ -243,7 +255,7 @@ export default function MembersPage() {
           'Content-Type': 'application/json',
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
-        body: JSON.stringify({ email: a.email, displayName: a.displayName, role: a.role }),
+        body: JSON.stringify({ email: a.email, displayName: resolveName(a), role: a.role, locale }),
       });
       setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));
       // The invite carries a fresh one-time password, so any shown here is now old.
@@ -256,6 +268,21 @@ export default function MembersPage() {
     }
   };
 
+  /** Sets an alumni assignment aside under Dismissed, or brings it back. */
+  const handleDismiss = async (a: RoleAssignment, dismiss: boolean) => {
+    try {
+      await updateDoc(doc(db, 'role_assignments', a.id), dismiss
+        ? { dismissed: true, dismissedAt: new Date().toISOString() }
+        : { dismissed: deleteField(), dismissedAt: deleteField() });
+      setAssignments(prev => prev.map(x => x.id === a.id
+        ? { ...x, dismissed: dismiss || undefined, dismissedAt: dismiss ? new Date().toISOString() : undefined }
+        : x));
+    } catch (err) {
+      console.error(err);
+      setError(t('saveFailed'));
+    }
+  };
+
   const resolveName = (a: RoleAssignment) => {
     if (a.displayName) return a.displayName;
     const found = knownUsers.find(u => u.email.toLowerCase() === a.email.toLowerCase());
@@ -264,8 +291,9 @@ export default function MembersPage() {
 
   const visible = assignments.filter(a => matchesQuery(search,
     a.email, resolveName(a), a.note, ROLES.find(r => r.value === a.role)?.label));
-  const pending = visible.filter(a => a.status !== 'joined');
-  const joined  = visible.filter(a => a.status === 'joined');
+  const pending   = visible.filter(a => a.status !== 'joined' && !a.dismissed);
+  const joined    = visible.filter(a => a.status === 'joined');
+  const dismissed = visible.filter(a => a.status !== 'joined' && a.dismissed);
   // Long pending list: 10 at a time, starting over when the search changes.
   const pendingPage = useViewMore(pending, search);
   const joinedPage  = useViewMore(joined, search);
@@ -333,6 +361,11 @@ export default function MembersPage() {
               >
                 {invState === 'sent' ? t('inviteSent') : invState === 'failed' ? t('inviteFailed') : invState === 'sending' ? '…' : t('sendInvite')}
               </button>
+              {a.dismissed ? (
+                <button className={styles.dismissBtn} onClick={() => handleDismiss(a, false)}>{t('restoreAssignment')}</button>
+              ) : a.role === 'alumni' && (
+                <button className={styles.dismissBtn} onClick={() => handleDismiss(a, true)}>{t('dismissAssignment')}</button>
+              )}
               <button className={styles.removeBtn} onClick={() => handleDelete(a.id)}>
                 {t('remove')}
               </button>
@@ -475,6 +508,18 @@ export default function MembersPage() {
             )}
           </div>
         </>
+      )}
+
+      {/* Dismissed alumni: set aside to review later; invite or restore any time. */}
+      {!loading && dismissed.length > 0 && (
+        <details className={styles.tableWrap + ' ' + styles.dismissedWrap}>
+          <summary className={styles.tableHeader + ' ' + styles.dismissedSummary}>
+            <span>{t('dismissedSection')}</span>
+            <span className={styles.count}>{dismissed.length}</span>
+          </summary>
+          <p className={styles.tableSubtitle}>{t('dismissedSubtitle')}</p>
+          {renderTable(dismissed, false)}
+        </details>
       )}
 
       {/* Shaper ⇄ Alumni for members who already have an account */}

@@ -5,9 +5,6 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-/** Sender for member invitations (and anything without its own sender). */
-export const MEMBERS_FROM = process.env.FROM_EMAIL || 'Jeddah Hub <members@jeddahhub.org>';
-
 /** Whether outgoing email is set up at all (checked before side effects). */
 export const emailConfigured = () => !!RESEND_API_KEY;
 

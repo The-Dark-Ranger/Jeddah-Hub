@@ -678,5 +678,33 @@ service cloud.firestore {
       allow update: if isCuratorOrImpact();
       allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
     }
+
+    // ── role_change_requests ─────────────────────────────────────
+    // An initiative lead asks to change a teammate's team role (Member,
+    // Lead or Co-Lead) from the Roster; only the Curator or Vice Curator
+    // reviews it, and only they apply it to the initiative (the lead's own
+    // team edits can never grant lead rights, see leadTeamStep). Never for
+    // the lead's own role, and the review only records its outcome.
+    match /role_change_requests/{docId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.requestedByUserId == request.auth.uid
+                    && isLeadOf(request.resource.data.initiativeId)
+                    && request.resource.data.keys().hasOnly(['initiativeId', 'initiativeTitle', 'targetUserId', 'targetUserName', 'fromRole', 'toRole', 'requestedByUserId', 'requestedByName', 'status', 'requestedAt'])
+                    && isNewRequest(request.resource.data)
+                    && request.resource.data.targetUserId is string
+                    && request.resource.data.targetUserId != request.auth.uid
+                    && request.resource.data.toRole in ['Member', 'Lead', 'Co-Lead']
+                    && optStr(request.resource.data, 'fromRole', 50)
+                    && optStr(request.resource.data, 'initiativeTitle', 300)
+                    && optStr(request.resource.data, 'targetUserName', 200)
+                    && isMyName(request.resource.data.requestedByName);
+      allow read: if isCurator()
+                  || isOwner(resource.data.requestedByUserId);
+      allow update: if isCurator()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt'])
+                    && request.resource.data.status in ['approved', 'declined']
+                    && request.resource.data.reviewedBy == request.auth.uid;
+      allow delete: if isOwner(resource.data.requestedByUserId) || isCurator();
+    }
   }
 }

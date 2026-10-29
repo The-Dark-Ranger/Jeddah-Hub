@@ -6,7 +6,7 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 29 October
-- The source code is now open source under the MIT Licence (`LICENSE`). The names and logos of Jeddah Hub, the Global Shapers Community, the World Economic Forum and the partners, the images, and the hub's own text are not covered.
+- The repository is marked all rights reserved (`LICENSE`): the code can be viewed on GitHub but not used, copied or shared without permission.
 - Repository cleanup: a detailed README, a developer guide (docs/DEVELOPMENT.md), a security policy, security-rules tests (`npm run test:rules`) and one-command rules deploys (`npm run deploy:rules`); the unused rules-deploy workflow, dead translation strings and local AI-assistant files removed from the repository; the four request queues on the Initiatives dashboard share one component (approving a member addition now uses the green button).
 - Phones and desktop: project pages no longer scroll sideways on phones (long names in the team grid end in "…"); no text renders smaller than 12px; footer links, "Back to top", share buttons, the Roster role picker and dashboard "Manage" links are finger-sized; dashboards no longer jump when the Community Charter reminder appears; form labels are linked to their fields (tapping a label focuses it; screen readers announce it); the newsletter box and photo-URL box have names; the spreadsheet code (about 900 KB) loads only when a report is downloaded, not with Active Projects and the initiative dashboards.
 - Curators can email a member a new one-time password from Role Assignments → Members (it signs them out everywhere; the curator never sees it); the login page no longer has "Forgot password?".

@@ -150,8 +150,8 @@ Team roles are **Member**, **Lead** and **Co-Lead** (picked from a list).
 Leads and Co-Leads have the same rights: their uid is in the initiative's
 `leads` array, which is what `firestore.rules` checks. A lead can change
 the team only one person at a time: accept a join request (adding a plain
-Member) or approve a leave. Adding leads, or several people at once, stays
-with curators and impact officers.
+Member) or approve a leave, never removing another lead or co-lead. Adding
+leads, or several people at once, stays with curators and impact officers.
 
 In the **Roster**, curators change anyone's team role directly. Leads see
 only the teams they lead; a role they pick there (never their own) becomes a

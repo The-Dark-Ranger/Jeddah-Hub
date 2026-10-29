@@ -240,14 +240,23 @@ service cloud.firestore {
     // A lead's change to the team: unchanged, one person removed (an
     // approved leave), or one plain Member added (an accepted join request).
     // Adding leads/co-leads or several people at once stays with curators.
+    // The entry added or removed is compared wherever it sits in the list
+    // (checking only the last one let a "Lead" badge in at the front, which
+    // then looks like a lead missing access to a curator), and a lead can't
+    // take another lead or co-lead off the team.
     function leadTeamStep() {
       let before = resource.data.get('members', []);
       let after = request.resource.data.get('members', []);
+      let added = after.removeAll(before);
+      let removed = before.removeAll(after);
       return after == before
-             || (after.size() == before.size() - 1 && before.hasAll(after))
-             || (after.size() == before.size() + 1 && after.hasAll(before)
-                 && (after[after.size() - 1] is string
-                     || after[after.size() - 1].get('role', 'Member') == 'Member'));
+             || (after.size() == before.size() - 1 && removed.size() == 1
+                 && !((removed[0] is string ? removed[0] : removed[0].get('userId', ''))
+                      in resource.data.get('leads', [])))
+             || (after.size() == before.size() + 1 && added.size() == 1
+                 && (added[0] is string
+                     || (added[0].keys().hasOnly(['userId', 'role'])
+                         && added[0].get('role', 'Member') == 'Member')));
     }
 
     match /initiatives/{docId} {
@@ -416,6 +425,23 @@ service cloud.firestore {
                .hasOnly(request.auth == null ? [] : [request.auth.uid]);
     }
 
+    // A guest like is the short random id the post page makes ("g_" and
+    // letters/digits), never an arbitrary value: otherwise one anonymous
+    // write could fill the post towards Firestore's 1 MiB document limit.
+    function guestLikeOk() {
+      let after = request.resource.data.get('visitorLikes', []);
+      let added = after.removeAll(resource.data.get('visitorLikes', []));
+      return after.size() <= 20000
+             && (added.size() == 0 || (added[0] is string && added[0].matches('^g_[a-z0-9]{6,40}$')));
+    }
+
+    // A member's own post: the fields the post editor (BlogManager) writes,
+    // with size limits.
+    function blogBody(d) {
+      return optStr(d, 'title', 300) && optStr(d, 'content', 100000) && optStr(d, 'excerpt', 1000)
+             && (!('tags' in d) || (d.tags is list && d.tags.size() <= 20));
+    }
+
     // ── blogs ─────────────────────────────────────────────────
     // Published posts are publicly readable.
     // Any authenticated member can create (status will be 'draft' or 'pending').
@@ -441,8 +467,14 @@ service cloud.firestore {
                     // The byline is the author's own name, not someone else's.
                     && (!('authorName' in request.resource.data) || isMyName(request.resource.data.authorName))
                     && optStr(request.resource.data, 'title', 300)
+                    // Members: only the editor's fields, and no likes of its own.
                     && (isCuratorOrImpact()
-                        || request.resource.data.status in ['draft', 'pending_review']);
+                        || (request.resource.data.status in ['draft', 'pending_review']
+                            && request.resource.data.keys().hasOnly(
+                                 ['title', 'content', 'excerpt', 'tags', 'status', 'updatedAt',
+                                  'authorId', 'authorName', 'authorRole', 'createdAt', 'likedBy'])
+                            && request.resource.data.get('likedBy', []).size() == 0
+                            && blogBody(request.resource.data)));
       allow update: if isCuratorOrImpact()
                     // Authors may only edit their own still-unpublished post, and only
                     // into another unpublished status, otherwise a self-write could flip
@@ -452,9 +484,11 @@ service cloud.firestore {
                     || (isSignedIn()
                         && request.auth.uid == resource.data.authorId
                         && resource.data.status in ['draft', 'pending_review']
-                        && request.resource.data.authorId == resource.data.authorId
-                        && request.resource.data.get('authorRole', '') == resource.data.get('authorRole', '')
-                        && request.resource.data.get('authorName', '') == resource.data.get('authorName', '')
+                        // Only what the editor changes: author, likes and
+                        // anything else stay as they were.
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['title', 'content', 'excerpt', 'tags', 'status', 'updatedAt'])
+                        && blogBody(request.resource.data)
                         && request.resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
                     // likedBy/visitorLikes fields on a published post, needed because
@@ -468,7 +502,8 @@ service cloud.firestore {
                              .hasOnly(['likedBy', 'visitorLikes'])
                         && oneLikeStep('likedBy')
                         && oneLikeStep('visitorLikes')
-                        && ownLikeOnly());
+                        && ownLikeOnly()
+                        && guestLikeOk());
       allow delete: if isCuratorOrImpact()
                     || (isSignedIn() && request.auth.uid == resource.data.authorId);
     }

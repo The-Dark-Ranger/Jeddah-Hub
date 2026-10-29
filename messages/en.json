@@ -18,7 +18,6 @@
     "subscribe": "Subscribe",
     "metrics": {
       "projects": "Initiatives",
-      "beneficiaries": "Beneficiaries",
       "shapers": "Members",
       "partners": "Partners"
     },
@@ -331,9 +330,7 @@
     "mainNav": "Main navigation",
     "switchLanguage": "العربية: Switch to Arabic",
     "skipToContent": "Skip to main content",
-    "signedInAs": "Signed in as",
-    "appearance": "Appearance",
-    "language": "Language"
+    "signedInAs": "Signed in as"
   },
   "Role": {
     "curator": "Curator",
@@ -482,7 +479,6 @@
     "goodMorning": "Good Morning",
     "goodAfternoon": "Good Afternoon",
     "goodEvening": "Good Evening",
-    "there": "there",
     "loggedInAs": "You are logged in as",
     "quickActions": "Quick Actions",
     "statActiveInitiatives": "Active Initiatives",

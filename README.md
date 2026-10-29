@@ -6,7 +6,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-DD2C00?logo=firebase&logoColor=white)](https://firebase.google.com)
 [![Vercel](https://img.shields.io/badge/Hosted%20on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 [![Languages](https://img.shields.io/badge/Languages-English%20%7C%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9-0f5a9f)](https://jeddahhub.org/ar)
-[![Licence: MIT](https://img.shields.io/badge/Licence-MIT-2ea44f)](LICENSE)
+[![Licence: all rights reserved](https://img.shields.io/badge/Licence-All%20rights%20reserved-555555)](LICENSE)
 
 The official website of **Jeddah Hub**, my local chapter of the
 [World Economic Forum's Global Shapers Community](https://www.globalshapers.org/),
@@ -256,16 +256,13 @@ the [World Economic Forum](https://www.weforum.org/).
 
 ## Licence
 
-The source code is released under the [MIT Licence](LICENSE). You may use,
-copy and adapt it, for example for another hub's website, as long as the
-copyright notice stays with it.
+Copyright © 2026 Mohammed Alshawi. **All rights reserved.**
 
-The licence covers the code only. It does not cover:
+The repository is public so the code can be read, but it is not open source.
+GitHub's Terms of Service allow viewing and forking any public repository on
+GitHub. Beyond that, no one may use, copy, modify or share the code without
+written permission (see [LICENSE](LICENSE)). To ask, use the
+[contact form](https://jeddahhub.org/en/contact).
 
-- the names and logos of Jeddah Hub, the Global Shapers Community, the World
-  Economic Forum and the hub's partners;
-- the images in `public/`;
-- the text that describes Jeddah Hub, its people and its work.
-
-These belong to their owners. If you reuse the code, replace them with your
-own.
+The names and logos of Jeddah Hub, the Global Shapers Community, the World
+Economic Forum and the hub's partners belong to their owners.

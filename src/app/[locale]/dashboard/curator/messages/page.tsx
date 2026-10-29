@@ -1,7 +1,7 @@
 'use client';
 
 /* Dashboard > Messages: messages sent through the Contact page. */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -49,6 +49,7 @@ const SUBJECT_KEYS: Record<string, string> = {
 };
 
 export default function MessagesPage() {
+  const formId = useId();
   const { user } = useAuth();
   const locale   = useLocale();
   const t  = useTranslations('Dashboard');
@@ -334,18 +335,18 @@ export default function MessagesPage() {
             </div>
             <div className={styles.modalBody}>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>{t('toLabel')}</label>
-                <input className={styles.modalInput} type="email" value={composeTo}
+                <label htmlFor={`${formId}-composeTo`} className={styles.modalLabel}>{t('toLabel')}</label>
+                <input id={`${formId}-composeTo`} className={styles.modalInput} type="email" value={composeTo}
                   onChange={e => setComposeTo(e.target.value)} placeholder={t('phRecipientEmail')} />
               </div>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>{t('subjectLabel')}</label>
-                <input className={styles.modalInput} value={composeSubj}
+                <label htmlFor={`${formId}-composeSubj`} className={styles.modalLabel}>{t('subjectLabel')}</label>
+                <input id={`${formId}-composeSubj`} className={styles.modalInput} value={composeSubj}
                   onChange={e => setComposeSubj(e.target.value)} placeholder={t('phSubjectLine')} />
               </div>
               <div className={styles.modalField}>
-                <label className={styles.modalLabel}>{t('messageLabel')}</label>
-                <textarea className={styles.modalTextarea} value={composeBody}
+                <label htmlFor={`${formId}-composeBody`} className={styles.modalLabel}>{t('messageLabel')}</label>
+                <textarea id={`${formId}-composeBody`} className={styles.modalTextarea} value={composeBody}
                   onChange={e => setComposeBody(e.target.value)}
                   placeholder={replyingId ? t('phWriteReply') : t('phWriteMessage')} rows={7} />
               </div>

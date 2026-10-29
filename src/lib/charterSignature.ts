@@ -51,6 +51,9 @@ export async function signCharter(uid: string, name: string) {
 }
 
 /** Whether sign-off is switched on, and this member's own signature. */
+/** What the dashboard needs to know about the member's Charter sign-off. */
+export type CharterStatus = ReturnType<typeof useCharterStatus>;
+
 export function useCharterStatus(uid: string | null | undefined) {
   const [state, setState] = useState<{ loading: boolean; required: boolean; signature: CharterSignature | null }>(
     { loading: true, required: false, signature: null });

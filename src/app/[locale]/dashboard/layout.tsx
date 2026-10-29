@@ -12,6 +12,7 @@ import { normalizeRole } from '@/lib/role';
 import PageTransition from '@/components/PageTransition';
 import DefaultPasswordBanner from '@/components/dashboard/DefaultPasswordBanner';
 import CharterSignBanner from '@/components/dashboard/CharterSignBanner';
+import { SIGNING_ROLES, useCharterStatus } from '@/lib/charterSignature';
 import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
@@ -44,6 +45,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router   = useRouter();
   const pathname = usePathname();
   const t        = useTranslations('Dashboard');
+
+  // The Charter reminder sits above every page. Until we know whether it's
+  // needed, the page loads invisibly (at most 2.5s), so the banner can't
+  // appear later and push everything down.
+  const charterStatus = useCharterStatus(user?.uid);
+  const [charterWaitOver, setCharterWaitOver] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setCharterWaitOver(true), 2500);
+    return () => clearTimeout(id);
+  }, []);
+  const holdPage = charterStatus.loading && !charterWaitOver
+    && SIGNING_ROLES.includes(normalizeRole(user?.role)) && !pathname.startsWith('/dashboard/shaper/charter');
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
@@ -195,10 +208,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
-      <main className={styles.mainContent}>
+      <main className={styles.mainContent} aria-busy={holdPage || undefined}>
         <DefaultPasswordBanner />
-        <CharterSignBanner />
-        <PageTransition scope="section">{children}</PageTransition>
+        <CharterSignBanner status={charterStatus} />
+        <div className={holdPage ? styles.holding : undefined}>
+          <PageTransition scope="section">{children}</PageTransition>
+        </div>
       </main>
     </div>
   );

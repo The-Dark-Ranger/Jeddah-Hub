@@ -1,7 +1,7 @@
 'use client';
 
 /* Shared blog editor and list used by the three Blogs dashboard pages. */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
@@ -26,6 +26,7 @@ interface BlogPost {
 }
 
 export default function BlogManager({ user }: { user: UserProfile }) {
+  const formId = useId();
   const t = useTranslations('BlogManager');
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -197,23 +198,23 @@ export default function BlogManager({ user }: { user: UserProfile }) {
             </p>
           )}
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('titleLabel')}</label>
-            <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
+            <label htmlFor={`${formId}-title`} className={styles.label}>{t('titleLabel')}</label>
+            <input id={`${formId}-title`} className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('contentLabel')}</label>
-            <textarea className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
+            <label htmlFor={`${formId}-content`} className={styles.label}>{t('contentLabel')}</label>
+            <textarea id={`${formId}-content`} className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
           </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.label}>{t('excerptLabel')} <span className={styles.labelHint}>{t('excerptHint')}</span></label>
-              <textarea className={styles.textarea} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder={t('excerptPlaceholder')} rows={3} />
+              <label htmlFor={`${formId}-excerpt`} className={styles.label}>{t('excerptLabel')} <span className={styles.labelHint}>{t('excerptHint')}</span></label>
+              <textarea id={`${formId}-excerpt`} className={styles.textarea} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder={t('excerptPlaceholder')} rows={3} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>{t('tagsLabel')} <span className={styles.labelHint}>{t('tagsHint')}</span></label>
-              <input className={styles.input} value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder={t('tagsPlaceholder')} />
-              <label className={styles.label} style={{ marginTop: '1.25rem' }}>{t('statusLabel')}</label>
-              <select className={styles.select} value={status} onChange={e => setStatus(e.target.value as BlogPost['status'])}>
+              <label htmlFor={`${formId}-tagsInput`} className={styles.label}>{t('tagsLabel')} <span className={styles.labelHint}>{t('tagsHint')}</span></label>
+              <input id={`${formId}-tagsInput`} className={styles.input} value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder={t('tagsPlaceholder')} />
+              <label htmlFor={`${formId}-status`} className={styles.label} style={{ marginTop: '1.25rem' }}>{t('statusLabel')}</label>
+              <select id={`${formId}-status`} className={styles.select} value={status} onChange={e => setStatus(e.target.value as BlogPost['status'])}>
                 {canPublishDirectly && <option value="published">{t('statusPublished')}</option>}
                 <option value="draft">{t('statusDraft')}</option>
                 {!canPublishDirectly && <option value="pending_review">{t('statusSubmitForReview')}</option>}

@@ -32,12 +32,12 @@
 }
 
 .heroCategoryTag {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: max(12px, 0.68rem); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   padding: 0.22rem 0.65rem; border-radius: 4px;
 }
 
 .statusBadge {
-  font-size: 0.7rem; font-weight: 700; padding: 0.22rem 0.65rem;
+  font-size: max(12px, 0.7rem); font-weight: 700; padding: 0.22rem 0.65rem;
   border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive   { background: rgba(16,185,129,0.1); color: var(--success); }
@@ -83,7 +83,7 @@
   font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1;
 }
 .statLabel {
-  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  font-size: max(12px, 0.75rem); font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--text-muted);
 }
 
@@ -119,11 +119,13 @@
 
 .teamGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
   gap: 0.75rem;
 }
 
+/* min-width: 0 lets a long name end in "…" instead of widening the page. */
 .teamCard {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -152,7 +154,7 @@
 }
 
 .teamRole {
-  font-size: 0.75rem; color: var(--text-muted); font-weight: 500;
+  font-size: max(12px, 0.75rem); color: var(--text-muted); font-weight: 500;
 }
 
 /* Loading/404 */
@@ -172,7 +174,7 @@
   .heroDescription { font-size: 1rem; line-height: 1.7; margin-bottom: 1.25rem; }
   .heroBadges { gap: 0.4rem; margin-bottom: 1rem; }
   .heroMeta { gap: 0.6rem; }
-  .datePill, .memberCount { font-size: 0.78rem; padding: 0.35rem 0.7rem; }
+  .datePill, .memberCount { font-size: max(12px, 0.78rem); padding: 0.35rem 0.7rem; }
   .sectionBody { font-size: 0.95rem; line-height: 1.75; }
   .statCallout { padding: 0.75rem 1.1rem; margin-bottom: 1rem; }
   .statValue { font-size: 1.25rem; }
@@ -194,7 +196,7 @@
   .heroDescription { font-size: 0.92rem; }
   .heroMeta { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .datePill, .memberCount { width: 100%; box-sizing: border-box; }
-  .teamGrid { grid-template-columns: 1fr 1fr; }
+  .teamGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── Two-column body: story + key facts ── */
@@ -239,7 +241,7 @@
   padding: 1.35rem 1.35rem 1.4rem;
   display: flex; flex-direction: column; gap: 1.25rem;
 }
-.factsTitle { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+.factsTitle { margin: 0; font-size: max(12px, .78rem); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
 .factsList { margin: 0; display: flex; flex-direction: column; }
 .factRow { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid var(--border-color); }
 .factRow:first-child { padding-top: 0; }
@@ -251,14 +253,14 @@
 .factDotActive { background: var(--success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 20%, transparent); }
 
 .timeline { display: flex; flex-direction: column; gap: .5rem; }
-.timelineHead, .timelineDates { display: flex; justify-content: space-between; font-size: .78rem; color: var(--text-muted); }
+.timelineHead, .timelineDates { display: flex; justify-content: space-between; font-size: max(12px, .78rem); color: var(--text-muted); }
 .timelineHead span:first-child { font-weight: 700; color: var(--text-main); }
 .timelineTrack { height: 8px; border-radius: 999px; background: var(--background-alt); overflow: hidden; }
 .timelineFill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--hero-color, var(--primary-blue)), color-mix(in srgb, var(--hero-color, var(--primary-blue)) 60%, #fff)); }
 
 .factsAreas { display: flex; flex-direction: column; gap: .6rem; }
-.factsAreasTitle { font-size: .78rem; font-weight: 700; color: var(--text-main); }
-.factsAreas .impactAreaTag { font-size: .78rem; padding: .3rem .7rem; border-radius: 999px; }
+.factsAreasTitle { font-size: max(12px, .78rem); font-weight: 700; color: var(--text-main); }
+.factsAreas .impactAreaTag { font-size: max(12px, .78rem); padding: .3rem .7rem; border-radius: 999px; }
 
 .factsActions { display: flex; flex-direction: column; gap: .6rem; }
 .copyBtn {
@@ -283,7 +285,7 @@
 .relatedCard:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(15, 23, 42, .1); }
 .relatedImg { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .relatedBody { display: flex; flex-direction: column; gap: .3rem; padding: .9rem 1rem 1.1rem; }
-.relatedCat { font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.relatedCat { font-size: max(12px, .7rem); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .relatedName { font-weight: 700; color: var(--text-main); line-height: 1.35; }
 
 @media (max-width: 960px) {

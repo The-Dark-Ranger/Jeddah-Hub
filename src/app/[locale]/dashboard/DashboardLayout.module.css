@@ -128,7 +128,7 @@
 }
 
 .navGroupTitle {
-  font-size: 0.7rem;
+  font-size: max(12px, 0.7rem);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: 700;
@@ -184,6 +184,8 @@
   overflow-y: auto;
   background: var(--background);
 }
+/* The page while the Charter check answers: laid out and loading, not shown. */
+.holding { visibility: hidden; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -266,7 +268,7 @@
 
   .navLink {
     white-space: nowrap;
-    font-size: 0.78rem;
+    font-size: max(12px, 0.78rem);
     padding: 0.45rem 0.65rem;
     border-radius: 8px;
   }
@@ -330,7 +332,7 @@
 .roleBadge {
   align-self: flex-start;
   padding: .15rem .55rem; border-radius: 999px;
-  font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+  font-size: max(12px, .7rem); font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
   color: var(--role, var(--primary-blue));
   background: color-mix(in srgb, var(--role, var(--primary-blue)) 13%, transparent);
 }

@@ -39,7 +39,7 @@
 
 .eyebrow {
   display: inline-flex; align-items: center; gap: .6rem;
-  font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  font-size: max(12px, .74rem); font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
   color: var(--wef-blue);
   margin: 0 0 1rem;
 }
@@ -82,7 +82,7 @@
 }
 .logo { display: block; height: 72px; width: auto; }
 .logoCaption {
-  margin: 0; font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  margin: 0; font-size: max(12px, .74rem); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-muted); text-align: center;
 }
 

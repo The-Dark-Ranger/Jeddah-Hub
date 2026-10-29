@@ -69,12 +69,12 @@
 
 .langActive {
   padding: 0 .7rem; height: 100%; display: flex; align-items: center;
-  font-size: .75rem; font-weight: 700; letter-spacing: .06em;
+  font-size: max(12px, .75rem); font-weight: 700; letter-spacing: .06em;
   background: var(--primary-fill); color: #fff;
 }
 .langInactive {
   padding: 0 .7rem; height: 100%; display: flex; align-items: center;
-  font-size: .75rem; font-weight: 600; letter-spacing: .06em;
+  font-size: max(12px, .75rem); font-weight: 600; letter-spacing: .06em;
   color: var(--text-muted);
   transition: color .2s ease, background .2s ease;
 }
@@ -231,7 +231,7 @@
   .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 40px; border-radius: 8px; }
   .iconBtn   { min-width: 40px; min-height: 40px; border-radius: 8px; }
   .langPill { height: 40px; border-radius: 8px; }
-  .langActive, .langInactive { padding: 0 .55rem; font-size: .72rem; }
+  .langActive, .langInactive { padding: 0 .55rem; font-size: max(12px, .72rem); }
   .hamburger { display: flex; }
 }
 
@@ -324,7 +324,7 @@
   background: var(--primary-fill); color: #fff; font-weight: 700;
 }
 .mobileUserText { display: flex; flex-direction: column; min-width: 0; }
-.mobileUserLabel { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+.mobileUserLabel { font-size: max(12px, .72rem); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
 .mobileUserName { font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mobileSocial:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
 

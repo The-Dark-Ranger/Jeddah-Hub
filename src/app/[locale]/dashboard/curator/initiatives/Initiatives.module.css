@@ -128,7 +128,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 18px; padding: 0 5px; border-radius: 10px;
   background: var(--background); color: var(--text-muted);
-  font-size: 0.72rem; font-weight: 700;
+  font-size: max(12px, 0.72rem); font-weight: 700;
 }
 
 /* Loading / empty */
@@ -175,14 +175,14 @@
 
 .statusPill {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: max(12px, 0.72rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive   { background: rgba(5,150,105,0.12); color: #059669; }
 .statusArchived { background: rgba(100,116,139,0.12); color: #64748b; }
 
 .categoryPill {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 600;
+  font-size: max(12px, 0.72rem); font-weight: 600;
   background: rgba(37,99,235,0.1); color: var(--primary-blue);
 }
 
@@ -201,7 +201,7 @@
 }
 
 .cardMeta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; }
-.metaItem { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--text-muted); }
+.metaItem { display: flex; align-items: center; gap: 4px; font-size: max(12px, 0.78rem); color: var(--text-muted); }
 
 /* Card action bar */
 .cardActions {
@@ -271,7 +271,7 @@
   display: flex; flex-direction: column; gap: 0.8rem;
 }
 .teamPanelTitle {
-  font-size: 0.78rem; font-weight: 700; color: var(--text-main);
+  font-size: max(12px, 0.78rem); font-weight: 700; color: var(--text-main);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .teamAssignRow { display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -301,12 +301,12 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .memberRole {
-  font-size: 0.74rem; color: var(--text-muted); white-space: nowrap;
+  font-size: max(12px, 0.74rem); color: var(--text-muted); white-space: nowrap;
   background: var(--background); padding: 0.12rem 0.45rem; border-radius: 6px;
   border: 1px solid var(--border-color);
 }
 .removeBtn {
-  font-size: 0.74rem; font-weight: 600; color: var(--danger);
+  font-size: max(12px, 0.74rem); font-weight: 600; color: var(--danger);
   background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
   border-radius: 6px; padding: 0.18rem 0.5rem; cursor: pointer; flex-shrink: 0;
   transition: all 0.15s;
@@ -331,7 +331,7 @@
 .leaveBadge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
-  background: var(--danger); color: white; font-size: 0.72rem; font-weight: 700;
+  background: var(--danger); color: white; font-size: max(12px, 0.72rem); font-weight: 700;
 }
 .leaveList { display: flex; flex-direction: column; gap: 0.65rem; }
 .leaveRow {
@@ -368,7 +368,7 @@
 .removalBadge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
-  background: var(--warning); color: white; font-size: 0.72rem; font-weight: 700;
+  background: var(--warning); color: white; font-size: max(12px, 0.72rem); font-weight: 700;
 }
 .removalList { display: flex; flex-direction: column; gap: 0.65rem; }
 .removalRow {
@@ -402,7 +402,7 @@
 }
 .featuredHint svg { color: #f59e0b; flex-shrink: 0; }
 .featuredPill {
-  font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
+  font-size: max(12px, .7rem); font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
   background: rgba(245, 158, 11, .15); color: #b45309;
 }
 :global([data-theme="dark"]) .featuredPill { color: #fbbf24; }
@@ -420,7 +420,7 @@
 
 /* ── Spotlight (the Initiatives page's big feature card) ── */
 .spotlightPill {
-  font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
+  font-size: max(12px, .7rem); font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
   background: rgba(124, 58, 237, .14); color: #6d28d9;
 }
 :global([data-theme="dark"]) .spotlightPill { color: #c4b5fd; }
@@ -456,6 +456,6 @@
   .cardToggles { grid-template-columns: 1fr; }
 }
 /* Long toggle labels wrap instead of being cut; Edit/Team stay on one line. */
-.cardToggles .featureBtn, .cardToggles .spotlightBtn { white-space: normal; text-align: center; line-height: 1.25; font-size: .78rem; padding: .4rem .55rem; }
+.cardToggles .featureBtn, .cardToggles .spotlightBtn { white-space: normal; text-align: center; line-height: 1.25; font-size: max(12px, .78rem); padding: .4rem .55rem; }
 .cardActions { gap: .4rem; }
 .cardActions .editBtn, .cardActions .teamBtn { white-space: nowrap; padding: .4rem .55rem; min-width: 0; }

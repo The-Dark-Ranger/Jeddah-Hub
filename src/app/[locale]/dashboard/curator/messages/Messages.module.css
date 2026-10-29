@@ -13,13 +13,13 @@
 .unreadBadge {
   display: inline-flex; align-items: center; padding: 0.15rem 0.55rem;
   border-radius: 20px; background: rgba(37,99,235,0.12); color: var(--primary-blue);
-  font-size: 0.78rem; font-weight: 600;
+  font-size: max(12px, 0.78rem); font-weight: 600;
 }
 
 .repliedBadge {
   display: inline-flex; align-items: center; gap: 3px; padding: 0.15rem 0.55rem;
   border-radius: 20px; background: rgba(16,185,129,0.12); color: var(--success);
-  font-size: 0.75rem; font-weight: 600;
+  font-size: max(12px, 0.75rem); font-weight: 600;
 }
 
 .repliedNote {
@@ -61,7 +61,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 18px; padding: 0 5px; border-radius: 10px;
   background: var(--background); color: var(--text-muted);
-  font-size: 0.72rem; font-weight: 700;
+  font-size: max(12px, 0.72rem); font-weight: 700;
 }
 
 /* Loading / empty */
@@ -102,7 +102,7 @@
 .senderName { font-weight: 700; font-size: 0.92rem; color: var(--text-main); }
 .subjectBadge {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.75rem; font-weight: 600; border: 1px solid; white-space: nowrap;
+  font-size: max(12px, 0.75rem); font-weight: 600; border: 1px solid; white-space: nowrap;
 }
 
 .messageDate { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
@@ -244,7 +244,7 @@
 .summaryItem:nth-child(2) .summaryValue { color: var(--primary-blue); }
 .summaryItem:nth-child(3) .summaryValue { color: var(--warning); }
 .summaryItem:nth-child(4) .summaryValue { color: var(--success); }
-.summaryLabel { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.summaryLabel { font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
 
 /* ── Message cards ── */
 .messageCard { border-radius: 14px; transition: border-color .15s ease, box-shadow .2s ease; }

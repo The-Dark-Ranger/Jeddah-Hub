@@ -116,7 +116,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 18px; padding: 0 5px; border-radius: 10px;
   background: var(--background); color: var(--text-muted);
-  font-size: 0.72rem; font-weight: 700;
+  font-size: max(12px, 0.72rem); font-weight: 700;
 }
 
 /* Loading / empty */
@@ -163,14 +163,14 @@
 
 .statusPill {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: max(12px, 0.72rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .statusActive   { background: rgba(5,150,105,0.12); color: #059669; }
 .statusArchived { background: rgba(100,116,139,0.12); color: #64748b; }
 
 .categoryPill {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 600;
+  font-size: max(12px, 0.72rem); font-weight: 600;
   background: rgba(37,99,235,0.1); color: var(--primary-blue);
 }
 
@@ -188,7 +188,7 @@
   border-radius: 6px; width: fit-content;
 }
 .cardMeta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem; }
-.metaItem { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--text-muted); }
+.metaItem { display: flex; align-items: center; gap: 4px; font-size: max(12px, 0.78rem); color: var(--text-muted); }
 
 /* Card action bar */
 .cardActions {
@@ -296,12 +296,12 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .memberRole {
-  font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;
+  font-size: max(12px, 0.75rem); color: var(--text-muted); white-space: nowrap;
   background: var(--background); padding: 0.15rem 0.5rem; border-radius: 6px;
   border: 1px solid var(--border-color);
 }
 .removeBtn {
-  font-size: 0.75rem; font-weight: 600; color: var(--danger);
+  font-size: max(12px, 0.75rem); font-weight: 600; color: var(--danger);
   background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
   border-radius: 6px; padding: 0.2rem 0.55rem; cursor: pointer; flex-shrink: 0;
   transition: all 0.15s ease;
@@ -314,7 +314,7 @@
 
 /* ── Spotlight (the Initiatives page's big feature card) ── */
 .spotlightPill {
-  font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
+  font-size: max(12px, .7rem); font-weight: 700; padding: .15rem .55rem; border-radius: 999px;
   background: rgba(124, 58, 237, .14); color: #6d28d9;
 }
 :global([data-theme="dark"]) .spotlightPill { color: #c4b5fd; }
@@ -341,6 +341,6 @@
 .cardActions .editBtn, .cardActions .teamBtn { justify-content: center; }
 .cardActions .iconOnly { width: 36px; height: 36px; padding: 0; justify-content: center; margin: 0; }
 /* Long toggle labels wrap instead of being cut; Edit/Team stay on one line. */
-.cardToggles .spotlightBtn { white-space: normal; text-align: center; line-height: 1.25; font-size: .78rem; padding: .4rem .55rem; }
+.cardToggles .spotlightBtn { white-space: normal; text-align: center; line-height: 1.25; font-size: max(12px, .78rem); padding: .4rem .55rem; }
 .cardActions { gap: .4rem; }
 .cardActions .editBtn, .cardActions .teamBtn { white-space: nowrap; padding: .4rem .55rem; min-width: 0; }

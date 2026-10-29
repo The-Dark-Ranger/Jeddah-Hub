@@ -7,7 +7,7 @@
 }
 
 .cardTitle {
-  font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
+  font-size: max(12px, 0.78rem); font-weight: 700; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: 0.07em;
   margin-bottom: 1.25rem; padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
@@ -17,9 +17,9 @@
 
 .formField { display: flex; flex-direction: column; gap: 0.4rem; }
 .label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
-.charCount { font-size: 0.75rem; color: var(--text-muted); text-align: end; margin-top: 0.25rem; }
+.charCount { font-size: max(12px, 0.75rem); color: var(--text-muted); text-align: end; margin-top: 0.25rem; }
 .charCountNearLimit { color: var(--warning, #f59e0b); }
-.hint { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+.hint { font-size: max(12px, 0.75rem); color: var(--text-muted); font-weight: 400; }
 
 .input {
   padding: 0.65rem 1rem; border-radius: 9px;
@@ -59,7 +59,7 @@
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .previewHint {
-  font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;
+  font-size: max(12px, 0.78rem); color: var(--text-muted); margin-top: 0.5rem;
   display: flex; align-items: center; gap: 0.35rem;
 }
 

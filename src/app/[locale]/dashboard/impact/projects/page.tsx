@@ -10,7 +10,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
-import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
 import InitiativeCover from '@/components/InitiativeCover';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import ModalPortal from '@/components/ModalPortal';
@@ -496,7 +496,7 @@ export default function ImpactProjects() {
                   <button
                     type="button"
                     className={styles.downloadBtn + ' ' + styles.iconOnly}
-                    onClick={() => void downloadInitiativeReport(init as Parameters<typeof downloadInitiativeReport>[0], getMemberNames(init))}
+                    onClick={() => void downloadReport(init as ReportInitiative, getMemberNames(init))}
                     title={t('downloadReport')}
                     aria-label={t('downloadReport')}
                   >

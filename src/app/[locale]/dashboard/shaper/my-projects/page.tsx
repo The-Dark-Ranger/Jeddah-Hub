@@ -16,7 +16,7 @@ import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
-import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
 import { slugify } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
@@ -469,7 +469,7 @@ export default function MyProjects() {
                       className={jiStyles.downloadLeadBtn}
                       onClick={() => {
                         const memberNames = Object.fromEntries((p.members || []).map(m => [memberId(m), getUserLabel(memberId(m))]));
-                        void downloadInitiativeReport(p as Parameters<typeof downloadInitiativeReport>[0], memberNames);
+                        void downloadReport(p as ReportInitiative, memberNames);
                       }}
                       title={t('downloadReport')}
                     >

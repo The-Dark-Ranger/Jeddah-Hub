@@ -32,15 +32,15 @@
 
 .clearBtn {
   padding: 0.2rem 0; border: none; background: transparent;
-  color: var(--text-muted); font-size: 0.78rem; font-weight: 600;
+  color: var(--text-muted); font-size: max(12px, 0.78rem); font-weight: 600;
   cursor: pointer; text-decoration: underline; transition: color 0.15s ease;
 }
 .clearBtn:hover { color: var(--danger); }
 
-.hint { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
+.hint { font-size: max(12px, 0.75rem); color: var(--text-muted); line-height: 1.5; }
 
 .urlInput {
-  padding: 0.55rem 0.85rem; border-radius: 9px;
+  min-height: 40px; padding: 0.55rem 0.85rem; border-radius: 9px;
   border: 1px solid var(--border-color); background: var(--input-bg);
   color: var(--text-main); font-size: 0.84rem; outline: none;
   transition: border-color 0.2s ease; width: 100%; box-sizing: border-box;

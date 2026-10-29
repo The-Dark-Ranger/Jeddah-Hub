@@ -89,7 +89,7 @@
 @media (prefers-reduced-motion: reduce) {
   .retreatFadeIn { animation: none; }
 }
-.retreatEyebrow { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:0; }
+.retreatEyebrow { font-size:max(12px, .75rem);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:0; }
 .retreatTitle   { font-size:clamp(1.9rem,3.5vw,3rem);font-weight:800;line-height:1.1;color:#fff;margin-bottom:.3rem; }
 .retreatSubtitle{ font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;margin-bottom:1.4rem; }
 .retreatDesc    { font-size:.97rem;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:1.75rem; }
@@ -107,12 +107,12 @@
 }
 .retreatBtnSecondary:hover { background:rgba(255,255,255,.16); transform:translateY(-2px); }
 .retreatVenues { background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.75rem; }
-.retreatVenuesTitle { font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);font-weight:600;margin-bottom:1rem; }
+.retreatVenuesTitle { font-size:max(12px, .72rem);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);font-weight:600;margin-bottom:1rem; }
 .retreatVenuesGrid  { display:grid;grid-template-columns:1fr 1fr;gap:.6rem; }
 .retreatVenueCard   { padding:.75rem 1rem;background:rgba(255,255,255,.06);border-radius:8px;border:1px solid rgba(255,255,255,.08);transition:background .2s ease; }
 .retreatVenueCard:hover { background:rgba(255,255,255,.1); }
 .retreatVenueName   { font-size:.83rem;font-weight:600;color:#fff; }
-.retreatVenueTag    { font-size:.7rem;color:rgba(255,255,255,.5);margin-top:.15rem; }
+.retreatVenueTag    { font-size:max(12px, .7rem);color:rgba(255,255,255,.5);margin-top:.15rem; }
 
 /* ── Activity slider controls, only rendered when there's more than one
    active Hub Activity/Workshop to page through. ── */
@@ -149,11 +149,11 @@
 .projectCard  { background:var(--card-bg-solid);border-radius:14px;overflow:hidden;border:1px solid var(--border-color);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;display:flex;flex-direction:column; }
 .projectCard:hover { transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,.1);border-color:var(--primary-blue); }
 .projectBanner { height:160px;position:relative;display:flex;align-items:flex-end;padding:.75rem; }
-.projectBannerTag { font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:.2rem .5rem;border-radius:4px; }
+.projectBannerTag { font-size:max(12px, .64rem);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:.2rem .5rem;border-radius:4px; }
 .projectInfo   { padding:1.5rem;flex:1;display:flex;flex-direction:column;gap:.65rem; }
 .projectTitle  { font-size:1.1rem;font-weight:700;color:var(--text-main);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
 .projectDesc   { color:var(--text-muted);line-height:1.65;font-size:.9rem;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden; }
-.projectBadge  { display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;background:rgba(16,185,129,.1);color:var(--success);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:auto; }
+.projectBadge  { display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:4px;background:rgba(16,185,129,.1);color:var(--success);font-size:max(12px, .7rem);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:auto; }
 
 /* ── Members ── */
 .membersGrid { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem; }
@@ -162,7 +162,7 @@
 .memberAvatar { width:44px;height:44px;border-radius:50%;color:#fff;font-weight:700;font-size:.95rem;display:flex;align-items:center;justify-content:center;margin:0 auto .7rem; }
 .memberAvatarImg { width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;margin:0 auto .7rem; }
 .memberName   { font-size:.8rem;font-weight:600;color:var(--text-main);line-height:1.3;margin-bottom:.15rem; }
-.memberRole   { font-size:.68rem;color:var(--text-muted); }
+.memberRole   { font-size:max(12px, .68rem);color:var(--text-muted); }
 
 /* ── Partners ── */
 .partnersImage {

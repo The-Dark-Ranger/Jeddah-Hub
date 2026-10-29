@@ -23,7 +23,7 @@
   overflow: hidden;
 }
 .heroContent { max-width: 700px; margin-inline: auto; padding-bottom: 4rem; position: relative; z-index: 1; }
-.heroEyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 1.1rem; }
+.heroEyebrow { font-size: max(12px, .78rem); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 1.1rem; }
 .heroTitle   { font-size: clamp(2.4rem,5.5vw,4rem); font-weight: 800; letter-spacing: -.03em; margin-bottom: 1.25rem; line-height: 1.08; }
 .heroSubtitle{ font-size: clamp(1rem,2vw,1.2rem); line-height: 1.75; color: rgba(255,255,255,.75); margin-bottom: 2.5rem; max-width: 560px; margin-inline: auto; }
 .heroBtn { display: inline-flex; align-items: center; gap: .5rem; background: #fff; color: #0a3272; padding: 1rem 2.5rem; border-radius: 10px; font-weight: 700; font-size: 1rem; transition: all .2s ease; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 20px rgba(0,0,0,.25); }
@@ -78,7 +78,7 @@
 }
 
 .heroChip span {
-  font-size: 0.72rem;
+  font-size: max(12px, 0.72rem);
   color: var(--text-muted);
   font-weight: 600;
   text-transform: uppercase;
@@ -89,7 +89,7 @@
 /* Sections */
 .section    { padding:6rem 1.5rem; }
 .sectionAlt { padding:6rem 1.5rem;background:var(--background-alt); }
-.eyebrow    { font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:.85rem; }
+.eyebrow    { font-size:max(12px, .75rem);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:.85rem; }
 .sectionTitle { font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;color:var(--text-main);line-height:1.3;margin-bottom:1.25rem; }
 .sectionBody  { font-size:1rem;color:var(--text-muted);line-height:1.8;margin-bottom:1rem; }
 
@@ -192,7 +192,7 @@
 }
 .ctaEyebrow {
   display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1.1rem !important;
-  padding: .4rem .95rem; border-radius: 999px; font-size: .74rem !important; font-weight: 700;
+  padding: .4rem .95rem; border-radius: 999px; font-size: max(12px, .74rem) !important; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase; color: #fff !important;
   background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22);
 }
@@ -288,7 +288,7 @@
   flex-shrink: 0;
 }
 .quoteName { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
-.quoteRole { font-size: 0.78rem; color: var(--primary-blue); font-weight: 500; }
+.quoteRole { font-size: max(12px, 0.78rem); color: var(--primary-blue); font-weight: 500; }
 
 /* ── Dark mode overrides ──────────────────────────────────────────────────
    In dark mode the hero uses a deep navy gradient so the blue tones remain

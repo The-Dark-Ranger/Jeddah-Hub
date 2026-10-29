@@ -88,10 +88,12 @@ sequenceDiagram
   off Who We Are, the homepage and the member counts until their first
   sign-in, which lists them automatically. Until then they have no public
   profile at all, so the database's public API has nothing to show either.
-- Passwords must be at least 8 characters, enforced by Firebase itself; an
-  older, shorter password is refused at sign-in and the member is sent to
-  **Forgot password?** on the login page, which emails a link to set a new
-  one (the reply is the same whether or not the address has an account).
+- A member's own password must be at least 8 characters. Someone who has
+  lost theirs (including members who have already signed in) gets a new
+  one-time password from **Role Assignments → Members → New password**: it
+  is emailed only to them (the curator never sees it), signs them out of
+  every device, and must be replaced at their next sign-in. Only the
+  Curator can do this for a curator's account; nobody for their own.
 - **Alumni** in Pending can be **dismissed**: set aside in a collapsible
   *Dismissed Alumni* section to review later, where a curator can still send
   an invite, restore them to Pending, or remove them.

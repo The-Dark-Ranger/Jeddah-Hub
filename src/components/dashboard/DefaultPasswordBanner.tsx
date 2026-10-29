@@ -8,15 +8,18 @@ import styles from './DefaultPasswordBanner.module.css';
 
 /** Shown across the dashboard while the member is still signed in with the
  *  temporary password a curator's account creation gave them. */
+const readFlag = () => {
+  try { return sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'; } catch { return false; }
+};
+
 export default function DefaultPasswordBanner() {
   const t = useTranslations('Dashboard');
-  const [show, setShow] = useState(false);
+  // Read straight away (the dashboard only renders in the browser), so the
+  // banner is there from the first frame instead of pushing the page down.
+  const [show, setShow] = useState(readFlag);
 
   useEffect(() => {
-    const read = () => {
-      try { setShow(sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'); } catch { setShow(false); }
-    };
-    read();
+    const read = () => setShow(readFlag());
     window.addEventListener('jh-password-changed', read);
     return () => window.removeEventListener('jh-password-changed', read);
   }, []);

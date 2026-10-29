@@ -30,7 +30,7 @@
 }
 .eyebrow {
   margin: 1rem 0 .5rem;
-  font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  font-size: max(12px, .75rem); font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
   color: var(--primary-blue);
 }
 .title { margin: 0 0 .75rem; font-size: clamp(1.6rem, 4vw, 2.3rem); font-weight: 800; color: var(--text-main); }
@@ -54,7 +54,7 @@
   text-align: start;
 }
 .suggestTitle {
-  margin: 0 0 .75rem; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  margin: 0 0 .75rem; font-size: max(12px, .75rem); font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text-muted);
 }
 .suggest ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }

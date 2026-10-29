@@ -45,14 +45,14 @@
 }
 .initiativeName { font-weight: 700; color: var(--text-main); font-size: 0.95rem; flex: 1; }
 .memberCount { font-size: 0.8rem; color: var(--text-muted); }
-.statusPill { font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+.statusPill { font-size: max(12px, 0.75rem); font-weight: 600; text-transform: capitalize; }
 
 .noMembersRow { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
 
 .tableScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .memberTable { width: 100%; border-collapse: collapse; }
 .memberTable th {
-  padding: 0.6rem 1.25rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+  padding: 0.6rem 1.25rem; font-size: max(12px, 0.78rem); font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.05em; color: var(--text-muted); text-align: start;
   background: var(--background); border-bottom: 1px solid var(--border-color);
 }
@@ -126,7 +126,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
   background: var(--primary-fill); color: white;
-  font-size: .72rem; font-weight: 700; margin-inline-start: .5rem;
+  font-size: max(12px, .72rem); font-weight: 700; margin-inline-start: .5rem;
 }
 .requestList { display: flex; flex-direction: column; gap: .75rem; }
 .requestRow {
@@ -146,9 +146,10 @@
   color: var(--primary-blue); font: inherit; font-size: .82rem; font-weight: 600;
 }
 .roleSelect:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 1px; }
+@media (max-width: 600px) { .roleSelect { min-height: 40px; } }
 .roleSelect:disabled { cursor: not-allowed; opacity: .65; }
 .pendingPill {
   display: inline-flex; align-items: center; padding: .25rem .65rem; border-radius: 20px;
   border: 1px solid var(--warning); background: rgba(245,158,11,.1); color: var(--text-main);
-  font-size: .76rem; font-weight: 600;
+  font-size: max(12px, .76rem); font-weight: 600;
 }

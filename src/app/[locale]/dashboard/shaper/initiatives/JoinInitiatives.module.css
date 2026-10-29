@@ -24,7 +24,7 @@
 }
 
 .statusPill {
-  font-size: 0.78rem; font-weight: 700; text-transform: capitalize;
+  font-size: max(12px, 0.78rem); font-weight: 700; text-transform: capitalize;
   padding: 0.3rem 0.7rem; border-radius: 20px; background: var(--background-alt);
   flex-shrink: 0;
 }
@@ -50,7 +50,7 @@
 .badge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px;
-  background: var(--primary-fill); color: white; font-size: 0.72rem; font-weight: 700;
+  background: var(--primary-fill); color: white; font-size: max(12px, 0.72rem); font-weight: 700;
 }
 .requestList { display: flex; flex-direction: column; gap: 0.75rem; }
 .incomingRow {
@@ -94,7 +94,7 @@
 .cardBody { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
 .categoryPill {
   display: inline-block; padding: 0.18rem 0.6rem; border-radius: 20px;
-  font-size: 0.72rem; font-weight: 600;
+  font-size: max(12px, 0.72rem); font-weight: 600;
   background: rgba(37,99,235,0.1); color: var(--primary-blue); width: fit-content;
 }
 .cardTitle {
@@ -134,7 +134,7 @@
   border: 1px solid rgba(245,158,11,0.25);
 }
 .cancelBtn {
-  padding: 0.3rem 0.65rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  padding: 0.3rem 0.65rem; border-radius: 7px; font-size: max(12px, 0.78rem); font-weight: 600;
   border: 1px solid var(--border-color); color: var(--text-muted);
   background: transparent; cursor: pointer; transition: all 0.15s ease;
 }
@@ -253,7 +253,7 @@
 .memberFooter { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 
 .leaveBtn {
-  padding: 0.3rem 0.65rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  padding: 0.3rem 0.65rem; border-radius: 7px; font-size: max(12px, 0.78rem); font-weight: 600;
   border: 1px solid rgba(239,68,68,0.25); color: var(--danger);
   background: rgba(239,68,68,0.06); cursor: pointer; transition: all 0.15s ease;
 }
@@ -295,25 +295,25 @@
 }
 .memberPanelInfo { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
 .memberPanelName { font-size: 0.85rem; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.memberPanelRole { font-size: 0.75rem; color: var(--text-muted); }
+.memberPanelRole { font-size: max(12px, 0.75rem); color: var(--text-muted); }
 .memberPanelActions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
 
 /* Removal request button and badges */
 .requestRemovalBtn {
-  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: 0.76rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: max(12px, 0.76rem); font-weight: 600;
   border: 1px solid rgba(239,68,68,0.25); color: var(--danger);
   background: rgba(239,68,68,0.06); cursor: pointer; transition: all 0.15s ease; flex-shrink: 0;
 }
 .requestRemovalBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
 .removalPendingBadge {
   display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: 0.76rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 7px; font-size: max(12px, 0.76rem); font-weight: 600;
   background: rgba(245,158,11,0.1); color: var(--warning);
   border: 1px solid rgba(245,158,11,0.25);
 }
 .cancelRemovalBtn {
   padding: 0.22rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-color);
-  color: var(--text-muted); background: transparent; font-size: 0.75rem; font-weight: 600;
+  color: var(--text-muted); background: transparent; font-size: max(12px, 0.75rem); font-weight: 600;
   cursor: pointer; transition: all 0.15s ease;
 }
 .cancelRemovalBtn:hover { border-color: var(--danger); color: var(--danger); }
@@ -321,7 +321,7 @@
 /* Add-member request row and trigger */
 .addMemberBtn {
   align-self: flex-start; margin-top: 0.25rem;
-  padding: 0.32rem 0.7rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  padding: 0.32rem 0.7rem; border-radius: 7px; font-size: max(12px, 0.78rem); font-weight: 600;
   border: 1px dashed var(--border-color); color: var(--primary-blue);
   background: transparent; cursor: pointer; transition: all 0.15s ease;
 }
@@ -333,7 +333,7 @@
   color: var(--text-main); font-size: 0.82rem;
 }
 .addMemberSubmitBtn {
-  padding: 0.32rem 0.75rem; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+  padding: 0.32rem 0.75rem; border-radius: 7px; font-size: max(12px, 0.78rem); font-weight: 600;
   border: none; color: #fff; background: var(--primary-fill);
   cursor: pointer; transition: opacity 0.15s ease; flex-shrink: 0;
 }
@@ -350,7 +350,7 @@
 }
 .tab:hover { color: var(--text-main); }
 .tabActive, .tabActive:hover { background: var(--primary-fill); border-color: var(--primary-blue); color: #fff; }
-.tabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
+.tabCount { font-size: max(12px, .72rem); padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
 .tabActive .tabCount { background: rgba(255, 255, 255, .22); }
 .emptyNote { padding: 2rem 0; text-align: center; color: var(--text-muted); }
 
@@ -359,6 +359,6 @@
 .cardCover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cardDesc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .cardMetaRow { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: auto; padding-top: .35rem; }
-.cardTeam { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.cardTeam { display: inline-flex; align-items: center; gap: .35rem; font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
 .viewLink { font-size: .8rem; font-weight: 700; color: var(--primary-blue); }
 .viewLink:hover { text-decoration: underline; }

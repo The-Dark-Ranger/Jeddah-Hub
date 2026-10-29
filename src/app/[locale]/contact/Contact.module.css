@@ -34,7 +34,7 @@
 }
 
 .eyebrow {
-  font-size: 0.78rem;
+  font-size: max(12px, 0.78rem);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -438,7 +438,7 @@
 /* ── Message character counter ── */
 .charCount {
   align-self: flex-end;
-  font-size: .75rem;
+  font-size: max(12px, .75rem);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   transition: color .2s ease;

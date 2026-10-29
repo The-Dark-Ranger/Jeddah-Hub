@@ -395,7 +395,7 @@ input, textarea, select {
 /* -- Badge ---------------------------------------------------- */
 .badge {
   display: inline-block; padding: 0.25rem 0.65rem; border-radius: 6px;
-  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: max(12px, 0.75rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
 }
 .badge-blue  { background: var(--primary-blue-glow); color: var(--primary-blue); }
 .badge-green { background: rgba(16,185,129,0.12);    color: var(--success); }

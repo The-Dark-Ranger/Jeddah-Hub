@@ -102,6 +102,7 @@ export default function AvatarUploader({ value, onChange }: Props) {
         value={isDataUri(value) ? '' : value}
         onChange={e => { onChange(e.target.value); setBroken(false); }}
         placeholder={t('orPasteUrl')}
+        aria-label={t('orPasteUrl')}
         disabled={isDataUri(value)}
         type="url"
       />

@@ -391,13 +391,7 @@
     "errorNetwork": "Can't reach the server. Check your connection and try again.",
     "errorLocked": "Too many failed attempts. Please wait {seconds} seconds and try again.",
     "errorEmailFormat": "Please enter a valid email address.",
-    "errorPasswordRenew": "For your security, this account needs a new password. Use “Forgot password?” below to get a link by email.",
-    "forgotPassword": "Forgot password?",
-    "resetIntro": "Enter your email and we'll send you a link to set a new password.",
-    "resetSend": "Send reset link",
-    "resetSending": "Sending…",
-    "resetSent": "If {email} has a member account, a link to set a new password is on its way. Check your inbox (and spam folder).",
-    "resetWait": "Please wait {seconds} seconds before asking for another email."
+    "errorPasswordRenew": "For your security, this account needs a new password. Please contact the Jeddah Hub team and a curator will email you a new one-time password."
   },
   "Common": {
     "email": "Email",
@@ -985,7 +979,11 @@
     "clearSelection": "Clear selection",
     "alreadyOnInitiative": "Already on this initiative",
     "statusTitle": "Members",
-    "statusHint": "Everyone with an account. Switch a member between Shaper and Alumni, or remove them from the Hub completely (their login, profile and initiative memberships). Who We Are, the homepage and the member counts update within a minute.",
+    "newPassword": "New password",
+    "newPasswordConfirm": "Send?",
+    "newPasswordSent": "A new one-time password was emailed to {name}.",
+    "newPasswordFailed": "Couldn't send the new password. Please try again.",
+    "statusHint": "Everyone with an account. Switch a member between Shaper and Alumni, email them a new one-time password (it signs them out everywhere; you never see it), or remove them from the Hub completely (their login, profile and initiative memberships). Who We Are, the homepage and the member counts update within a minute.",
     "statusLoadFailed": "Couldn't load members.",
     "statusSaveFailed": "Couldn't change the status. Please try again.",
     "viewMoreCount": "View {count} more ({total} hidden)",

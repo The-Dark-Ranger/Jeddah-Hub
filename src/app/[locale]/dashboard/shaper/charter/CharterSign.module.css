@@ -49,6 +49,8 @@
   min-width: 50px; min-height: 0; padding: 0; box-sizing: border-box;
   background: var(--border-color); cursor: pointer; transition: background .2s ease;
 }
+/* Invisible, larger hit area around the 50x28 track. */
+.switch::before { content: ''; position: absolute; inset: -8px; }
 .switchOn { background: #10b981; }
 .switch:disabled { opacity: .6; cursor: wait; }
 .switch:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
@@ -75,8 +77,8 @@
   padding: .65rem 0; border-bottom: 1px solid var(--border-color); font-size: .88rem;
 }
 .memberName { display: flex; flex-direction: column; font-weight: 600; color: var(--text-main); }
-.memberRole { font-size: .75rem; font-weight: 500; color: var(--text-muted); }
-.chipSigned, .chipPending { flex-shrink: 0; padding: .25rem .65rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+.memberRole { font-size: max(12px, .75rem); font-weight: 500; color: var(--text-muted); }
+.chipSigned, .chipPending { flex-shrink: 0; padding: .25rem .65rem; border-radius: 999px; font-size: max(12px, .75rem); font-weight: 700; }
 .chipSigned { background: rgba(16, 185, 129, .14); color: #047857; }
 .chipPending { background: rgba(245, 158, 11, .14); color: #b45309; }
 :global([data-theme="dark"]) .chipSigned { color: #6ee7b7; }

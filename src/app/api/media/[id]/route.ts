@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
+import { isRateLimited, clientIp } from '@/lib/rateLimit';
 
 /* Serves a photo stored in the Firestore `media` collection (one document per
  * photo, see src/lib/media.ts) as a real image, so pages keep using a plain
  * <img src="/api/media/<id>">. Media documents are immutable, a new upload
- * always gets a new id, so responses are cached for a year at the CDN. */
+ * always gets a new id, so responses are cached for a year at the CDN.
+ * What reaches this code missed that cache and costs a database read, so
+ * one visitor gets a generous but limited number per minute. */
 
 const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const ID_RE = /^[A-Za-z0-9]{20}$/;
 const DATA_RE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!PROJECT || !ID_RE.test(id)) return new NextResponse(null, { status: 404 });
+  if (isRateLimited(`media:${clientIp(req)}`, 240, 60_000)) return new NextResponse(null, { status: 429 });
 
   let res: Response;
   try {

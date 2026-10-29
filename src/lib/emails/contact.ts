@@ -12,6 +12,17 @@ import {
 import { LOGO_ATTACHMENTS } from './logos';
 
 const ADDRESS = process.env.CONTACT_EMAIL || 'contact@jeddahhub.org';
+/** Links in a message: full URLs, www. addresses and bare domains with
+ *  common endings (the contact route allows at most a few). */
+export const LINK_RE = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|io|ru|xyz|top|info|biz|click|link|shop|site|online)\b/gi;
+
+/** The visitor's links as plain, unclickable text ("hxxps://example[.]com").
+ *  Their copy goes to whatever address was typed into the form, so it must
+ *  not carry working links that someone else may have written, under the
+ *  hub's name. */
+const defangLinks = (text: string) =>
+  text.replace(LINK_RE, link => link.replace(/^http/i, 'hxxp').replace(/\./g, '[.]'));
+
 /** Where contact-form messages are delivered. */
 export const CONTACT_INBOX = process.env.CONTACT_INBOX || 'jeddahglobalshapers@gmail.com';
 
@@ -155,7 +166,7 @@ export function senderCopy(m: ContactMessage) {
         [c.rows.email, email],
       ]) +
       sectionTitle(c.yourMessage) +
-      quote(m.lang, m.message) +
+      quote(m.lang, defangLinks(m.message)) +
       sectionTitle(c.nextTitle) +
       steps(c.next) +
       sectionTitle(c.exploreTitle) +
@@ -176,7 +187,7 @@ export function senderCopy(m: ContactMessage) {
       c.heading(m.name), '', c.intro, '',
       ...(ref ? [`${c.rows.ref}: ${ref}`] : []),
       `${c.rows.topic}: ${topic}`, `${c.rows.sent}: ${jeddahTime(m.lang, m.at)}`, '',
-      `${c.yourMessage}:`, m.message, '',
+      `${c.yourMessage}:`, defangLinks(m.message), '',
       c.footer(m.email),
     ].join('\n'),
   };

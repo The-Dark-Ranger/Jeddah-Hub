@@ -24,6 +24,9 @@ const isDev = process.env.NODE_ENV !== 'production';
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://www.google.com https://www.gstatic.com`,
+  // No inline event-handler attributes (onerror=, onclick=…): React never
+  // writes them, so even injected HTML can't run code through them.
+  "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: https:",

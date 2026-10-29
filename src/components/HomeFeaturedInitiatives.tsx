@@ -9,6 +9,8 @@ import styles from '@/app/[locale]/Home.module.css';
 import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { safeColor } from '@/lib/activityTypes';
+import { cssUrl } from '@/lib/sanitize';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -55,12 +57,14 @@ function cardImage(init: Initiative): string | undefined {
 }
 
 function cardGradient(init: Initiative, fallback: string): string {
-  const img = cardImage(init);
+  // Leads can edit these fields, so only checked values reach the CSS.
+  const img = cssUrl(cardImage(init));
   if (img) {
-    return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),url(${img})`;
+    return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),${img}`;
   }
-  if (init.color) {
-    return `linear-gradient(135deg,${init.color}ee,${init.color}99)`;
+  const color = safeColor(init.color);
+  if (color) {
+    return `linear-gradient(135deg,${color}ee,${color}99)`;
   }
   const cat = CATEGORY_COLORS[init.category ?? ''];
   if (cat) return `linear-gradient(135deg,${cat}ee,${cat}88)`;

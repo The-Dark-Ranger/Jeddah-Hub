@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## October 2026
 
 ### 29 October
+- Penetration test fixes: passwords must be at least 8 characters (enforced by Firebase) and the login page has **Forgot password?**; accounts still on the old default password were reset or signed out; colours and photo addresses can no longer inject styles into public pages; photos upload through the server with a daily limit and can't be listed in bulk; leads can't change a project's web address; "Incoming" members have no public profile until they sign in; posts from other websites to the forms are refused; links in the visitor's copy of a contact message are no longer clickable; a crash in the image route is fixed; `security.txt` added.
 - Security audit fixes: a lead can only add a plain Member (wherever it sits in the list) and can't remove another lead; members' own posts accept only the editor's fields, with size limits and no self-added likes; guest likes must be a real guest id (no oversized values); only the Curator can create, reset or remove an account a Curator role is waiting for.
 
 ### 28 October

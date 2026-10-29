@@ -14,7 +14,7 @@ import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { withinLimit, DAY } from '@/lib/persistentLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { readJsonBody } from '@/lib/http';
-import { json, isBotSubmission } from '@/lib/formGuard';
+import { json, isBotSubmission, isCrossSite } from '@/lib/formGuard';
 import { isBlockedBot } from '@/lib/botCheck';
 import type { CustomForm, CustomFormQuestion } from '@/lib/activityTypes';
 
@@ -28,6 +28,7 @@ const clean = (v: unknown, max: number) =>
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
+  if (isCrossSite(req)) return json({ error: 'forbidden' }, 403);
   if (isRateLimited(`activity:${ip}`, 6, 10 * 60_000)) return json({ error: 'too_many' }, 429);
   if (await isBlockedBot('activity')) return json({ error: 'bot_check_failed' }, 403);
 
@@ -80,17 +81,28 @@ export async function POST(req: NextRequest) {
   const fingerprint = email
     ? createHash('sha256').update(`${activityId}\n${formType}\n${email}`).digest('hex')
     : null;
+  const response = {
+    activityId, formType, answers, read: false, submittedAt: new Date().toISOString(),
+    ...(name ? { submitterName: name } : {}),
+    ...(email ? { submitterEmail: email, fingerprint } : {}),
+  };
   try {
     if (fingerprint) {
+      // Older responses have random ids, so look for those too.
       const dup = await db.collection('activity_responses').where('fingerprint', '==', fingerprint).limit(1).get();
       if (!dup.empty) return json({ ok: true, status: 'already' });
       if (!(await withinLimit(`activity-email:${email}`, 10, DAY))) return json({ error: 'too_many' }, 429);
+      // The fingerprint is the document id: create() refuses a second copy
+      // even when two identical submissions arrive at the same moment.
+      try {
+        await db.collection('activity_responses').doc(fingerprint).create(response);
+      } catch (err) {
+        if ((err as { code?: unknown } | null)?.code === 6) return json({ ok: true, status: 'already' }); // ALREADY_EXISTS
+        throw err;
+      }
+    } else {
+      await db.collection('activity_responses').add(response);
     }
-    await db.collection('activity_responses').add({
-      activityId, formType, answers, read: false, submittedAt: new Date().toISOString(),
-      ...(name ? { submitterName: name } : {}),
-      ...(email ? { submitterEmail: email, fingerprint } : {}),
-    });
   } catch (err) {
     console.error('[activity] save failed', err);
     return json({ error: 'save_failed' }, 500);

@@ -14,6 +14,7 @@ import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS, type PlaceholderProject } from '
 import { slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
 import InitiativeCover from '@/components/InitiativeCover';
+import { safeColor } from '@/lib/activityTypes';
 
 export interface Project extends PlaceholderProject { slug?: string; featured?: boolean; spotlight?: boolean; }
 
@@ -65,7 +66,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
   const locale = useLocale();
   const title = locale === 'ar' && project.titleAr ? project.titleAr : project.title;
   const description = locale === 'ar' && project.descriptionAr ? project.descriptionAr : project.description;
-  const accentColor = project.color || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
+  const accentColor = safeColor(project.color) || CATEGORY_COLORS[project.category ?? ''] || CATEGORY_COLORS.Default;
   const isActive = !archived;
   // Just the cover, a multi-photo carousel on a listing-page card made
   // every card's image block a different shape (arrows/dots on some,

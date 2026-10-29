@@ -48,11 +48,15 @@ async function upsertProfile(app: App, uid: string, email: string, displayName: 
       if (Object.keys(fill).length) tx.set(userRef, fill, { merge: true });
     }
 
-    const pub: Record<string, string | boolean> = { role: effectiveRole };
+    // "Incoming" members get no public profile at all until their first
+    // sign-in creates it (src/lib/auth.ts), so even the database's public
+    // API has nothing to show for them, not just the site's pages.
+    if (hidden) {
+      if (publicSnap.exists) tx.delete(publicRef);
+      return;
+    }
+    const pub: Record<string, string> = { role: effectiveRole };
     if (!publicSnap.data()?.displayName && name) pub.displayName = name;
-    // "Incoming" members stay off public pages until their first sign-in,
-    // which clears this (src/lib/auth.ts).
-    if (hidden) pub.hidden = true;
     tx.set(publicRef, pub, { merge: true });
   });
 }

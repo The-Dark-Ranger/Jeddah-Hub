@@ -295,7 +295,8 @@ export default function ManageRoster() {
 
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
-    return u?.displayName || u?.email || userId;
+    // A lead sees public profiles only, which members get at first sign-in.
+    return u?.displayName || u?.email || (isCurator ? userId : t('pendingMemberName'));
   };
 
   const activeInitiatives = initiatives.filter(i => i.status !== 'archived');

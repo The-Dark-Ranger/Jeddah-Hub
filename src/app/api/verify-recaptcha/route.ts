@@ -3,10 +3,12 @@ import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { readJsonBody } from '@/lib/http';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isBlockedBot } from '@/lib/botCheck';
+import { isCrossSite } from '@/lib/formGuard';
 
 const SECRET = process.env.RECAPTCHA_SECRET_KEY;
 
 export async function POST(req: NextRequest) {
+  if (isCrossSite(req)) return NextResponse.json({ ok: false, error: 'Access denied' }, { status: 403 });
   // Gates login and contact submissions; a real person needs a handful of
   // tries a minute at most.
   if (isRateLimited(`verify-recaptcha:${clientIp(req)}`, 20, 60_000)) {
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   // The token must have been issued for the form that's asking.
-  const action = body?.action === 'login' || body?.action === 'contact' ? body.action : null;
+  const action = body?.action === 'login' || body?.action === 'reset' || body?.action === 'contact' ? body.action : null;
   if (!action) return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 });
   const passed = await verifyRecaptchaToken(token, { action });
   if (passed) return NextResponse.json({ ok: true });

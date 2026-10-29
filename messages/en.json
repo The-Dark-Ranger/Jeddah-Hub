@@ -390,7 +390,14 @@
     "errorTooMany": "Too many attempts. Please wait a few minutes and try again.",
     "errorNetwork": "Can't reach the server. Check your connection and try again.",
     "errorLocked": "Too many failed attempts. Please wait {seconds} seconds and try again.",
-    "errorEmailFormat": "Please enter a valid email address."
+    "errorEmailFormat": "Please enter a valid email address.",
+    "errorPasswordRenew": "For your security, this account needs a new password. Use “Forgot password?” below to get a link by email.",
+    "forgotPassword": "Forgot password?",
+    "resetIntro": "Enter your email and we'll send you a link to set a new password.",
+    "resetSend": "Send reset link",
+    "resetSending": "Sending…",
+    "resetSent": "If {email} has a member account, a link to set a new password is on its way. Check your inbox (and spam folder).",
+    "resetWait": "Please wait {seconds} seconds before asking for another email."
   },
   "Common": {
     "email": "Email",
@@ -953,6 +960,7 @@
     "creatingLogin": "Creating…",
     "accountCreateFailed": "The assignment was saved, but the sign-in account couldn’t be created. Try “Create login” again.",
     "accountNotConfigured": "The assignment was saved, but automatic accounts aren’t set up yet: the site needs the FIREBASE_SERVICE_ACCOUNT setting on Vercel.",
+    "pendingMemberName": "New member (not signed in yet)",
     "pwTitle": "Change password",
     "pwIntro": "Use at least 8 characters. You’ll need your current password to confirm.",
     "pwCurrent": "Current password",

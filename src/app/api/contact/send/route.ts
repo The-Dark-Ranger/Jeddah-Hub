@@ -16,11 +16,11 @@ import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody } from '@/lib/http';
-import { json, isBotSubmission } from '@/lib/formGuard';
+import { json, isBotSubmission, isCrossSite } from '@/lib/formGuard';
 import { isBlockedBot } from '@/lib/botCheck';
 import { withinLimit, withinEmailBudget, DAY, HOUR } from '@/lib/persistentLimit';
 import { sendEmail } from '@/lib/email';
-import { hubNotification, senderCopy, isTopic, type ContactMessage } from '@/lib/emails/contact';
+import { hubNotification, senderCopy, isTopic, LINK_RE, type ContactMessage } from '@/lib/emails/contact';
 
 /** A person needs at least this long to fill in name, email, topic and a message. */
 const MIN_FILL_MS = 4000;
@@ -36,10 +36,9 @@ const DUPLICATE_WINDOW_MS = 24 * 60 * 60_000;
 const clean = (v: unknown, max: number) =>
   typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‏‪-‮⁦-⁩]/g, '').trim().slice(0, max + 1) : '';
 
-const LINK_RE = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|io|ru|xyz|top|info|biz|click|link|shop|site|online)\b/gi;
-
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
+  if (isCrossSite(req)) return json({ error: 'forbidden' }, 403);
   if (isRateLimited(`contact:${ip}`, 3, 10 * 60_000)) return json({ error: 'too_many' }, 429);
   if (await isBlockedBot('contact')) return json({ error: 'bot_check_failed' }, 403);
 

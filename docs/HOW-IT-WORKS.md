@@ -86,7 +86,12 @@ sequenceDiagram
   public listing, but only if the person has never signed in.
 - A note containing **"Incoming"** (e.g. "Incoming Shaper") keeps the member
   off Who We Are, the homepage and the member counts until their first
-  sign-in, which lists them automatically.
+  sign-in, which lists them automatically. Until then they have no public
+  profile at all, so the database's public API has nothing to show either.
+- Passwords must be at least 8 characters, enforced by Firebase itself; an
+  older, shorter password is refused at sign-in and the member is sent to
+  **Forgot password?** on the login page, which emails a link to set a new
+  one (the reply is the same whether or not the address has an account).
 - **Alumni** in Pending can be **dismissed**: set aside in a collapsible
   *Dismissed Alumni* section to review later, where a curator can still send
   an invite, restore them to Pending, or remove them.
@@ -383,7 +388,7 @@ with `npx firebase-tools deploy --only firestore:rules`.
 | `users` | Full member record, including email and the real role | The member, curators, impact officers |
 | `role_assignments` | Pending roles, keyed by email | The invitee, curators, impact officers |
 | `blogs` | News posts | Everyone if published, otherwise the author and reviewers |
-| `media` | Uploaded photos (served by `/api/media`) | Everyone |
+| `media` | Uploaded photos, written only by `POST /api/media` (a real JPEG under 1 MB, a daily limit per member) and served by `/api/media/<id>` | Everyone, one photo at a time by its id; nobody can list them |
 | `activity_responses` | Registration and after-event answers (`formType`), written only by the server after its checks | Curators, impact officers |
 | `rate_limits` | Server-side counters for the public forms and email (hashed keys) | Nobody (server only) |
 | `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups, written only by the server after its checks | Curators |

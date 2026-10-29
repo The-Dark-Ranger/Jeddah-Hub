@@ -23,6 +23,7 @@ import InitiativeFormFields, {
 import styles from './Initiatives.module.css';
 import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { CategoryLabel } from '@/lib/categoryLabel';
+import { safeColor } from '@/lib/activityTypes';
 import { errorCode, isLeadRole, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal, type TeamRole } from '@/lib/types';
 
 interface Initiative {
@@ -834,7 +835,7 @@ export default function ManageInitiatives() {
               className={styles.card + (init.status === 'archived' ? ' ' + styles.cardArchived : '')}
             >
               {init.color && (
-                <div className={styles.colorBar} style={{ background: init.color }} />
+                <div className={styles.colorBar} style={{ background: safeColor(init.color) }} />
               )}
               <div className={styles.cardImage}>
                 <InitiativeCover src={init.imageUrl} title={init.title} accent={fallbackColor} />

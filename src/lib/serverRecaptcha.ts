@@ -1,7 +1,9 @@
 const SECRET = process.env.RECAPTCHA_SECRET_KEY;
 
 /** Sites a token may come from (Google reports the page's hostname). */
-const ALLOWED_HOSTS = new Set(['jeddahhub.org', 'www.jeddahhub.org', 'jeddah-hub.vercel.app', 'localhost']);
+const ALLOWED_HOSTS = new Set(['jeddahhub.org', 'www.jeddahhub.org', 'jeddah-hub.vercel.app',
+  // Tokens minted on a local page count only in development.
+  ...(process.env.NODE_ENV === 'production' ? [] : ['localhost'])]);
 /** This project's own Vercel preview deployments (not any *.vercel.app site). */
 const isOwnPreview = (host: string) => /^jeddah-[a-z0-9-]+-mohammed-alshawis-projects\.vercel\.app$/.test(host);
 

@@ -22,6 +22,20 @@ export function safeExternalUrl(raw: string | null | undefined): string | undefi
   }
 }
 
+/** A photo for a CSS background, as url("…"), only in the forms this site
+ *  stores (an inline image, its own /api/media or /api/img path, or an
+ *  https address) and with no character that could close the url() and
+ *  add CSS of its own (e.g. a full-page overlay). Anything else gives
+ *  undefined, so no background is set. */
+export function cssUrl(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const v = raw.trim();
+  const ok = /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)
+    || /^\/api\/(?:media|img)\/[A-Za-z0-9_./?=&%-]+$/.test(v)
+    || /^https:\/\/[^\s"'()\\<>;{}]+$/.test(v);
+  return ok ? `url("${v}")` : undefined;
+}
+
 /** A value for an exported spreadsheet / CSV cell. Text that starts with
  *  = + - @ (or a tab / carriage return) is read by Excel and Sheets as a
  *  formula, which can run commands or leak data when a curator opens the

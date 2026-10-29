@@ -208,14 +208,18 @@ flowchart LR
   only be granted by a curator, and names and emails on requests, posts and
   notifications must be the sender's own.
 - **Accounts** start with a random one-time password that must be changed at
-  first sign-in. The login form adds a honeypot, a minimum fill time, reCAPTCHA
-  and a lockout after repeated failures.
+  first sign-in, and Firebase refuses passwords shorter than 8 characters
+  (an older short one has to be replaced through **Forgot password?**). The
+  login form adds a honeypot, a minimum fill time, reCAPTCHA and a lockout
+  after repeated failures.
 - **Public forms** (contact, newsletter, and activity registration and
   feedback) can only be submitted through server routes; the database
   refuses direct writes from browsers. Each route applies rate limits that
   hold across every server instance, a honeypot and minimum fill time,
   Vercel BotID, reCAPTCHA (refusing everything if it isn't configured), input checks and
-  duplicate protection before saving or sending anything.
+  duplicate protection before saving or sending anything. Posts from another
+  website's page are refused. Photo uploads also go through the server
+  (`POST /api/media`: a real JPEG, a daily limit per member).
 - **Initiative teams**: Lead and Co-Lead rights come only from the
   initiative's `leads` array, which only curators and impact officers can
   change; a lead can change the team one plain member at a time, and asks
@@ -225,7 +229,10 @@ flowchart LR
   a visitor typed is escaped first. Every member invite is also recorded in
   the hub inbox (never with the password).
 - **Links and exports**: only http(s) links are saved or shown, and spreadsheet
-  exports neutralise formula-like values.
+  exports neutralise formula-like values. Theme colours and photo addresses
+  are checked before they reach a page's styles, and links in the copy of a
+  contact message sent to the visitor are shown as plain text.
+- **Reporting a problem**: see [`/.well-known/security.txt`](public/.well-known/security.txt).
 - **At the edge**: Vercel Bot Protection challenges non-browser traffic, common
   scanner probes (`/.env`, `/wp-admin`, `*.php`, …) are refused, and the
   dashboard, login and API are kept out of search engines.

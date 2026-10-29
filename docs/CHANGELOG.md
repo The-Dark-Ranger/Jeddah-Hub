@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## October 2026
 
+### 29 October
+- Security audit fixes: a lead can only add a plain Member (wherever it sits in the list) and can't remove another lead; members' own posts accept only the editor's fields, with size limits and no self-added likes; guest likes must be a real guest id (no oversized values); only the Curator can create, reset or remove an account a Curator role is waiting for.
+
 ### 28 October
 - Roster: team roles are editable in place. Curators change them directly; initiative leads get the Roster for their own teams and their role changes wait for Curator or Vice Curator approval (count on the dashboard's Roster card).
 - Vercel BotID: an invisible bot check on the contact, newsletter and activity forms and the login; automated requests are refused. (#191)

@@ -8,6 +8,7 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { isRateLimited } from '@/lib/rateLimit';
 import { MEMBER_ROLES, type MemberRole } from '@/lib/memberAccounts';
 import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
+import { normalizeRole } from '@/lib/role';
 
 /* Creates a member's Firebase sign-in account with the temporary password,
  * and lists them on the public Who We Are page straight away.
@@ -56,6 +57,14 @@ async function upsertProfile(app: App, uid: string, email: string, displayName: 
   });
 }
 
+/** True when Role Assignments holds a Curator role for this email. Only the
+ *  Curator may create, reset or remove that account: whoever learns its
+ *  one-time password could sign in first and take the Curator role. */
+async function assignedCurator(app: App, email: string): Promise<boolean> {
+  const snap = await getFirestore(app).doc(`role_assignments/${email}`).get();
+  return snap.exists && normalizeRole(String(snap.get('role') ?? '')) === 'curator';
+}
+
 /** Removes a never-signed-in member's account and profile. */
 async function removePending(app: App, email: string, callerRole: string | undefined): Promise<'removed' | 'kept' | 'not-found'> {
   const auth = getAuth(app);
@@ -69,7 +78,7 @@ async function removePending(app: App, email: string, callerRole: string | undef
   const db = getFirestore(app);
   // Only the Curator may remove a curator's account.
   const target = (await db.doc(`users/${record.uid}`).get()).data();
-  if (target?.role === 'curator' && callerRole !== 'curator') return 'kept';
+  if (callerRole !== 'curator' && (target?.role === 'curator' || await assignedCurator(app, email))) return 'kept';
   await Promise.all([db.doc(`public_profiles/${record.uid}`).delete(), db.doc(`users/${record.uid}`).delete()]);
   await auth.deleteUser(record.uid);
   return 'removed';
@@ -87,7 +96,7 @@ async function resetTempPassword(app: App, email: string, callerRole: string | u
   }
   if (record.metadata.lastSignInTime) return { result: 'kept' };
   const target = (await getFirestore(app).doc(`users/${record.uid}`).get()).data();
-  if (target?.role === 'curator' && callerRole !== 'curator') return { result: 'kept' };
+  if (callerRole !== 'curator' && (target?.role === 'curator' || await assignedCurator(app, email))) return { result: 'kept' };
   const tempPassword = generateTempPassword();
   await auth.updateUser(record.uid, { password: tempPassword });
   return { result: 'reset', tempPassword };
@@ -217,8 +226,9 @@ export async function POST(req: NextRequest) {
   const role = MEMBER_ROLES.find(r => r === body?.role);
   const wantsHidden = body?.hideUntilSignIn === true;
   if (!role) return NextResponse.json({ result: 'failed', reason: 'invalid-role' }, { status: 400 });
-  // Only the Curator can make someone a curator (matches firestore.rules).
-  if (role === 'curator' && caller.role !== 'curator') {
+  // Only the Curator can make someone a curator (matches firestore.rules),
+  // or create the account a Curator role is waiting for.
+  if (caller.role !== 'curator' && (role === 'curator' || await assignedCurator(app, email))) {
     return NextResponse.json({ result: 'failed', reason: 'forbidden-role' }, { status: 403 });
   }
 

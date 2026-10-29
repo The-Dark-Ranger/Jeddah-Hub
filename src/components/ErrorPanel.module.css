@@ -19,7 +19,7 @@
 .primary { border: none; background: var(--primary-fill); color: #fff; }
 .secondary { border: 1px solid var(--border-color); background: transparent; color: var(--text-main); }
 .primary:focus-visible, .secondary:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
-.code { margin: .25rem 0 0; font-size: .72rem; color: var(--text-muted); font-family: ui-monospace, Consolas, monospace; }
+.code { margin: .25rem 0 0; font-size: max(12px, .72rem); color: var(--text-muted); font-family: ui-monospace, Consolas, monospace; }
 @media (max-width: 480px) {
   .panel { margin: 3rem 1rem; padding: 1.75rem 1.25rem; }
   .compact { margin: 1.25rem 0; }

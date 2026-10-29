@@ -61,7 +61,7 @@
 .table thead th {
   position: sticky; top: 0; z-index: 1;
   text-align: start; padding: .7rem 1rem; background: var(--background-alt);
-  font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted);
+  font-size: max(12px, .72rem); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted);
   border-bottom: 1px solid var(--border-color);
 }
 .table td { padding: .65rem 1rem; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
@@ -72,7 +72,7 @@
 .emailText { min-width: 0; overflow-wrap: anywhere; }
 .avatar {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  display: grid; place-items: center; font-size: .75rem; font-weight: 700;
+  display: grid; place-items: center; font-size: max(12px, .75rem); font-weight: 700;
   background: var(--primary-blue-glow); color: var(--primary-blue);
 }
 .date { white-space: nowrap; color: var(--text-muted) !important; }

@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
-import { downloadInitiativeReport } from '@/lib/exportInitiative';
+import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
 import InitiativeCover from '@/components/InitiativeCover';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
@@ -947,7 +947,7 @@ export default function ManageInitiatives() {
                 <button
                   type="button"
                   className={styles.downloadBtn + ' ' + styles.iconOnly}
-                  onClick={() => void downloadInitiativeReport(init as Parameters<typeof downloadInitiativeReport>[0], getMemberNames(init))}
+                  onClick={() => void downloadReport(init as ReportInitiative, getMemberNames(init))}
                   title={t('downloadReport')}
                   aria-label={t('downloadReport')}
                 >

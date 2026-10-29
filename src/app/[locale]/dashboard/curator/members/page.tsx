@@ -2,7 +2,7 @@
 
 /* Dashboard > Role Assignments: add members (creates their login with a
  * one-time password), send invites, and track who has signed in. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { collection, getDocs, setDoc, deleteDoc, updateDoc, deleteField, doc, query, orderBy } from 'firebase/firestore';
@@ -43,6 +43,7 @@ interface KnownUser { email: string; displayName?: string; }
 
 
 export default function MembersPage() {
+  const formId = useId();
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
   const locale = useLocale();
@@ -428,8 +429,8 @@ export default function MembersPage() {
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('fullNameLabel')} *</label>
-            <input
+            <label htmlFor={`${formId}-name`} className={styles.label}>{t('fullNameLabel')} *</label>
+            <input id={`${formId}-name`}
               className={styles.input}
               type="text"
               value={name}
@@ -440,8 +441,8 @@ export default function MembersPage() {
             />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('emailAddress')} *</label>
-            <input
+            <label htmlFor={`${formId}-email`} className={styles.label}>{t('emailAddress')} *</label>
+            <input id={`${formId}-email`}
               className={styles.input}
               type="email"
               value={email}
@@ -452,16 +453,16 @@ export default function MembersPage() {
             />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('colRole')} *</label>
-            <select className={styles.select} value={role} onChange={e => setRole(e.target.value as UserRole)}>
+            <label htmlFor={`${formId}-role`} className={styles.label}>{t('colRole')} *</label>
+            <select id={`${formId}-role`} className={styles.select} value={role} onChange={e => setRole(e.target.value as UserRole)}>
               {/* Only the Curator can make someone a curator (firestore.rules). */}
               {ROLES.filter(r => r.value !== 'curator' || normRole === 'curator')
                 .map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label}>{t('noteOptional')} <span className={styles.optional}>{t('optional')}</span></label>
-            <input
+            <label htmlFor={`${formId}-note`} className={styles.label}>{t('noteOptional')} <span className={styles.optional}>{t('optional')}</span></label>
+            <input id={`${formId}-note`}
               className={styles.input}
               value={note}
               onChange={e => setNote(e.target.value)}

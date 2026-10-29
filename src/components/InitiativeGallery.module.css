@@ -2,11 +2,11 @@
 
 .heading {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+  font-size: max(12px, 0.75rem); font-weight: 700; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--text-muted);
 }
 .count {
-  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em;
+  font-size: max(12px, 0.75rem); font-weight: 600; letter-spacing: 0.02em;
   color: var(--text-muted); font-variant-numeric: tabular-nums;
   text-transform: none;
 }

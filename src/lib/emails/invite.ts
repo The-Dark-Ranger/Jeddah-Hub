@@ -1,7 +1,9 @@
 /* The member invite: the email a curator sends from Role Assignments, with
  * the sign-in address and, for someone who has never signed in, a fresh
- * one-time password (shown nowhere else). In the curator's dashboard
- * language, sent from its own address. */
+ * one-time password (shown nowhere else). The same email, worded as "your
+ * new password", carries a replacement one-time password a curator issues
+ * from the Members list. In the curator's dashboard language, sent from its
+ * own address. */
 import { escapeHtml } from '@/lib/escapeHtml';
 import { sender } from '@/lib/email';
 import {
@@ -38,6 +40,18 @@ const COPY = {
     ],
     help: 'Questions? Just reply to this email.',
     footer: (e: string) => `You received this because a Jeddah Hub curator added ${e} to the hub. If you weren't expecting it, you can ignore this email.`,
+    reset: {
+      subject: 'Your new Jeddah Hub password',
+      preheader: 'A new one-time password for the Jeddah Hub dashboard.',
+      heading: (n: string) => `A new password for you${n ? `, ${n}` : ''}`,
+      nextTitle: 'Next steps',
+      intro: (r: string) => `A Jeddah Hub curator has issued a new one-time password for your <strong>${r}</strong> account and signed it out of other devices. Use it to sign in, then choose your own password.`,
+      next: [
+        ['Sign in', 'Use the email and one-time password above on the sign-in page.'],
+        ['Choose your password', 'You will be asked to pick a new password straight away.'],
+      ],
+      footer: (e: string) => `You received this because a Jeddah Hub curator issued a new password for ${e}. If you weren't expecting it, reply to this email.`,
+    },
   },
   ar: {
     from: 'مركز جدة',
@@ -59,11 +73,24 @@ const COPY = {
     ],
     help: 'لديك سؤال؟ ردّ على هذه الرسالة.',
     footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أضاف ${e} إلى المركز. إن لم تكن تتوقعها، يمكنك تجاهلها.`,
+    reset: {
+      subject: 'كلمة مرور جديدة لحسابك في مركز جدة',
+      preheader: 'كلمة مرور مؤقتة جديدة للوحة تحكم مركز جدة.',
+      heading: (n: string) => `كلمة مرور جديدة لك${n ? ` يا ${n}` : ''}`,
+      nextTitle: 'الخطوات التالية',
+      intro: (r: string) => `أصدر أحد منسقي مركز جدة كلمة مرور مؤقتة جديدة لحسابك بصفة <strong>${r}</strong>، وأُنهيت جلساتك على الأجهزة الأخرى. استخدمها لتسجيل الدخول ثم اختر كلمة مرورك الخاصة.`,
+      next: [
+        ['سجّل الدخول', 'استخدم البريد وكلمة المرور المؤقتة أعلاه في صفحة تسجيل الدخول.'],
+        ['اختر كلمة مرورك', 'سيُطلب منك اختيار كلمة مرور جديدة مباشرةً.'],
+      ],
+      footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أصدر كلمة مرور جديدة للحساب ${e}. إن لم تكن تتوقعها، ردّ على هذه الرسالة.`,
+    },
   },
 } as const;
 
-export function memberInvite(m: { lang: Lang; email: string; name?: string | null; role: string; tempPassword: string | null }) {
-  const c = COPY[m.lang];
+export function memberInvite(m: { lang: Lang; email: string; name?: string | null; role: string; tempPassword: string | null; newPassword?: boolean }) {
+  // A replacement password for an existing member reads differently.
+  const c = m.newPassword ? { ...COPY[m.lang], ...COPY[m.lang].reset } : COPY[m.lang];
   const role = ROLES[m.lang][m.role] ?? ROLES[m.lang].shaper;
   const first = escapeHtml((m.name || '').trim().split(/\s+/)[0] || '');
   const email = escapeHtml(m.email);
@@ -117,18 +144,21 @@ export function memberInvite(m: { lang: Lang; email: string; name?: string | nul
  *  in the hub inbox for reference. Never contains the password. */
 export function inviteRecord(r: {
   email: string; name?: string | null; role: string; lang: Lang; withPassword: boolean;
-  sentBy: string; inviteCount: number; at?: Date;
+  sentBy: string; inviteCount: number; at?: Date; newPassword?: boolean;
 }) {
   const role = ROLES.en[r.role] ?? ROLES.en.shaper;
   const who = r.name || r.email;
+  const what = r.newPassword ? 'New password sent' : 'Invite sent';
   const html = emailLayout({
     lang: 'en',
-    title: 'Invite sent',
-    preheader: `${who} was invited as ${role}.`,
+    title: what,
+    preheader: r.newPassword ? `${who} was sent a new one-time password.` : `${who} was invited as ${role}.`,
     footerNote: "Sent automatically each time a curator sends an invite from Role Assignments, for the hub's records. The password itself is never included.",
     body:
-      heading(`Invite sent: ${escapeHtml(who)}`) +
-      paragraph('A member invitation was emailed from Role Assignments.') +
+      heading(`${what}: ${escapeHtml(who)}`) +
+      paragraph(r.newPassword
+        ? 'A curator issued a new one-time password from Role Assignments → Members; the member was signed out of other devices.'
+        : 'A member invitation was emailed from Role Assignments.') +
       infoTable('en', [
         ['Invited', `${r.name ? `${escapeHtml(r.name)}<br>` : ''}<span dir="ltr">${escapeHtml(r.email)}</span>`],
         ['Role', escapeHtml(role)],
@@ -144,11 +174,11 @@ export function inviteRecord(r: {
   return {
     from: sender('Jeddah Hub Records', ADDRESS),
     to: CONTACT_INBOX,
-    subject: `[Invite sent] ${who} (${role})`,
+    subject: `[${what}] ${who} (${role})`,
     html,
     attachments: LOGO_ATTACHMENTS,
     text: [
-      `Invite sent: ${who}`, `Email: ${r.email}`, `Role: ${role}`,
+      `${what}: ${who}`, `Email: ${r.email}`, `Role: ${role}`,
       `Sign-in details: ${r.withPassword ? 'new one-time password' : 'own password (already signed in)'}`,
       `Email language: ${r.lang === 'ar' ? 'Arabic' : 'English'}`, `Sent by: ${r.sentBy}`,
       `Sent at: ${jeddahTime('en', r.at)}`, `Invites so far: ${r.inviteCount}`,

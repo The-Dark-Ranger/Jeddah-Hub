@@ -24,7 +24,7 @@
 .back:hover { color: var(--primary-blue); }
 
 .articleCategory {
-  display: inline-block; font-size: 0.68rem; font-weight: 700;
+  display: inline-block; font-size: max(12px, 0.68rem); font-weight: 700;
   letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--primary-blue); margin-bottom: 0.75rem;
 }
@@ -210,12 +210,12 @@
 .tagItem {
   padding: .25rem .7rem; border-radius: 999px;
   background: var(--primary-blue-glow); color: var(--primary-blue);
-  font-size: .78rem; font-weight: 600;
+  font-size: max(12px, .78rem); font-weight: 600;
 }
 
 .articleActions { justify-content: space-between; flex-wrap: wrap; }
 .share { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
-.shareLabel { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-inline-end: .2rem; }
+.shareLabel { font-size: max(12px, .78rem); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-inline-end: .2rem; }
 .shareBtn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; min-height: 38px; border-radius: 10px;
@@ -226,7 +226,10 @@
 .shareBtn:hover { color: var(--primary-blue); border-color: var(--primary-blue); transform: translateY(-2px); }
 .shareBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
 .shareBtnDone { color: var(--success); border-color: var(--success); }
-.copiedNote { font-size: .78rem; font-weight: 600; color: var(--success); min-width: 0; }
+@media (max-width: 640px) {
+  .shareBtn { width: 44px; height: 44px; }
+}
+.copiedNote { font-size: max(12px, .78rem); font-weight: 600; color: var(--success); min-width: 0; }
 
 .related { margin-top: 3rem; }
 .relatedTitle { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0 0 1rem; }
@@ -240,9 +243,9 @@
 }
 .relatedCard:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(15, 23, 42, .08); }
 .relatedCard:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
-.relatedTag { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary-blue); }
+.relatedTag { font-size: max(12px, .68rem); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary-blue); }
 .relatedName { font-weight: 700; color: var(--text-main); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.relatedDate { font-size: .78rem; color: var(--text-muted); margin-top: auto; }
+.relatedDate { font-size: max(12px, .78rem); color: var(--text-muted); margin-top: auto; }
 
 @media (max-width: 720px) {
   .relatedGrid { grid-template-columns: 1fr; }

@@ -2,7 +2,7 @@
 
 /* Dashboard > My Hub Activities (initiative leads): propose new activities and
  * changes; a curator approves them before they go live. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import {
   collection, getDocs, addDoc, deleteDoc, doc,
   query, where,
@@ -40,6 +40,7 @@ interface ChangeRequest {
 interface LedInitiative { id: string; title: string; }
 
 export default function LeadActivitiesPage() {
+  const formId = useId();
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
 
@@ -340,8 +341,8 @@ export default function LeadActivitiesPage() {
             <div className={styles.modalBody}>
               {ledInitiatives.length > 1 && (
                 <div className={styles.field}>
-                  <label className={styles.label}>{t('selectInitiativeLabel')} *</label>
-                  <select className={styles.input} value={formInitiativeId} onChange={e => setFormInitiativeId(e.target.value)}>
+                  <label htmlFor={`${formId}-formInitiativeId`} className={styles.label}>{t('selectInitiativeLabel')} *</label>
+                  <select id={`${formId}-formInitiativeId`} className={styles.input} value={formInitiativeId} onChange={e => setFormInitiativeId(e.target.value)}>
                     {ledInitiatives.map(init => (
                       <option key={init.id} value={init.id}>{init.title}</option>
                     ))}

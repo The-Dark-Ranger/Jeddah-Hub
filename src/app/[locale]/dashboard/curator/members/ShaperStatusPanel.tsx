@@ -1,10 +1,11 @@
 'use client';
 
-/* Dashboard > Role Assignments > Members: switch Shaper/Alumni and remove members. */
+/* Dashboard > Role Assignments > Members: switch Shaper/Alumni, send a new
+ * password and remove members. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { useLocale, useTranslations } from 'next-intl';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { normalizeRole } from '@/lib/role';
 import { useRoleLabel } from '@/lib/roleLabel';
 import { refreshPublicPages } from '@/lib/spotlight';
@@ -39,9 +40,13 @@ const CONFIRM_MS = 4000;
  *    change goes to users/{uid}.role (what every permission check reads),
  *    public_profiles/{uid}.role (Who We Are, homepage, member counts) and
  *    any still-pending role assignment so it can't re-apply the old status.
+ *  - New password emails the member a fresh one-time password and signs
+ *    them out everywhere (/api/invite), e.g. when they've lost theirs; the
+ *    curator never sees it.
  *  - Remove deletes the member from the Hub (sign-in account included) via
- *    the server; see deleteMember in /api/members/create-account. First
- *    click arms it, a second click within a few seconds confirms. */
+ *    the server; see deleteMember in /api/members/create-account.
+ *  New password and Remove both arm on the first click; a second click
+ *  within a few seconds confirms. */
 export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => void }) {
   const t = useTranslations('Dashboard');
   const locale = useLocale();
@@ -52,8 +57,10 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  // The armed button, as "remove:<uid>" or "password:<uid>".
   const [armed, setArmed] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
@@ -110,16 +117,37 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
     }
   };
 
-  const remove = async (m: Member) => {
-    // First click arms the button; the second (within CONFIRM_MS) removes.
-    if (armed !== m.uid) {
-      setArmed(m.uid);
-      if (armTimer.current) clearTimeout(armTimer.current);
-      armTimer.current = setTimeout(() => setArmed(a => (a === m.uid ? null : a)), CONFIRM_MS);
-      return;
+  /** First click arms `key`; true on the second click within CONFIRM_MS. */
+  const confirmed = (key: string) => {
+    if (armed === key) { setArmed(null); return true; }
+    setArmed(key);
+    if (armTimer.current) clearTimeout(armTimer.current);
+    armTimer.current = setTimeout(() => setArmed(a => (a === key ? null : a)), CONFIRM_MS);
+    return false;
+  };
+
+  const sendNewPassword = async (m: Member, name: string) => {
+    if (!m.email || !confirmed(`password:${m.uid}`)) return;
+    setBusy(m.uid); setError(''); setNotice('');
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
+        body: JSON.stringify({ email: m.email, displayName: m.name, role: m.role, locale, newPassword: true }),
+      });
+      if (res.ok) setNotice(t('newPasswordSent', { name }));
+      else setError(t('newPasswordFailed'));
+    } catch {
+      setError(t('newPasswordFailed'));
+    } finally {
+      setBusy(null);
     }
-    setArmed(null);
-    setBusy(m.uid); setError('');
+  };
+
+  const remove = async (m: Member) => {
+    if (!confirmed(`remove:${m.uid}`)) return;
+    setBusy(m.uid); setError(''); setNotice('');
     const result = await deleteMember(m.uid);
     setBusy(null);
     if (result === 'removed' || result === 'not-found') {
@@ -175,6 +203,7 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
       </div>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
+      {notice && <p className={styles.notice} role="status">{notice}</p>}
 
       {members === null ? (
         <DashSkeleton rows={4} header={false} label={t('loading')} />
@@ -185,7 +214,9 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
           {page.shown.map(m => {
             const name = (locale === 'ar' && m.nameAr) || m.name;
             const isSelf = m.uid === user?.uid;
-            const canRemove = !isSelf && (m.role !== 'curator' || isFullCurator);
+            // Never yourself; a curator's account only by the Curator.
+            const canManage = !isSelf && (m.role !== 'curator' || isFullCurator);
+            const pwArmed = armed === `password:${m.uid}`, rmArmed = armed === `remove:${m.uid}`;
             return (
               <li key={m.uid} className={styles.row}>
                 <div className={styles.who}>
@@ -217,15 +248,26 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
                   ) : (
                     <span className={styles.roleTag}>{roleLabel(m.role)}</span>
                   )}
-                  {canRemove && (
+                  {canManage && m.email && (
                     <button
                       type="button"
-                      className={styles.removeBtn + (armed === m.uid ? ' ' + styles.removeArmed : '')}
+                      className={styles.pwBtn + (pwArmed ? ' ' + styles.pwArmed : '')}
+                      disabled={busy === m.uid}
+                      onClick={() => sendNewPassword(m, name)}
+                      aria-label={(pwArmed ? t('newPasswordConfirm') : t('newPassword')) + ': ' + name}
+                    >
+                      {pwArmed ? t('newPasswordConfirm') : t('newPassword')}
+                    </button>
+                  )}
+                  {canManage && (
+                    <button
+                      type="button"
+                      className={styles.removeBtn + (rmArmed ? ' ' + styles.removeArmed : '')}
                       disabled={busy === m.uid}
                       onClick={() => remove(m)}
-                      aria-label={(armed === m.uid ? t('memberRemoveConfirm') : t('remove')) + ': ' + name}
+                      aria-label={(rmArmed ? t('memberRemoveConfirm') : t('remove')) + ': ' + name}
                     >
-                      {busy === m.uid && armed !== m.uid ? '…' : armed === m.uid ? t('memberRemoveConfirm') : t('remove')}
+                      {busy === m.uid && !rmArmed ? '…' : rmArmed ? t('memberRemoveConfirm') : t('remove')}
                     </button>
                   )}
                 </div>

@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   // The token must have been issued for the form that's asking.
-  const action = body?.action === 'login' || body?.action === 'reset' || body?.action === 'contact' ? body.action : null;
+  const action = body?.action === 'login' || body?.action === 'contact' ? body.action : null;
   if (!action) return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 });
   const passed = await verifyRecaptchaToken(token, { action });
   if (passed) return NextResponse.json({ ok: true });

@@ -19,6 +19,7 @@ type Status = 'idle' | 'loading' | 'success' | 'already' | 'error' | 'invalid-em
 
 export default function NewsletterForm() {
   const t = useTranslations('HomePage');
+  const tCommon = useTranslations('Common');
   const locale = useLocale();
   const [email, setEmail] = useState('');
   const [honeypot, setHoneypot] = useState('');
@@ -66,6 +67,7 @@ export default function NewsletterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your.email@example.com"
+          aria-label={tCommon('email')}
           className={styles.input}
           maxLength={254}
           autoComplete="email"

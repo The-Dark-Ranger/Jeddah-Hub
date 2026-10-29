@@ -208,10 +208,11 @@ flowchart LR
   only be granted by a curator, and names and emails on requests, posts and
   notifications must be the sender's own.
 - **Accounts** start with a random one-time password that must be changed at
-  first sign-in, and Firebase refuses passwords shorter than 8 characters
-  (an older short one has to be replaced through **Forgot password?**). The
-  login form adds a honeypot, a minimum fill time, reCAPTCHA and a lockout
-  after repeated failures.
+  first sign-in, to one of at least 8 characters. A member who loses theirs
+  gets a new one-time password from a curator (Role Assignments → Members),
+  emailed only to them; it also signs them out everywhere. The login form
+  adds a honeypot, a minimum fill time, reCAPTCHA and a lockout after
+  repeated failures.
 - **Public forms** (contact, newsletter, and activity registration and
   feedback) can only be submitted through server routes; the database
   refuses direct writes from browsers. Each route applies rate limits that

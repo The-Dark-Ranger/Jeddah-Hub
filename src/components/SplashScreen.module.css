@@ -254,7 +254,7 @@
 }
 .percent {
   min-width: 4ch; text-align: center;
-  font-size: .74rem; font-weight: 700; letter-spacing: .14em;
+  font-size: max(12px, .74rem); font-weight: 700; letter-spacing: .14em;
   font-variant-numeric: tabular-nums;
   color: var(--sp-percent);
 }
@@ -265,7 +265,7 @@
   bottom: max(1.75rem, env(safe-area-inset-bottom));
   inset-inline: 1rem;
   display: flex; align-items: center; justify-content: center; gap: .85rem;
-  font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+  font-size: max(12px, .72rem); font-weight: 600; letter-spacing: .06em;
   color: var(--sp-footer);
   text-align: center;
   animation: fadeIn .45s ease .2s both;
@@ -295,7 +295,7 @@
   .glass { width: 106px; height: 106px; }
   .logo { width: 72px; height: 72px; }
   .track { width: 180px; }
-  .footer { font-size: .66rem; gap: .6rem; }
+  .footer { font-size: max(12px, .66rem); gap: .6rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3,17 +3,18 @@
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useAuth } from '@/context/AuthContext';
-import { SIGNING_ROLES, useCharterStatus } from '@/lib/charterSignature';
+import { SIGNING_ROLES, type CharterStatus } from '@/lib/charterSignature';
 import { normalizeRole } from '@/lib/role';
 import styles from './DefaultPasswordBanner.module.css';
 
 /** Shown across the dashboard while curators require members to sign the
- *  Community Charter and this member hasn't yet. */
-export default function CharterSignBanner() {
+ *  Community Charter and this member hasn't yet. The layout loads `status`
+ *  (useCharterStatus) and holds the page until it's known. */
+export default function CharterSignBanner({ status }: { status: CharterStatus }) {
   const t = useTranslations('Dashboard');
   const { user } = useAuth();
   const pathname = usePathname();
-  const { loading, required, signature } = useCharterStatus(user?.uid);
+  const { loading, required, signature } = status;
 
   // The charter page has the sign-off form itself; alumni aren't asked.
   if (loading || !required || signature || !SIGNING_ROLES.includes(normalizeRole(user?.role))

@@ -75,7 +75,7 @@
 .feedbackSection .form { border-top: 4px solid var(--activity-accent, var(--primary-blue)); }
 .formKicker {
   align-self: flex-start; padding: .25rem .7rem; border-radius: 999px;
-  font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  font-size: max(12px, .72rem); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
   background: color-mix(in srgb, var(--activity-accent, var(--primary-blue)) 14%, transparent);
   color: var(--activity-accent, var(--primary-blue));
 }
@@ -167,7 +167,7 @@
 }
 .facts { display: flex; flex-wrap: wrap; gap: 1rem 2.25rem; margin: 0; }
 .fact { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
-.fact dt { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+.fact dt { font-size: max(12px, .7rem); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
 .fact dd { margin: 0; display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; color: var(--text-main); font-size: .92rem; }
 .factLink { display: inline-flex; align-items: center; gap: .3rem; color: var(--activity-accent); }
 .factLink:hover { text-decoration: underline; text-underline-offset: 3px; }

@@ -7,7 +7,7 @@
 }
 .legend {
   padding: 0 0.4rem;
-  font-size: 0.78rem; font-weight: 700;
+  font-size: max(12px, 0.78rem); font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -21,7 +21,7 @@
 .controls { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
 
 .previewCol { position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.45rem; }
-.previewLabel { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.previewLabel { font-size: max(12px, 0.75rem); font-weight: 600; color: var(--text-muted); }
 
 /* Mirrors the homepage activity card at a glance. */
 .preview {
@@ -47,20 +47,20 @@
   position: absolute; inset-inline-start: 8px; top: 8px;
   padding: 0.15rem 0.55rem; border-radius: 20px;
   background: var(--accent); color: #fff;
-  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: max(12px, 0.62rem); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
 }
 .previewBody { padding: 0.85rem 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .previewEyebrow {
-  margin: 0; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  margin: 0; font-size: max(12px, 0.62rem); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   color: color-mix(in srgb, var(--accent) 55%, #fff);
 }
 .previewTitle { margin: 0; font-size: 0.98rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
-.previewMeta { margin: 0; font-size: 0.7rem; color: rgba(255, 255, 255, 0.65); }
+.previewMeta { margin: 0; font-size: max(12px, 0.7rem); color: rgba(255, 255, 255, 0.65); }
 .previewBtn {
   align-self: flex-start; margin-top: 0.4rem;
   padding: 0.35rem 0.75rem; border-radius: 6px;
   background: var(--accent); color: #fff;
-  font-size: 0.7rem; font-weight: 700;
+  font-size: max(12px, 0.7rem); font-weight: 700;
 }
 
 @media (max-width: 720px) {

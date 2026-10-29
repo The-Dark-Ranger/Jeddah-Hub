@@ -1,6 +1,7 @@
 'use client';
 
 /* The initiative form fields shared by the create/edit and propose forms. */
+import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';
@@ -92,6 +93,7 @@ interface Props {
  *  edit modal, same fields, same capability, just different callers with
  *  different write targets (a real initiative doc vs a pending proposal). */
 export default function InitiativeFormFields({ form, onChange }: Props) {
+  const formId = useId();
   const t = useTranslations('Dashboard');
   const catLabel = useCategoryLabel();
   const mk = (k: keyof InitiativeFormShape) =>
@@ -102,22 +104,22 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
     <>
       <div className={styles.editRow}>
         <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldTitle')} *</label>
-          <input className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+          <label htmlFor={`${formId}-title`} className={styles.label}>{t('fieldTitle')} *</label>
+          <input id={`${formId}-title`} className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
         </div>
         <div className={styles.formField}>
-          <label className={styles.label}>
+          <label htmlFor={`${formId}-titleAr`} className={styles.label}>
             {t('fieldTitleAr')}
             <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
           </label>
-          <input className={styles.input} dir="rtl" value={form.titleAr} onChange={mk('titleAr')} placeholder={t('phInitiativeNameAr')} />
+          <input id={`${formId}-titleAr`} className={styles.input} dir="rtl" value={form.titleAr} onChange={mk('titleAr')} placeholder={t('phInitiativeNameAr')} />
         </div>
       </div>
 
       <div className={styles.editRow3}>
         <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldCategory')}</label>
-          <select className={styles.input} value={form.category} onChange={mk('category')}>
+          <label htmlFor={`${formId}-category`} className={styles.label}>{t('fieldCategory')}</label>
+          <select id={`${formId}-category`} className={styles.input} value={form.category} onChange={mk('category')}>
             <option value="">{t('categorySelectPrompt')}</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{catLabel(c)}</option>)}
           </select>
@@ -132,55 +134,55 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
           )}
         </div>
         <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldStartDate')}</label>
-          <input className={styles.input} type="date" value={form.startDate} onChange={mk('startDate')} />
+          <label htmlFor={`${formId}-startDate`} className={styles.label}>{t('fieldStartDate')}</label>
+          <input id={`${formId}-startDate`} className={styles.input} type="date" value={form.startDate} onChange={mk('startDate')} />
         </div>
         <div className={styles.formField}>
-          <label className={styles.label}>{t('fieldEndDate')}</label>
-          <input className={styles.input} type="date" value={form.endDate} onChange={mk('endDate')} />
+          <label htmlFor={`${formId}-endDate`} className={styles.label}>{t('fieldEndDate')}</label>
+          <input id={`${formId}-endDate`} className={styles.input} type="date" value={form.endDate} onChange={mk('endDate')} />
         </div>
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldKeyStat')}</label>
-        <input className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
+        <label htmlFor={`${formId}-stat`} className={styles.label}>{t('fieldKeyStat')}</label>
+        <input id={`${formId}-stat`} className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldDescription')} *</label>
-        <textarea className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
+        <label htmlFor={`${formId}-description`} className={styles.label}>{t('fieldDescription')} *</label>
+        <textarea id={`${formId}-description`} className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>
+        <label htmlFor={`${formId}-descriptionAr`} className={styles.label}>
           {t('fieldDescriptionAr')}
           <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
         </label>
-        <textarea className={styles.textarea} dir="rtl" value={form.descriptionAr} onChange={mk('descriptionAr')} placeholder={t('phDescriptionAr')} rows={2} />
+        <textarea id={`${formId}-descriptionAr`} className={styles.textarea} dir="rtl" value={form.descriptionAr} onChange={mk('descriptionAr')} placeholder={t('phDescriptionAr')} rows={2} />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldProblem')}</label>
-        <textarea className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
+        <label htmlFor={`${formId}-problem`} className={styles.label}>{t('fieldProblem')}</label>
+        <textarea id={`${formId}-problem`} className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldObjective')}</label>
-        <textarea className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
+        <label htmlFor={`${formId}-objective`} className={styles.label}>{t('fieldObjective')}</label>
+        <textarea id={`${formId}-objective`} className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
       </div>
 
       <div className={styles.formField}>
-        <label className={styles.label}>{t('fieldImpact')}</label>
-        <textarea className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
+        <label htmlFor={`${formId}-impact`} className={styles.label}>{t('fieldImpact')}</label>
+        <textarea id={`${formId}-impact`} className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
       </div>
 
       <div className={styles.editRow}>
         <div className={styles.formField}>
-          <label className={styles.label}>
+          <label htmlFor={`${formId}-impactAreas`} className={styles.label}>
             {t('fieldImpactAreas')}
             <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
           </label>
-          <input className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
+          <input id={`${formId}-impactAreas`} className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
         </div>
       </div>
 

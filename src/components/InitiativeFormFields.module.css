@@ -2,7 +2,7 @@
    curator, impact officer, initiative lead and propose forms. */
 .formField { display: flex; flex-direction: column; gap: 0.4rem; }
 .label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); }
-.fieldHint { font-weight: 400; color: var(--text-muted); font-size: 0.78rem; margin-inline-start: 0.3rem; }
+.fieldHint { font-weight: 400; color: var(--text-muted); font-size: max(12px, 0.78rem); margin-inline-start: 0.3rem; }
 
 .input,
 .textarea {

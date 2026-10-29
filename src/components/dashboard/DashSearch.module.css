@@ -26,7 +26,7 @@
 }
 .count {
   position: absolute; inset-inline-end: 2.4rem;
-  font-size: .72rem; font-weight: 600; color: var(--text-muted);
+  font-size: max(12px, .72rem); font-weight: 600; color: var(--text-muted);
   white-space: nowrap; pointer-events: none;
 }
 .clear {

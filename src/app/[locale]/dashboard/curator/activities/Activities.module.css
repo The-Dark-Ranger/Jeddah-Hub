@@ -16,7 +16,7 @@
 .proposalsBadge {
   display:inline-flex;align-items:center;justify-content:center;
   min-width:20px;height:20px;padding:0 .4rem;border-radius:10px;
-  background:var(--primary-fill);color:#fff;font-size:.72rem;font-weight:700;
+  background:var(--primary-fill);color:#fff;font-size:max(12px, .72rem);font-weight:700;
 }
 .proposalsList { display:flex;flex-direction:column;gap:.5rem; }
 .proposalRow {
@@ -25,20 +25,20 @@
 }
 .proposalInfo { display:flex;flex-direction:column;gap:.15rem;min-width:0; }
 .proposalName { font-size:.86rem;font-weight:600;color:var(--text-main); }
-.proposalMeta { font-size:.78rem;color:var(--text-muted); }
+.proposalMeta { font-size:max(12px, .78rem);color:var(--text-muted); }
 .proposalActions { display:flex;gap:.4rem;flex-shrink:0; }
 .approveProposalBtn {
-  padding:.32rem .75rem;border-radius:7px;border:none;font-size:.78rem;font-weight:600;
+  padding:.32rem .75rem;border-radius:7px;border:none;font-size:max(12px, .78rem);font-weight:600;
   background:rgba(16,185,129,.12);color:#059669;cursor:pointer;transition:background .18s;
 }
 .approveProposalBtn:hover { background:rgba(16,185,129,.22); }
 .declineProposalBtn {
-  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:.78rem;font-weight:600;
+  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:max(12px, .78rem);font-weight:600;
   background:transparent;color:var(--text-muted);cursor:pointer;transition:all .18s;
 }
 .declineProposalBtn:hover { border-color:var(--danger);color:var(--danger); }
 .viewProposalBtn {
-  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:.78rem;font-weight:600;
+  padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:max(12px, .78rem);font-weight:600;
   background:transparent;color:var(--primary-blue);cursor:pointer;transition:all .18s;
 }
 .viewProposalBtn:hover { border-color:var(--primary-blue);background:var(--primary-blue-glow); }
@@ -49,7 +49,7 @@
   padding:.6rem 0;border-bottom:1px solid var(--border-color);
 }
 .detailRow:last-child { border-bottom:none; }
-.detailLabel { font-size:.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em; }
+.detailLabel { font-size:max(12px, .76rem);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em; }
 .detailValue { font-size:.9rem;color:var(--text-main);white-space:pre-wrap;line-height:1.5; }
 .detailHighlightList { margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.2rem; }
 
@@ -100,7 +100,7 @@
 .cardTop    { display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.5rem; }
 .cardInfo   { flex:1;min-width:0; }
 .cardBadgeRow { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; flex-wrap:wrap; }
-.cardEyebrow { font-size:.75rem;font-weight:600;color:var(--primary-blue);text-transform:uppercase;letter-spacing:.06em;margin:0; }
+.cardEyebrow { font-size:max(12px, .75rem);font-weight:600;color:var(--primary-blue);text-transform:uppercase;letter-spacing:.06em;margin:0; }
 .cardTitle  { font-size:1.05rem;font-weight:700;color:var(--text-main);margin:0 0 .2rem; }
 .cardSubtitle { font-size:.85rem;color:var(--text-muted);margin:0 0 .25rem; }
 .cardMeta   { font-size:.8rem;color:var(--text-muted);margin:0; }
@@ -109,12 +109,12 @@
 /* ── Kind badge, distinguishes an "Activity" from a "Workshop" at a
    glance, both in this admin list and (via the same values) on the public
    pages, per the request to differentiate the two for clearer logging. ── */
-.kindBadge { flex-shrink:0;font-size:.68rem;font-weight:700;padding:.15rem .55rem;border-radius:6px;letter-spacing:.04em;text-transform:uppercase; }
+.kindBadge { flex-shrink:0;font-size:max(12px, .68rem);font-weight:700;padding:.15rem .55rem;border-radius:6px;letter-spacing:.04em;text-transform:uppercase; }
 .kindActivity { background:rgba(15,90,159,.12); color:var(--primary-blue); }
 .kindWorkshop { background:rgba(124,58,237,.12); color:#7c3aed; }
 
 /* ── Status badge ── */
-.badge        { flex-shrink:0;font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;letter-spacing:.04em; }
+.badge        { flex-shrink:0;font-size:max(12px, .72rem);font-weight:700;padding:.2rem .65rem;border-radius:99px;letter-spacing:.04em; }
 .badgeActive   { background:rgba(16,185,129,.12);color:#059669; }
 .badgeInactive { background:rgba(107,114,128,.1);color:var(--text-muted); }
 .badgeArchived { background:rgba(107,114,128,.1);color:var(--text-muted); }
@@ -185,7 +185,7 @@
   padding: .5rem .75rem; text-align: start; border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
-.responsesTable th { color: var(--text-muted); font-weight: 700; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; }
+.responsesTable th { color: var(--text-muted); font-weight: 700; font-size: max(12px, .74rem); text-transform: uppercase; letter-spacing: .04em; }
 .responsesTable td { color: var(--text-main); }
 
 /* ── Footer buttons ── */
@@ -231,7 +231,7 @@
 }
 .responseTab:hover { color: var(--text-main); }
 .responseTabActive, .responseTabActive:hover { background: var(--primary-fill); border-color: var(--primary-blue); color: #fff; }
-.responseTabCount { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
+.responseTabCount { font-size: max(12px, .72rem); padding: .05rem .45rem; border-radius: 999px; background: rgba(0, 0, 0, .08); }
 .responseTabActive .responseTabCount { background: rgba(255, 255, 255, .22); }
 
 /* Average score of a star-rating question. */
@@ -241,4 +241,4 @@
   font-size: .88rem; color: var(--text-main);
 }
 .ratingSummaryScore { font-size: 1.1rem; font-weight: 800; color: #d98a00; }
-.ratingSummaryCount { margin-inline-start: auto; font-size: .78rem; color: var(--text-muted); }
+.ratingSummaryCount { margin-inline-start: auto; font-size: max(12px, .78rem); color: var(--text-muted); }

@@ -2,7 +2,7 @@
 
 /* Dashboard > My Profile: name, photo, bios and links (mirrored to the public
  * profile), plus changing the password. */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -125,6 +125,7 @@ function ChangePassword() {
 }
 
 export default function MyProfile() {
+  const formId = useId();
   const { user, patchUser } = useAuth();
   const t = useTranslations('Dashboard');
 
@@ -227,13 +228,13 @@ export default function MyProfile() {
         <div className={styles.formFields}>
           <div className={styles.socialsGrid}>
             <div className={styles.formField}>
-              <label className={styles.label}>{t('displayName')}</label>
-              <input className={styles.input} value={form.displayName} onChange={set('displayName')} placeholder={t('phDisplayName')} />
+              <label htmlFor={`${formId}-displayName`} className={styles.label}>{t('displayName')}</label>
+              <input id={`${formId}-displayName`} className={styles.input} value={form.displayName} onChange={set('displayName')} placeholder={t('phDisplayName')} />
               <span className={styles.hint}>{t('displayNameHint')}</span>
             </div>
             <div className={styles.formField}>
-              <label className={styles.label}>{t('displayNameAr')}</label>
-              <input className={styles.input} value={form.displayNameAr} onChange={set('displayNameAr')} placeholder={t('phDisplayNameAr')} dir="rtl" />
+              <label htmlFor={`${formId}-displayNameAr`} className={styles.label}>{t('displayNameAr')}</label>
+              <input id={`${formId}-displayNameAr`} className={styles.input} value={form.displayNameAr} onChange={set('displayNameAr')} placeholder={t('phDisplayNameAr')} dir="rtl" />
               <span className={styles.hint}>{t('displayNameArHint')}</span>
             </div>
           </div>
@@ -245,8 +246,8 @@ export default function MyProfile() {
             />
           </div>
           <div className={styles.formField}>
-            <label className={styles.label}>{t('bioLabel')}</label>
-            <textarea
+            <label htmlFor={`${formId}-bio`} className={styles.label}>{t('bioLabel')}</label>
+            <textarea id={`${formId}-bio`}
               className={styles.textarea}
               value={form.bio}
               onChange={set('bio')}
@@ -259,8 +260,8 @@ export default function MyProfile() {
             </p>
           </div>
           <div className={styles.formField}>
-            <label className={styles.label}>{t('bioArLabel')}</label>
-            <textarea
+            <label htmlFor={`${formId}-bioAr`} className={styles.label}>{t('bioArLabel')}</label>
+            <textarea id={`${formId}-bioAr`}
               className={styles.textarea}
               value={form.bioAr}
               onChange={set('bioAr')}
@@ -282,16 +283,16 @@ export default function MyProfile() {
         <SectionTitle icon="social">{t('socialsSection')}</SectionTitle>
         <div className={styles.socialsGrid}>
           <div className={styles.formField}>
-            <label className={styles.label}>{t('linkedinUrl')}</label>
-            <input className={styles.input} value={form.linkedin} onChange={set('linkedin')} placeholder={t('phLinkedin')} type="url" />
+            <label htmlFor={`${formId}-linkedin`} className={styles.label}>{t('linkedinUrl')}</label>
+            <input id={`${formId}-linkedin`} className={styles.input} value={form.linkedin} onChange={set('linkedin')} placeholder={t('phLinkedin')} type="url" />
           </div>
           <div className={styles.formField}>
-            <label className={styles.label}>{t('twitterUrl')}</label>
-            <input className={styles.input} value={form.twitter} onChange={set('twitter')} placeholder={t('phTwitter')} type="url" />
+            <label htmlFor={`${formId}-twitter`} className={styles.label}>{t('twitterUrl')}</label>
+            <input id={`${formId}-twitter`} className={styles.input} value={form.twitter} onChange={set('twitter')} placeholder={t('phTwitter')} type="url" />
           </div>
           <div className={styles.formField}>
-            <label className={styles.label}>{t('instagramUrl')}</label>
-            <input className={styles.input} value={form.instagram} onChange={set('instagram')} placeholder={t('phInstagram')} type="url" />
+            <label htmlFor={`${formId}-instagram`} className={styles.label}>{t('instagramUrl')}</label>
+            <input id={`${formId}-instagram`} className={styles.input} value={form.instagram} onChange={set('instagram')} placeholder={t('phInstagram')} type="url" />
           </div>
         </div>
         <p className={styles.previewHint}>

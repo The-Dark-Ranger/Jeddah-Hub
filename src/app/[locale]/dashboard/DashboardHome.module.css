@@ -220,10 +220,10 @@
 }
 .notifBody { flex: 1; min-width: 0; }
 .notifMsg { font-size: 0.88rem; color: var(--text-main); line-height: 1.5; }
-.notifTime { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
+.notifTime { font-size: max(12px, 0.78rem); color: var(--text-muted); margin-top: 0.2rem; }
 .notifActions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
 .notifMarkRead {
-  font-size: 0.78rem; font-weight: 600; color: var(--primary-blue);
+  font-size: max(12px, 0.78rem); font-weight: 600; color: var(--primary-blue);
   background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline;
 }
 
@@ -232,7 +232,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
   background: var(--primary-fill); color: #fff;
-  font-size: .72rem; font-weight: 700; margin-inline-start: .5rem;
+  font-size: max(12px, .72rem); font-weight: 700; margin-inline-start: .5rem;
 }
 .actionCard { color: inherit; text-decoration: none; }
 .actionCard:focus-visible, .profileCard:focus-visible, .liveItem:focus-visible, .panelLink:focus-visible {
@@ -269,7 +269,7 @@
 .profileRing::before {
   content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--card-bg-solid);
 }
-.profileRing > span { position: relative; font-size: .78rem; font-weight: 800; color: var(--text-main); }
+.profileRing > span { position: relative; font-size: max(12px, .78rem); font-weight: 800; color: var(--text-main); }
 .profileText { display: flex; flex-direction: column; gap: .2rem; flex: 1; min-width: 0; }
 .profileTitle { font-weight: 700; color: var(--text-main); font-size: .95rem; }
 .profileMissing { font-size: .82rem; color: var(--text-muted); }
@@ -287,7 +287,10 @@
 }
 .panelHeader { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .panelTitle { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main); }
-.panelLink { font-size: .8rem; font-weight: 700; color: var(--primary-blue); border-radius: 6px; }
+.panelLink {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 40px; min-width: 44px; padding-inline: .4rem;
+  font-size: .8rem; font-weight: 700; color: var(--primary-blue); border-radius: 6px;
+}
 .panelLink:hover { text-decoration: underline; }
 .panelEmpty { margin: 0; font-size: .86rem; color: var(--text-muted); padding: .5rem 0; }
 .panelSkeleton { display: flex; flex-direction: column; gap: .6rem; }
@@ -314,7 +317,7 @@
 .newsDot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-blue); flex-shrink: 0; margin-inline: .35rem; }
 .liveText { display: flex; flex-direction: column; min-width: 0; }
 .liveTitle { font-weight: 600; font-size: .9rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.liveMeta { font-size: .78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.liveMeta { font-size: max(12px, .78rem); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 760px) {
   .liveGrid { grid-template-columns: 1fr; }
@@ -328,7 +331,7 @@
 }
 
 /* ── Hub insights ── */
-.panelMeta { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.panelMeta { font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
 .bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
 .barRow { display: grid; grid-template-columns: minmax(80px, 34%) minmax(0, 1fr) 2rem; align-items: center; gap: .75rem; }
 .barLabel { font-size: .84rem; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -43,7 +43,7 @@
 .tocTitle {
   list-style: none; cursor: pointer;
   padding: .7rem .8rem; border-radius: 10px;
-  font-size: .74rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+  font-size: max(12px, .74rem); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
   display: flex; align-items: center; justify-content: space-between;
 }
 .tocTitle::-webkit-details-marker { display: none; }
@@ -63,7 +63,7 @@
   transition: background .15s ease, color .15s ease;
 }
 .tocLink:hover { background: var(--primary-blue-glow); color: var(--primary-blue); }
-.tocNum { font-size: .72rem; font-weight: 700; color: var(--primary-blue); font-variant-numeric: tabular-nums; }
+.tocNum { font-size: max(12px, .72rem); font-weight: 700; color: var(--primary-blue); font-variant-numeric: tabular-nums; }
 
 .section { scroll-margin-top: 96px; }
 .sectionTitle { display: flex; align-items: baseline; gap: .75rem; }

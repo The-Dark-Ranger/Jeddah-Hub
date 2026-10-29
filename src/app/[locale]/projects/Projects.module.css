@@ -81,7 +81,7 @@
 
 .sectionLabel {
   display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+  font-size: max(12px, 0.78rem); font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 1.5rem;
 }
 
@@ -89,7 +89,7 @@
 .sectionCount {
   margin-inline-start: 0.3rem; background: var(--background-alt);
   border-radius: 10px; padding: 0.05rem 0.5rem;
-  font-size: 0.72rem; color: var(--text-muted);
+  font-size: max(12px, 0.72rem); color: var(--text-muted);
 }
 
 /* Grid, stretch (the default, stated explicitly) so every card in a row
@@ -125,13 +125,13 @@
 .cardMeta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 
 .cardCategory {
-  font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+  font-size: max(12px, 0.67rem); font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 4px;
 }
 
 .cardStatus {
   display: inline-flex; align-items: center; gap: 0.3rem;
-  font-size: 0.75rem; font-weight: 600;
+  font-size: max(12px, 0.75rem); font-weight: 600;
 }
 
 .statusDot { width: 6px; height: 6px; border-radius: 50%; }
@@ -220,7 +220,7 @@
   background: var(--card-bg-solid); border: 1px solid var(--border-color);
   display: flex; flex-direction: column-reverse; gap: .15rem;
 }
-.stat dt { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.stat dt { font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
 .stat dd { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--primary-blue); letter-spacing: -.02em; line-height: 1.1; }
 .clearBtn {
   margin-top: 1rem; padding: .6rem 1.2rem; border-radius: 10px; cursor: pointer;
@@ -232,13 +232,13 @@
 .catCount {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 18px; padding: 0 6px; margin-inline-start: .4rem;
-  border-radius: 999px; font-size: .68rem; font-weight: 700;
+  border-radius: 999px; font-size: max(12px, .68rem); font-weight: 700;
   background: var(--background-alt); color: var(--text-muted);
 }
 .catBtnActive .catCount { background: rgba(255, 255, 255, .25); color: inherit; }
 
 .cardFacts { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin-top: .75rem; }
-.cardFact { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.cardFact { display: inline-flex; align-items: center; gap: .35rem; font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
 
 /* ── Header art (desktop) ── */
 .headerGlobe {
@@ -271,14 +271,14 @@
   display: inline-flex; align-items: center; gap: .35rem;
   padding: .3rem .75rem; border-radius: 999px;
   background: rgba(255, 255, 255, .94); color: #0f172a;
-  font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  font-size: max(12px, .72rem); font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
 }
 .spotlightTag::before { content: '★'; color: #f59e0b; }
 .spotlightBody {
   display: flex; flex-direction: column; gap: .75rem; justify-content: center;
   padding: 2.5rem; border-top: 4px solid var(--spot-accent);
 }
-.spotlightCategory { font-size: .74rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--spot-accent); }
+.spotlightCategory { font-size: max(12px, .74rem); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--spot-accent); }
 .spotlightTitle { margin: 0; font-size: clamp(1.5rem, 2.6vw, 2.1rem); font-weight: 800; line-height: 1.15; color: var(--text-main); letter-spacing: -.01em; }
 .spotlightDesc {
   margin: 0; font-size: .98rem; line-height: 1.7; color: var(--text-muted);
@@ -319,7 +319,7 @@
   .cardSlider { height: 170px; }
   .stats { grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1.5rem; }
   .stat { padding: .75rem .7rem; text-align: center; }
-  .stat dt { font-size: .7rem; }
+  .stat dt { font-size: max(12px, .7rem); }
   .stat dd { font-size: 1.3rem; }
 }
 @media (max-width: 400px) {

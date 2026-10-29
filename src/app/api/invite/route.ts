@@ -1,6 +1,10 @@
 /* POST /api/invite (curators only): emails a member their invitation
  * (src/lib/emails/invite.ts) in the curator's dashboard language, with a
- * fresh one-time password if they have never signed in. */
+ * fresh one-time password if they have never signed in. With
+ * `newPassword: true` (Role Assignments → Members) it also gives a member
+ * who has signed in before a new one-time password and signs them out
+ * everywhere, e.g. one who lost theirs. The password only ever goes to the
+ * member's own inbox; the curator never sees it. */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
 import { isValidEmail } from '@/lib/validateEmail';
@@ -61,21 +65,35 @@ export async function POST(req: NextRequest) {
     if (KNOWN_ROLES.has(saved)) role = saved;
     displayName = asString(assignment.get('displayName'), 120) ?? displayName;
   }
-  let tempPassword: string | null = null;
+  const newPassword = body?.newPassword === true;
+  let record;
   try {
-    const record = await getAuth(app).getUserByEmail(email);
-    if (!record.metadata.lastSignInTime) {
-      tempPassword = generateTempPassword();
-      await getAuth(app).updateUser(record.uid, { password: tempPassword });
-    }
+    record = await getAuth(app).getUserByEmail(email);
   } catch {
     // No login yet: the dashboard creates one before inviting, so this
     // only happens if it was removed in between.
     return NextResponse.json({ error: 'no_account' }, { status: 409 });
   }
+  const signedInBefore = !!record.metadata.lastSignInTime;
+  if (newPassword && signedInBefore) {
+    // Not for your own account (My Profile changes it), and only the
+    // Curator can do it for a curator, as with every curator record.
+    if (record.uid === caller.uid) return NextResponse.json({ error: 'self' }, { status: 400 });
+    const target = await getFirestore(app).doc(`users/${record.uid}`).get().catch(() => null);
+    const targetRole = normalizeRole(String(target?.get('role') ?? ''));
+    if (targetRole === 'curator' && caller.role !== 'curator') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    if (KNOWN_ROLES.has(targetRole)) role = targetRole;
+  }
+  let tempPassword: string | null = null;
+  if (!signedInBefore || newPassword) {
+    tempPassword = generateTempPassword();
+    await getAuth(app).updateUser(record.uid, { password: tempPassword });
+    // Whoever had their session (or old password) is signed out everywhere.
+    if (signedInBefore) await getAuth(app).revokeRefreshTokens(record.uid);
+  }
 
   const lang = body?.locale === 'ar' ? 'ar' : 'en';
-  const result = await sendEmail(memberInvite({ lang, email, name: displayName, role, tempPassword }));
+  const result = await sendEmail(memberInvite({ lang, email, name: displayName, role, tempPassword, newPassword: newPassword && signedInBefore }));
   if (!result.ok) return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
 
   // Record it: on the assignment (shown in Role Assignments) and as an
@@ -102,7 +120,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[invite] could not record the invite', err);
   }
-  await sendEmail(inviteRecord({ email, name: displayName, role, lang, withPassword: !!tempPassword, sentBy, inviteCount, at }));
+  await sendEmail(inviteRecord({ email, name: displayName, role, lang, withPassword: !!tempPassword, sentBy, inviteCount, at, newPassword: newPassword && signedInBefore }));
 
   return NextResponse.json({ ok: true, withPassword: !!tempPassword, lastInvitedAt: at.toISOString(), inviteCount });
 }

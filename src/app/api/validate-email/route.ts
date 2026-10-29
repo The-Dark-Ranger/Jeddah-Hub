@@ -3,8 +3,10 @@ import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { readJsonBody } from '@/lib/http';
+import { isCrossSite } from '@/lib/formGuard';
 
 export async function POST(req: NextRequest) {
+  if (isCrossSite(req)) return NextResponse.json({ ok: false, reason: 'forbidden' }, { status: 403 });
   // A pre-flight check for the contact form and curator invites, so the
   // limit is generous; this route never sends or writes anything itself.
   if (isRateLimited(`validate-email:${clientIp(req)}`, 30, 60_000)) {

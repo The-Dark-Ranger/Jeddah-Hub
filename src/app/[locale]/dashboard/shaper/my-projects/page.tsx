@@ -17,11 +17,13 @@ import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
 import { downloadInitiativeReport } from '@/lib/exportInitiative';
-import { slugify, uniqueInitiativeSlug } from '@/lib/slug';
+import { slugify } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { errorCode, isLeadEntry, memberId, type LeadRequest, type MemberEntry, type MembershipRequest } from '@/lib/types';
+import { safeColor } from '@/lib/activityTypes';
+import { cssUrl } from '@/lib/sanitize';
 
 interface Project {
   id: string;
@@ -159,7 +161,8 @@ export default function MyProjects() {
     return () => { document.body.style.overflow = ''; };
   }, [leadEditInit]);
 
-  const getUserLabel = (userId: string) => users.find(u => u.id === userId)?.displayName || userId;
+  // Members who haven't signed in yet have no public profile to name them.
+  const getUserLabel = (userId: string) => users.find(u => u.id === userId)?.displayName || t('pendingMemberName');
   const toggleMemberPanel = (id: string) => setMemberPanelOpenId(prev => prev === id ? null : id);
 
   const openLeadEdit = (p: Project) => { setLeadEditInit(p); setLeadForm(initiativeToForm(p)); };
@@ -169,8 +172,9 @@ export default function MyProjects() {
     if (!leadEditInit || !leadForm.title) return;
     setLeadSaving(true);
     try {
-      const slug = await uniqueInitiativeSlug(leadForm.title, leadEditInit.id);
-      const updated = { ...initiativeFormToDoc(leadForm), slug };
+      // The web address (slug) stays as it is: only curators and impact
+      // officers set it, so a lead can't take over another project's URL.
+      const updated = initiativeFormToDoc(leadForm);
       await updateDoc(doc(db, 'initiatives', leadEditInit.id), updated);
       setProjects(prev => prev.map(p => p.id === leadEditInit.id ? { ...p, ...updated, color: updated.color ?? undefined } : p));
       closeLeadEdit();
@@ -416,7 +420,7 @@ export default function MyProjects() {
                 <Link key={p.id} href={`/projects/${p.slug || slugify(p.title)}`} className={styles.card}>
                   <div
                     className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
-                    style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
+                    style={{ '--card-accent': safeColor(p.color) || 'var(--primary-blue)', backgroundImage: cssUrl(p.imageUrl) } as React.CSSProperties}
                   >
                     {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
                   </div>
@@ -442,7 +446,7 @@ export default function MyProjects() {
               <div key={p.id} className={styles.leadCard}>
                 <div
                   className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
-                  style={{ '--card-accent': p.color || 'var(--primary-blue)', ...(p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : {}) } as React.CSSProperties}
+                  style={{ '--card-accent': safeColor(p.color) || 'var(--primary-blue)', backgroundImage: cssUrl(p.imageUrl) } as React.CSSProperties}
                 >
                   {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
                 </div>

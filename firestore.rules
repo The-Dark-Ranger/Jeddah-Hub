@@ -69,6 +69,12 @@ service cloud.firestore {
     function optStr(d, key, max) {
       return !(key in d) || d[key] == null || (d[key] is string && d[key].size() <= max);
     }
+    // A theme colour: empty, or a hex colour. It's placed into the page's CSS,
+    // so free text could otherwise add styles of its own (e.g. an overlay).
+    function optColor(d) {
+      return !('color' in d) || d.color == null || d.color == ''
+             || (d.color is string && d.color.matches('^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$'));
+    }
     // A user-entered link: empty, or an http(s) URL (never javascript:, data:, …).
     function optUrl(d, key) {
       return !(key in d) || d[key] == null || d[key] == ''
@@ -233,7 +239,9 @@ service cloud.firestore {
     // co-leads or remove others via a raw write. Note `members[].role` is
     // a display-only string (e.g. "Lead" badge text); actual lead
     // privilege is only ever granted through the separate `leads` field,
-    // so a lead editing that text doesn't grant themselves anything new.
+    // so a lead editing that text doesn't grant themselves anything new. A
+    // lead can't change the `slug` (the public web address) either, or they
+    // could give their project another initiative's address.
     // `featured`/`featuredAt` pick what the homepage's Featured
     // Initiatives section shows, a curatorship decision, so impact
     // officers (who can otherwise edit initiatives) can't set them.
@@ -262,11 +270,11 @@ service cloud.firestore {
     match /initiatives/{docId} {
       allow read: if true;
       // Every write: an activity's button link must be a real http(s) URL.
-      allow create: if optUrl(request.resource.data, 'ctaUrl')
+      allow create: if optUrl(request.resource.data, 'ctaUrl') && optColor(request.resource.data)
                     && (isCurator()
                         || (isImpactOfficer() && request.resource.data.get('featured', false) != true));
       allow delete: if isCurator();
-      allow update: if optUrl(request.resource.data, 'ctaUrl') && (isCurator()
+      allow update: if optUrl(request.resource.data, 'ctaUrl') && optColor(request.resource.data) && (isCurator()
                     || (isImpactOfficer()
                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['featured', 'featuredAt']))
                     || (isSignedIn()
@@ -277,7 +285,7 @@ service cloud.firestore {
                                'title', 'titleAr', 'description', 'descriptionAr',
                                'category', 'startDate', 'endDate',
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
-                               'impact', 'impactAreas', 'color', 'members', 'slug',
+                               'impact', 'impactAreas', 'color', 'members',
                              ])
                         && leadTeamStep()));
     }
@@ -325,6 +333,7 @@ service cloud.firestore {
                           'imageUrl', 'images', 'stat', 'problem', 'objective', 'impact', 'impactAreas', 'color',
                           'proposedBy', 'proposedByName', 'status', 'requestedAt'])
                     && isMyName(request.resource.data.proposedByName)
+                    && optColor(request.resource.data)
                     && optStr(request.resource.data, 'title', 300)
                     && optStr(request.resource.data, 'description', 10000)
                     && optStr(request.resource.data, 'descriptionAr', 10000);
@@ -575,20 +584,17 @@ service cloud.firestore {
     }
 
     // ── media ─────────────────────────────────────────────────
-    // One uploaded photo per document (src/lib/media.ts), served publicly
-    // by /api/media/<id>, so reads are public, like the initiatives and
-    // activities that reference them. Only signed-in members may upload,
-    // only as themselves, only a JPEG data URI, and below Firestore's
-    // 1 MiB document limit. Documents are immutable once written.
+    // One uploaded photo per document, served publicly by /api/media/<id>,
+    // so a photo can be read by its id, like the initiatives and activities
+    // that reference it. Listing them is refused: that would download every
+    // photo at once, including ones from proposals that were never approved.
+    // Uploads only arrive through POST /api/media (server, Admin SDK), which
+    // checks it's a real JPEG under 1 MB and each member's daily limit.
+    // Documents are immutable once written.
     match /media/{docId} {
-      allow read: if true;
-      allow create: if isAnyMember()
-                    && request.resource.data.keys().hasOnly(['data', 'contentType', 'uploadedBy', 'createdAt'])
-                    && request.resource.data.uploadedBy == request.auth.uid
-                    && request.resource.data.contentType == 'image/jpeg'
-                    && request.resource.data.data is string
-                    && request.resource.data.data.size() <= 1000000
-                    && request.resource.data.createdAt is string;
+      allow get: if true;
+      allow list: if false;
+      allow create: if false;
       allow delete: if isCurator()
                     || (isSignedIn() && resource.data.uploadedBy == request.auth.uid);
     }

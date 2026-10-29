@@ -86,6 +86,32 @@
   to { transform: rotate(360deg); }
 }
 
+.hint { margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+/* A quiet text button: "Forgot password?". */
+.linkBtn {
+  align-self: center; min-height: 40px; padding: 0.4rem 0.75rem; border: none; border-radius: 8px;
+  background: none; color: var(--primary-blue); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+}
+.linkBtn:hover { text-decoration: underline; }
+.linkBtn:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }
+
+.reset { display: flex; flex-direction: column; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.resetForm { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+.resetForm .hint { margin: 0 0 0.25rem; }
+.resetError { font-size: 0.85rem; font-weight: 600; color: var(--danger); }
+.notice {
+  padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; line-height: 1.55; color: var(--text-main);
+  background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.secondaryBtn {
+  min-height: 44px; padding: 0.6rem 1.1rem; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--primary-blue); background: transparent; color: var(--primary-blue);
+  font: inherit; font-size: 0.92rem; font-weight: 700;
+}
+.secondaryBtn:hover:not(:disabled) { background: var(--primary-fill); color: #fff; }
+.secondaryBtn:disabled { opacity: 0.6; cursor: wait; }
+
 @media (max-width: 480px) {
   .card {
     padding: 2rem 1.5rem;

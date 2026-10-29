@@ -12,6 +12,8 @@ import InitiativeGallery from '@/components/InitiativeGallery';
 import { PLACEHOLDER_PROJECTS, CATEGORY_COLORS } from '@/lib/placeholderProjects';
 import { slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
+import { safeColor } from '@/lib/activityTypes';
+import { cssUrl } from '@/lib/sanitize';
 
 /** The initiative's story, in reading order. */
 const STORY = [
@@ -207,7 +209,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
   const title = locale === 'ar' && initiative.titleAr ? initiative.titleAr : initiative.title;
   const description = locale === 'ar' && initiative.descriptionAr ? initiative.descriptionAr : initiative.description;
   const categoryColor = CATEGORY_COLORS[initiative.category ?? ''] ?? CATEGORY_COLORS.Default;
-  const heroColor = initiative.color || categoryColor;
+  const heroColor = safeColor(initiative.color) || categoryColor;
   /* Cover image first, then the gallery photos, deduped, so the curator's
    * cover doubles as the faded hero backdrop without having to be re-added to
    * the photo list just to produce that effect. */
@@ -237,7 +239,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
         {photos.length > 0 && (
           <div
             className={styles.heroImage}
-            style={{ backgroundImage: `url(${photos[0]})` }}
+            style={{ backgroundImage: cssUrl(photos[0]) }}
           />
         )}
         <div className={styles.heroOrb} />

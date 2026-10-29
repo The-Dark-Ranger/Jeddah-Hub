@@ -24,6 +24,7 @@ import styles from './Initiatives.module.css';
 import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { safeColor } from '@/lib/activityTypes';
+import RequestQueue from './RequestQueue';
 import { errorCode, isLeadRole, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal, type TeamRole } from '@/lib/types';
 
 interface Initiative {
@@ -692,125 +693,48 @@ export default function ManageInitiatives() {
         />
       </div>
 
-      {/* ── Proposed Initiatives (from shapers) ── */}
-      {proposals.length > 0 && (
-        <div className={styles.leaveSection}>
-          <h3 className={styles.leaveSectionTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            {t('proposedInitiatives')}
-            <span className={styles.leaveBadge}>{proposals.length}</span>
-          </h3>
-          <div className={styles.leaveList}>
-            {proposals.map(p => (
-              <div key={p.id} className={styles.leaveRow}>
-                <div className={styles.leaveInfo}>
-                  <span className={styles.leaveName}>{p.title}</span>
-                  <span className={styles.leaveMeta}>{t('proposedBy')} <strong>{p.proposedByName}</strong></span>
-                </div>
-                <div className={styles.leaveActions}>
-                  <button className={styles.approveLeaveBtn} onClick={() => handleApproveProposal(p)}>{t('approveProposal')}</button>
-                  <button className={styles.declineLeaveBtn} onClick={() => handleDeclineProposal(p.id)}>{t('declineProposal')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Leave Requests ── */}
-      {leaveRequests.length > 0 && (
-        <div className={styles.leaveSection}>
-          <h3 className={styles.leaveSectionTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            {t('incomingLeaveRequests')}
-            <span className={styles.leaveBadge}>{leaveRequests.length}</span>
-          </h3>
-          <div className={styles.leaveList}>
-            {leaveRequests.map(req => (
-              <div key={req.id} className={styles.leaveRow}>
-                <div className={styles.leaveInfo}>
-                  <span className={styles.leaveName}>{req.userName || req.userEmail}</span>
-                  <span className={styles.leaveMeta}>{t('wantsToLeave')} <strong>{req.initiativeTitle}</strong></span>
-                </div>
-                <div className={styles.leaveActions}>
-                  <button className={styles.approveLeaveBtn} onClick={() => handleApproveLeave(req)}>{t('approveLeave')}</button>
-                  <button className={styles.declineLeaveBtn} onClick={() => handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Removal Requests ── */}
-      {removalRequests.length > 0 && (
-        <div className={styles.removalSection}>
-          <h3 className={styles.removalSectionTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-            </svg>
-            {t('removalRequests')}
-            <span className={styles.removalBadge}>{removalRequests.length}</span>
-          </h3>
-          <div className={styles.removalList}>
-            {removalRequests.map(req => (
-              <div key={req.id} className={styles.removalRow}>
-                <div className={styles.removalInfo}>
-                  <span className={styles.removalName}>{req.targetUserName || req.targetUserId}</span>
-                  <span className={styles.removalMeta}>
-                    {t('requestedToRemove')} <strong>{req.initiativeTitle}</strong>
-                    {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
-                  </span>
-                </div>
-                <div className={styles.removalActions}>
-                  <button className={styles.approveRemovalBtn} onClick={() => handleApproveRemoval(req)}>{t('approveRemoval')}</button>
-                  <button className={styles.declineRemovalBtn} onClick={() => handleDeclineRemoval(req.id)}>{t('declineRemoval')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Member-Add Requests ── */}
-      {addRequests.length > 0 && (
-        <div className={styles.removalSection}>
-          <h3 className={styles.removalSectionTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="8.5" cy="7" r="4"/>
-              <path d="M20 8v6M23 11h-6"/>
-              <path d="M2 21v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2"/>
-            </svg>
-            {t('addMemberRequests')}
-            <span className={styles.removalBadge}>{addRequests.length}</span>
-          </h3>
-          <div className={styles.removalList}>
-            {addRequests.map(req => (
-              <div key={req.id} className={styles.removalRow}>
-                <div className={styles.removalInfo}>
-                  <span className={styles.removalName}>{req.targetUserName || req.targetUserId}</span>
-                  <span className={styles.removalMeta}>
-                    {t('requestedToAdd')} <strong>{req.initiativeTitle}</strong>
-                    {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
-                  </span>
-                </div>
-                <div className={styles.removalActions}>
-                  <button className={styles.approveRemovalBtn} onClick={() => handleApproveAddMember(req)}>{t('approveAdd')}</button>
-                  <button className={styles.declineRemovalBtn} onClick={() => handleDeclineAddMember(req.id)}>{t('declineAdd')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Requests waiting for a curator ── */}
+      <RequestQueue
+        icon={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>}
+        title={t('proposedInitiatives')}
+        items={proposals}
+        itemKey={p => p.id}
+        name={p => p.title}
+        meta={p => <>{t('proposedBy')} <strong>{p.proposedByName}</strong></>}
+        approveLabel={t('approveProposal')} onApprove={handleApproveProposal}
+        declineLabel={t('declineProposal')} onDecline={p => handleDeclineProposal(p.id)}
+      />
+      <RequestQueue
+        icon={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>}
+        title={t('incomingLeaveRequests')}
+        items={leaveRequests}
+        itemKey={r => r.id}
+        name={r => r.userName || r.userEmail}
+        meta={r => <>{t('wantsToLeave')} <strong>{r.initiativeTitle}</strong></>}
+        approveLabel={t('approveLeave')} onApprove={handleApproveLeave}
+        declineLabel={t('declineLeave')} onDecline={r => handleDeclineLeave(r.id)}
+      />
+      <RequestQueue
+        tone="remove"
+        icon={<><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></>}
+        title={t('removalRequests')}
+        items={removalRequests}
+        itemKey={r => r.id}
+        name={r => r.targetUserName || r.targetUserId}
+        meta={r => <>{t('requestedToRemove')} <strong>{r.initiativeTitle}</strong>{r.requestedByName && <> · {t('by')} {r.requestedByName}</>}</>}
+        approveLabel={t('approveRemoval')} onApprove={handleApproveRemoval}
+        declineLabel={t('declineRemoval')} onDecline={r => handleDeclineRemoval(r.id)}
+      />
+      <RequestQueue
+        icon={<><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/><path d="M2 21v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2"/></>}
+        title={t('addMemberRequests')}
+        items={addRequests}
+        itemKey={r => r.id}
+        name={r => r.targetUserName || r.targetUserId}
+        meta={r => <>{t('requestedToAdd')} <strong>{r.initiativeTitle}</strong>{r.requestedByName && <> · {t('by')} {r.requestedByName}</>}</>}
+        approveLabel={t('approveAdd')} onApprove={handleApproveAddMember}
+        declineLabel={t('declineAdd')} onDecline={r => handleDeclineAddMember(r.id)}
+      />
 
       {/* ── Cards ── */}
       {loading ? (

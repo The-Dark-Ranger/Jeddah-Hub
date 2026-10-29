@@ -18,7 +18,6 @@
     "subscribe": "اشترك",
     "metrics": {
       "projects": "مبادرة",
-      "beneficiaries": "مستفيد",
       "shapers": "عضو",
       "partners": "شريك"
     },
@@ -331,9 +330,7 @@
     "mainNav": "التنقل الرئيسي",
     "switchLanguage": "English: التبديل إلى الإنجليزية",
     "skipToContent": "انتقل إلى المحتوى الرئيسي",
-    "signedInAs": "تم تسجيل الدخول باسم",
-    "appearance": "المظهر",
-    "language": "اللغة"
+    "signedInAs": "تم تسجيل الدخول باسم"
   },
   "Role": {
     "curator": "منسق",
@@ -482,7 +479,6 @@
     "goodMorning": "صباح الخير",
     "goodAfternoon": "طاب يومك",
     "goodEvening": "مساء الخير",
-    "there": "صديقي",
     "loggedInAs": "مسجّلٌ دخولك بصفة",
     "quickActions": "إجراءات سريعة",
     "statActiveInitiatives": "المبادرات النشطة",

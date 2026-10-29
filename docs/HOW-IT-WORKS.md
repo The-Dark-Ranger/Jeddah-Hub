@@ -370,14 +370,17 @@ fades.
 
 ```mermaid
 flowchart LR
-    B[Branch] --> PR[Pull request] --> VP[Vercel preview<br/>build check]
+    B[Branch] --> CHK[npm run check<br/>npm run test:rules] --> PR[Pull request]
+    PR --> VP[Vercel preview<br/>build check]
     VP -->|passes| M[Squash-merge<br/>to main] --> PROD[Vercel deploys<br/>jeddahhub.org]
-    M -->|firestore.rules changed| GA[GitHub Action<br/>deploys the rules]
+    M -->|firestore.rules changed| DR[npm run deploy:rules]
 ```
 
-The rules workflow needs the `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID`
-repository secrets. Without them it skips itself, and rules are published by hand
-with `npx firebase-tools deploy --only firestore:rules`.
+`main` is protected: a change reaches it only through a pull request whose
+Vercel check has passed, never by a direct or force push, and the history
+stays linear (squash merges). After a change to `firestore.rules` is merged,
+`npm run deploy:rules` publishes it to Firebase; run `npm run test:rules`
+first (see [DEVELOPMENT.md](DEVELOPMENT.md#security-rules)).
 
 ---
 

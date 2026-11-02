@@ -65,6 +65,15 @@
   flex-direction: column;
 }
 
+.capsNote { margin: .45rem 0 0; font-size: .82rem; font-weight: 600; color: var(--warning, #b45309); }
+
+.keepRow {
+  display: flex; align-items: flex-start; gap: .6rem; cursor: pointer;
+  font-size: .9rem; font-weight: 600; color: var(--text-main); line-height: 1.4;
+}
+.keepRow input { width: 18px; height: 18px; margin-top: .1rem; flex-shrink: 0; accent-color: var(--primary-blue); }
+.keepHint { display: block; font-size: max(12px, .8rem); font-weight: 500; color: var(--text-muted); }
+
 .submitBtn {
   width: 100%;
   margin-top: 0.5rem;

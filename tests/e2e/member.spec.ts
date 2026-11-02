@@ -7,6 +7,40 @@ import { expectNoSidewaysScroll, isInViewport, PEOPLE, signIn, UPLOAD_FILE, watc
 /** Answers "are you sure?" pop-ups with yes. */
 const acceptDialogs = (page: Page) => page.on('dialog', d => d.accept());
 
+test.describe('signing in', () => {
+  test('a wrong password is cleared and says nothing about the account; Caps Lock is pointed out', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    await page.locator('#login-email').fill(PEOPLE.signer.email);
+    await page.locator('#login-password').fill('wrong-password');
+    // A real Caps Lock can't be switched on in an automated browser: send the key event it produces.
+    await page.locator('#login-password').dispatchEvent('keydown', { key: 'A', modifierCapsLock: true });
+    await expect(page.getByText('Caps Lock is on.')).toBeVisible();
+    await page.locator('#login-password').dispatchEvent('keyup', { key: 'a', modifierCapsLock: false });
+    await expect(page.getByText('Caps Lock is on.')).toHaveCount(0);
+    await page.waitForTimeout(1_700);
+    await page.locator('form button[type="submit"]').click();
+    await expect(page.getByText('Invalid email or password.')).toBeVisible();
+    await expect(page.locator('#login-password')).toHaveValue('');
+  });
+
+  test('not keeping the session means it ends with the browser; a signed-in visit to sign in goes to the dashboard', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    await page.getByRole('checkbox', { name: /Keep me signed in/ }).uncheck();
+    await page.locator('#login-email').fill(PEOPLE.signer.email);
+    await page.locator('#login-password').fill(PEOPLE.signer.password);
+    await page.waitForTimeout(1_700);
+    await page.locator('form button[type="submit"]').click();
+    await page.waitForURL(/\/dashboard/);
+    const kept = await page.evaluate(() => Object.keys(sessionStorage).some(k => k.startsWith('firebase:authUser')));
+    expect(kept).toBe(true);
+
+    await page.goto('/en/login');
+    await page.waitForURL(/\/dashboard/);
+  });
+});
+
 test.describe('changing a password', () => {
   test('My Profile has the form, and no extra button above it', async ({ page }) => {
     await signIn(page, PEOPLE.signer);

@@ -1,10 +1,14 @@
 'use client';
 
 /* Member login: email/password with bot checks (honeypot, minimum fill time,
- * reCAPTCHA) and a lockout after repeated failures. */
-import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+ * reCAPTCHA, BotID), a lockout after repeated failures in the browser and a
+ * limit on the server, and a choice not to stay signed in on a shared device. */
+import { useEffect, useRef, useState } from 'react';
+import {
+  browserSessionPersistence, indexedDBLocalPersistence, setPersistence, signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import PasswordInput from '@/components/PasswordInput';
@@ -23,12 +27,16 @@ import styles from './Login.module.css';
  *  - a submission faster than a person can type is refused
  *  - email/password are validated (format, length) before anything is sent
  *  - after 5 failed attempts the form locks, 30s doubling up to 15 min
- *    (kept in localStorage so a reload doesn't reset it). */
+ *    (kept in localStorage so a reload doesn't reset it)
+ *  - the server allows 10 attempts per account every 15 minutes and 60 per
+ *    network an hour (api/verify-recaptcha), which clearing storage can't reset. */
 const MAX_FAILS = 5;
 const LOCK_BASE_MS = 30_000;
 const LOCK_MAX_MS = 15 * 60_000;
 const MIN_FILL_MS = 1500;
 const LOCK_KEY = 'jh-login-lock';
+/** The "Keep me signed in" choice, remembered on this device (not a secret). */
+const KEEP_KEY = 'jh-keep-signed-in';
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
 type LockState = { fails: number; until: number };
@@ -42,7 +50,12 @@ function writeLock(s: LockState) {
   try { localStorage.setItem(LOCK_KEY, JSON.stringify(s)); } catch { /* storage blocked */ }
 }
 
+function readKeep(): boolean {
+  try { return localStorage.getItem(KEEP_KEY) !== '0'; } catch { return true; }
+}
+
 export default function LoginPage() {
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [honeypot, setHoneypot] = useState('');
@@ -51,8 +64,19 @@ export default function LoginPage() {
   // Counted from when the page started opening: on a slow phone the form can
   // be filled long before it becomes interactive, and that isn't a bot.
   const [openedAt] = useState(() => performance.timeOrigin);
+  const [keepSignedIn, setKeepSignedIn] = useState(readKeep);
+  const [capsLock, setCapsLock] = useState(false);
   const router = useRouter();
   const t = useTranslations('LoginPage');
+
+  // Already signed in: straight to the dashboard instead of a second sign-in.
+  // Not while this page is signing someone in: it sends them on itself.
+  const signingIn = useRef(false);
+  useEffect(() => {
+    if (!authLoading && user && !signingIn.current) router.replace('/dashboard');
+  }, [authLoading, user, router]);
+
+  const onPasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => setCapsLock(e.getModifierState('CapsLock'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,14 +114,20 @@ export default function LoginPage() {
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, action: 'login' }),
+        body: JSON.stringify({ token, action: 'login', email: cleanEmail }),
       });
       if (!verify.ok) {
-        setError(t('errorGeneral'));
+        setError(verify.status === 429 ? t('errorTooMany') : t('errorGeneral'));
         setLoading(false);
         return;
       }
 
+      // On a shared computer the session ends when the browser closes.
+      try { localStorage.setItem(KEEP_KEY, keepSignedIn ? '1' : '0'); } catch { /* storage blocked */ }
+      await setPersistence(auth, keepSignedIn ? indexedDBLocalPersistence : browserSessionPersistence)
+        .catch(() => setPersistence(auth, browserSessionPersistence))
+        .catch(() => { /* keep the default */ });
+      signingIn.current = true;
       const cred    = await signInWithEmailAndPassword(auth, cleanEmail, password);
       writeLock({ fails: 0, until: 0 });
       // Remember (for this tab only) that the temporary password was used,
@@ -121,8 +151,14 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (err) {
+      signingIn.current = false;
+      // A failed password doesn't stay on screen.
+      setPassword('');
       const code = (err as { code?: string } | null)?.code ?? '';
-      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-email') {
+      // A disabled account answers like a wrong password, so the page never
+      // tells anyone which addresses have an account.
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password'
+          || code === 'auth/invalid-email' || code === 'auth/user-disabled') {
         recordFailure();
         setError(t('errorInvalid'));
       } else if (code === 'auth/password-does-not-meet-requirements') {
@@ -188,8 +224,20 @@ export default function LoginPage() {
               minLength={6}
               maxLength={128}
               autoComplete="current-password"
+              onKeyDown={onPasswordKey}
+              onKeyUp={onPasswordKey}
+              aria-describedby={capsLock ? 'login-caps' : undefined}
             />
+            {capsLock && <p id="login-caps" className={styles.capsNote} role="status">{t('capsLockOn')}</p>}
           </div>
+
+          <label className={styles.keepRow}>
+            <input type="checkbox" checked={keepSignedIn} onChange={e => setKeepSignedIn(e.target.checked)} />
+            <span>
+              {t('keepSignedIn')}
+              <span className={styles.keepHint}>{t('keepSignedInHint')}</span>
+            </span>
+          </label>
 
           <button type="submit" className={'btn-primary ' + styles.submitBtn} disabled={loading}>
             {loading ? <span className={styles.spinner} /> : t('signIn')}

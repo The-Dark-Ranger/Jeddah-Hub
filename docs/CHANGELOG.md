@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 3 November
+- Sign-in is stronger: the server now limits attempts (10 per account every 15 minutes, 60 per network an hour), and clearing the browser can't reset that. A disabled account answers like a wrong password. A failed password is cleared from the field. "Keep me signed in on this device" can be unticked on a shared computer, which ends the session when the browser closes. The page warns when Caps Lock is on, and a member who is already signed in goes straight to the dashboard.
+
 ### 2 November
 - Active Projects: opening a team no longer stretches the project's photo, and the whole photo now shows instead of being cropped; the team opens below with room for two columns of members. Adding a member is a search by name (English or Arabic), alphabetical, and no longer offers someone already asked for. Larger buttons on phones, and the search no longer makes phones zoom in. In dark mode, page content no longer shows through the navbar.
 - Community Charter: Read & sign now opens the Charter at the top, so members read down to the sign-off, and the Curator and Vice Curator can download who has signed as Excel or CSV.

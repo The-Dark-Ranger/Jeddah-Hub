@@ -31,6 +31,13 @@ export default async function seed() {
     status: 'active', slug: 'green-jeddah', members: [{ userId: PEOPLE.lead.uid, role: 'Lead' }], leads: [PEOPLE.lead.uid],
   });
 
+  await db.doc('initiatives/clean-shores').set({
+    title: 'Clean Shores',
+    description: 'Monthly beach clean-ups along the Red Sea coast, run with local schools and volunteers, with every kilo of waste recorded and shared with the city so the next clean-up goes where it is needed most.',
+    category: 'Environment', status: 'active', slug: 'clean-shores', stat: '2 tonnes of waste collected',
+    members: [{ userId: PEOPLE.lead.uid, role: 'Member' }, { userId: PEOPLE.shaper.uid, role: 'Member' }],
+  });
+
   await db.doc('blogs/seeded-post').set({
     ...PUBLISHED_POST, status: 'published', authorId: PEOPLE.curator.uid, authorName: PEOPLE.curator.name,
     authorRole: 'curator', createdAt: '2026-02-01T00:00:00.000Z', likedBy: [],
@@ -40,7 +47,7 @@ export default async function seed() {
 
   // Compile the most used pages up front: the dev server builds each page on
   // its first visit, which could otherwise run into a test's time limit.
-  for (const path of ['/en', '/en/login', '/en/dashboard', '/en/dashboard/shaper/profile', '/en/dashboard/shaper/activities', '/en/dashboard/curator/activities']) {
+  for (const path of ['/en', '/en/login', '/en/dashboard', '/en/dashboard/shaper/profile', '/en/dashboard/shaper/activities', '/en/dashboard/curator/activities', '/en/news', '/en/news/trees-along-the-corniche']) {
     await fetch(`http://localhost:3100${path}`).catch(() => {});
   }
 }

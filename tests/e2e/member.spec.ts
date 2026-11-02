@@ -1,5 +1,6 @@
 /* The dashboards: changing a password, the Charter, news photos, and proposing
  * and approving a Hub Activity, each followed from start to finish. */
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, isInViewport, PEOPLE, signIn, UPLOAD_FILE, watchErrors } from './helpers';
 
@@ -7,15 +8,12 @@ import { expectNoSidewaysScroll, isInViewport, PEOPLE, signIn, UPLOAD_FILE, watc
 const acceptDialogs = (page: Page) => page.on('dialog', d => d.accept());
 
 test.describe('changing a password', () => {
-  test('the button on My Profile goes down to the form', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 700 });
+  test('My Profile has the form, and no extra button above it', async ({ page }) => {
     await signIn(page, PEOPLE.signer);
     await page.goto('/en/dashboard/shaper/profile');
     await expect(page.getByRole('heading', { name: PEOPLE.signer.name })).toBeVisible();
-    expect(await isInViewport(page, '#password')).toBe(false);
-
-    await page.getByRole('button', { name: 'Change password' }).click();
-    await expect.poll(() => isInViewport(page, '#password')).toBe(true);
+    await expect(page.locator('#password')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Change password' })).toHaveCount(0);
   });
 
   test('a one-time password leads straight to the form, and setting one clears the reminder', async ({ page }) => {
@@ -43,8 +41,14 @@ test.describe('the Community Charter', () => {
   test('a different name must be typed again; the account name and the tick sign it', async ({ page }) => {
     const errors = watchErrors(page);
     await signIn(page, PEOPLE.signer);
-    await page.goto('/en/dashboard/shaper/charter#sign');
-    await expect.poll(() => isInViewport(page, '#sign')).toBe(true);
+
+    // Read & sign opens the Charter at the top, not at the sign-off.
+    await page.getByRole('link', { name: 'Read & sign' }).click();
+    await page.waitForURL(/\/dashboard\/shaper\/charter$/);
+    await expect(page.locator('#sign')).toBeAttached();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await isInViewport(page, 'h1')).toBe(true);
+    expect(await isInViewport(page, '#sign')).toBe(false);
 
     const name = page.locator('#charter-name');
     const tick = page.getByRole('checkbox', { name: /read the Community Charter/ });
@@ -80,14 +84,33 @@ test.describe('the Community Charter', () => {
     await expect(page.locator('#sign')).toContainText('سامي شيبر');
   });
 
-  test('a curator sees who has signed, and the Charter has no downloads', async ({ page }) => {
-    await signIn(page, PEOPLE.curator);
-    await page.goto('/en/dashboard/shaper/charter');
-    await expect(page.getByText(/2 of \d+ Shapers signed/)).toBeVisible();
-    await page.getByRole('button', { name: 'Show members' }).click();
-    await expect(page.getByRole('listitem').filter({ hasText: 'Sara Signer' })).toContainText('Signed');
-    await expect(page.getByRole('listitem').filter({ hasText: 'Lena Lead' })).toContainText('Not signed');
-    await expect(page.getByRole('button', { name: /download/i })).toHaveCount(0);
+  test('the Curator and Vice Curator download who signed; nobody else can', async ({ browser }) => {
+    for (const who of [PEOPLE.curator, PEOPLE.vice]) {
+      const page = await (await browser.newContext()).newPage();
+      await signIn(page, who);
+      await page.goto('/en/dashboard/shaper/charter');
+      await expect(page.getByText(/2 of \d+ Shapers signed/)).toBeVisible();
+
+      const csvDownload = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download sign-offs (CSV)' }).click();
+      const csv = readFileSync(await (await csvDownload).path(), 'utf8');
+      expect(csv).toContain('"Name","Email","Role","Name signed","Signed at (UTC)","Member ID"');
+      expect(csv).toMatch(/"Sara Signer","signer@example.org","shaper","Sara Signer","\d{4}-\d{2}-\d{2}T/);
+      // Only those who signed.
+      expect(csv).not.toContain('Lena Lead');
+
+      const excelDownload = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download sign-offs (Excel)' }).click();
+      const excel = await excelDownload;
+      expect(excel.suggestedFilename()).toMatch(/\.xlsx$/);
+      expect(readFileSync(await excel.path()).subarray(0, 2).toString()).toBe('PK');
+    }
+
+    const others = await (await browser.newContext()).newPage();
+    await signIn(others, PEOPLE.impact);
+    await others.goto('/en/dashboard/shaper/charter');
+    await expect(others.locator('#sign')).toBeVisible();
+    await expect(others.getByRole('button', { name: /Download sign-offs/ })).toHaveCount(0);
   });
 });
 
@@ -262,6 +285,27 @@ test.describe('Hub Activities', () => {
     await page.getByRole('button', { name: 'Start over' }).click();
     await expect(page.getByRole('dialog').getByLabel('Title *')).toHaveValue('');
   });
+});
+
+test.describe('Active Projects', () => {
+  for (const screen of [{ width: 390, height: 844 }, { width: 900, height: 800 }, { width: 1366, height: 800 }]) {
+    test(`projects have room at ${screen.width}px wide, with the team panel open`, async ({ page }) => {
+      await page.setViewportSize(screen);
+      await signIn(page, PEOPLE.lead);
+      await page.goto('/en/dashboard/shaper/my-projects');
+      await page.getByRole('button', { name: /^Members/ }).click();
+      await expect(page.getByText('Clean Shores')).toBeVisible();
+
+      // Each project uses the whole width of the page instead of a narrow column.
+      const widths = await page.locator('main h3').evaluateAll(titles => titles.map(h => {
+        const card = h.parentElement!.parentElement!;
+        return card.getBoundingClientRect().width / card.parentElement!.getBoundingClientRect().width;
+      }));
+      expect(widths.length).toBeGreaterThanOrEqual(2);
+      for (const share of widths) expect(share).toBeGreaterThan(0.98);
+      await expectNoSidewaysScroll(page);
+    });
+  }
 });
 
 test.describe('every dashboard page on a phone and a desktop', () => {

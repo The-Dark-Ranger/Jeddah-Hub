@@ -107,7 +107,7 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 | **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter. |
 | **Initiative lead (Lead / Co-Lead)** | Everything a Shaper can, plus run their initiative: edit its content and photos, review join and leave requests, ask for members to be added or removed or to change role (the Curator or Vice Curator approves), export a member report. |
 | **Impact Officer** | Manage initiatives and Hub Activities, pick the spotlight and publish posts. |
-| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off, moderate posts, read contact messages, export the newsletter list. |
+| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off and downloading who signed, moderate posts, read contact messages, export the newsletter list. |
 
 ## Tech stack
 

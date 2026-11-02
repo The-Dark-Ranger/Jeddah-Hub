@@ -485,7 +485,7 @@ export default function MyProjects() {
 
                   {memberPanelOpenId === p.id && (
                     <div className={jiStyles.memberPanel}>
-                      <p className={jiStyles.memberPanelTitle}>{t('membersLabel')}</p>
+                      <p className={jiStyles.memberPanelTitle}>{t('viewMembers')}</p>
                       {nonLeadMembers.length === 0 ? (
                         <p className={jiStyles.memberPanelEmpty}>{t('noTeamMembers')}</p>
                       ) : (

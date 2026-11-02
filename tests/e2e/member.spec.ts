@@ -293,12 +293,19 @@ test.describe('Active Projects', () => {
       await page.setViewportSize(screen);
       await signIn(page, PEOPLE.lead);
       await page.goto('/en/dashboard/shaper/my-projects');
-      await page.getByRole('button', { name: /^Members/ }).click();
       await expect(page.getByText('Clean Shores')).toBeVisible();
+
+      // Opening the team panel doesn't stretch the project's photo.
+      const photo = page.locator('[class*="leadCard"] [class*="cardBanner"]');
+      const before = (await photo.boundingBox())!;
+      await page.getByRole('button', { name: /^Members/ }).click();
+      await expect(page.getByRole('button', { name: /Request to Add a Member/ })).toBeVisible();
+      const after = (await photo.boundingBox())!;
+      expect(Math.round(after.height)).toBe(Math.round(before.height));
 
       // Each project uses the whole width of the page instead of a narrow column.
       const widths = await page.locator('main h3').evaluateAll(titles => titles.map(h => {
-        const card = h.parentElement!.parentElement!;
+        const card = h.closest('[class*="leadCard"], [class*="card_"], a')!;
         return card.getBoundingClientRect().width / card.parentElement!.getBoundingClientRect().width;
       }));
       expect(widths.length).toBeGreaterThanOrEqual(2);
@@ -306,6 +313,44 @@ test.describe('Active Projects', () => {
       await expectNoSidewaysScroll(page);
     });
   }
+});
+
+test('a lead finds a member to add by typing, in English or Arabic', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, PEOPLE.lead);
+  await page.goto('/en/dashboard/shaper/my-projects');
+  await page.getByRole('button', { name: /^Members/ }).click();
+  await page.getByRole('button', { name: /Request to Add a Member/ }).click();
+
+  const search = page.getByRole('combobox');
+  await expect(search).toBeFocused();
+  await search.fill('سامي');
+  await expect(page.getByRole('option')).toHaveText([/Sami Shaper/]);
+  await search.fill('sara');
+  await expect(page.getByRole('option')).toHaveText([/Sara Signer/]);
+  // People already on the team aren't offered.
+  await search.fill('lena');
+  await expect(page.getByRole('option')).toHaveCount(0);
+  await expect(page.getByText('No matches')).toBeVisible();
+
+  // The results are not cut off at the bottom of the page.
+  await search.fill('sa');
+  const lastResult = page.getByRole('option').last();
+  await lastResult.scrollIntoViewIfNeeded();
+  const box = (await lastResult.boundingBox())!;
+  const atThatPoint = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[role=option]') !== null, [box.x + 20, box.y + box.height / 2]);
+  expect(atThatPoint).toBe(true);
+
+  await search.fill('sara');
+  await page.getByRole('option', { name: /Sara Signer/ }).click();
+  await page.getByRole('button', { name: 'Send Request' }).click();
+  await expect(page.getByText('Sara Signer')).toBeVisible();
+  await expectNoSidewaysScroll(page);
+
+  // Asked for once: not offered a second time.
+  await page.getByRole('button', { name: /Request to Add a Member/ }).click();
+  await page.getByRole('combobox').fill('sara');
+  await expect(page.getByRole('option')).toHaveCount(0);
 });
 
 test.describe('every dashboard page on a phone and a desktop', () => {

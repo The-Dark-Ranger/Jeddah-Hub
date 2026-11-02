@@ -3,7 +3,7 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { PEOPLE, PHOTO_ID, PHOTO_URI, PUBLISHED_POST } from './helpers';
+import { PEOPLE, PHOTO_ID, PHOTO_PATH, PHOTO_URI, PUBLISHED_POST } from './helpers';
 
 export default async function seed() {
   // A safety catch: the Admin SDK would otherwise reach for a real project.
@@ -19,7 +19,7 @@ export default async function seed() {
       uid: p.uid, email: p.email, role: p.role, displayName: p.name,
       ...(p.nameAr ? { displayNameAr: p.nameAr } : {}), createdAt: '2026-01-01T00:00:00.000Z',
     });
-    await db.doc(`public_profiles/${p.uid}`).set({ displayName: p.name, role: p.role });
+    await db.doc(`public_profiles/${p.uid}`).set({ displayName: p.name, role: p.role, ...(p.nameAr ? { displayNameAr: p.nameAr } : {}) });
   }
 
   await db.doc(`media/${PHOTO_ID}`).set({
@@ -28,7 +28,7 @@ export default async function seed() {
 
   await db.doc('initiatives/green-jeddah').set({
     title: 'Green Jeddah', description: 'Planting trees along the corniche.', category: 'Environment',
-    status: 'active', slug: 'green-jeddah', members: [{ userId: PEOPLE.lead.uid, role: 'Lead' }], leads: [PEOPLE.lead.uid],
+    status: 'active', slug: 'green-jeddah', imageUrl: PHOTO_PATH, members: [{ userId: PEOPLE.lead.uid, role: 'Lead' }], leads: [PEOPLE.lead.uid],
   });
 
   await db.doc('initiatives/clean-shores').set({

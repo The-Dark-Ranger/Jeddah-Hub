@@ -42,10 +42,17 @@
 /* ── Led project card, same shell as .card, but not itself a link since
    it hosts multiple distinct actions (manage vs. view on the public site). ── */
 .leadCard {
-  display: flex; flex-direction: row;
+  display: flex; flex-direction: column;
   background: var(--card-bg); border: 1px solid var(--primary-blue);
-  border-radius: 16px; overflow: hidden;
+  border-radius: 16px;
 }
+/* Photo and text. The team panel opens below this row, not beside it, so the
+   photo keeps its size. The card itself can't clip: the member search's list
+   has to reach past its edge. */
+.leadRow { display: flex; flex-direction: row; overflow: hidden; border-radius: 15px; }
+.leadRow:has(+ .teamPanel) { border-end-start-radius: 0; border-end-end-radius: 0; }
+.teamPanel { padding: 1.25rem 1.75rem 1.5rem; border-radius: 0 0 15px 15px; }
+.memberGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: .6rem; }
 
 .leadingBadge {
   align-self: flex-start;
@@ -57,7 +64,6 @@
 .leadActions {
   margin-top: auto; padding-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem;
 }
-.leadCard .cardBody > :last-child:not(.leadActions) { margin-top: 0.5rem; border-radius: 10px; }
 
 .viewSiteLink {
   display: inline-flex; align-items: center; gap: 0.35rem;
@@ -87,12 +93,18 @@
   background-image: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 85%, #fff), color-mix(in srgb, var(--card-accent) 55%, #0f172a));
   background-size: cover; background-position: center;
 }
+.cardBannerImg { overflow: hidden; }
 .cardBannerImg::before {
+  content: ''; position: absolute; inset: -24px;
+  background: var(--cover) center / cover no-repeat;
+  filter: blur(18px) brightness(.8);
+}
+.cardBannerImg::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .55));
+  background: var(--cover) center / contain no-repeat;
 }
 .bannerCategory {
-  position: relative;
+  position: relative; z-index: 1;
   font-size: max(12px, .68rem); font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   padding: .22rem .6rem; border-radius: 999px;
   background: rgba(255, 255, 255, .92); color: #0f172a;
@@ -113,13 +125,15 @@
 /* Too narrow for a photo beside the text (the dashboard's menu takes 260px
    until phones): the photo goes on top. */
 @media (max-width: 1000px) {
-  .card, .leadCard { flex-direction: column; }
+  .card, .leadRow { flex-direction: column; }
   .cardBanner { flex: none; width: 100%; height: 170px; min-height: 0; }
   .cardBody { flex: none; padding: 1.25rem; }
+  .teamPanel { padding: 1rem 1.25rem 1.25rem; }
 }
 @media (max-width: 640px) {
   .grid { gap: 1.25rem; }
   .cardBody { padding: 1.1rem 1.1rem 1.25rem; }
+  .teamPanel { padding: 1rem 1.1rem 1.25rem; }
   .cardBanner { height: 150px; }
   .cardTitle { font-size: 1.1rem; }
   .leadActions > * { flex: 1 1 auto; min-height: 42px; justify-content: center; text-align: center; }

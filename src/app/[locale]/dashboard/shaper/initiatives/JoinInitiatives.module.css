@@ -327,11 +327,7 @@
 }
 .addMemberBtn:hover { border-color: var(--primary-blue); background: var(--primary-blue-glow); }
 .addMemberRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
-.addMemberSelect {
-  flex: 1; min-width: 160px; padding: 0.4rem 0.6rem; border-radius: 7px;
-  border: 1px solid var(--border-color); background: var(--input-bg, var(--card-bg));
-  color: var(--text-main); font-size: 0.82rem;
-}
+.addMemberSearch { flex: 1 1 280px; }
 .addMemberSubmitBtn {
   padding: 0.32rem 0.75rem; border-radius: 7px; font-size: max(12px, 0.78rem); font-weight: 600;
   border: none; color: #fff; background: var(--primary-fill);
@@ -339,6 +335,13 @@
 }
 .addMemberSubmitBtn:hover:not(:disabled) { opacity: 0.9; }
 .addMemberSubmitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.addMemberRow .addMemberSubmitBtn, .addMemberRow .cancelRemovalBtn { min-height: 40px; padding-inline: 1rem; }
+@media (max-width: 640px) {
+  .requestRemovalBtn, .cancelRemovalBtn, .addMemberBtn { min-height: 40px; padding-inline: .85rem; }
+  .addMemberBtn { align-self: stretch; }
+  .addMemberSearch { flex-basis: 100%; }
+  .addMemberRow .addMemberSubmitBtn, .addMemberRow .cancelRemovalBtn { flex: 1 1 auto; min-height: 44px; }
+}
 
 /* ── Toolbar: All / Joined tabs + search ── */
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1.25rem; }

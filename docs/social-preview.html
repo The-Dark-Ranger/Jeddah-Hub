@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- The repository's social preview card (.github/social-preview.png), 1280x640.
+     To change it: edit this file, open it in a browser at exactly 1280x640 and
+     screenshot it, then upload the image under GitHub > Settings > Social preview. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1280px; height: 640px; overflow: hidden; font-family: Inter, sans-serif; color: #fff;
+    background: radial-gradient(ellipse 55% 90% at 100% 0%, rgba(94,163,224,.35), transparent 60%),
+                linear-gradient(120deg, #051535 0%, #0a3272 58%, #0f5a9f 100%); position: relative; }
+  .ring { position: absolute; border-radius: 50%; border: 2px solid rgba(255,255,255,.10); }
+  .r1 { width: 620px; height: 620px; right: -200px; bottom: -330px; }
+  .r2 { width: 380px; height: 380px; right: -80px; bottom: -210px; border-color: rgba(255,255,255,.07); }
+  .band { position: absolute; left: 0; right: 0; height: 22px; background: rgba(147,197,253,.55);
+    -webkit-mask: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGkAAABeCAYAAAAg/TovAAAACXBIWXMAAAPoAAAD6AG1e1JrAAACn0lEQVR42u3dT0sbQRjH8d0keO5BoaAXDy0txXegp+IbqBePCi22hx5rTxUVhKr0UhoR/HPyzfSmBU/23tI26k1Nk6zPkmdxSU12jTNlZ/Id+LEg7GZ2Ppklzj7ZBJGd1tDtmiSQlHTbmeTvjyW/dZ9W5F/7q9v3er6VLuNxW8IAJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCaQ7If3Qfep6Uj7lQs/tnctIz1L7+NyWXUQKdTssWZSsSpb0ZHzKB8lHyWTGeBQSiTiEFOolwPeUXEYiIIEEEkgggQSSc0ih5Tj/EbxsMSVmkh8zKX6jjEue6FqiqTzSYz50FSm5BIxIViSfJBuSTUOJj/VZ8qLj9W7LkOSrLobWJGeG8kdX9qt9vmELs8D6VHJlcWFzvwdSmEI6/g99cBYpviz8TN17aRhKXY/5JSfSUar/LUNJ7iXt+oBk46ZfU7dbOZG+dexnciz2QAIJJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJpAFGalpIvQ+kX6kBMnXrOhmgKjOpe1vXFyrnQDq12I9t15FmLCQuoZqVTGSUUiUdjmvTvkvOo3YJVM1Q4kvoZdQuFXMVKShKYWJFiwdHLWRM8iCjKLLwSDbLe0NHKleZSQUolgfJ8YAEEkgggTQYn+6KkpCZxEyyjvTc80zrP7ROrzj43JLBftNjDdGJtbuWx2n4gsRMAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSRjD6UtYpJvHL7OiXQY3fyuoKk+JE9p3mEm9W5vcyKdWOzDwX2Q5j3OnORl1H7CfdbD20v6DcVXup/JPixIpnL0gQpWV0Mt+L+zqXA/anINvVl0rjf7C1sAAAAASUVORK5CYII=) repeat-x left center / auto 100%; }
+  .top { top: 0; } .bottom { bottom: 0; }
+  /* Everything that matters stays 40pt (~54px) inside the edges. */
+  .safe { position: absolute; inset: 62px 80px; display: flex; align-items: center; gap: 56px; }
+  .logo { width: 250px; height: 240px; flex-shrink: 0; filter: drop-shadow(0 10px 30px rgba(0,0,0,.35)); }
+  .text { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .eyebrow { font-size: 20px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.72); }
+  h1 { font-size: 88px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+  .tag { font-size: 30px; font-weight: 600; color: rgba(255,255,255,.9); display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+  .tag .ar { font-family: Tajawal, sans-serif; font-weight: 700; font-size: 32px; color: #93c5fd; }
+  .desc { font-size: 22px; line-height: 1.45; color: rgba(255,255,255,.78); max-width: 760px; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { font-size: 18px; font-weight: 600; padding: 7px 15px; border-radius: 999px;
+    background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.22); }
+  .url { position: absolute; left: 80px; right: 80px; bottom: 50px; display: flex; justify-content: space-between;
+    font-size: 19px; font-weight: 600; color: rgba(255,255,255,.7); }
+  .url b { color: #fff; }
+</style></head>
+<body>
+  <div class="band top"></div>
+  <span class="ring r1"></span><span class="ring r2"></span>
+  <div class="safe">
+    <img class="logo" src="../public/logo-dark.png" alt="">
+    <div class="text">
+      <p class="eyebrow">Global Shapers Community</p>
+      <h1>Jeddah Hub</h1>
+      <p class="tag">From Jeddah to the Globe <span class="ar" dir="rtl">من جدة إلى العالم</span></p>
+      <p class="desc">The hub's bilingual website and member dashboard: initiatives, Hub Activities, news and the Community Charter.</p>
+      <div class="chips"><span class="chip">Next.js 16</span><span class="chip">React 19</span><span class="chip">Firebase</span><span class="chip">Vercel</span><span class="chip">English · العربية</span></div>
+    </div>
+  </div>
+  <div class="url"><span><b>jeddahhub.org</b></span><span>github.com/The-Dark-Ranger/Jeddah-Hub</span></div>
+  <div class="band bottom"></div>
+</body></html>

@@ -1,5 +1,7 @@
 # Jeddah Hub
 
+![Jeddah Hub: the website and member dashboard of the Global Shapers Community Jeddah Hub](.github/social-preview.png)
+
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)

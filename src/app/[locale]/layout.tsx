@@ -90,7 +90,7 @@ export default async function LocaleLayout({
   const themeAttr   = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : undefined;
 
   return (
-    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-theme={themeAttr} className={`${inter.variable} ${tajawal.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-theme={themeAttr} data-scroll-behavior="smooth" className={`${inter.variable} ${tajawal.variable}`} suppressHydrationWarning>
       <head>
         {/* Must run before first paint: lock in the saved theme and decide
             whether this load shows the splash, so neither flashes in late. */}

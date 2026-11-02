@@ -14,6 +14,7 @@ import { slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
 import { safeColor } from '@/lib/activityTypes';
 import { cssUrl } from '@/lib/sanitize';
+import { formatDate } from '@/lib/dates';
 
 /** The initiative's story, in reading order. */
 const STORY = [
@@ -186,8 +187,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
 
   const getUserPhoto = (userId: string) => users.find(u => u.id === userId)?.photoURL || null;
 
-  const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
-  const fmtMonth = (d: Date) => d.toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' });
+  const fmtMonth = (d: Date) => formatDate(d, locale, { month: 'short', year: 'numeric' });
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -272,9 +272,9 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
                   <rect x="3" y="4" width="18" height="18" rx="2"/>
                   <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                {initiative.startDate && new Date(initiative.startDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', year: 'numeric' })}
+                {initiative.startDate && formatDate(initiative.startDate, locale, { month: 'long', year: 'numeric' })}
                 {initiative.startDate && initiative.endDate && ' – '}
-                {initiative.endDate && new Date(initiative.endDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', year: 'numeric' })}
+                {initiative.endDate && formatDate(initiative.endDate, locale, { month: 'long', year: 'numeric' })}
               </div>
             )}
             {Array.isArray(initiative.members) && initiative.members.length > 0 && (

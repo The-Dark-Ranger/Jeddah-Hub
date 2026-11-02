@@ -2,7 +2,7 @@
 
 /* Dashboard > Community Charter: the charter text, the sign-off form, and
  * (for curators) the sign-off switch and who has signed. */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';
 import WefLogo from '@/components/WefLogo';
@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { normalizeRole } from '@/lib/role';
 import CharterAdmin from './CharterAdmin';
 import CharterSignOff from './CharterSignOff';
+import { downloadCharterPdf } from './charterPdf';
 import styles from './Charter.module.css';
 
 /** ~200 words a minute over the whole document. */
@@ -76,6 +77,19 @@ export default function CommunityCharterPage() {
     if (tocRef.current && window.matchMedia('(max-width: 768px)').matches) tocRef.current.open = false;
   }, []);
 
+  const [downloading, setDownloading] = useState(false);
+  const [downloadFailed, setDownloadFailed] = useState(false);
+  const download = async () => {
+    setDownloading(true); setDownloadFailed(false);
+    try {
+      await downloadCharterPdf();
+    } catch {
+      setDownloadFailed(true);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
       {isCurator && <CharterAdmin />}
@@ -89,6 +103,15 @@ export default function CommunityCharterPage() {
             <span aria-hidden="true">·</span>
             {t('readMinutes', { n: READ_MINUTES })}
           </p>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.downloadBtn} onClick={download} disabled={downloading}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {downloading ? t('downloadingPdf') : t('downloadPdf')}
+            </button>
+            {downloadFailed && <span role="alert">{t('downloadFailed')}</span>}
+          </div>
         </div>
         <WefLogo alt="World Economic Forum" variant="white" height={52} className={styles.headerLogo} />
       </header>

@@ -10,6 +10,7 @@ import { useRouter } from '@/i18n/routing';
 import PasswordInput from '@/components/PasswordInput';
 import { useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
+import { PASSWORD_FORM_HREF } from '@/lib/passwordForm';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
 import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
@@ -47,7 +48,9 @@ export default function LoginPage() {
   const [honeypot, setHoneypot] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
-  const [openedAt] = useState(() => Date.now());
+  // Counted from when the page started opening: on a slow phone the form can
+  // be filled long before it becomes interactive, and that isn't a bot.
+  const [openedAt] = useState(() => performance.timeOrigin);
   const router = useRouter();
   const t = useTranslations('LoginPage');
 
@@ -106,7 +109,9 @@ export default function LoginPage() {
       const profile = await getUserProfile(cred.user.uid);
 
       const normRole = normalizeRole(profile?.role);
-      if (normRole === 'curator' || normRole === 'vice_curator') {
+      if (isTemporaryPassword(password)) {
+        router.push(PASSWORD_FORM_HREF);
+      } else if (normRole === 'curator' || normRole === 'vice_curator') {
         router.push('/dashboard/curator/initiatives');
       } else if (normRole === 'impact_officer') {
         router.push('/dashboard/impact/projects');

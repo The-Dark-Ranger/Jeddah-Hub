@@ -3,6 +3,20 @@
 What changed on the site, newest first. Each line links to its pull request,
 which has the full description and how it was tested.
 
+## November 2026
+
+### 2 November
+- Hub Activities: every member can propose an activity or workshop from My Hub Activities with the same full form leads have (photos, dates, highlights, registration and feedback forms). A Curator or Vice Curator approves it before it goes live. Members follow what happened to each request, can correct one while it waits, see the reviewer's note if it is declined and send it again, and can ask for changes to activities they proposed. Curators get one review queue with search and counts, see only what would change on a live activity, and approving saves everything at once.
+- News: posts can have a cover photo and up to 12 more photos, shown on the News page, at the top of the post and as a gallery. A shared post now shows its own title, summary and picture.
+- Community Charter: members type the name on their account (a different name has to be typed again) and tick one box saying they have read the Charter and will adhere to it. The record holds the account name and the server's time, and can't be edited afterwards. The Charter downloads as a PDF, members get a signed copy, and curators can download the sign-offs as Excel or CSV for keeping or moving the data.
+- Change password: the button now goes down to the form, from My Profile and from the reminder, including right after signing in with a one-time password. Added a Change password button at the top of My Profile. The Charter reminder's link now goes down to the sign-off in the same way.
+- Initiatives page: removed the summary strip (active initiatives, Shapers involved, focus areas).
+- Fixes found by the new browser tests: the X, LinkedIn and WhatsApp buttons on a news post shared an empty link; Arabic pages showed Hijri dates and different digits from the server, which made the browser rebuild the whole page (dates are now the same everywhere); on phones up to 400px wide the news header's wave covered its subtitle; signing in with a one-time password now opens the Change password form; the sign-in page no longer refuses someone on a slow phone as "too fast".
+- Other fixes: a curator opening a post waiting for review sees its real status; the post editor's button says what it will do (save a draft, submit, publish); downloads work in Safari and Firefox; published and removed posts and activities show on the public site straight away; legacy-format team members count on the dashboard home; the activity editor closes with Esc, only asks before discarding real changes, fills a phone's screen, and catches a bad button link before saving.
+- Faster: the dashboard home reads the initiatives once instead of up to five times, and news cards load a small version of each photo. Tidier: the dashboard sidebar fills its column and the role badge stays on one line.
+- Up to date: Vercel Analytics and Speed Insights 2, BotID 1.5.12, jose 6.2.15, and a dependency fix that takes the security audit to 0 known vulnerabilities.
+- New browser tests (`npm run test:e2e`) follow the main functions from start to finish, and open every page in both languages on phone and desktop sizes; more security-rules tests.
+
 ## October 2026
 
 ### 29 October

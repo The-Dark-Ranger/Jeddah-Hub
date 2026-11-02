@@ -1,8 +1,7 @@
-/** Shared between the curator's direct-write Activities dashboard and the
- *  lead's approval-gated one (dashboard/shaper/activities), plus the
- *  curator-side code that applies an approved activity_change_requests
- *  payload, one place for the Hub Activity shape so a lead's proposal and
- *  a curator's own edit form always agree on what an activity is. */
+/** Shared between the curators' direct-write Hub Activities page and members'
+ *  approval-gated My Hub Activities, plus the code that applies an approved
+ *  activity_change_requests payload: one place for the Hub Activity shape, so
+ *  a proposal and a curator's own edit always agree on what an activity is. */
 
 export interface Highlight { name: string; tag: string; }
 
@@ -64,6 +63,39 @@ export interface ActivityFormData {
   color: string;
 }
 
+/** A Hub Activity as stored: an initiatives doc tagged type 'hub_activity'.
+ *  Older documents can lack any of the form's fields. */
+export interface HubActivity extends Partial<Omit<ActivityFormData, 'title'>> {
+  id: string;
+  title: string;
+  slug?: string;
+  archived?: boolean;
+  /** The initiative it belongs to, when it isn't for the whole hub. */
+  initiativeId?: string;
+  /** The member whose approved proposal created it. */
+  proposedBy?: string;
+  createdAt?: { toMillis?: () => number };
+}
+
+/** activity_change_requests: a member's request to create or change an
+ *  activity, waiting for a reviewer (see firestore.rules). */
+export interface ActivityChangeRequest {
+  id: string;
+  changeType: 'create' | 'update';
+  activityId: string | null;
+  /** Empty when the activity is for the whole hub. */
+  initiativeId: string;
+  activityTitle: string;
+  payload: Record<string, unknown>;
+  proposedBy: string;
+  proposedByName?: string;
+  status: 'pending' | 'approved' | 'declined';
+  requestedAt?: string;
+  reviewedAt?: string;
+  /** The reviewer's note to the sender. */
+  reviewNote?: string;
+}
+
 /** The only fields a change request's `payload` may carry through to a
  *  live `initiatives` (hub_activity) doc, applied explicitly at approval
  *  time rather than spreading `payload` wholesale, so a malicious payload
@@ -83,6 +115,23 @@ export function pickActivityFields(payload: Record<string, unknown>): Record<str
     if (key in payload) out[key] = payload[key];
   }
   return out;
+}
+
+/** Same value whatever order Firestore returned a map's keys in. */
+function stableJson(value: unknown): string {
+  return JSON.stringify(value ?? '', (_key, v: unknown) => (
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+      : v
+  ));
+}
+
+/** The fields of a request's payload that differ from the live activity, so a
+ *  reviewer sees what would change rather than the whole form. */
+export function changedActivityFields(payload: Record<string, unknown>, live: HubActivity): Record<string, unknown> {
+  const current = live as unknown as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(pickActivityFields(payload))
+    .filter(([key, value]) => stableJson(value) !== stableJson(current[key])));
 }
 
 export const emptyCustomForm = (): CustomForm => ({ enabled: false, questions: [] });

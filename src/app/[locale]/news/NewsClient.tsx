@@ -9,12 +9,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { loadFirestore } from '@/lib/loadFirestore';
+import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import { newsPath } from '@/lib/slug';
 import { RoleLabel } from '@/lib/roleLabel';
 import { useLocale, useTranslations } from 'next-intl';
 import styles from './News.module.css';
 import WaveDivider from '@/components/WaveDivider';
+import { formatDate } from '@/lib/dates';
 
 export interface NewsPost {
   id: string;
@@ -25,25 +27,28 @@ export interface NewsPost {
   authorName?: string;
   authorRole?: string;
   tags?: string[];
+  imageUrl?: string;
   status: string;
   likes?: number;
   createdAt: string;
 }
 
-function timeAgo(iso: string, t: (key: 'timeMinutes' | 'timeHours' | 'timeDays', values: { n: number }) => string, locale: string) {
-  const diff = Date.now() - new Date(iso).getTime();
+function timeAgo(iso: string, now: number | null, t: (key: 'timeMinutes' | 'timeHours' | 'timeDays', values: { n: number }) => string, locale: string) {
+  const diff = (now ?? 0) - new Date(iso).getTime();
   const mins = Math.max(0, Math.floor(diff / 60000));
-  if (mins < 60) return t('timeMinutes', { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('timeHours', { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return t('timeDays', { n: days });
-  return new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  // Without the visitor's clock yet, or for older posts: the date itself.
+  if (now === null || days >= 30) return formatDate(iso, locale, { month: 'short', day: 'numeric', year: 'numeric' });
+  if (mins < 60) return t('timeMinutes', { n: mins });
+  if (hrs < 24) return t('timeHours', { n: hrs });
+  return t('timeDays', { n: days });
 }
 
 function getExcerpt(post: NewsPost) {
   if (post.excerpt) return post.excerpt;
-  return post.content.length > 200 ? post.content.slice(0, 200).trim() + '...' : post.content;
+  const text = post.content ?? '';
+  return text.length > 200 ? text.slice(0, 200).trim() + '...' : text;
 }
 
 /** Published posts (newest first) and their authors' photos, loaded on the
@@ -61,6 +66,11 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('');
   const [authorPhotos, setAuthorPhotos] = useState<Record<string, string>>(initial?.authorPhotos ?? {});
+  // "5 minutes ago" uses the visitor's clock, so it appears once the page is
+  // in the browser; the first render has to match the server's.
+  const [now, setNow] = useState<number | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- read the clock in the browser only
+  useEffect(() => { setNow(Date.now()); }, []);
 
   const allTags = Array.from(new Set(posts.flatMap(p => p.tags ?? []))).slice(0, 10);
 
@@ -120,7 +130,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
     let result = posts;
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q));
+      result = result.filter(p => p.title?.toLowerCase().includes(q) || p.content?.toLowerCase().includes(q));
     }
     if (activeTag) result = result.filter(p => p.tags?.includes(activeTag));
     return result;
@@ -142,6 +152,8 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input
+              type="search"
+              aria-label={t('searchPlaceholder')}
               className={styles.searchInput}
               placeholder={t('searchPlaceholder')}
               value={search}
@@ -152,9 +164,9 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
               the grid below doesn't jump when the tags arrive. */}
           {(loading || allTags.length > 0) && (
             <div className={styles.tags} aria-busy={loading}>
-              <button className={styles.tag + (!activeTag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag('')}>{t('tagAll')}</button>
+              <button type="button" className={styles.tag + (!activeTag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag('')}>{t('tagAll')}</button>
               {allTags.map(tag => (
-                <button key={tag} className={styles.tag + (activeTag === tag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}>{tag}</button>
+                <button key={tag} type="button" className={styles.tag + (activeTag === tag ? ' ' + styles.tagActive : '')} onClick={() => setActiveTag(tag === activeTag ? '' : tag)}>{tag}</button>
               ))}
             </div>
           )}
@@ -171,6 +183,16 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
           <div className={styles.grid}>
             {filtered.map(post => (
               <Link key={post.id} href={newsPath(post)} className={styles.card}>
+                {post.imageUrl && (
+                  <div className={styles.cardMedia}>
+                    {/* A small version of an uploaded photo; a linked photo is shown as it is. */}
+                    <Image
+                      src={post.imageUrl} alt="" fill sizes="(max-width: 700px) 100vw, 350px"
+                      unoptimized={!post.imageUrl.startsWith('/api/media/')}
+                      onError={e => { e.currentTarget.parentElement!.hidden = true; }}
+                    />
+                  </div>
+                )}
                 <div className={styles.cardCategory}>
                   {post.tags && post.tags.length > 0 ? post.tags[0].toUpperCase() : t('hubUpdate').toUpperCase()}
                 </div>
@@ -190,7 +212,7 @@ export default function NewsClient({ initial }: { initial?: NewsData }) {
                       <div className={styles.cardAuthorRole}><RoleLabel role={post.authorRole} /></div>
                     </div>
                   </div>
-                  <span className={styles.cardDate}>{timeAgo(post.createdAt, t, locale)}</span>
+                  <span className={styles.cardDate}>{timeAgo(post.createdAt, now, t, locale)}</span>
                 </div>
               </Link>
             ))}

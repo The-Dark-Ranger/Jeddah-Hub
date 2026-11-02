@@ -6,13 +6,26 @@
  * that become something other than text: a link's href, or a cell in a
  * spreadsheet a curator downloads. */
 
+/** Adds https:// to a link typed without a scheme (e.g. linkedin.com/in/x). */
+export function withHttps(raw: string): string {
+  const v = raw.trim();
+  return v && !/^[a-z][a-z0-9+.-]*:/i.test(v) ? `https://${v}` : v;
+}
+
+/** A photo address that may be saved on a post: an uploaded photo
+ *  (/api/media/<id>) or an http(s) link. Anything else becomes ''. */
+export function safePhotoUrl(raw: string): string {
+  const v = raw.trim();
+  return /^\/api\/media\/[A-Za-z0-9]+$/.test(v) ? v : safeExternalUrl(v) ?? '';
+}
+
 /** A user-entered link, only if it's an http(s) URL; anything else
  *  (javascript:, data:, vbscript:, relative paths) becomes undefined so the
  *  link isn't rendered. A bare "www.example.com" is treated as https. */
 export function safeExternalUrl(raw: string | null | undefined): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const v = raw.trim();
-  if (!v) return undefined;
+  if (!v || /\s/.test(v)) return undefined;
   const withScheme = /^www\./i.test(v) ? `https://${v}` : v;
   try {
     const u = new URL(withScheme);

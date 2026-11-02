@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { FIRESTORE_REST } from '@/lib/emulators';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 
 /* Serves a photo stored in the Firestore `media` collection (one document per
@@ -20,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   let res: Response;
   try {
     res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(PROJECT)}/databases/(default)/documents/media/${id}`,
+      `${FIRESTORE_REST}/projects/${encodeURIComponent(PROJECT)}/databases/(default)/documents/media/${id}`,
       { signal: AbortSignal.timeout(8000), cache: 'no-store' },
     );
   } catch {

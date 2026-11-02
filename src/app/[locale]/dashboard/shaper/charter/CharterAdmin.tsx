@@ -1,29 +1,25 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { useLocale, useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { normalizeRole } from '@/lib/role';
 import { getRequireSignature, setRequireSignature, SIGNATURES, SIGNING_ROLES, type CharterSignature } from '@/lib/charterSignature';
+import { downloadSignOffsCsv, downloadSignOffsExcel, type RegisterMember } from './charterExport';
 import styles from './CharterSign.module.css';
+import { intlLocale } from '@/lib/dates';
 
-/** Who the sign-off applies to: active Shapers, including the curatorship.
- *  Alumni aren't counted (see SIGNING_ROLES). */
-const MEMBER_ROLES = SIGNING_ROLES;
-
-interface Member { uid: string; name: string; role: string; }
-
-/** Curators (and vice curators) switch charter sign-off on or off and see
- *  who has signed. Rendered above the Charter for them only. */
+/** Curators (and vice curators) switch charter sign-off on or off, see who
+ *  has signed and download the record. Rendered above the Charter for them only. */
 export default function CharterAdmin() {
   const t = useTranslations('CharterPage');
   const tr = useTranslations('Role');
   const locale = useLocale();
   const { user } = useAuth();
   const [required, setRequired] = useState<boolean | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [everyone, setEveryone] = useState<RegisterMember[]>([]);
   const [signatures, setSignatures] = useState<Record<string, CharterSignature>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -37,9 +33,13 @@ export default function CharterAdmin() {
         getDocs(collection(db, SIGNATURES)),
       ]);
       setRequired(req);
-      setMembers(usersSnap.docs
-        .map(d => ({ uid: d.id, name: (d.data().displayName as string) || (d.data().email as string) || d.id, role: normalizeRole(d.data().role) }))
-        .filter(m => MEMBER_ROLES.includes(m.role))
+      setEveryone(usersSnap.docs
+        .map(d => ({
+          uid: d.id,
+          name: (d.data().displayName as string) || (d.data().email as string) || d.id,
+          email: (d.data().email as string) || '',
+          role: normalizeRole(d.data().role),
+        }))
         .sort((a, b) => a.name.localeCompare(b.name)));
       setSignatures(Object.fromEntries(sigSnap.docs.map(d => [d.id, d.data() as CharterSignature])));
     } catch {
@@ -63,12 +63,15 @@ export default function CharterAdmin() {
     }
   };
 
-  /** New term: everyone signs again. */
+  /** New term: everyone signs again. All at once, so a failure leaves the
+   *  record whole rather than half deleted. */
   const reset = async () => {
     if (!confirm(t('resetConfirm'))) return;
     setBusy(true); setError('');
     try {
-      await Promise.all(Object.keys(signatures).map(uid => deleteDoc(doc(db, SIGNATURES, uid))));
+      const batch = writeBatch(db);
+      Object.keys(signatures).forEach(uid => batch.delete(doc(db, SIGNATURES, uid)));
+      await batch.commit();
       setSignatures({});
       window.dispatchEvent(new Event('jh-charter-changed'));
     } catch {
@@ -78,8 +81,22 @@ export default function CharterAdmin() {
     }
   };
 
+  const download = async (format: 'excel' | 'csv') => {
+    setBusy(true); setError('');
+    try {
+      if (format === 'csv') downloadSignOffsCsv(everyone, signatures);
+      else await downloadSignOffsExcel(everyone, signatures);
+    } catch {
+      setError(t('downloadFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Who the sign-off applies to: active Shapers, including the curatorship.
+  const members = everyone.filter(m => SIGNING_ROLES.includes(m.role));
   const signedCount = members.filter(m => signatures[m.uid]).length;
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <section className={styles.adminCard} aria-labelledby="charter-admin-title">
@@ -101,7 +118,7 @@ export default function CharterAdmin() {
         </button>
       </div>
 
-      {error && <p className={styles.error}>{error}</p>}
+      {error && <p className={styles.error} role="alert">{error}</p>}
 
       <div className={styles.progressRow}>
         <span className={styles.progressText}>{t('adminSignedCount', { signed: signedCount, total: members.length })}</span>
@@ -113,6 +130,12 @@ export default function CharterAdmin() {
       <div className={styles.adminActions}>
         <button type="button" className={styles.linkBtn} onClick={() => setOpen(o => !o)} aria-expanded={open}>
           {open ? t('adminHideList') : t('adminShowList')}
+        </button>
+        <button type="button" className={styles.linkBtn} onClick={() => download('excel')} disabled={busy || required === null}>
+          {t('adminDownloadExcel')}
+        </button>
+        <button type="button" className={styles.linkBtn} onClick={() => download('csv')} disabled={busy || required === null}>
+          {t('adminDownloadCsv')}
         </button>
         {signedCount > 0 && (
           <button type="button" className={styles.linkBtnDanger} onClick={reset} disabled={busy}>{t('adminReset')}</button>

@@ -65,7 +65,7 @@
 
 @media (max-width: 720px) {
   .grid { grid-template-columns: 1fr; }
-  .previewCol { position: static; order: -1; max-width: 320px; }
+  .previewCol { position: static; max-width: 320px; }
 }
 
 /* With a colour picked, the card takes it on like the homepage section does. */

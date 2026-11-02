@@ -18,6 +18,7 @@ import type { UserProfile } from '@/lib/auth';
 import styles from './DashboardHome.module.css';
 import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import { memberId, type MemberEntry } from '@/lib/types';
+import { intlLocale } from '@/lib/dates';
 
 interface Stats {
   initiatives: number; activeInitiatives: number;
@@ -70,7 +71,6 @@ export default function DashboardHome() {
     const role      = normalizeRole(user?.role);
     const isCurator = role === 'curator' || role === 'vice_curator';
     const isImpact  = role === 'impact_officer';
-    const isShaper  = role === 'shaper'  || role === 'alumni';
 
     const next: Stats = {
       initiatives: 0, activeInitiatives: 0, blogs: 0,
@@ -85,40 +85,25 @@ export default function DashboardHome() {
     };
 
     await Promise.all([
+      // One read of the collection feeds every initiative count and list on
+      // this page. Hub Activities are stored here too, as docs tagged
+      // type:'hub_activity', and are kept apart from real initiatives.
       safe(async () => {
-        // Hub Activities (dashboard/curator/activities) are stored as
-        // initiatives docs tagged type:'hub_activity', excluded from every
-        // count/list below the same way HomeFeaturedInitiatives, /projects,
-        // and the curator Initiatives page already do.
-        const activityCount = (await getCountFromServer(
-          query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')),
-        )).data().count;
-
-        if (isShaper) {
-          // Shapers need per-document membership, so the active initiatives are
-          // downloaded once and every count derived from that one snapshot.
-          const [total, activeSnap] = await Promise.all([
-            getCountFromServer(collection(db, 'initiatives')),
-            getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
-          ]);
-          const activeDocs = activeSnap.docs.filter(d => !d.data().type);
-          next.initiatives       = total.data().count - activityCount;
-          next.activeInitiatives = activeDocs.length;
-          activeDocs.forEach(d => {
-            const data = d.data();
-            if (user && data.members?.some((m: MemberEntry) => memberId(m) === user.uid)) next.myProjects++;
-          });
-        } else {
-          // Nobody else needs the documents, count them server-side instead.
-          const [total, active, activeActivityCount] = await Promise.all([
-            getCountFromServer(collection(db, 'initiatives')),
-            getCountFromServer(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
-            getCountFromServer(query(collection(db, 'initiatives'),
-              where('type', '==', 'hub_activity'), where('status', '==', 'active'))),
-          ]);
-          next.initiatives       = total.data().count - activityCount;
-          next.activeInitiatives = active.data().count - activeActivityCount.data().count;
-        }
+        const docs = (await getDocs(collection(db, 'initiatives'))).docs;
+        const real = docs.filter(d => !d.data().type);
+        const active = real.filter(d => d.data().status === 'active');
+        next.initiatives       = real.length;
+        next.activeInitiatives = active.length;
+        next.myProjects        = active.filter(d =>
+          d.data().members?.some((m: MemberEntry) => memberId(m) === user?.uid)).length;
+        setInitiatives(real.map(d => ({ id: d.id, ...(d.data() as Omit<InitiativeLite, 'id'>) })));
+        // What visitors see right now, shown to every role.
+        setLiveActivities(docs
+          .filter(d => d.data().type === 'hub_activity')
+          .map(d => ({ id: d.id, ...(d.data() as Omit<LiveActivity, 'id'>) }))
+          .filter(a => a.active === true)
+          .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+          .slice(0, 3));
       }),
 
       safe(async () => {
@@ -130,24 +115,6 @@ export default function DashboardHome() {
         next.blogs = (await getCountFromServer(target)).data().count;
       }),
 
-      // Every real initiative (public read), feeds the category chart, a
-      // Shaper's "your initiatives" list and the "needs attention" list.
-      safe(async () => {
-        const snap = await getDocs(collection(db, 'initiatives'));
-        setInitiatives(snap.docs
-          .filter(d => !(d.data() as { type?: string }).type)
-          .map(d => ({ id: d.id, ...(d.data() as Omit<InitiativeLite, 'id'>) })));
-      }),
-
-      // What visitors see right now, shown to every role.
-      safe(async () => {
-        const snap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
-        setLiveActivities(snap.docs
-          .map(d => ({ id: d.id, ...(d.data() as Omit<LiveActivity, 'id'>) }))
-          .filter(a => a.active === true)
-          .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
-          .slice(0, 3));
-      }),
       safe(async () => {
         let docs;
         try {
@@ -196,10 +163,10 @@ export default function DashboardHome() {
       ] : []),
 
       // Curatorship-team collection (curator/vice_curator/impact_officer):
-      // pending Hub Activity proposals/edits awaiting a decision. Counted
-      // across both activity_change_requests (the current lead-facing flow)
-      // and the legacy activity_requests collection, so any request
-      // submitted before that flow was retired still surfaces here.
+      // Hub Activity proposals and edits awaiting a decision. Counted across
+      // activity_change_requests (what members send now) and the retired
+      // activity_requests, so anything sent before that form was retired
+      // still surfaces here.
       ...(isCurator || isImpact ? [
         safe(async () => {
           const [changeCount, legacyCount] = await Promise.all([
@@ -250,7 +217,7 @@ export default function DashboardHome() {
   };
   const roleLabel = roleLabels[role ?? ''] ?? String(user.role).replace(/_/g, ' ');
   const name = (locale === 'ar' && user.displayNameAr) || user.displayName || user.email?.split('@')[0] || '';
-  const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
+  const dateLocale = intlLocale(locale);
   const today = new Date().toLocaleDateString(dateLocale, { weekday: 'long', month: 'long', day: 'numeric' });
 
   const initTitle = (i: InitiativeLite) => (locale === 'ar' && i.titleAr) || i.title;
@@ -263,7 +230,7 @@ export default function DashboardHome() {
   }, {})).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const maxCat = Math.max(1, ...byCategory.map(([, n]) => n));
 
-  const myInitiatives = initiatives.filter(i => i.members?.some(m => m.userId === user.uid));
+  const myInitiatives = initiatives.filter(i => i.members?.some(m => memberId(m) === user.uid));
   // Active initiatives whose public page is missing something visible.
   const needsAttention = initiatives
     .filter(i => i.status !== 'archived')
@@ -446,6 +413,10 @@ export default function DashboardHome() {
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>} />
+            <ActionCard title={t('myActivitiesTitle')} desc={t('dashMyActivitiesCardDesc')} href="/dashboard/shaper/activities"
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>} />
             <ActionCard title={t('actionBrowseInitiatives')} desc={t('actionBrowseInitiativesDesc')} href="/dashboard/shaper/initiatives"
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -570,7 +541,7 @@ export default function DashboardHome() {
                       <span className={styles.liveText}>
                         <span className={styles.liveTitle}>{initTitle(i)}</span>
                         <span className={styles.liveMeta}>
-                          {[i.members?.find(m => m.userId === user.uid)?.role, i.category && tcat(i.category)].filter(Boolean).join(' · ')}
+                          {[i.members?.find(m => memberId(m) === user.uid)?.role, i.category && tcat(i.category)].filter(Boolean).join(' · ')}
                         </span>
                       </span>
                     </Link>

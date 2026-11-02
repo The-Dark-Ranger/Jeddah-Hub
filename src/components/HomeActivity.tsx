@@ -92,7 +92,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
           <div className={styles.retreatAside}>
             {activity.imageUrl && (
               <div className={styles.retreatMedia}>
-                <img src={activity.imageUrl} alt={activity.title} className={styles.retreatMediaImg} />
+                <img src={activity.imageUrl} alt={activity.title} className={styles.retreatMediaImg} loading="lazy" decoding="async" />
               </div>
             )}
             {hasHighlights && (

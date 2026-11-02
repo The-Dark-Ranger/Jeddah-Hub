@@ -91,7 +91,7 @@ boundary and have their own [tests](#testing).
 | **Who We Are** | The current curatorship, active Shapers and alumni, each with a bio in English and Arabic, photo and social links. |
 | **Initiatives** | Every project the hub runs or has run, searchable and filterable, with a Spotlight chosen from the dashboard; a detail page per initiative (challenge, goal, impact, key facts, timeline, gallery, team). |
 | **Hub Activities** | A page per event, with an optional registration form and an after-event feedback form (star ratings) built by the organisers; answers export to Excel. |
-| **News** | Articles by Shapers and curators, with likes, sharing and related stories. |
+| **News** | Articles by Shapers and curators with a cover photo and a gallery, likes, sharing and related stories. |
 | **Become a Shaper** | Recruitment page with a live member count, linking to the World Economic Forum's application platform. |
 | **Contact** | Message form checked for bots and spam on the server; the hub gets a copy by email and the visitor a receipt in their language. Newsletter signup with a welcome email. |
 | **Privacy Policy, Terms of Use** | What is collected and why. |
@@ -104,10 +104,10 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 | Role | What they can do |
 |---|---|
-| **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives and Hub Activities, write news posts, sign the Community Charter. |
+| **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter and download it as a PDF. |
 | **Initiative lead (Lead / Co-Lead)** | Everything a Shaper can, plus run their initiative: edit its content and photos, review join and leave requests, ask for members to be added or removed or to change role (the Curator or Vice Curator approves), export a member report. |
 | **Impact Officer** | Manage initiatives and Hub Activities, pick the spotlight and publish posts. |
-| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off, moderate posts, read contact messages, export the newsletter list. |
+| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off and its downloadable register, moderate posts, read contact messages, export the newsletter list. |
 
 ## Tech stack
 
@@ -165,6 +165,7 @@ value comes from. Never commit real values.
 | `npm run typecheck` | TypeScript, no output |
 | `npm run check` | Typecheck and lint together; run before every pull request |
 | `npm run test:rules` | Tests `firestore.rules` in the Firestore emulator (needs Java 17+) |
+| `npm run test:e2e` | Tests the site's main functions in a real browser against Firebase's emulators (needs Java 17+ and Microsoft Edge or Chrome) |
 | `npm run deploy:rules` | Publishes `firestore.rules` and indexes to Firebase |
 
 ## Project structure
@@ -190,6 +191,7 @@ src/
 messages/en.json, ar.json        # Every interface string, in both languages
 public/                          # Logos, images, security.txt
 tests/firestore-rules/           # Security-rules tests
+tests/e2e/                       # Browser tests of the main functions
 docs/                            # How it works, developer guide, changelog
 firestore.rules                  # The authorization boundary, documented inline
 ```
@@ -201,8 +203,16 @@ goes and the conventions the code follows.
 
 - **Security rules:** `npm run test:rules` starts the Firestore emulator on a
   throwaway `demo-` project and checks who can read and write what: team
-  changes, theme colours, photos, posts and likes, Roster requests, private
-  collections and roles. Run it whenever `firestore.rules` changes.
+  changes, theme colours, photos, posts and likes, the Charter, activity
+  proposals, Roster requests, private collections and roles. Run it whenever
+  `firestore.rules` changes.
+- **Functions:** `npm run test:e2e` opens the site in a real browser against
+  Firebase's emulators with made-up members, so the real database is never
+  touched and no email is sent. It signs in as each role and follows the main
+  functions from start to finish: changing a password, signing and downloading
+  the Charter, news posts with photos, proposing and approving a Hub Activity.
+  It also opens every page in both languages on phone and desktop sizes,
+  checking for errors and sideways scrolling.
 - **Code:** `npm run check` (TypeScript and ESLint) must pass; every pull
   request also gets a Vercel preview build.
 

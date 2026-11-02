@@ -8,13 +8,15 @@ import { useAuth } from '@/context/AuthContext';
 import { Link, useRouter } from '@/i18n/routing';
 import { newsPath } from '@/lib/slug';
 import { RoleLabel } from '@/lib/roleLabel';
+import InitiativeGallery from '@/components/InitiativeGallery';
 import { useTranslations, useLocale } from 'next-intl';
 import styles from './Post.module.css';
+import { formatDate } from '@/lib/dates';
+import { SITE_URL } from '@/lib/seo';
 
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  });
+function postDate(iso: string, locale: string) {
+  if (!iso || isNaN(Date.parse(iso))) return '';
+  return formatDate(iso, locale, { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 /** ~200 words a minute, never less than one. */
@@ -25,11 +27,12 @@ function readingMinutes(text: string) {
 /** A blog post as this page reads it (blogs/{id}). */
 interface BlogPost {
   id: string; title: string; content: string; slug?: string; tags?: string[];
+  imageUrl?: string; images?: string[];
   authorId?: string; authorName?: string; authorRole?: string; createdAt?: string;
   likedBy?: string[]; visitorLikes?: string[];
 }
 
-export interface RelatedPost { id: string; title: string; slug?: string; createdAt?: string; tags?: string[]; }
+export interface RelatedPost { id: string; title: string; slug?: string; createdAt?: string; tags?: string[]; imageUrl?: string; }
 
 function genGuestId() {
   return 'g_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -135,7 +138,10 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
     })();
   }, [id, initial, urlId, router]);
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // Built from the post, not the address bar: the links are written on the
+  // server too, where there is no address bar, and React doesn't correct them
+  // afterwards, so they used to share nothing.
+  const shareUrl = post ? `${SITE_URL}/${locale}${newsPath(post)}` : '';
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -217,16 +223,26 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
               </div>
             </div>
             <div className={styles.articleDate}>
-              {formatDate(post.createdAt ?? "", locale)}
+              {postDate(post.createdAt ?? '', locale)}
               <span className={styles.metaDot} aria-hidden="true" />
               {t('minRead', { n: readingMinutes(post.content || '') })}
             </div>
           </div>
+          {post.imageUrl && (
+            <figure className={styles.cover}>
+              <img src={post.imageUrl} alt="" fetchPriority="high" decoding="async" onError={e => { e.currentTarget.parentElement!.hidden = true; }} />
+            </figure>
+          )}
           <div className={styles.articleBody}>
             {(post.content || '').split('\n').map((para: string, i: number) =>
               para.trim() ? <p key={i}>{para}</p> : <br key={i} />
             )}
           </div>
+          {Array.isArray(post.images) && post.images.length > 0 && (
+            <div className={styles.gallery}>
+              <InitiativeGallery photos={post.images} title={post.title} />
+            </div>
+          )}
           {Array.isArray(post.tags) && post.tags.length > 0 && (
             <ul className={styles.tagList} aria-label={t('tags')}>
               {post.tags.map((tag: string) => <li key={tag} className={styles.tagItem}>#{tag}</li>)}
@@ -275,9 +291,10 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
             <div className={styles.relatedGrid}>
               {related.map(r => (
                 <Link key={r.id} href={newsPath(r)} className={styles.relatedCard}>
+                  {r.imageUrl && <img src={r.imageUrl} alt="" className={styles.relatedThumb} loading="lazy" decoding="async" />}
                   {r.tags?.[0] && <span className={styles.relatedTag}>{r.tags[0]}</span>}
                   <span className={styles.relatedName}>{r.title}</span>
-                  {r.createdAt && <span className={styles.relatedDate}>{formatDate(r.createdAt, locale)}</span>}
+                  {r.createdAt && <span className={styles.relatedDate}>{postDate(r.createdAt, locale)}</span>}
                 </Link>
               ))}
             </div>

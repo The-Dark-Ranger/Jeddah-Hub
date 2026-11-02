@@ -25,6 +25,7 @@ import styles from './Projects.module.css';
 import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { errorCode, isLeadRole, type TeamRole } from '@/lib/types';
+import { intlLocale } from '@/lib/dates';
 
 interface Member { userId: string; role: string; }
 
@@ -441,8 +442,8 @@ export default function ImpactProjects() {
                           <rect x="3" y="4" width="18" height="18" rx="2"/>
                           <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        {new Date(init.startDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}
-                        {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}`}
+                        {new Date(init.startDate).toLocaleDateString(intlLocale(locale), { month: 'short', year: 'numeric' })}
+                        {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString(intlLocale(locale), { month: 'short', year: 'numeric' })}`}
                       </span>
                     )}
                     <span className={styles.metaItem}>

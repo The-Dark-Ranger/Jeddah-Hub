@@ -210,18 +210,7 @@
   .cardBody { padding: 1.1rem; }
 }
 
-/* ── Summary strip, category counts, card facts ── */
-.stats {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem;
-  margin: 0 0 2rem; padding: 0;
-}
-.stat {
-  padding: 1rem 1.2rem; border-radius: 14px;
-  background: var(--card-bg-solid); border: 1px solid var(--border-color);
-  display: flex; flex-direction: column-reverse; gap: .15rem;
-}
-.stat dt { font-size: max(12px, .78rem); font-weight: 600; color: var(--text-muted); }
-.stat dd { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--primary-blue); letter-spacing: -.02em; line-height: 1.1; }
+/* ── Category counts, card facts ── */
 .clearBtn {
   margin-top: 1rem; padding: .6rem 1.2rem; border-radius: 10px; cursor: pointer;
   border: 1px solid var(--primary-blue); background: transparent; color: var(--primary-blue);
@@ -317,10 +306,6 @@
   .categoryTabs::-webkit-scrollbar { display: none; }
   .catBtn { flex-shrink: 0; scroll-snap-align: start; white-space: nowrap; min-height: 40px; }
   .cardSlider { height: 170px; }
-  .stats { grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1.5rem; }
-  .stat { padding: .75rem .7rem; text-align: center; }
-  .stat dt { font-size: max(12px, .7rem); }
-  .stat dd { font-size: 1.3rem; }
 }
 @media (max-width: 400px) {
   /* Match the narrower page gutter so the chip row doesn't overflow. */

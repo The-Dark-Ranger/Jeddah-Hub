@@ -72,6 +72,16 @@ test('server routes refuse what they should', async ({ request }) => {
   expect(crossSite.status()).toBe(403);
 });
 
+test('the server limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
+  const attempt = () => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'target@example.org' } });
+  // The first 10 get through to the bot check (refused here: no reCAPTCHA key in tests).
+  for (let i = 0; i < 10; i++) expect((await attempt()).status()).not.toBe(429);
+  expect((await attempt()).status()).toBe(429);
+  // Other accounts aren't affected.
+  const other = await request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'someone@example.org' } });
+  expect(other.status()).not.toBe(429);
+});
+
 test('security headers are sent', async ({ request }) => {
   const res = await request.get('/en');
   const headers = res.headers();

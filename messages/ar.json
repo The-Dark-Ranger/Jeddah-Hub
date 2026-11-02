@@ -1052,7 +1052,7 @@
     "adminShowList": "عرض الأعضاء",
     "adminHideList": "إخفاء الأعضاء",
     "adminReset": "بدء جولة توقيع جديدة",
-    "resetConfirm": "هل تريد مسح جميع التوقيعات ليوقّع كل عضو من جديد؟ نزّل التوقيعات أولًا إذا أردت الاحتفاظ بسجل هذه الجولة.",
+    "resetConfirm": "مسح جميع التوقيعات ليوقّع كل الأعضاء من جديد؟",
     "adminSignedOn": "وقّع {date}",
     "adminNotSigned": "لم يوقّع",
     "adminLoadFailed": "تعذّر تحميل التوقيعات.",
@@ -1061,13 +1061,7 @@
     "signNameMismatch": "هذا ليس الاسم المسجل في حسابك ({name}). يرجى كتابته مرة أخرى.",
     "signNoAccountName": "لا يوجد اسم في حسابك بعد. أضفه من ملفي الشخصي، ثم عد لتأكيد الميثاق.",
     "signGoToProfile": "الذهاب إلى ملفي الشخصي",
-    "signConfirm": "لقد قرأت ميثاق المجتمع وسألتزم به.",
-    "downloadPdf": "تنزيل الميثاق (PDF)",
-    "downloadingPdf": "جارٍ التجهيز…",
-    "downloadSigned": "تنزيل نسختي الموقّعة (PDF)",
-    "downloadFailed": "تعذّر تجهيز الملف. يرجى المحاولة مرة أخرى.",
-    "adminDownloadExcel": "تنزيل التوقيعات (Excel)",
-    "adminDownloadCsv": "تنزيل التوقيعات (CSV)"
+    "signConfirm": "لقد قرأت ميثاق المجتمع وسألتزم به."
   },
   "PrivacyPolicyPage": {
     "title": "سياسة الخصوصية",

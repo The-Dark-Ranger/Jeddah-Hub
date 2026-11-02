@@ -36,13 +36,6 @@
 }
 .signBtn:hover:not(:disabled) { transform: translateY(-1px); background: #0c4a85; }
 .signBtn:disabled { opacity: .55; cursor: not-allowed; }
-.secondaryBtn {
-  margin-top: 1rem; min-height: 40px; padding: .55rem 1.1rem; border-radius: 10px; cursor: pointer;
-  border: 1px solid #10b981; background: transparent; color: var(--text-main);
-  font: inherit; font-size: .88rem; font-weight: 700;
-}
-.secondaryBtn:hover:not(:disabled) { background: rgba(16, 185, 129, .12); }
-.secondaryBtn:disabled { opacity: .6; cursor: wait; }
 .error { color: var(--danger); font-size: .85rem; font-weight: 600; margin: .4rem 0 .75rem; }
 
 /* ── Curator panel ── */

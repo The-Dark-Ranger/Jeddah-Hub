@@ -104,10 +104,10 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 | Role | What they can do |
 |---|---|
-| **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter and download it as a PDF. |
+| **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter. |
 | **Initiative lead (Lead / Co-Lead)** | Everything a Shaper can, plus run their initiative: edit its content and photos, review join and leave requests, ask for members to be added or removed or to change role (the Curator or Vice Curator approves), export a member report. |
 | **Impact Officer** | Manage initiatives and Hub Activities, pick the spotlight and publish posts. |
-| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off and its downloadable register, moderate posts, read contact messages, export the newsletter list. |
+| **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off, moderate posts, read contact messages, export the newsletter list. |
 
 ## Tech stack
 
@@ -209,8 +209,8 @@ goes and the conventions the code follows.
 - **Functions:** `npm run test:e2e` opens the site in a real browser against
   Firebase's emulators with made-up members, so the real database is never
   touched and no email is sent. It signs in as each role and follows the main
-  functions from start to finish: changing a password, signing and downloading
-  the Charter, news posts with photos, proposing and approving a Hub Activity.
+  functions from start to finish: changing a password, signing the Charter,
+  news posts with photos, proposing and approving a Hub Activity.
   It also opens every page in both languages on phone and desktop sizes,
   checking for errors and sideways scrolling.
 - **Code:** `npm run check` (TypeScript and ESLint) must pass; every pull

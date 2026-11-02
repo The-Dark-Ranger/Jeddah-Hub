@@ -7,19 +7,20 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { normalizeRole } from '@/lib/role';
 import { getRequireSignature, setRequireSignature, SIGNATURES, SIGNING_ROLES, type CharterSignature } from '@/lib/charterSignature';
-import { downloadSignOffsCsv, downloadSignOffsExcel, type RegisterMember } from './charterExport';
 import styles from './CharterSign.module.css';
 import { intlLocale } from '@/lib/dates';
 
-/** Curators (and vice curators) switch charter sign-off on or off, see who
- *  has signed and download the record. Rendered above the Charter for them only. */
+interface Member { uid: string; name: string; role: string; }
+
+/** Curators (and vice curators) switch charter sign-off on or off and see who
+ *  has signed. Rendered above the Charter for them only. */
 export default function CharterAdmin() {
   const t = useTranslations('CharterPage');
   const tr = useTranslations('Role');
   const locale = useLocale();
   const { user } = useAuth();
   const [required, setRequired] = useState<boolean | null>(null);
-  const [everyone, setEveryone] = useState<RegisterMember[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [signatures, setSignatures] = useState<Record<string, CharterSignature>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -33,13 +34,10 @@ export default function CharterAdmin() {
         getDocs(collection(db, SIGNATURES)),
       ]);
       setRequired(req);
-      setEveryone(usersSnap.docs
-        .map(d => ({
-          uid: d.id,
-          name: (d.data().displayName as string) || (d.data().email as string) || d.id,
-          email: (d.data().email as string) || '',
-          role: normalizeRole(d.data().role),
-        }))
+      // Who the sign-off applies to: active Shapers, including the curatorship.
+      setMembers(usersSnap.docs
+        .map(d => ({ uid: d.id, name: (d.data().displayName as string) || (d.data().email as string) || d.id, role: normalizeRole(d.data().role) }))
+        .filter(m => SIGNING_ROLES.includes(m.role))
         .sort((a, b) => a.name.localeCompare(b.name)));
       setSignatures(Object.fromEntries(sigSnap.docs.map(d => [d.id, d.data() as CharterSignature])));
     } catch {
@@ -81,20 +79,6 @@ export default function CharterAdmin() {
     }
   };
 
-  const download = async (format: 'excel' | 'csv') => {
-    setBusy(true); setError('');
-    try {
-      if (format === 'csv') downloadSignOffsCsv(everyone, signatures);
-      else await downloadSignOffsExcel(everyone, signatures);
-    } catch {
-      setError(t('downloadFailed'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // Who the sign-off applies to: active Shapers, including the curatorship.
-  const members = everyone.filter(m => SIGNING_ROLES.includes(m.role));
   const signedCount = members.filter(m => signatures[m.uid]).length;
   const fmt = (iso: string) => new Date(iso).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -130,12 +114,6 @@ export default function CharterAdmin() {
       <div className={styles.adminActions}>
         <button type="button" className={styles.linkBtn} onClick={() => setOpen(o => !o)} aria-expanded={open}>
           {open ? t('adminHideList') : t('adminShowList')}
-        </button>
-        <button type="button" className={styles.linkBtn} onClick={() => download('excel')} disabled={busy || required === null}>
-          {t('adminDownloadExcel')}
-        </button>
-        <button type="button" className={styles.linkBtn} onClick={() => download('csv')} disabled={busy || required === null}>
-          {t('adminDownloadCsv')}
         </button>
         {signedCount > 0 && (
           <button type="button" className={styles.linkBtnDanger} onClick={reset} disabled={busy}>{t('adminReset')}</button>

@@ -1,6 +1,5 @@
 /* The dashboards: changing a password, the Charter, news photos, and proposing
  * and approving a Hub Activity, each followed from start to finish. */
-import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, isInViewport, PEOPLE, signIn, UPLOAD_FILE, watchErrors } from './helpers';
 
@@ -68,16 +67,10 @@ test.describe('the Community Charter', () => {
     await submit.click();
     await expect(page.getByRole('heading', { name: "You've confirmed the Charter" })).toBeVisible();
     await expect(page.getByText(/Signed as Sara Signer/)).toBeVisible();
-
-    const download = page.waitForEvent('download');
-    await page.getByRole('button', { name: /signed copy/ }).click();
-    const file = await download;
-    expect(file.suggestedFilename()).toBe('Community-Charter-signed.pdf');
-    expect(readFileSync(await file.path()).subarray(0, 5).toString()).toBe('%PDF-');
     expect(errors).toEqual([]);
   });
 
-  test('the Arabic account name is accepted too, and the Charter downloads', async ({ page }) => {
+  test('the Arabic account name is accepted too', async ({ page }) => {
     await signIn(page, PEOPLE.shaper);
     await page.goto('/ar/dashboard/shaper/charter');
     await page.locator('#charter-name').fill('سامي شيبر');
@@ -85,31 +78,16 @@ test.describe('the Community Charter', () => {
     await page.locator('form').getByRole('button').last().click();
     await expect(page.locator('#sign svg').first()).toBeVisible();
     await expect(page.locator('#sign')).toContainText('سامي شيبر');
-
-    const download = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'تنزيل الميثاق (PDF)' }).click();
-    const file = await download;
-    expect(file.suggestedFilename()).toBe('Community-Charter.pdf');
-    expect(readFileSync(await file.path()).length).toBeGreaterThan(5_000);
   });
 
-  test('a curator downloads the sign-offs as CSV and Excel', async ({ page }) => {
+  test('a curator sees who has signed, and the Charter has no downloads', async ({ page }) => {
     await signIn(page, PEOPLE.curator);
     await page.goto('/en/dashboard/shaper/charter');
-    await expect(page.getByText(/of \d+ Shapers signed/)).toBeVisible();
-
-    const csvDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download sign-offs (CSV)' }).click();
-    const csv = readFileSync(await (await csvDownload).path(), 'utf8');
-    expect(csv).toContain('"Name","Email","Role","Status","Name signed","Signed at (UTC)","Member ID"');
-    expect(csv).toMatch(/"Sara Signer","signer@example.org","shaper","Signed","Sara Signer","\d{4}-\d{2}-\d{2}T/);
-    expect(csv).toContain('"Lena Lead","lead@example.org","shaper","Not signed"');
-
-    const excelDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download sign-offs (Excel)' }).click();
-    const excel = await excelDownload;
-    expect(excel.suggestedFilename()).toMatch(/\.xlsx$/);
-    expect(readFileSync(await excel.path()).subarray(0, 2).toString()).toBe('PK');
+    await expect(page.getByText(/2 of \d+ Shapers signed/)).toBeVisible();
+    await page.getByRole('button', { name: 'Show members' }).click();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Sara Signer' })).toContainText('Signed');
+    await expect(page.getByRole('listitem').filter({ hasText: 'Lena Lead' })).toContainText('Not signed');
+    await expect(page.getByRole('button', { name: /download/i })).toHaveCount(0);
   });
 });
 

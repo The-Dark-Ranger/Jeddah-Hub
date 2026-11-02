@@ -244,13 +244,6 @@ Arabic spelling variants don't count as different. `firestore.rules` enforces
 the same thing, so the record always holds the account's name and the server's
 time, and a signature can't be edited afterwards.
 
-**Downloads.** Everyone can download the Charter as a PDF, and a member who has
-signed can download a copy with their sign-off at the end. Curators can download
-the whole register as Excel or CSV (name, email, role, status, name signed, time
-signed in UTC, member ID), including anyone with a signature on record who is no
-longer asked to sign. That file is the way to move this data to another system,
-and to keep a record before starting a new signing round.
-
 ```mermaid
 flowchart TD
     C[Curator turns on<br/>'Require sign-off'] --> S[(settings/charter<br/>requireSignature: true)]
@@ -259,7 +252,6 @@ flowchart TD
     B -->|no, or alumni| Q[No banner]
     F --> G[(charter_signatures/uid)]
     G --> P[Curator panel:<br/>X of Y Shapers signed]
-    P -->|any time| D[Download the register<br/>as Excel or CSV]
     P -->|new term| R[Start a new signing round<br/>clears all signatures]
 ```
 

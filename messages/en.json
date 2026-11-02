@@ -1052,7 +1052,7 @@
     "adminShowList": "Show members",
     "adminHideList": "Hide members",
     "adminReset": "Start a new signing round",
-    "resetConfirm": "Clear all signatures so every member signs again? Download the sign-offs first if you want to keep a record of this round.",
+    "resetConfirm": "Clear all signatures so every member signs again?",
     "adminSignedOn": "Signed {date}",
     "adminNotSigned": "Not signed",
     "adminLoadFailed": "Couldn't load signatures.",
@@ -1061,13 +1061,7 @@
     "signNameMismatch": "That isn't the name on your account ({name}). Please type it again.",
     "signNoAccountName": "Your account doesn't have a name yet. Add it in My Profile, then come back to confirm the Charter.",
     "signGoToProfile": "Go to My Profile",
-    "signConfirm": "I have read the Community Charter and I will adhere to it.",
-    "downloadPdf": "Download the Charter (PDF)",
-    "downloadingPdf": "Preparing…",
-    "downloadSigned": "Download my signed copy (PDF)",
-    "downloadFailed": "Couldn't prepare the file. Please try again.",
-    "adminDownloadExcel": "Download sign-offs (Excel)",
-    "adminDownloadCsv": "Download sign-offs (CSV)"
+    "signConfirm": "I have read the Community Charter and I will adhere to it."
   },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy",

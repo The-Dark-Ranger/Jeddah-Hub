@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from '@/i18n/routing';
 import { matchAccountName, signCharter, useCharterStatus } from '@/lib/charterSignature';
-import { downloadCharterPdf } from './charterPdf';
 import styles from './CharterSign.module.css';
 import { intlLocale } from '@/lib/dates';
 
@@ -23,7 +22,6 @@ export default function CharterSignOff() {
   const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [downloading, setDownloading] = useState(false);
   const nameInput = useRef<HTMLInputElement>(null);
 
   // The dashboard's "sign the Charter" link ends in #sign, but this card only
@@ -60,41 +58,23 @@ export default function CharterSignOff() {
     }
   };
 
-  const downloadSignedCopy = async () => {
-    if (!signature) return;
-    setDownloading(true); setError('');
-    try {
-      await downloadCharterPdf({ name: signature.name, email: user.email, signedAt: signature.signedAt });
-    } catch {
-      setError(t('downloadFailed'));
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
     <section id="sign" className={styles.signCard + (signature ? ' ' + styles.signCardDone : required ? ' ' + styles.signCardRequired : '')}>
       {signature ? (
-        <>
-          <div className={styles.signedRow}>
-            <span className={styles.signedIcon} aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5" /></svg>
-            </span>
-            <div>
-              <h2 className={styles.signTitle}>{t('signedTitle')}</h2>
-              <p className={styles.signText}>
-                {t('signedOn', {
-                  name: signature.name,
-                  date: new Date(signature.signedAt).toLocaleDateString(intlLocale(locale), { year: 'numeric', month: 'long', day: 'numeric' }),
-                })}
-              </p>
-            </div>
+        <div className={styles.signedRow}>
+          <span className={styles.signedIcon} aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5" /></svg>
+          </span>
+          <div>
+            <h2 className={styles.signTitle}>{t('signedTitle')}</h2>
+            <p className={styles.signText}>
+              {t('signedOn', {
+                name: signature.name,
+                date: new Date(signature.signedAt).toLocaleDateString(intlLocale(locale), { year: 'numeric', month: 'long', day: 'numeric' }),
+              })}
+            </p>
           </div>
-          <button type="button" className={styles.secondaryBtn} onClick={downloadSignedCopy} disabled={downloading}>
-            {downloading ? t('downloadingPdf') : t('downloadSigned')}
-          </button>
-          {error && <p className={styles.error} role="alert">{error}</p>}
-        </>
+        </div>
       ) : accountNames.length === 0 ? (
         <>
           <h2 className={styles.signTitle}>{t('signTitle')}</h2>

@@ -19,7 +19,7 @@
 .clear:hover { color: var(--text-main); }
 .list {
   position: absolute; z-index: 30; top: calc(100% + 6px); inset-inline: 0;
-  max-height: 320px; overflow-y: auto; margin: 0; padding: .35rem; list-style: none;
+  max-height: min(320px, 45dvh); overflow-y: auto; margin: 0; padding: .35rem; list-style: none;
   border-radius: 12px; border: 1px solid var(--border-color);
   background: var(--card-bg-solid); box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
 }
@@ -32,4 +32,9 @@
 .optionActive { background: var(--background-alt); }
 .optionSelected .optionLabel { color: var(--primary-blue); }
 .optionDisabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 640px) {
+  /* Smaller text makes phones zoom the page in on focus. */
+  .input { font-size: 16px; }
+  .option { padding: .7rem; }
+}
 .empty { padding: .8rem .7rem; font-size: .88rem; color: var(--text-muted); }

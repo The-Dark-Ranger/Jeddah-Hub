@@ -1,4 +1,6 @@
+/* Above the footer, so a dropdown near the bottom of a page can reach over it. */
 .layout {
+  position: relative; z-index: 1;
   display: flex;
   min-height: calc(100svh - 64px);
 }
@@ -180,8 +182,8 @@
 /* Main Content */
 .mainContent {
   flex: 1;
+  min-width: 0;
   padding: 2rem;
-  overflow-y: auto;
   background: var(--background);
 }
 /* The page while the Charter check answers: laid out and loading, not shown. */

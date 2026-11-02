@@ -24,6 +24,8 @@ interface Props {
   clearLabel: string;
   className?: string;
   ariaLabel?: string;
+  /** Open ready to type, when the person has just asked for this picker. */
+  autoFocus?: boolean;
 }
 
 /** Arabic-insensitive, case-insensitive match: alef/yaa/taa-marbuta forms
@@ -38,7 +40,7 @@ function fold(s: string) {
 
 /** A dropdown you can type into to filter, for long lists of people or
  *  initiatives. Keyboard: ↑/↓ to move, Enter to pick, Esc to close. */
-export default function SearchSelect({ options, value, onChange, placeholder, noResults, clearLabel, className, ariaLabel }: Props) {
+export default function SearchSelect({ options, value, onChange, placeholder, noResults, clearLabel, className, ariaLabel, autoFocus }: Props) {
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -92,6 +94,7 @@ export default function SearchSelect({ options, value, onChange, placeholder, no
         </svg>
         <input
           className={styles.input}
+          autoFocus={autoFocus}
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}

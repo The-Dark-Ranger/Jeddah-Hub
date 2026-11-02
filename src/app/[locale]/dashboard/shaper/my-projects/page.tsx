@@ -13,6 +13,7 @@ import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import ModalPortal from '@/components/ModalPortal';
+import SearchSelect from '@/components/dashboard/SearchSelect';
 import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
@@ -23,6 +24,7 @@ import jiStyles from '../initiatives/JoinInitiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { errorCode, isLeadEntry, memberId, type LeadRequest, type MemberEntry, type MembershipRequest } from '@/lib/types';
 import { safeColor } from '@/lib/activityTypes';
+import { useRoleLabel } from '@/lib/roleLabel';
 import { cssUrl } from '@/lib/sanitize';
 
 interface Project {
@@ -44,9 +46,25 @@ interface Project {
   slug?: string;
 }
 
+/** A project's photo and category. The whole photo shows over a blurred copy
+ *  of itself, so logos and wide images aren't cropped; a project without one
+ *  shows its colour. */
+function ProjectBanner({ project: p }: { project: Project }) {
+  const cover = cssUrl(p.imageUrl);
+  return (
+    <div
+      className={styles.cardBanner + (cover ? ' ' + styles.cardBannerImg : '')}
+      style={{ '--card-accent': safeColor(p.color) || 'var(--primary-blue)', '--cover': cover } as React.CSSProperties}
+    >
+      {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
+    </div>
+  );
+}
+
 export default function MyProjects() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
+  const roleLabel = useRoleLabel();
 
   const [projects, setProjects]   = useState<Project[]>([]);
   const [leadIds, setLeadIds]     = useState<string[]>([]);
@@ -62,7 +80,7 @@ export default function MyProjects() {
   /* Candidate shapers a lead can pick from to request adding, sourced from
    * public_profiles (leads can't read the private `users` collection, only
    * curators/impact officers can) rather than a per-member lookup. */
-  const [directory, setDirectory] = useState<{ id: string; displayName?: string }[]>([]);
+  const [directory, setDirectory] = useState<{ id: string; displayName?: string; displayNameAr?: string; role?: string }[]>([]);
   const [addPickerOpenId, setAddPickerOpenId] = useState<string | null>(null);
   const [addPickerTarget, setAddPickerTarget] = useState('');
 
@@ -100,7 +118,7 @@ export default function MyProjects() {
           getDocs(query(collection(db, 'public_profiles'), where('role', 'in', ['shaper', 'alumni']))).catch(() => null),
         ]);
         setPendingAdds(addSnap ? addSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRequest)) : []);
-        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string })) : []);
+        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; role?: string })) : []);
 
         setIncomingRequests(joinSnap
           ? joinSnap.docs.map(d => {
@@ -418,12 +436,7 @@ export default function MyProjects() {
               // Plain member, unchanged from the original simple clickable card.
               return (
                 <Link key={p.id} href={`/projects/${p.slug || slugify(p.title)}`} className={styles.card}>
-                  <div
-                    className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
-                    style={{ '--card-accent': safeColor(p.color) || 'var(--primary-blue)', backgroundImage: cssUrl(p.imageUrl) } as React.CSSProperties}
-                  >
-                    {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
-                  </div>
+                  <ProjectBanner project={p} />
                   <div className={styles.cardBody}>
                     <span className={styles.roleChip}>{t('memberDefaultRole')}</span>
                     <h3 className={styles.cardTitle}>{p.title}</h3>
@@ -444,12 +457,8 @@ export default function MyProjects() {
             // Led project, full management card.
             return (
               <div key={p.id} className={styles.leadCard}>
-                <div
-                  className={styles.cardBanner + (p.imageUrl ? ' ' + styles.cardBannerImg : '')}
-                  style={{ '--card-accent': safeColor(p.color) || 'var(--primary-blue)', backgroundImage: cssUrl(p.imageUrl) } as React.CSSProperties}
-                >
-                  {p.category && <span className={styles.bannerCategory}><CategoryLabel category={p.category} /></span>}
-                </div>
+                <div className={styles.leadRow}>
+                <ProjectBanner project={p} />
                 <div className={styles.cardBody}>
                   <span className={styles.leadingBadge}>{t('leadingBadge')}</span>
                   <h3 className={styles.cardTitle}>{p.title}</h3>
@@ -483,13 +492,17 @@ export default function MyProjects() {
                     </Link>
                   </div>
 
+                </div>
+                </div>
+
                   {memberPanelOpenId === p.id && (
-                    <div className={jiStyles.memberPanel}>
+                    <div className={jiStyles.memberPanel + ' ' + styles.teamPanel}>
                       <p className={jiStyles.memberPanelTitle}>{t('viewMembers')}</p>
                       {nonLeadMembers.length === 0 ? (
                         <p className={jiStyles.memberPanelEmpty}>{t('noTeamMembers')}</p>
                       ) : (
-                        nonLeadMembers.map((m, idx) => {
+                        <div className={styles.memberGrid}>
+                        {nonLeadMembers.map((m, idx) => {
                           const mid = memberId(m);
                           const removal = pendingRemovals.find(r => r.targetUserId === mid && r.initiativeId === p.id);
                           return (
@@ -508,7 +521,8 @@ export default function MyProjects() {
                               )}
                             </div>
                           );
-                        })
+                        })}
+                        </div>
                       )}
 
                       {pendingAdds.filter(r => r.initiativeId === p.id).map(r => (
@@ -525,16 +539,21 @@ export default function MyProjects() {
 
                       {addPickerOpenId === p.id ? (
                         <div className={jiStyles.addMemberRow}>
-                          <select
-                            className={jiStyles.addMemberSelect}
+                          <SearchSelect
+                            className={jiStyles.addMemberSearch}
+                            autoFocus
+                            options={directory
+                              // Not someone already on the team or already asked for.
+                              .filter(d => !(p.members || []).some(m => memberId(m) === d.id)
+                                && !pendingAdds.some(r => r.initiativeId === p.id && r.targetUserId === d.id))
+                              .map(d => ({ value: d.id, label: d.displayName || d.id, hint: d.role ? roleLabel(d.role) : undefined, keywords: d.displayNameAr }))
+                              .sort((a, b) => a.label.localeCompare(b.label))}
                             value={addPickerTarget}
-                            onChange={e => setAddPickerTarget(e.target.value)}
-                          >
-                            <option value="">{t('selectShaperPrompt')}</option>
-                            {directory
-                              .filter(d => !(p.members || []).some(m => memberId(m) === d.id))
-                              .map(d => <option key={d.id} value={d.id}>{d.displayName || d.id}</option>)}
-                          </select>
+                            onChange={setAddPickerTarget}
+                            placeholder={t('searchMemberPh')}
+                            noResults={t('noMatches')}
+                            clearLabel={t('clearSelection')}
+                          />
                           <button
                             className={jiStyles.addMemberSubmitBtn}
                             disabled={!addPickerTarget}
@@ -553,7 +572,6 @@ export default function MyProjects() {
                       )}
                     </div>
                   )}
-                </div>
               </div>
             );
           })}

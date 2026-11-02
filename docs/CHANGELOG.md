@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## November 2026
 
 ### 2 November
+- Active Projects: opening a team no longer stretches the project's photo, and the whole photo now shows instead of being cropped; the team opens below with room for two columns of members. Adding a member is a search by name (English or Arabic), alphabetical, and no longer offers someone already asked for. Larger buttons on phones, and the search no longer makes phones zoom in. In dark mode, page content no longer shows through the navbar.
 - Community Charter: Read & sign now opens the Charter at the top, so members read down to the sign-off, and the Curator and Vice Curator can download who has signed as Excel or CSV.
 - Active Projects: projects now use the page's full width, one per row with the photo beside the text and more space, and stack neatly on tablets and phones.
 - My Profile: removed the extra Change password button; the form and the one-time password reminder stay.

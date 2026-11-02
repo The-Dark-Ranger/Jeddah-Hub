@@ -24,9 +24,24 @@
   padding:.6rem .8rem;border-radius:9px;background:var(--background-alt);
 }
 .proposalInfo { display:flex;flex-direction:column;gap:.15rem;min-width:0; }
-.proposalName { font-size:.86rem;font-weight:600;color:var(--text-main); }
+.proposalName { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.86rem;font-weight:600;color:var(--text-main); }
 .proposalMeta { font-size:max(12px, .78rem);color:var(--text-muted); }
-.proposalActions { display:flex;gap:.4rem;flex-shrink:0; }
+.proposalActions { display:flex;gap:.4rem;flex-shrink:0;flex-wrap:wrap; }
+.queueHint { font-size:max(12px, .76rem);font-weight:600;color:#b45309; }
+:global([data-theme="dark"]) .queueHint { color:#fcd34d; }
+.reviewNote { font-size:.82rem;line-height:1.5;color:var(--text-main);white-space:pre-wrap; }
+.sectionHeading { font-size:1rem;font-weight:700;color:var(--text-main);margin:0 0 .75rem; }
+.successNote {
+  margin:0;padding:.7rem 1rem;border-radius:10px;font-size:.88rem;font-weight:600;
+  background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:#047857;
+}
+:global([data-theme="dark"]) .successNote { color:#6ee7b7; }
+.draftNote {
+  display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:0;padding:.55rem .8rem;border-radius:9px;
+  background:var(--background-alt);font-size:.84rem;color:var(--text-muted);
+}
+.draftNote button { background:none;border:none;padding:.2rem 0;color:var(--primary-blue);font:inherit;font-weight:700;cursor:pointer; }
+.modalError { flex-basis:100%;margin:0;font-size:.84rem;font-weight:600;color:var(--danger); }
 .approveProposalBtn {
   padding:.32rem .75rem;border-radius:7px;border:none;font-size:max(12px, .78rem);font-weight:600;
   background:rgba(16,185,129,.12);color:#059669;cursor:pointer;transition:background .18s;
@@ -51,10 +66,13 @@
 .detailRow:last-child { border-bottom:none; }
 .detailLabel { font-size:max(12px, .76rem);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em; }
 .detailValue { font-size:.9rem;color:var(--text-main);white-space:pre-wrap;line-height:1.5; }
-.detailHighlightList { margin:0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.2rem; }
+.detailHighlightList { margin:.25rem 0 0;padding-inline-start:1.1rem;display:flex;flex-direction:column;gap:.2rem; }
+.detailHeading { margin:1rem 0 .25rem;font-size:.9rem;font-weight:700;color:var(--text-main); }
 
-/* ── Active/Archived/All filter tabs ── */
+/* ── Search and Active/Archived/All filter tabs ── */
+.toolbar { display:flex;flex-direction:column;gap:.75rem; }
 .archiveTabs { display:flex;flex-wrap:wrap;gap:.5rem; }
+.archiveTabCount { margin-inline-start:.4rem;font-size:max(12px, .74rem);opacity:.8; }
 .archiveTab {
   padding:.45rem .9rem;border-radius:8px;
   border:1px solid var(--border-color);background:var(--card-bg);
@@ -104,7 +122,11 @@
 .cardTitle  { font-size:1.05rem;font-weight:700;color:var(--text-main);margin:0 0 .2rem; }
 .cardSubtitle { font-size:.85rem;color:var(--text-muted);margin:0 0 .25rem; }
 .cardMeta   { font-size:.8rem;color:var(--text-muted);margin:0; }
-.cardDesc   { font-size:.875rem;color:var(--text-secondary,var(--text-muted));margin:.25rem 0 .75rem;line-height:1.55; }
+.cardBadges { display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.35rem;flex-shrink:0;max-width:45%; }
+.cardDesc   {
+  font-size:.875rem;color:var(--text-secondary,var(--text-muted));margin:.25rem 0 .75rem;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
 
 /* ── Kind badge, distinguishes an "Activity" from a "Workshop" at a
    glance, both in this admin list and (via the same values) on the public
@@ -120,7 +142,9 @@
 .badgeArchived { background:rgba(107,114,128,.1);color:var(--text-muted); }
 
 /* ── Card actions ── */
-.cardActions { display:flex;gap:.5rem;flex-wrap:wrap; }
+.cardActions { display:flex;align-items:center;gap:.5rem;flex-wrap:wrap; }
+.viewLink { order:1;padding:.35rem .4rem;font-size:.8rem;font-weight:600;color:var(--primary-blue); }
+.viewLink:hover { text-decoration:underline; }
 .editBtn   { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-main);font-size:.8rem;cursor:pointer;transition:background .18s; }
 .editBtn:hover { background:var(--card-bg); }
 .responsesBtn { padding:.35rem .8rem;border-radius:6px;border:1px solid var(--primary-blue);background:transparent;color:var(--primary-blue);font-size:.8rem;font-weight:600;cursor:pointer;transition:background .18s,color .18s; }
@@ -132,7 +156,7 @@
 .toggleOn:hover  { background:rgba(16,185,129,.22); }
 .toggleOff { background:rgba(107,114,128,.1);color:var(--text-muted); }
 .toggleOff:hover { background:rgba(107,114,128,.2); }
-.deleteBtn { padding:.35rem .8rem;border-radius:6px;border:none;background:rgba(239,68,68,.08);color:#dc2626;font-size:.8rem;cursor:pointer;transition:background .18s;margin-inline-start:auto; }
+.deleteBtn { padding:.35rem .8rem;border-radius:6px;border:none;background:rgba(239,68,68,.08);color:#dc2626;font-size:.8rem;cursor:pointer;transition:background .18s;margin-inline-start:auto;order:2; }
 .deleteBtn:hover { background:rgba(239,68,68,.18); }
 
 /* ── Modal ── */
@@ -152,9 +176,10 @@
   padding:1.1rem 1.5rem;border-bottom:1px solid var(--border-color);flex-shrink:0;
 }
 .modalHeader h2 { font-size:1.1rem;font-weight:700;margin:0;color:var(--text-main); }
-.closeBtn { background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--text-muted);padding:.25rem; }
+.modal:focus { outline:none; }
+.closeBtn { flex-shrink:0;min-width:40px;min-height:40px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--text-muted);padding:.25rem; }
 .modalBody { padding:1.25rem 1.5rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem; }
-.modalFooter { padding:1rem 1.5rem;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:.75rem;flex-shrink:0; }
+.modalFooter { padding:1rem 1.5rem;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.75rem;flex-shrink:0; }
 
 /* ── Form fields ── */
 .formRow { display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
@@ -220,7 +245,20 @@
   .cardTop { flex-wrap: wrap; gap: .6rem .5rem; justify-content: flex-start; }
   .cardInfo { flex: 1 1 calc(100% - 72px - .85rem); }
   .cardTop:not(:has(.cardThumb)) .cardInfo { flex-basis: 100%; }
-  .cardActions > button { flex: 1 1 auto; min-height: 38px; }
+  .cardBadges { max-width: none; justify-content: flex-start; flex-basis: 100%; }
+  .cardActions > button { flex: 1 1 auto; min-height: 40px; }
+  .deleteBtn { margin-inline-start: 0; }
+  .proposalRow { align-items: stretch; flex-direction: column; }
+  .proposalActions > button { flex: 1 1 auto; min-height: 40px; }
+  .newBtn { min-height: 44px; justify-content: center; width: 100%; }
+  /* The editor fills the phone's screen, with its buttons always in reach. */
+  .overlay { padding: 0; align-items: stretch; }
+  .modal { max-width: none; max-height: none; height: 100dvh; border-radius: 0; }
+  .modalHeader { padding: .75rem 1rem; }
+  .modalBody { padding: 1rem; flex: 1; }
+  .modalFooter { padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom)); }
+  .modalFooter > button { flex: 1 1 auto; min-height: 44px; }
+  .input, .textarea { font-size: 16px; }
 }
 /* ── Responses window: Registration / After the event tabs ── */
 .responseTabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1rem; }

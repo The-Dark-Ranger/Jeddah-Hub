@@ -105,6 +105,7 @@
 .postItem:hover { border-color: var(--primary-blue); }
 
 .postMain { flex: 1; min-width: 0; }
+.postThumb { flex-shrink: 0; width: 96px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); }
 
 .postTopRow {
   display: flex;
@@ -406,6 +407,7 @@
 @media (max-width: 700px) {
   .formRow { grid-template-columns: 1fr; }
   .postItem { flex-direction: column; }
+  .postThumb { width: 100%; height: 150px; }
   .postActions { flex-direction: row; flex-wrap: wrap; }
 }
 

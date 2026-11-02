@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-/* Charter sign-off, mirroring the hub's Google Form ("Name" + "I confirm
- * compliance with Community Charter").
+/* Charter sign-off: the member types the name on their account and ticks one
+ * box saying they have read the Charter and will adhere to it.
  *
  * settings/charter { requireSignature }, curators switch it on or off.
- * charter_signatures/{uid} { uid, name, confirmed, signedAt }, one per
- * member; firestore.rules let a member write only their own, and only
- * curators / impact officers read everyone's. */
+ * charter_signatures/{uid} { uid, name, confirmed, signedAt, signedAtServer },
+ * one per member; firestore.rules let a member create only their own, with
+ * their own account name, and only curators / impact officers read everyone's.
+ * A signature can't be edited: a new signing round deletes them all. */
 
 const CHARTER_SETTINGS = { collection: 'settings', id: 'charter' } as const;
 /** Roles asked to sign: active Shapers, including the curatorship.
@@ -23,7 +24,10 @@ export interface CharterSignature {
   uid: string;
   name: string;
   confirmed: true;
+  /** The device's clock, shown on the page. */
   signedAt: string;
+  /** The server's clock, which a device can't change. Older signatures don't have it. */
+  signedAtServer?: Timestamp;
 }
 
 export async function getRequireSignature(): Promise<boolean> {
@@ -43,15 +47,34 @@ async function getMySignature(uid: string): Promise<CharterSignature | null> {
   return snap.exists() ? (snap.data() as CharterSignature) : null;
 }
 
-export async function signCharter(uid: string, name: string) {
-  const sig: CharterSignature = { uid, name: name.trim(), confirmed: true, signedAt: new Date().toISOString() };
-  await setDoc(doc(db, SIGNATURES, uid), sig);
-  window.dispatchEvent(new Event(CHARTER_EVENT));
-  return sig;
+/** Ignores what doesn't change a name: spacing, capitals, Arabic vowel marks
+ *  and the common spellings of the same letter (أ/إ/آ/ا, ى/ي, ة/ه). */
+function comparableName(name: string) {
+  return name.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ')
+    .replace(/[ً-ْٰـ]/g, '')
+    .replace(/[آأإ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه');
 }
 
-/** Whether sign-off is switched on, and this member's own signature. */
-/** What the dashboard needs to know about the member's Charter sign-off. */
+/** The name on the account (English or Arabic) that `typed` matches, spelled
+ *  as the account spells it, or null when it matches neither. */
+export function matchAccountName(typed: string, accountNames: (string | null | undefined)[]): string | null {
+  const wanted = comparableName(typed);
+  if (!wanted) return null;
+  return accountNames.find(n => n && comparableName(n) === wanted) ?? null;
+}
+
+export async function signCharter(uid: string, accountName: string) {
+  await setDoc(doc(db, SIGNATURES, uid), {
+    uid, name: accountName, confirmed: true,
+    signedAt: new Date().toISOString(), signedAtServer: serverTimestamp(),
+  });
+  window.dispatchEvent(new Event(CHARTER_EVENT));
+}
+
+/** What the dashboard needs to know about the member's Charter sign-off:
+ *  whether sign-off is switched on, and this member's own signature. */
 export type CharterStatus = ReturnType<typeof useCharterStatus>;
 
 export function useCharterStatus(uid: string | null | undefined) {

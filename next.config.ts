@@ -20,6 +20,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // eval() in a production build, so this is scoped to dev only rather than
 // loosening the policy actually served to real visitors.
 const isDev = process.env.NODE_ENV !== 'production';
+// Local test runs talk to Firebase's emulators (src/lib/emulators.ts).
+const emulatorHosts = isDev && process.env.NEXT_PUBLIC_USE_EMULATORS === '1'
+  ? ' http://127.0.0.1:9099 http://127.0.0.1:8085 ws://127.0.0.1:8085'
+  : '';
 
 const CSP = [
   "default-src 'self'",
@@ -30,7 +34,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: https:",
-  "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com https://*.firebaseio.com wss://*.firebaseio.com",
+  `connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com https://*.firebaseio.com wss://*.firebaseio.com${emulatorHosts}`,
   "frame-src https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",

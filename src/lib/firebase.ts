@@ -3,9 +3,10 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import {
   getAuth, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence,
-  browserSessionPersistence, inMemoryPersistence, type Auth,
+  browserSessionPersistence, inMemoryPersistence, connectAuthEmulator, type Auth,
 } from "firebase/auth";
-import { initializeFirestore, getFirestore, type Firestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
+import { USE_EMULATORS } from "@/lib/emulators";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -54,6 +55,10 @@ try {
   app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
   auth = makeAuth(app);
   db = makeDb(app);
+  if (USE_EMULATORS && isBrowser && !auth.emulatorConfig) {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8085);
+  }
 } catch (e) {
   if (process.env.NODE_ENV !== 'production') {
     console.warn('[firebase] Init failed, set NEXT_PUBLIC_FIREBASE_* env vars:', (e as Error).message);

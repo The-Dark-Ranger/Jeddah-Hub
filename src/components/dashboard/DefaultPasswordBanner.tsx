@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { Link, usePathname } from '@/i18n/routing';
 import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { PASSWORD_FORM_HREF, showPasswordForm } from '@/lib/passwordForm';
 import styles from './DefaultPasswordBanner.module.css';
 
 /** Shown across the dashboard while the member is still signed in with the
@@ -14,6 +15,7 @@ const readFlag = () => {
 
 export default function DefaultPasswordBanner() {
   const t = useTranslations('Dashboard');
+  const pathname = usePathname();
   // Read straight away (the dashboard only renders in the browser), so the
   // banner is there from the first frame instead of pushing the page down.
   const [show, setShow] = useState(readFlag);
@@ -31,7 +33,16 @@ export default function DefaultPasswordBanner() {
         <path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" />
       </svg>
       <span className={styles.text}>{t('defaultPwBanner')}</span>
-      <Link href="/dashboard/shaper/profile#password" className={styles.link}>{t('pwTitle')}</Link>
+      <Link
+        href={PASSWORD_FORM_HREF}
+        className={styles.link}
+        // Already on My Profile: nothing navigates, so jump to the form here.
+        onClick={e => {
+          if (pathname.startsWith('/dashboard/shaper/profile')) { e.preventDefault(); showPasswordForm(); }
+        }}
+      >
+        {t('pwTitle')}
+      </Link>
     </div>
   );
 }

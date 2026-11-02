@@ -15,10 +15,8 @@ import AvatarUploader from '@/components/AvatarUploader';
 import PasswordInput from '@/components/PasswordInput';
 import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import styles from './Profile.module.css';
-import { safeExternalUrl } from '@/lib/sanitize';
-
-/** Adds https:// to a link typed without a scheme (e.g. linkedin.com/in/x). */
-const withScheme = (v: string) => { const t = v.trim(); return t && !/^[a-z][a-z0-9+.-]*:/i.test(t) ? 'https://' + t : t; };
+import { safeExternalUrl, withHttps } from '@/lib/sanitize';
+import { PASSWORD_FORM_ID, showPasswordForm } from '@/lib/passwordForm';
 
 interface ProfileForm {
   displayName: string;
@@ -99,7 +97,7 @@ function ChangePassword() {
   };
 
   return (
-    <form id="password" className={styles.card + ' ' + styles.passwordCard} onSubmit={submit}>
+    <form id={PASSWORD_FORM_ID} className={styles.card + ' ' + styles.passwordCard} onSubmit={submit}>
       <SectionTitle icon="lock">{t('pwTitle')}</SectionTitle>
       <p className={styles.cardIntro}>{t('pwIntro')}</p>
       <div className={styles.pwGrid}>
@@ -159,6 +157,12 @@ export default function MyProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
+  // Arriving at #password (the Change password links): the form exists only
+  // now that the profile has loaded, so the browser's own jump missed it.
+  useEffect(() => {
+    if (loaded && window.location.hash === '#' + PASSWORD_FORM_ID) showPasswordForm();
+  }, [loaded]);
+
   const set = (k: keyof ProfileForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
@@ -177,9 +181,9 @@ export default function MyProfile() {
         bioAr:         form.bioAr.trim(),
         // Only http(s) links are stored (firestore.rules refuses anything
         // else); "linkedin.com/in/x" gets https:// added.
-        linkedin:      safeExternalUrl(withScheme(form.linkedin)) ?? '',
-        twitter:       safeExternalUrl(withScheme(form.twitter)) ?? '',
-        instagram:     safeExternalUrl(withScheme(form.instagram)) ?? '',
+        linkedin:      safeExternalUrl(withHttps(form.linkedin)) ?? '',
+        twitter:       safeExternalUrl(withHttps(form.twitter)) ?? '',
+        instagram:     safeExternalUrl(withHttps(form.instagram)) ?? '',
       };
       await updateDoc(doc(db, 'users', user.uid), publicFields);
       // Mirror to public_profiles (never email) so About/homepage reflect
@@ -219,7 +223,10 @@ export default function MyProfile() {
           <span>{user.email}</span>
         </HeroLine>
       </RoleHero>
-      <p className={styles.pageSubtitle}>{t('editProfileSubtitle')}</p>
+      <div className={styles.pageIntro}>
+        <p className={styles.pageSubtitle}>{t('editProfileSubtitle')}</p>
+        <button type="button" className={styles.secondaryBtn} onClick={showPasswordForm}>{t('pwTitle')}</button>
+      </div>
 
     <form className={styles.formStack} onSubmit={handleSave}>
       {/* Profile info */}

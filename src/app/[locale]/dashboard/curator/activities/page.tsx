@@ -1,79 +1,36 @@
 'use client';
 
 /* Dashboard > Hub Activities (curators, impact officers): create and edit
- * activities, open/close their forms, view and export responses, and review
- * activity proposals and leads' change requests. */
+ * activities, open and close their forms, read their responses, and review
+ * what members send for approval. */
 import { useState, useEffect } from 'react';
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
-  query, serverTimestamp, where, getCountFromServer,
+  query, serverTimestamp, where, getCountFromServer, writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { useTranslations } from 'next-intl';
-import ModalPortal from '@/components/ModalPortal';
+import { useLocale, useTranslations } from 'next-intl';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import {
   pickActivityFields, emptyActivityForm as emptyForm, emptyCustomForm,
-  parseHighlights, highlightsToText, activityToForm, safeColor,
+  activityToForm, changedActivityFields,
+  type ActivityChangeRequest, type ActivityFormData, type HubActivity,
 } from '@/lib/activityTypes';
-import type { Highlight, CustomForm, ActivityKind, FormType } from '@/lib/activityTypes';
 import { refreshPublicPages } from '@/lib/spotlight';
 import { normalizeRole } from '@/lib/role';
 import { omitKeys } from '@/lib/omitKeys';
-import ActivityFormFields from '@/components/ActivityFormFields';
+import ActivityCard from '@/components/dashboard/ActivityCard';
+import ActivityEditorModal from '@/components/dashboard/ActivityEditorModal';
+import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import ActivityResponsesModal from './ActivityResponsesModal';
+import ActivityReview from './ActivityReview';
 import styles from './Activities.module.css';
-import { errorCode, type Proposal } from '@/lib/types';
+import type { Proposal } from '@/lib/types';
+import { intlLocale } from '@/lib/dates';
 
-interface Activity {
-  id: string;
-  title: string;
-  eyebrow: string;
-  subtitle: string;
-  description: string;
-  date: string;
-  location: string;
-  ctaText: string;
-  ctaUrl: string;
-  highlights: Highlight[];
-  active: boolean;
-  archived?: boolean;
-  kind?: ActivityKind;
-  customForm?: CustomForm;
-  feedbackForm?: CustomForm;
-  imageUrl?: string;
-  images?: string[];
-  color?: string;
-  createdAt?: { toMillis?: () => number };
-  initiativeId?: string;
-}
-
-interface ActivityChangeRequest {
-  id: string;
-  changeType: 'create' | 'update';
-  activityId: string | null;
-  initiativeId: string;
-  activityTitle: string;
-  payload: Record<string, unknown>;
-  proposedBy: string;
-  proposedByName?: string;
-  status: 'pending' | 'approved' | 'declined';
-}
-
-interface ActivityResponse {
-  id: string;
-  activityId: string;
-  answers: Record<string, string>;
-  submittedAt: string;
-  submitterName?: string;
-  submitterEmail?: string;
-  read?: boolean;
-  /** Missing on responses sent before the after-event form existed. */
-  formType?: FormType;
-}
-
-const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
+const RETREAT_PREFILL: Partial<ActivityFormData> = {
   eyebrow: 'Annual Gathering',
   title: 'Jeddah Retreat 2026',
   subtitle: 'Where Cultures Meet',
@@ -94,158 +51,84 @@ const RETREAT_PREFILL: Omit<Activity, 'id' | 'createdAt'> = {
   kind: 'activity',
 };
 
-/** Renders every known activity field present in a proposal/change
- *  request so a curator or impact officer can see the full proposed
- *  content (not just its title) before approving or declining it.
- *  Shared between the legacy activity_requests and activity_change_requests
- *  details modals since both carry the same underlying activity shape. */
-function ProposalFields({ fields, t }: { fields: Record<string, unknown>; t: ReturnType<typeof useTranslations> }) {
-  const row = (labelKey: Parameters<typeof t>[0], value: React.ReactNode) => (
-    <div className={styles.detailRow}>
-      <span className={styles.detailLabel}>{t(labelKey)}</span>
-      <span className={styles.detailValue}>{value}</span>
-    </div>
-  );
+type ArchiveFilter = 'active' | 'archived' | 'all';
 
-  const highlights = fields.highlights as Highlight[] | undefined;
-  const customForm = fields.customForm as CustomForm | undefined;
-  const color = safeColor(fields.color);
-  const imageUrl = typeof fields.imageUrl === 'string' ? fields.imageUrl : '';
-  const images = Array.isArray(fields.images) ? (fields.images as unknown[]).filter((s): s is string => typeof s === 'string') : [];
-
-  return (
-    <>
-      {typeof fields.kind === 'string' && row('activityKindLabel', fields.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity'))}
-      {!!fields.eyebrow && row('activityEyebrowLabel', fields.eyebrow as string)}
-      {!!fields.subtitle && row('activitySubtitleLabel', fields.subtitle as string)}
-      {!!fields.description && row('activityDescLabel', fields.description as string)}
-      {!!fields.date && row('activityDateLabel', fields.date as string)}
-      {!!fields.location && row('activityLocationLabel', fields.location as string)}
-      {!!fields.ctaText && row('activityCtaTextLabel', fields.ctaText as string)}
-      {!!fields.ctaUrl && row('activityCtaUrlLabel', fields.ctaUrl as string)}
-      {!!highlights?.length && row('activityHighlightsLabel',
-        <ul className={styles.detailHighlightList}>
-          {highlights.map((h, i) => <li key={i}>{h.name}{h.tag ? `: ${h.tag}` : ''}</li>)}
-        </ul>
-      )}
-      {color && row('activityAccentColor',
-        <span className={styles.detailColor}><span style={{ background: color }} />{color}</span>
-      )}
-      {(imageUrl || images.length > 0) && row('fieldPhotos',
-        <span className={styles.detailPhotos}>
-          {[imageUrl, ...images].filter(Boolean).slice(0, 6).map((src, i) => <img key={i} src={src} alt="" loading="lazy" />)}
-        </span>
-      )}
-      {typeof fields.active === 'boolean' && row('activityActiveLabel', fields.active ? t('yes') : t('no'))}
-      {typeof fields.archived === 'boolean' && row('filterArchived', fields.archived ? t('yes') : t('no'))}
-      {([['regTitle', customForm], ['fbTitle', fields.feedbackForm as CustomForm | undefined]] as const).map(([label, f]) =>
-        f ? (
-          <div key={label}>{row(label,
-            f.enabled
-              ? `${f.closed ? t('regClosed') : t('regOpen')} · ${t('customFormQuestionCount', { n: f.questions?.length || 0 })}`
-              : t('no'))}
-          </div>
-        ) : null
-      )}
-    </>
-  );
-}
+/** What's open in the review window: a current request, or a proposal from
+ *  the retired form (activity_requests) that was already waiting. */
+type ReviewTarget = { kind: 'change'; request: ActivityChangeRequest } | { kind: 'legacy'; proposal: Proposal };
 
 export default function ActivitiesPage() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
+  const locale = useLocale();
 
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<HubActivity[]>([]);
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Activity | null>(null);
-  const [form, setForm] = useState(emptyForm());
-  const [highlightsText, setHighlightsText] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>('active');
+  const [search, setSearch] = useState('');
+  /** null: closed. Otherwise the activity being edited, or none for a new one. */
+  const [editor, setEditor] = useState<{ editing: HubActivity | null; initial: ActivityFormData } | null>(null);
+  const [responsesFor, setResponsesFor] = useState<HubActivity | null>(null);
 
-  /* Responses viewer */
-  const [responsesFor, setResponsesFor] = useState<Activity | null>(null);
-  const [responses, setResponses] = useState<ActivityResponse[]>([]);
-  const [loadingResponses, setLoadingResponses] = useState(false);
-  const [responsesTab, setResponsesTab] = useState<FormType>('registration');
-
-  /* Lead-proposed activities/workshops awaiting review */
-  const [activityProposals, setActivityProposals] = useState<Proposal[]>([]);
-
-  /* Lead-submitted create/edit/archive requests on existing activities,
-     see activityTypes.ts and firestore.rules' activity_change_requests
-     for why these can't just write to `initiatives` directly. */
+  const [legacyProposals, setLegacyProposals] = useState<Proposal[]>([]);
   const [changeRequests, setChangeRequests] = useState<ActivityChangeRequest[]>([]);
-  /* initiativeId -> title, resolved for whichever initiatives the pending
-     change requests reference, lets the review list and details modal
-     name the initiative instead of just its id. */
+  /* initiativeId -> title, so the queue names the initiative, not its id. */
   const [initiativeTitles, setInitiativeTitles] = useState<Record<string, string>>({});
-
-  /* Full-detail view of a single pending proposal/change request, opened
-   * from its row's "View Details" button, a curator/impact officer needs
-   * the complete proposed content (not just the title) to decide whether
-   * to approve or decline it. */
-  const [viewingLegacy, setViewingLegacy] = useState<Proposal | null>(null);
-  const [viewingChange, setViewingChange] = useState<ActivityChangeRequest | null>(null);
+  const [reviewing, setReviewing] = useState<ReviewTarget | null>(null);
 
   const role = normalizeRole(user?.role);
-  const canEdit = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
+  const isCurator = role === 'curator' || role === 'vice_curator';
+  const canEdit = isCurator || role === 'impact_officer';
+  /** The Curator or Vice Curator decide everything; impact officers only
+   *  requests tied to an initiative (firestore.rules says the same). */
+  const canDecide = (req: ActivityChangeRequest) => isCurator || !!req.initiativeId;
 
   async function fetchAll() {
     setLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, 'initiatives'), where('type', '==', 'hub_activity'))
-      );
+      const snap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
       const sorted = snap.docs
-        .map(d => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }))
-        .sort((a, b) => {
-          const ta = a.createdAt?.toMillis?.() ?? 0;
-          const tb = b.createdAt?.toMillis?.() ?? 0;
-          return tb - ta;
-        });
+        .map(d => ({ id: d.id, ...(d.data() as Omit<HubActivity, 'id'>) }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
       setActivities(sorted);
 
-      // So curators can see at a glance which activities have new (unread)
-      // responses to check, without opening each "View Responses" modal,
-      // and so the badge actually clears once they've been viewed.
+      // Which activities have new responses to check, without opening each one.
       const withForms = sorted.filter(a => a.customForm?.enabled || a.feedbackForm?.enabled);
       const counts = await Promise.all(withForms.map(a =>
         getCountFromServer(query(collection(db, 'activity_responses'),
           where('activityId', '==', a.id), where('read', '==', false)))
-          .then(snap => [a.id, snap.data().count] as const)
+          .then(c => [a.id, c.data().count] as const)
           .catch(() => [a.id, 0] as const)
       ));
       setResponseCounts(Object.fromEntries(counts));
-    } catch {
+    } catch (err) {
+      console.error('Failed to load activities:', err);
       setActivities([]);
     } finally {
       setLoading(false);
     }
 
-    // Non-critical, a lead's proposal fetch failing shouldn't blank the
-    // main activities list above it.
+    // A review queue that fails to load shouldn't blank the list above it.
     try {
       const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
-      setActivityProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
+      setLegacyProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
     } catch {
-      setActivityProposals([]);
+      setLegacyProposals([]);
     }
 
     try {
       const changeSnap = await getDocs(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending')));
-      const reqs = changeSnap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }));
+      const reqs = changeSnap.docs
+        .map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }))
+        .sort((a, b) => (a.requestedAt ?? '').localeCompare(b.requestedAt ?? ''));
       setChangeRequests(reqs);
 
-      // Resolve each referenced initiative's title once, so both the row
-      // list and the details modal can name it instead of showing a raw id.
       const uniqueIds = Array.from(new Set(reqs.map(r => r.initiativeId).filter(Boolean)));
       const titleEntries = await Promise.all(uniqueIds.map(async id => {
         try {
-          const snap = await getDoc(doc(db, 'initiatives', id));
-          return [id, (snap.data()?.title as string) || id] as const;
+          const s = await getDoc(doc(db, 'initiatives', id));
+          return [id, (s.data()?.title as string) || id] as const;
         } catch {
           return [id, id] as const;
         }
@@ -259,221 +142,166 @@ export default function ActivitiesPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
   useEffect(() => { fetchAll(); }, []);
 
-  function openCreate(prefill?: Omit<Activity, 'id' | 'createdAt'>) {
-    setEditing(null);
-    // activityToForm fills every field RETREAT_PREFILL leaves out, an
-    // undefined field would be rejected by the Firestore SDK on save.
-    const f = activityToForm(prefill ?? emptyForm());
-    setForm(f);
-    setHighlightsText(highlightsToText(f.highlights || []));
-    setModalOpen(true);
-  }
-
-  function openEdit(a: Activity) {
-    setEditing(a);
-    setForm(activityToForm(a));
-    setHighlightsText(highlightsToText(a.highlights || []));
-    setModalOpen(true);
-  }
-
-  async function handleSave() {
-    if (!form.title.trim()) return;
-    setSaving(true);
+  /** Runs a change to a live activity; on failure says so and leaves the list as it is. */
+  async function applyChange(what: string, change: () => Promise<unknown>) {
     try {
-      const slug = await uniqueInitiativeSlug(form.title, editing?.id);
-      const payload = { ...form, highlights: parseHighlights(highlightsText), type: 'hub_activity', slug };
-      if (editing) {
-        await updateDoc(doc(db, 'initiatives', editing.id), { ...payload, updatedAt: serverTimestamp() });
-      } else {
-        await addDoc(collection(db, 'initiatives'), { ...payload, createdAt: serverTimestamp() });
-      }
-      setModalOpen(false);
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to save activity:', err);
-      const code = errorCode(err) || 'unknown';
-      alert(`${t('saveFailed')} (${code})`);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleToggleActive(a: Activity) {
-    try {
-      await updateDoc(doc(db, 'initiatives', a.id), { active: !a.active });
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to toggle activity:', err);
-      alert(t('saveFailed'));
-    }
-  }
-
-  // Archived is otherwise a separate axis from active/hidden, a past
-  // retreat can be both "hidden" (not shown on the homepage) and
-  // "archived" (tucked out of the default admin list) without those two
-  // states fighting each other. The one direction that isn't independent:
-  // archiving something that's still active also turns it inactive, so a
-  // curator can't accidentally archive-but-leave-live an activity and
-  // forget to hide it, unarchiving never re-activates it automatically,
-  // since bringing it back onto the homepage should be a deliberate step.
-  // One click to open or close an activity's registration or after-event form.
-  async function handleToggleForm(a: Activity, key: 'customForm' | 'feedbackForm') {
-    const f = a[key];
-    if (!f) return;
-    try {
-      const closed = !f.closed;
-      await updateDoc(doc(db, 'initiatives', a.id), { [`${key}.closed`]: closed });
-      setActivities(prev => prev.map(x => x.id === a.id && x[key] ? { ...x, [key]: { ...x[key], closed } } : x));
+      await change();
       void refreshPublicPages();
-    } catch (err) {
-      console.error('Failed to open/close form:', err);
-      alert(t('saveFailed'));
-    }
-  }
-
-  async function handleToggleArchive(a: Activity) {
-    try {
-      const archived = !a.archived;
-      await updateDoc(doc(db, 'initiatives', a.id), {
-        archived,
-        ...(archived && a.active ? { active: false } : {}),
-      });
       fetchAll();
     } catch (err) {
-      console.error('Failed to toggle archive:', err);
+      console.error(`Failed to ${what}:`, err);
       alert(t('saveFailed'));
     }
   }
 
-  async function handleApproveActivityProposal(req: Proposal) {
-    try {
-      const fields = omitKeys(req, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
-      const slug = await uniqueInitiativeSlug(String(fields.title || ''));
-      await addDoc(collection(db, 'initiatives'), {
+  async function handleSave(form: ActivityFormData) {
+    const editing = editor?.editing;
+    const slug = await uniqueInitiativeSlug(form.title, editing?.id);
+    const payload = { ...form, type: 'hub_activity', slug };
+    if (editing) {
+      await updateDoc(doc(db, 'initiatives', editing.id), { ...payload, updatedAt: serverTimestamp() });
+    } else {
+      await addDoc(collection(db, 'initiatives'), { ...payload, createdAt: serverTimestamp() });
+    }
+    setEditor(null);
+    void refreshPublicPages();
+    fetchAll();
+  }
+
+  // Archived is a separate axis from active/hidden: a past retreat can be both
+  // hidden and tucked out of the default list. The one link between them:
+  // archiving something still live also hides it, so it can't stay on the
+  // homepage by accident. Unarchiving never brings it back by itself.
+  const toggleArchive = (a: HubActivity) => {
+    const archived = !a.archived;
+    return updateDoc(doc(db, 'initiatives', a.id), { archived, ...(archived && a.active ? { active: false } : {}) });
+  };
+
+  const handleDelete = (a: HubActivity) => {
+    if (!confirm(t('deleteActivityConfirm'))) return;
+    void applyChange('delete activity', () => deleteDoc(doc(db, 'initiatives', a.id)));
+  };
+
+  /** The review's outcome on the request: who decided, and their note. */
+  const reviewFields = (status: 'approved' | 'declined', note: string) => ({
+    status, reviewedAt: new Date().toISOString(), reviewedBy: user?.uid,
+    ...(note ? { reviewNote: note } : {}),
+  });
+
+  const finishReview = () => {
+    setReviewing(null);
+    void refreshPublicPages();
+    fetchAll();
+  };
+
+  // Applied through an explicit field allowlist (pickActivityFields), so a
+  // payload can't carry an unexpected field onto the live activity even if a
+  // reviewer just clicks Approve. The activity and the request's new status
+  // are saved together, so a failure can't create the activity twice.
+  async function approveRequest(req: ActivityChangeRequest, note: string) {
+    const fields = pickActivityFields(req.payload);
+    const batch = writeBatch(db);
+    if (req.changeType === 'create') {
+      const slug = await uniqueInitiativeSlug(String(fields.title || req.activityTitle || ''));
+      batch.set(doc(collection(db, 'initiatives')), {
         eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
+        highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
         ...fields,
         type: 'hub_activity',
-        active: true,
-        highlights: [],
-        customForm: emptyCustomForm(),
+        ...(req.initiativeId ? { initiativeId: req.initiativeId } : {}),
+        // Lets the member who proposed it ask for changes later.
+        proposedBy: req.proposedBy,
         createdAt: serverTimestamp(),
         slug,
       });
-      await updateDoc(doc(db, 'activity_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
-      setActivityProposals(prev => prev.filter(p => p.id !== req.id));
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to approve activity proposal:', err);
-      alert(t('saveFailed'));
+    } else if (req.activityId) {
+      batch.update(doc(db, 'initiatives', req.activityId), { ...fields, updatedAt: serverTimestamp() });
     }
+    batch.update(doc(db, 'activity_change_requests', req.id), reviewFields('approved', note));
+    await batch.commit();
+    finishReview();
   }
 
-  async function handleDeclineActivityProposal(reqId: string) {
-    try {
-      await updateDoc(doc(db, 'activity_requests', reqId), { status: 'declined', reviewedAt: new Date().toISOString() });
-      setActivityProposals(prev => prev.filter(p => p.id !== reqId));
-    } catch (err) {
-      console.error('Failed to decline activity proposal:', err);
-      alert(t('saveFailed'));
-    }
+  async function declineRequest(req: ActivityChangeRequest, note: string) {
+    await updateDoc(doc(db, 'activity_change_requests', req.id), reviewFields('declined', note));
+    finishReview();
   }
 
-  // Applies an explicit field allowlist (pickActivityFields) rather than
-  // spreading req.payload wholesale, the payload's shape is only checked
-  // as "is a map" by firestore.rules (like activity_responses.answers, it's
-  // curator/lead-defined and open-ended), so this is what actually keeps a
-  // malicious payload from smuggling an unexpected field into `initiatives`
-  // even if a curator blindly clicks Approve.
-  async function handleApproveChangeRequest(req: ActivityChangeRequest) {
-    try {
-      const fields = pickActivityFields(req.payload);
-      if (req.changeType === 'create') {
-        const slug = await uniqueInitiativeSlug((fields.title as string) || req.activityTitle || '');
-        await addDoc(collection(db, 'initiatives'), {
-          eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
-          highlights: [], active: true, kind: 'activity', customForm: emptyCustomForm(),
-          ...fields,
-          type: 'hub_activity',
-          initiativeId: req.initiativeId,
-          createdAt: serverTimestamp(),
-          slug,
-        });
-      } else if (req.activityId) {
-        await updateDoc(doc(db, 'initiatives', req.activityId), { ...fields, updatedAt: serverTimestamp() });
-      }
-      await updateDoc(doc(db, 'activity_change_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
-      setChangeRequests(prev => prev.filter(r => r.id !== req.id));
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to approve activity change request:', err);
-      alert(t('saveFailed'));
-    }
+  async function approveLegacy(req: Proposal) {
+    const fields = omitKeys(req, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+    const slug = await uniqueInitiativeSlug(String(fields.title || ''));
+    const batch = writeBatch(db);
+    batch.set(doc(collection(db, 'initiatives')), {
+      eyebrow: '', subtitle: '', date: '', location: '', ctaText: '', ctaUrl: '',
+      ...fields,
+      type: 'hub_activity',
+      active: true,
+      highlights: [],
+      customForm: emptyCustomForm(),
+      createdAt: serverTimestamp(),
+      slug,
+    });
+    batch.update(doc(db, 'activity_requests', req.id), { status: 'approved', reviewedAt: new Date().toISOString() });
+    await batch.commit();
+    finishReview();
   }
 
-  async function handleDeclineChangeRequest(reqId: string) {
-    try {
-      await updateDoc(doc(db, 'activity_change_requests', reqId), { status: 'declined', reviewedAt: new Date().toISOString() });
-      setChangeRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error('Failed to decline activity change request:', err);
-      alert(t('saveFailed'));
-    }
+  async function declineLegacy(req: Proposal) {
+    await updateDoc(doc(db, 'activity_requests', req.id), { status: 'declined', reviewedAt: new Date().toISOString() });
+    finishReview();
   }
-
-  async function handleDelete(a: Activity) {
-    if (!confirm(t('deleteActivityConfirm'))) return;
-    try {
-      await deleteDoc(doc(db, 'initiatives', a.id));
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to delete activity:', err);
-      alert(t('saveFailed'));
-    }
-  }
-
-  async function openResponses(a: Activity, tab: FormType) {
-    setResponsesFor(a);
-    setResponsesTab(tab);
-    setLoadingResponses(true);
-    try {
-      const snap = await getDocs(query(collection(db, 'activity_responses'), where('activityId', '==', a.id)));
-      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityResponse, 'id'>) }));
-      setResponses(docs);
-
-      // Viewing the modal is what "checking" a response means, clear its
-      // unread badge here rather than requiring a separate action.
-      const unread = docs.filter(r => r.read === false);
-      if (unread.length > 0) {
-        Promise.all(unread.map(r => updateDoc(doc(db, 'activity_responses', r.id), { read: true })))
-          .catch(err => console.error('Failed to mark responses read:', err));
-        setResponseCounts(c => ({ ...c, [a.id]: 0 }));
-      }
-    } catch (err) {
-      console.error('Failed to load responses:', err);
-      setResponses([]);
-    } finally {
-      setLoadingResponses(false);
-    }
-  }
-
-  function closeResponses() {
-    setResponsesFor(null);
-    setResponses([]);
-  }
-
-  async function handleDownloadResponses() {
-    if (!responsesFor) return;
-    const { downloadActivityResponses } = await import('@/lib/exportActivityResponses');
-    downloadActivityResponses(responsesFor.title, tabQuestions, tabResponses,
-      responsesTab === 'feedback' ? 'Feedback' : 'Registrations');
-  }
-
-  // Responses for the open tab; older ones without formType are registrations.
-  const tabResponses = responses.filter(r => (r.formType ?? 'registration') === responsesTab);
-  const tabQuestions = (responsesTab === 'feedback' ? responsesFor?.feedbackForm : responsesFor?.customForm)?.questions || [];
 
   if (!canEdit) {
     return <p style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</p>;
+  }
+
+  const matching = activities.filter(a => matchesQuery(search, a.title, a.subtitle, a.eyebrow, a.location, a.date));
+  const inTab = (f: ArchiveFilter) => matching.filter(a => (f === 'all' ? true : f === 'archived' ? !!a.archived : !a.archived));
+  const visible = inTab(archiveFilter);
+  const waiting = legacyProposals.length + changeRequests.length;
+
+  const scopeOf = (req: ActivityChangeRequest) =>
+    req.initiativeId ? `${t('forInitiative')} ${initiativeTitles[req.initiativeId] || req.initiativeId}` : t('forWholeHub');
+  const sentOn = (iso?: string) => (iso && !isNaN(Date.parse(iso))
+    ? new Date(iso).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric' })
+    : '');
+
+  /** Everything the review window shows for the open request. */
+  function reviewWindow(target: ReviewTarget) {
+    if (target.kind === 'legacy') {
+      const p = target.proposal;
+      return (
+        <ActivityReview
+          heading={p.title ?? ''}
+          details={p.proposedByName ? [{ label: t('by'), value: p.proposedByName }] : []}
+          fields={p}
+          canDecide
+          allowNote={false}
+          onClose={() => setReviewing(null)}
+          onApprove={() => approveLegacy(p)}
+          onDecline={() => declineLegacy(p)}
+        />
+      );
+    }
+    const req = target.request;
+    const live = req.changeType === 'update' ? activities.find(a => a.id === req.activityId) : undefined;
+    return (
+      <ActivityReview
+        heading={req.activityTitle}
+        details={[
+          { label: t('changeTypeLabel'), value: req.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate') },
+          { label: t('reviewScope'), value: scopeOf(req) },
+          ...(req.proposedByName ? [{ label: t('by'), value: req.proposedByName }] : []),
+        ]}
+        fields={live ? changedActivityFields(req.payload, live) : req.payload}
+        changesOnly={!!live}
+        canDecide={canDecide(req)}
+        allowNote
+        onClose={() => setReviewing(null)}
+        onApprove={note => approveRequest(req, note)}
+        onDecline={note => declineRequest(req, note)}
+      />
+    );
   }
 
   return (
@@ -483,25 +311,46 @@ export default function ActivitiesPage() {
           <h1 className={styles.title}>{t('activitiesTitle')}</h1>
           <p className={styles.subtitle}>{t('activitiesSubtitle')}</p>
         </div>
-        <button className={styles.newBtn} onClick={() => openCreate()}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <button type="button" className={styles.newBtn} onClick={() => setEditor({ editing: null, initial: emptyForm() })}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           {t('newActivityBtn')}
         </button>
       </div>
 
-      {activityProposals.length > 0 && (
-        <div className={styles.proposalsSection}>
-          <h3 className={styles.proposalsTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      {waiting > 0 && (
+        <section className={styles.proposalsSection} aria-labelledby="activity-queue-title">
+          <h2 className={styles.proposalsTitle} id="activity-queue-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            {t('activityProposals')}
-            <span className={styles.proposalsBadge}>{activityProposals.length}</span>
-          </h3>
+            {t('waitingForReview')}
+            <span className={styles.proposalsBadge}>{waiting}</span>
+          </h2>
           <div className={styles.proposalsList}>
-            {activityProposals.map(req => (
+            {changeRequests.map(req => (
+              <div key={req.id} className={styles.proposalRow}>
+                <div className={styles.proposalInfo}>
+                  <span className={styles.proposalName}>{req.activityTitle}</span>
+                  <span className={styles.proposalMeta}>
+                    {[
+                      req.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate'),
+                      scopeOf(req),
+                      req.proposedByName && `${t('by')} ${req.proposedByName}`,
+                      sentOn(req.requestedAt),
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                  {!canDecide(req) && <span className={styles.queueHint}>{t('curatorOnlyApproval')}</span>}
+                </div>
+                <div className={styles.proposalActions}>
+                  <button type="button" className={styles.viewProposalBtn} onClick={() => setReviewing({ kind: 'change', request: req })}>
+                    {canDecide(req) ? t('reviewBtn') : t('viewDetails')}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {legacyProposals.map(req => (
               <div key={req.id} className={styles.proposalRow}>
                 <div className={styles.proposalInfo}>
                   <span className={styles.proposalName}>{req.title}</span>
@@ -511,130 +360,32 @@ export default function ActivitiesPage() {
                   </span>
                 </div>
                 <div className={styles.proposalActions}>
-                  <button className={styles.viewProposalBtn} onClick={() => setViewingLegacy(req)}>{t('viewDetails')}</button>
-                  <button className={styles.approveProposalBtn} onClick={() => handleApproveActivityProposal(req)}>{t('approveProposal')}</button>
-                  <button className={styles.declineProposalBtn} onClick={() => handleDeclineActivityProposal(req.id)}>{t('declineProposal')}</button>
+                  <button type="button" className={styles.viewProposalBtn} onClick={() => setReviewing({ kind: 'legacy', proposal: req })}>{t('reviewBtn')}</button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {changeRequests.length > 0 && (
-        <div className={styles.proposalsSection}>
-          <h3 className={styles.proposalsTitle}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            {t('activityChangeRequests')}
-            <span className={styles.proposalsBadge}>{changeRequests.length}</span>
-          </h3>
-          <div className={styles.proposalsList}>
-            {changeRequests.map(req => (
-              <div key={req.id} className={styles.proposalRow}>
-                <div className={styles.proposalInfo}>
-                  <span className={styles.proposalName}>{req.activityTitle}</span>
-                  <span className={styles.proposalMeta}>
-                    {req.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate')}
-                    {' · '}{t('forInitiative')} {initiativeTitles[req.initiativeId] || req.initiativeId}
-                    {req.proposedByName && <> · {t('by')} {req.proposedByName}</>}
-                  </span>
-                </div>
-                <div className={styles.proposalActions}>
-                  <button className={styles.viewProposalBtn} onClick={() => setViewingChange(req)}>{t('viewDetails')}</button>
-                  <button className={styles.approveProposalBtn} onClick={() => handleApproveChangeRequest(req)}>{t('approveProposal')}</button>
-                  <button className={styles.declineProposalBtn} onClick={() => handleDeclineChangeRequest(req.id)}>{t('declineProposal')}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {viewingLegacy && (
-        <ModalPortal>
-        <div className={styles.overlay} onClick={() => setViewingLegacy(null)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>{viewingLegacy.title}</h2>
-              <button className={styles.closeBtn} onClick={() => setViewingLegacy(null)} aria-label={t('closeModal')}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              {viewingLegacy.proposedByName && (
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>{t('by')}</span>
-                  <span className={styles.detailValue}>{viewingLegacy.proposedByName}</span>
-                </div>
-              )}
-              <ProposalFields fields={viewingLegacy} t={t} />
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setViewingLegacy(null)}>{t('cancel')}</button>
-              <button className={styles.declineProposalBtn} onClick={() => { handleDeclineActivityProposal(viewingLegacy.id); setViewingLegacy(null); }}>
-                {t('declineProposal')}
-              </button>
-              <button className={styles.saveBtn} onClick={() => { handleApproveActivityProposal(viewingLegacy); setViewingLegacy(null); }}>
-                {t('approveProposal')}
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
-      )}
-
-      {viewingChange && (
-        <ModalPortal>
-        <div className={styles.overlay} onClick={() => setViewingChange(null)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>{viewingChange.activityTitle}</h2>
-              <button className={styles.closeBtn} onClick={() => setViewingChange(null)} aria-label={t('closeModal')}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>{t('changeTypeLabel')}</span>
-                <span className={styles.detailValue}>
-                  {viewingChange.changeType === 'create' ? t('changeTypeCreate') : t('changeTypeUpdate')}
-                </span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>{t('forInitiative')}</span>
-                <span className={styles.detailValue}>{initiativeTitles[viewingChange.initiativeId] || viewingChange.initiativeId}</span>
-              </div>
-              {viewingChange.proposedByName && (
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>{t('by')}</span>
-                  <span className={styles.detailValue}>{viewingChange.proposedByName}</span>
-                </div>
-              )}
-              <ProposalFields fields={viewingChange.payload} t={t} />
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setViewingChange(null)}>{t('cancel')}</button>
-              <button className={styles.declineProposalBtn} onClick={() => { handleDeclineChangeRequest(viewingChange.id); setViewingChange(null); }}>
-                {t('declineProposal')}
-              </button>
-              <button className={styles.saveBtn} onClick={() => { handleApproveChangeRequest(viewingChange); setViewingChange(null); }}>
-                {t('approveProposal')}
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
+        </section>
       )}
 
       {activities.length > 0 && (
-        <div className={styles.archiveTabs}>
-          {(['active', 'archived', 'all'] as const).map(f => (
-            <button
-              key={f}
-              className={styles.archiveTab + (archiveFilter === f ? ' ' + styles.archiveTabActive : '')}
-              onClick={() => setArchiveFilter(f)}
-            >
-              {f === 'active' ? t('filterActive') : f === 'archived' ? t('filterArchived') : t('filterAll')}
-            </button>
-          ))}
+        <div className={styles.toolbar}>
+          <DashSearch value={search} onChange={setSearch} placeholder={t('searchActivitiesPh')}
+            resultLabel={t('resultsCount', { count: visible.length })} />
+          <div className={styles.archiveTabs}>
+            {(['active', 'archived', 'all'] as const).map(f => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={archiveFilter === f}
+                className={styles.archiveTab + (archiveFilter === f ? ' ' + styles.archiveTabActive : '')}
+                onClick={() => setArchiveFilter(f)}
+              >
+                {f === 'active' ? t('filterActive') : f === 'archived' ? t('filterArchived') : t('filterAll')}
+                <span className={styles.archiveTabCount}>{inTab(f).length}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -644,215 +395,81 @@ export default function ActivitiesPage() {
         <div className={styles.emptyState}>
           <p className={styles.emptyTitle}>{t('noActivities')}</p>
           <p className={styles.emptyDesc}>{t('createFirstActivity')}</p>
-          <button className={styles.prefillBtn} onClick={() => openCreate(RETREAT_PREFILL)}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button type="button" className={styles.prefillBtn} onClick={() => setEditor({ editing: null, initial: activityToForm(RETREAT_PREFILL) })}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
             </svg>
             {t('prefillRetreat')}
           </button>
         </div>
-      ) : activities.filter(a =>
-          archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived
-        ).length === 0 ? (
-        <p className={styles.empty}>{t('noArchivedActivities')}</p>
+      ) : visible.length === 0 ? (
+        <p className={styles.empty}>{search ? t('noMatches') : t('noArchivedActivities')}</p>
       ) : (
         <div className={styles.list}>
-          {activities
-            .filter(a => archiveFilter === 'all' ? true : archiveFilter === 'archived' ? !!a.archived : !a.archived)
-            .map(a => (
-            <div
-              key={a.id}
-              className={styles.card + (a.active ? ' ' + styles.cardActive : '')}
-              style={safeColor(a.color) ? { '--activity-accent': a.color } as React.CSSProperties : undefined}
-            >
-              <div className={styles.cardTop}>
-                {a.imageUrl && <img src={a.imageUrl} alt="" className={styles.cardThumb} loading="lazy" />}
-                <div className={styles.cardInfo}>
-                  <div className={styles.cardBadgeRow}>
-                    <span className={styles.kindBadge + ' ' + (a.kind === 'workshop' ? styles.kindWorkshop : styles.kindActivity)}>
-                      {a.kind === 'workshop' ? t('kindWorkshop') : t('kindActivity')}
-                    </span>
-                    {a.eyebrow && <p className={styles.cardEyebrow}>{a.eyebrow}</p>}
-                  </div>
-                  <h2 className={styles.cardTitle}>{a.title}</h2>
-                  {a.subtitle && <p className={styles.cardSubtitle}>{a.subtitle}</p>}
-                  {(a.date || a.location) && (
-                    <p className={styles.cardMeta}>{[a.date, a.location].filter(Boolean).join(' · ')}</p>
-                  )}
-                </div>
-                <span className={styles.badge + ' ' + (a.active ? styles.badgeActive : styles.badgeInactive)}>
-                  {a.active ? t('activityActive') : t('activityInactive')}
-                </span>
-                {a.archived && <span className={styles.badge + ' ' + styles.badgeArchived}>{t('filterArchived')}</span>}
-                {a.customForm?.enabled && (
-                  <span className={styles.badge + ' ' + (a.customForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
-                    {a.customForm.closed ? t('regBadgeClosed') : t('regBadgeOpen')}
-                  </span>
-                )}
-                {a.feedbackForm?.enabled && (
-                  <span className={styles.badge + ' ' + (a.feedbackForm.closed ? styles.badgeRegClosed : styles.badgeRegOpen)}>
-                    {a.feedbackForm.closed ? t('fbBadgeClosed') : t('fbBadgeOpen')}
-                  </span>
-                )}
-              </div>
-              {a.description && <p className={styles.cardDesc}>{a.description}</p>}
-              <div className={styles.cardActions}>
-                <button className={styles.editBtn} onClick={() => openEdit(a)}>{t('editActivity')}</button>
-                {a.customForm?.enabled && (
-                  <button
-                    className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
-                    onClick={() => handleToggleForm(a, 'customForm')}
-                  >
-                    {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
-                  </button>
-                )}
-                {a.feedbackForm?.enabled && (
-                  <button
-                    className={styles.toggleBtn + ' ' + (a.feedbackForm.closed ? styles.toggleOn : styles.toggleOff)}
-                    onClick={() => handleToggleForm(a, 'feedbackForm')}
-                  >
-                    {a.feedbackForm.closed ? t('fbOpenAction') : t('fbCloseAction')}
-                  </button>
-                )}
-                {(a.customForm?.enabled || a.feedbackForm?.enabled) && (
-                  <button
-                    className={styles.responsesBtn + (responseCounts[a.id] > 0 ? ' ' + styles.responsesBtnHasNew : '')}
-                    onClick={() => openResponses(a, a.customForm?.enabled ? 'registration' : 'feedback')}
-                  >
-                    {responseCounts[a.id] > 0
-                      ? t('viewResponsesCount', { n: responseCounts[a.id] })
-                      : t('viewResponses')}
-                  </button>
-                )}
+          {visible.map(a => (
+            <ActivityCard key={a.id} activity={a}>
+              <button type="button" className={styles.editBtn} onClick={() => setEditor({ editing: a, initial: activityToForm(a) })}>{t('editActivity')}</button>
+              {a.customForm?.enabled && (
                 <button
-                  className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
-                  onClick={() => handleToggleActive(a)}
+                  type="button"
+                  className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
+                  onClick={() => applyChange('open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'customForm.closed': !a.customForm?.closed }))}
                 >
-                  {a.active ? t('setHidden') : t('setActive')}
+                  {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
                 </button>
-                <button className={styles.toggleBtn + ' ' + styles.toggleOff} onClick={() => handleToggleArchive(a)}>
-                  {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
+              )}
+              {a.feedbackForm?.enabled && (
+                <button
+                  type="button"
+                  className={styles.toggleBtn + ' ' + (a.feedbackForm.closed ? styles.toggleOn : styles.toggleOff)}
+                  onClick={() => applyChange('open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'feedbackForm.closed': !a.feedbackForm?.closed }))}
+                >
+                  {a.feedbackForm.closed ? t('fbOpenAction') : t('fbCloseAction')}
                 </button>
-                <button className={styles.deleteBtn} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>
-              </div>
-            </div>
+              )}
+              {(a.customForm?.enabled || a.feedbackForm?.enabled) && (
+                <button
+                  type="button"
+                  className={styles.responsesBtn + (responseCounts[a.id] > 0 ? ' ' + styles.responsesBtnHasNew : '')}
+                  onClick={() => setResponsesFor(a)}
+                >
+                  {responseCounts[a.id] > 0 ? t('viewResponsesCount', { n: responseCounts[a.id] }) : t('viewResponses')}
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
+                onClick={() => applyChange('show or hide the activity', () => updateDoc(doc(db, 'initiatives', a.id), { active: !a.active }))}
+              >
+                {a.active ? t('setHidden') : t('setActive')}
+              </button>
+              <button type="button" className={styles.toggleBtn + ' ' + styles.toggleOff} onClick={() => applyChange('archive the activity', () => toggleArchive(a))}>
+                {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
+              </button>
+              {isCurator && <button type="button" className={styles.deleteBtn} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>}
+            </ActivityCard>
           ))}
         </div>
       )}
 
-      {modalOpen && (
-        <ModalPortal>
-        <div className={styles.overlay} onClick={() => { if (confirm(t('confirmDiscardChanges'))) setModalOpen(false); }}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>{editing ? t('editActivity') : t('createActivity')}</h2>
-              <button className={styles.closeBtn} onClick={() => setModalOpen(false)} aria-label={t('closeModal')}>✕</button>
-            </div>
+      {reviewing && reviewWindow(reviewing)}
 
-            <div className={styles.modalBody}>
-              <ActivityFormFields form={form} setForm={setForm} highlightsText={highlightsText} setHighlightsText={setHighlightsText} />
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setModalOpen(false)}>{t('cancel')}</button>
-              <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !form.title.trim()}>
-                {saving ? t('savingDots') : (editing ? t('saveActivity') : t('createActivity'))}
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
+      {editor && (
+        <ActivityEditorModal
+          heading={editor.editing ? t('editActivity') : t('createActivity')}
+          submitLabel={editor.editing ? t('saveActivity') : t('createActivity')}
+          initial={editor.initial}
+          onClose={() => setEditor(null)}
+          onSubmit={handleSave}
+        />
       )}
 
       {responsesFor && (
-        <ModalPortal>
-        <div className={styles.overlay} onClick={closeResponses}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>{t('responsesFor')}: {responsesFor.title}</h2>
-              <button className={styles.closeBtn} onClick={closeResponses} aria-label={t('closeModal')}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              {responsesFor.customForm?.enabled && responsesFor.feedbackForm?.enabled && (
-                <div className={styles.responseTabs} role="tablist">
-                  {(['registration', 'feedback'] as const).map(tab => (
-                    <button
-                      key={tab}
-                      type="button"
-                      role="tab"
-                      aria-selected={responsesTab === tab}
-                      className={styles.responseTab + (responsesTab === tab ? ' ' + styles.responseTabActive : '')}
-                      onClick={() => setResponsesTab(tab)}
-                    >
-                      {tab === 'feedback' ? t('fbTitle') : t('regTitle')}
-                      <span className={styles.responseTabCount}>
-                        {responses.filter(r => (r.formType ?? 'registration') === tab).length}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {loadingResponses ? (
-                <DashSkeleton rows={3} header={false} label={t('loading')} />
-              ) : tabResponses.length === 0 ? (
-                <p className={styles.empty}>{t('noResponsesYet')}</p>
-              ) : (
-                <>
-                  {/* Average of each star-rating question. */}
-                  {tabQuestions.filter(q => q.type === 'rating').map(q => {
-                    const scores = tabResponses.map(r => Number(r.answers?.[q.id])).filter(n => n >= 1 && n <= 5);
-                    if (!scores.length) return null;
-                    const avg = scores.reduce((x, y) => x + y, 0) / scores.length;
-                    return (
-                      <div key={q.id} className={styles.ratingSummary}>
-                        <span className={styles.ratingSummaryScore}>★ {avg.toFixed(1)}</span>
-                        <span>{q.label}</span>
-                        <span className={styles.ratingSummaryCount}>{t('ratingCount', { n: scores.length })}</span>
-                      </div>
-                    );
-                  })}
-                  <div className={styles.responsesTableWrap}>
-                    <table className={styles.responsesTable}>
-                      <thead>
-                        <tr>
-                          <th>{t('submittedAtCol')}</th>
-                          <th>{t('submitterNameCol')}</th>
-                          <th>{t('submitterEmailCol')}</th>
-                          {tabQuestions.map(q => <th key={q.id}>{q.label}</th>)}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tabResponses.map(r => (
-                          <tr key={r.id}>
-                            <td>{new Date(r.submittedAt).toLocaleString()}</td>
-                            <td>{r.submitterName || ''}</td>
-                            <td>{r.submitterEmail || ''}</td>
-                            {tabQuestions.map(q => (
-                              <td key={q.id}>
-                                {q.type === 'rating' && r.answers?.[q.id] ? `★ ${r.answers[q.id]}` : r.answers?.[q.id] ?? ''}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={closeResponses}>{t('cancel')}</button>
-              <button
-                className={styles.saveBtn}
-                onClick={handleDownloadResponses}
-                disabled={tabResponses.length === 0}
-              >
-                {t('downloadResponses')}
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
+        <ActivityResponsesModal
+          activity={responsesFor}
+          onClose={() => setResponsesFor(null)}
+          onRead={() => setResponseCounts(c => ({ ...c, [responsesFor.id]: 0 }))}
+        />
       )}
     </div>
   );

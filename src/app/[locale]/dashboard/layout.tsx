@@ -14,6 +14,7 @@ import DefaultPasswordBanner from '@/components/dashboard/DefaultPasswordBanner'
 import CharterSignBanner from '@/components/dashboard/CharterSignBanner';
 import { SIGNING_ROLES, useCharterStatus } from '@/lib/charterSignature';
 import { MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
+import { PASSWORD_FORM_HREF } from '@/lib/passwordForm';
 import ThemeLogo from '@/components/ThemeLogo';
 import styles from './DashboardLayout.module.css';
 import { roleStyle } from '@/lib/roleColors';
@@ -69,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     let mustChange = false;
     try { mustChange = sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'; } catch { /* storage blocked */ }
     if (mustChange && !pathname.startsWith('/dashboard/shaper/profile')) {
-      router.replace('/dashboard/shaper/profile#password');
+      router.replace(PASSWORD_FORM_HREF);
     }
   }, [loading, user, pathname, router]);
 

@@ -172,11 +172,12 @@ homepage. Curators and impact officers put one in the **Spotlight** card.
 
 ```mermaid
 flowchart TD
-    C[Curator creates or edits<br/>an activity] --> I[(initiatives<br/>type: hub_activity)]
-    M[Member proposes<br/>an activity] --> Q[(activity_requests)]
-    Q -->|curator or impact<br/>officer approves| I
-    L[Initiative lead creates<br/>or edits one] --> R[(activity_change_requests)]
-    R -->|curator or impact<br/>officer approves| I
+    C[Curator or impact officer<br/>creates or edits one] --> I[(initiatives<br/>type: hub_activity)]
+    M[Any member proposes one for<br/>the whole hub, or asks to<br/>change one they proposed] --> R[(activity_change_requests)]
+    L[Initiative lead proposes<br/>or changes one for<br/>their initiative] --> R
+    R -->|for the whole hub:<br/>Curator or Vice Curator| I
+    R -->|tied to an initiative:<br/>also an Impact Officer| I
+    R -->|declined, with a note| N[The sender sees why on<br/>My Hub Activities and<br/>can fix it and send it again]
     I --> H[Homepage activity section<br/>in the activity's colour,<br/>arrows when there are several]
     I --> P[/activities/name page/]
     P --> F{Registration<br/>open?}
@@ -187,6 +188,16 @@ flowchart TD
     AR --> E[Curator views responses<br/>by tab and exports to Excel]
     FR --> E
 ```
+
+Any member can propose an activity or workshop from **My Hub Activities**, with
+the same full form a curator uses: text, photos, colour, dates, button,
+highlights, and registration and after-event forms. An unsent proposal stays on
+the member's device until it is sent. Nothing goes live until a reviewer
+approves it, and the reviewer sees the whole proposal or, for a change to a live
+activity, only what would change. The activity and the request's outcome are
+saved together, so a failed save can't create an activity twice. A member can
+correct a request while it is waiting, and later ask for changes to the
+activities they proposed, which go through the same approval.
 
 Each activity has two forms built with the same editor: **Registration**
 (before the event) and **After the event**. The after-event form starts closed
@@ -202,6 +213,13 @@ that form's own questions (type, options, 1 to 5 ratings, lengths, required
 ones), and one response per email per form.
 
 ## 6. News posts
+
+A post can have a cover photo, shown on the News page and at the top of the
+article, and up to 12 more photos, shown as a gallery under the text. Photos
+upload through [`/api/media`](../src/app/api/media/route.ts) like other photos
+on the site, and only their addresses are saved on the post, because the News
+page reads every post at once. A shared post shows its own title, summary and
+cover.
 
 ```mermaid
 stateDiagram-v2
@@ -219,15 +237,18 @@ stateDiagram-v2
 
 ## 7. Community Charter sign-off
 
-The Charter page reproduces the hub's official Google Form word for word.
-Members confirm it the same way the form asks: their name plus *"I confirm
-compliance with Community Charter"*.
+Members sign by typing the name on their account (English or Arabic) and
+ticking one box: *"I have read the Community Charter and I will adhere to it."*
+A different name is cleared and has to be typed again; capitals, spacing and
+Arabic spelling variants don't count as different. `firestore.rules` enforces
+the same thing, so the record always holds the account's name and the server's
+time, and a signature can't be edited afterwards.
 
 ```mermaid
 flowchart TD
     C[Curator turns on<br/>'Require sign-off'] --> S[(settings/charter<br/>requireSignature: true)]
     S --> B{Active Shaper<br/>who hasn't signed?}
-    B -->|yes| N[Dashboard banner:<br/>Read & sign] --> F[Charter page:<br/>name + confirm]
+    B -->|yes| N[Dashboard banner:<br/>Read & sign] --> F[Charter page: type the<br/>account name + one tick]
     B -->|no, or alumni| Q[No banner]
     F --> G[(charter_signatures/uid)]
     G --> P[Curator panel:<br/>X of Y Shapers signed]
@@ -370,7 +391,7 @@ fades.
 
 ```mermaid
 flowchart LR
-    B[Branch] --> CHK[npm run check<br/>npm run test:rules] --> PR[Pull request]
+    B[Branch] --> CHK[npm run check<br/>npm run test:rules<br/>npm run test:e2e] --> PR[Pull request]
     PR --> VP[Vercel preview<br/>build check]
     VP -->|passes| M[Squash-merge<br/>to main] --> PROD[Vercel deploys<br/>jeddahhub.org]
     M -->|firestore.rules changed| DR[npm run deploy:rules]

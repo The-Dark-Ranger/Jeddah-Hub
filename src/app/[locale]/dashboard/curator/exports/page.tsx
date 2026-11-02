@@ -10,7 +10,8 @@ import { normalizeRole } from '@/lib/role';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Exports.module.css';
-import { spreadsheetSafe } from '@/lib/sanitize';
+import { csvBlob, downloadBlob } from '@/lib/download';
+import { intlLocale } from '@/lib/dates';
 
 interface Subscriber { email: string; subscribedAt?: string; }
 
@@ -48,7 +49,7 @@ export default function ExportEmails() {
   useEffect(() => { if (isCurator) void load(); }, [isCurator, load]);
 
   const fmt = (iso?: string) => iso
-    ? new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(iso).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric', year: 'numeric' })
     : '-';
 
   const visible = subs.filter(s => matchesQuery(search, s.email));
@@ -56,15 +57,7 @@ export default function ExportEmails() {
 
   const downloadCSV = () => {
     const rows = [['email', 'subscribed_at'], ...visible.map(s => [s.email, s.subscribedAt ?? ''])];
-    // Quoted, with formula-looking values neutralised (subscribers type their
-    // own email into a public form).
-    const csv = rows.map(r => r.map(v => `"${String(spreadsheetSafe(v)).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jeddah-hub-subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(csvBlob(rows), `jeddah-hub-subscribers-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const copy = async (mode: 'lines' | 'commas') => {
@@ -101,7 +94,7 @@ export default function ExportEmails() {
       {/* At a glance */}
       <div className={styles.stats}>
         {([
-          [t('newsletterSubscribers'), loading ? '…' : subs.length.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US'), 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6'],
+          [t('newsletterSubscribers'), loading ? '…' : subs.length.toLocaleString(intlLocale(locale)), 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6'],
           [t('newLast30Days'), loading ? '…' : `+${newThisMonth}`, 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6'],
           [t('latestSignup'), loading ? '…' : fmt(subs[0]?.subscribedAt), 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2'],
         ] as const).map(([label, value, icon]) => (

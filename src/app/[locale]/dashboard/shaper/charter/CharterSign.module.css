@@ -22,19 +22,21 @@
   font: inherit; font-size: .95rem;
 }
 .input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(15, 90, 159, .15); }
+.inputRejected, .inputRejected:focus { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, .15); }
+.fieldHint { margin: .4rem 0 0; font-size: .82rem; line-height: 1.5; color: var(--text-muted); }
 .confirmRow {
-  display: flex; align-items: center; gap: .65rem; margin: 1.1rem 0 1.25rem;
+  display: flex; align-items: flex-start; gap: .65rem; margin: 1.1rem 0 1.25rem; line-height: 1.45;
   font-size: .95rem; font-weight: 600; color: var(--text-main); cursor: pointer;
 }
-.confirmRow input { width: 18px; height: 18px; accent-color: var(--primary-blue); flex-shrink: 0; }
+.confirmRow input { width: 18px; height: 18px; margin-top: .12rem; accent-color: var(--primary-blue); flex-shrink: 0; }
 .signBtn {
-  padding: .75rem 1.6rem; border: none; border-radius: 10px; cursor: pointer;
+  display: inline-block; padding: .75rem 1.6rem; border: none; border-radius: 10px; cursor: pointer;
   background: var(--primary-fill); color: #fff; font: inherit; font-weight: 700; font-size: .95rem;
   transition: transform .15s ease, background .15s ease;
 }
 .signBtn:hover:not(:disabled) { transform: translateY(-1px); background: #0c4a85; }
 .signBtn:disabled { opacity: .55; cursor: not-allowed; }
-.error { color: #dc2626; font-size: .85rem; font-weight: 600; margin: .25rem 0 .75rem; }
+.error { color: var(--danger); font-size: .85rem; font-weight: 600; margin: .4rem 0 .75rem; }
 
 /* ── Curator panel ── */
 .adminCard {
@@ -64,11 +66,12 @@
 .progressText { font-size: .85rem; font-weight: 700; color: var(--text-main); }
 .progressBar { flex: 1; min-width: 140px; height: 8px; border-radius: 999px; background: var(--border-color); overflow: hidden; }
 .progressBar span { display: block; height: 100%; background: #10b981; border-radius: inherit; transition: width .3s ease; }
-.adminActions { display: flex; gap: 1rem; margin-top: .9rem; flex-wrap: wrap; }
+.adminActions { display: flex; gap: .4rem 1.1rem; margin-top: .9rem; flex-wrap: wrap; }
 .linkBtn, .linkBtnDanger {
-  background: none; border: none; padding: 0; cursor: pointer; font: inherit; font-size: .85rem; font-weight: 700;
+  background: none; border: none; padding: .35rem 0; cursor: pointer; font: inherit; font-size: .85rem; font-weight: 700;
   color: var(--primary-blue);
 }
+.linkBtn:disabled, .linkBtnDanger:disabled { opacity: .55; cursor: wait; }
 .linkBtnDanger { color: #dc2626; }
 .linkBtn:hover, .linkBtnDanger:hover { text-decoration: underline; }
 .memberList { list-style: none; margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--border-color); }

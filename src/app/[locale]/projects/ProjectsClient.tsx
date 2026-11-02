@@ -1,7 +1,7 @@
 'use client';
 
-/* Initiatives page (client part): summary strip, search, area filters,
- * spotlight card and the grid of active and past initiatives. */
+/* Initiatives page (client part): search, area filters, spotlight card and
+ * the grid of active and past initiatives. */
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { loadFirestore } from '@/lib/loadFirestore';
@@ -166,7 +166,6 @@ function SkeletonCard() {
 export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const t  = useTranslations('ProjectsPage');
   const tc = useTranslations('Categories');
-  const locale = useLocale();
   // Known categories get a translated label; custom ones show as typed.
   const catLabel = useCategoryLabel();
   const [projects, setProjects]     = useState<Project[]>(() =>
@@ -220,14 +219,6 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const active   = filtered.filter(p => (p.status === 'active' || !p.status) && p.id !== spotlight?.id);
   const archived = filtered.filter(p => p.status && p.status !== 'active');
 
-  // Summary strip under the header (whole list, not the current filter).
-  const activeCount = projects.filter(isActive).length;
-  const shaperCount = new Set(projects.flatMap(p => (Array.isArray(p.members) ? p.members : []).map(m => m.userId))).size;
-  const stats = [
-    { value: activeCount, label: t('statActive') },
-    { value: shaperCount, label: t('statShapers') },
-    { value: categoryTabs.length, label: t('statAreas') },
-  ].filter(s => s.value > 0);
   const clearFilters = () => { setSearch(''); setActiveCategory('all'); };
 
   return (
@@ -244,16 +235,6 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
       <PatternDivider />
 
       <div className={styles.container}>
-        {!loading && stats.length > 0 && (
-          <dl className={styles.stats}>
-            {stats.map(s => (
-              <div key={s.label} className={styles.stat}>
-                <dt>{s.label}</dt>
-                <dd>{s.value.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
         <div className={styles.filters}>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

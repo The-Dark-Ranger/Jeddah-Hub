@@ -4,11 +4,14 @@
  * create member accounts and send invites. */
 import { randomInt } from 'node:crypto';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { USE_EMULATORS } from './emulators';
 
 /** The Admin app, or null when FIREBASE_SERVICE_ACCOUNT isn't configured. */
 export function adminApp(): App | null {
   const existing = getApps().find(a => a.name === 'member-admin');
   if (existing) return existing;
+  // The emulators need no credentials; the SDK finds them from the environment.
+  if (USE_EMULATORS) return initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID }, 'member-admin');
   // Tolerate a byte-order mark or stray whitespace: values piped in from a
   // Windows shell (e.g. `... | vercel env add`) arrive with a leading BOM.
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.replace(/^﻿/, '').trim();

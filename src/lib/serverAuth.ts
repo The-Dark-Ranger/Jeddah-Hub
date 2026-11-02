@@ -1,7 +1,8 @@
 /* Server-side checks for API routes: verifies a Firebase ID token and the
  * caller's role. */
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
+import { FIRESTORE_REST, USE_EMULATORS } from './emulators';
 import { normalizeRole } from './role';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -21,6 +22,12 @@ interface VerifiedCaller {
 async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
   if (!PROJECT_ID) return null;
   try {
+    // The Auth emulator's tokens aren't signed. See emulators.ts: this branch
+    // doesn't exist in a production build.
+    if (USE_EMULATORS) {
+      const test = decodeJwt(idToken);
+      return { uid: String(test.sub), email: typeof test.email === 'string' ? test.email : null };
+    }
     const { payload } = await jwtVerify(idToken, JWKS, {
       issuer: `https://securetoken.google.com/${PROJECT_ID}`,
       audience: PROJECT_ID,
@@ -47,7 +54,7 @@ async function getCallerRole(uid: string, idToken: string): Promise<string | nul
   if (!PROJECT_ID) return null;
   try {
     const res = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(PROJECT_ID)}/databases/(default)/documents/users/${encodeURIComponent(uid)}`,
+      `${FIRESTORE_REST}/projects/${encodeURIComponent(PROJECT_ID)}/databases/(default)/documents/users/${encodeURIComponent(uid)}`,
       {
         cache: 'no-store',
         headers: { Authorization: `Bearer ${idToken}` },

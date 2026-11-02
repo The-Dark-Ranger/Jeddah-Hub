@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { unstable_cache } from 'next/cache';
+import { FIRESTORE_REST } from '@/lib/emulators';
 
 /* Public site data, read on the server and sent inside the page HTML.
  *
@@ -17,7 +18,7 @@ import { unstable_cache } from 'next/cache';
  * Server-only: imports node:crypto, so it can't be bundled for the browser. */
 
 const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
+const BASE = `${FIRESTORE_REST}/projects/${PROJECT}/databases/(default)/documents`;
 /** How long public data is cached before the next visit refreshes it. */
 const REVALIDATE = 60;
 

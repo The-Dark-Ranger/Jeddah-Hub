@@ -12,6 +12,7 @@ import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
 import InitiativeCover from '@/components/InitiativeCover';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
+import { intlLocale } from '@/lib/dates';
 import { setSpotlight } from '@/lib/spotlight';
 import SearchSelect from '@/components/dashboard/SearchSelect';
 import { omitKeys } from '@/lib/omitKeys';
@@ -788,8 +789,8 @@ export default function ManageInitiatives() {
                         <rect x="3" y="4" width="18" height="18" rx="2"/>
                         <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                       </svg>
-                      {new Date(init.startDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}
-                      {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', year: 'numeric' })}`}
+                      {new Date(init.startDate).toLocaleDateString(intlLocale(locale), { month: 'short', year: 'numeric' })}
+                      {init.endDate && ` → ${new Date(init.endDate).toLocaleDateString(intlLocale(locale), { month: 'short', year: 'numeric' })}`}
                     </span>
                   )}
                   <span className={styles.metaItem}>

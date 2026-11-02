@@ -12,6 +12,7 @@ import { normalizeRole } from '@/lib/role';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
 import styles from './Messages.module.css';
+import { intlLocale } from '@/lib/dates';
 
 interface ContactMessage {
   id: string;
@@ -39,7 +40,7 @@ function formatDate(iso: string, locale: string) {
   if (mins  < 60) return locale === 'ar' ? `منذ ${mins}د` : `${mins}m ago`;
   if (hours < 24) return locale === 'ar' ? `منذ ${hours}س` : `${hours}h ago`;
   if (days  < 7)  return locale === 'ar' ? `منذ ${days} أيام` : `${days}d ago`;
-  return new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US',
+  return new Date(iso).toLocaleDateString(intlLocale(locale),
     { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -292,7 +293,7 @@ export default function MessagesPage() {
                     <p className={styles.messageBody}>{msg.message}</p>
                     {msg.repliedAt && (
                       <p className={styles.repliedNote}>
-                        {t('repliedOnLabel', { date: new Date(msg.repliedAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}
+                        {t('repliedOnLabel', { date: new Date(msg.repliedAt).toLocaleDateString(intlLocale(locale), { month: 'long', day: 'numeric', year: 'numeric' }) })}
                       </p>
                     )}
                     <div className={styles.messageActions}>

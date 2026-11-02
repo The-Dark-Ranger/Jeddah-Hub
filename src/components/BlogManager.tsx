@@ -9,7 +9,15 @@ import { UserProfile } from '@/lib/auth';
 import { normalizeRole } from '@/lib/role';
 import { RoleLabel } from '@/lib/roleLabel';
 import { readDraft, clearDraft, useDraftAutosave } from '@/lib/drafts';
+import { safePhotoUrl } from '@/lib/sanitize';
+import { refreshPublicPages } from '@/lib/spotlight';
+import ImageUploader from '@/components/ImageUploader';
 import styles from './BlogManager.module.css';
+
+/** Extra photos on one post (firestore.rules allows the same number). */
+const MAX_POST_PHOTOS = 12;
+
+const photoLines = (text: string) => text.split('\n').map(safePhotoUrl).filter(Boolean);
 
 interface BlogPost {
   id: string;
@@ -17,6 +25,8 @@ interface BlogPost {
   content: string;
   excerpt: string;
   tags: string[];
+  imageUrl?: string;
+  images?: string[];
   authorId: string;
   authorName: string;
   authorRole: string;
@@ -61,6 +71,9 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   const [content, setContent]   = useState('');
   const [excerpt, setExcerpt]   = useState('');
   const [tagsInput, setTagsInput] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  // Newline-joined, the shape ImageUploader works with.
+  const [images, setImages]     = useState('');
   const [status, setStatus]     = useState<BlogPost['status']>(canPublishDirectly ? 'published' : 'draft');
   const [saving, setSaving]     = useState(false);
   const [filter, setFilter]     = useState('all');
@@ -68,10 +81,10 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   // A new post's text is kept on this device until it is saved.
   const draftKey = `blog:${user.uid}`;
-  type BlogDraft = { title: string; content: string; excerpt: string; tagsInput: string };
+  type BlogDraft = { title: string; content: string; excerpt: string; tagsInput: string; imageUrl?: string; images?: string };
   useDraftAutosave(view === 'write' ? draftKey : null,
-    { title, content, excerpt, tagsInput } satisfies BlogDraft,
-    !title.trim() && !content.trim() && !excerpt.trim() && !tagsInput.trim());
+    { title, content, excerpt, tagsInput, imageUrl, images } satisfies BlogDraft,
+    !title.trim() && !content.trim() && !excerpt.trim() && !tagsInput.trim() && !imageUrl && !images);
 
   const startWriting = () => {
     resetForm();
@@ -79,6 +92,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     if (d) {
       setTitle(d.title || ''); setContent(d.content || '');
       setExcerpt(d.excerpt || ''); setTagsInput(d.tagsInput || '');
+      setImageUrl(d.imageUrl || ''); setImages(d.images || '');
     }
     setRestored(!!d);
     setView('write');
@@ -108,6 +122,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   const resetForm = () => {
     setTitle(''); setContent(''); setExcerpt(''); setTagsInput('');
+    setImageUrl(''); setImages('');
     setStatus(canPublishDirectly ? 'published' : 'draft');
     setEditId(null);
   };
@@ -116,6 +131,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     setTitle(post.title); setContent(post.content);
     setExcerpt(post.excerpt || '');
     setTagsInput((post.tags || []).join(', '));
+    setImageUrl(post.imageUrl || ''); setImages((post.images || []).join('\n'));
     setStatus(post.status); setEditId(post.id);
     setView('edit');
   };
@@ -129,7 +145,8 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
       const content_ = {
         title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
-        tags, status, updatedAt: new Date().toISOString(),
+        tags, status, imageUrl: safePhotoUrl(imageUrl), images: photoLines(images),
+        updatedAt: new Date().toISOString(),
       };
       if (view === 'edit' && editId) {
         // Editing keeps the original author: a curator fixing someone's post
@@ -147,6 +164,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         clearDraft(draftKey);
       }
       resetForm(); setView('list');
+      if (canPublishDirectly) void refreshPublicPages();
       await fetchPosts();
     } catch (err) {
       console.error(err);
@@ -161,6 +179,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     try {
       await deleteDoc(doc(db, 'blogs', id));
       setPosts(prev => prev.filter(p => p.id !== id));
+      if (canPublishDirectly) void refreshPublicPages();
     } catch (err) {
       console.error(err);
       alert(t('deleteFailed'));
@@ -171,6 +190,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     try {
       await updateDoc(doc(db, 'blogs', id), { status: newStatus });
       setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      void refreshPublicPages();
     } catch (err) {
       console.error(err);
       alert(t('statusUpdateFailed'));
@@ -205,6 +225,15 @@ export default function BlogManager({ user }: { user: UserProfile }) {
             <label htmlFor={`${formId}-content`} className={styles.label}>{t('contentLabel')}</label>
             <textarea id={`${formId}-content`} className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
           </div>
+          <div className={styles.formGroup}>
+            <ImageUploader
+              coverUrl={imageUrl}
+              photos={images}
+              onChange={(key, value) => (key === 'imageUrl' ? setImageUrl(value) : setImages(value))}
+              uploadsOnly
+              maxPhotos={MAX_POST_PHOTOS}
+            />
+          </div>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label htmlFor={`${formId}-excerpt`} className={styles.label}>{t('excerptLabel')} <span className={styles.labelHint}>{t('excerptHint')}</span></label>
@@ -217,7 +246,8 @@ export default function BlogManager({ user }: { user: UserProfile }) {
               <select id={`${formId}-status`} className={styles.select} value={status} onChange={e => setStatus(e.target.value as BlogPost['status'])}>
                 {canPublishDirectly && <option value="published">{t('statusPublished')}</option>}
                 <option value="draft">{t('statusDraft')}</option>
-                {!canPublishDirectly && <option value="pending_review">{t('statusSubmitForReview')}</option>}
+                {/* A curator opening a post waiting for review sees that status too. */}
+                {(!canPublishDirectly || status === 'pending_review') && <option value="pending_review">{t('statusSubmitForReview')}</option>}
               </select>
               {!canPublishDirectly && (
                 <p className={styles.statusNote}>{t('statusNote')}</p>
@@ -227,7 +257,11 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           <div className={styles.formActions}>
             <button type="button" className={styles.cancelBtn} onClick={() => { setView('list'); resetForm(); }}>{t('cancel')}</button>
             <button type="submit" className={styles.saveBtn} disabled={saving}>
-              {saving ? t('saving') : view === 'edit' ? t('saveChanges') : t('publishPost')}
+              {saving ? t('saving')
+                : view === 'edit' ? t('saveChanges')
+                : status === 'published' ? t('publishPost')
+                : status === 'pending_review' ? t('statusSubmitForReview')
+                : t('saveDraft')}
             </button>
           </div>
         </form>
@@ -286,13 +320,14 @@ export default function BlogManager({ user }: { user: UserProfile }) {
             const canDelete = canSeeAll || isOwn;
             return (
               <div key={post.id} className={styles.postItem}>
+                {post.imageUrl && <img src={post.imageUrl} alt="" className={styles.postThumb} loading="lazy" />}
                 <div className={styles.postMain}>
                   <div className={styles.postTopRow}>
                     <span className={styles.postStatus} style={{ color: si.color, borderColor: si.color }}>{si.label}</span>
                     <span className={styles.postDate}>{timeAgo(post.createdAt)}</span>
                   </div>
                   <h3 className={styles.postTitle}>{post.title}</h3>
-                  <p className={styles.postExcerpt}>{(post.excerpt || post.content).slice(0, 120)}...</p>
+                  <p className={styles.postExcerpt}>{(post.excerpt || post.content || '').slice(0, 120)}...</p>
                   {post.tags && post.tags.length > 0 && (
                     <div className={styles.postTags}>
                       {post.tags.slice(0, 3).map(tag => <span key={tag} className={styles.postTag}>{tag}</span>)}

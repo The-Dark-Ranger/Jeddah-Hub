@@ -48,7 +48,7 @@
   position: sticky;
   top: 68px;
   align-self: flex-start;
-  max-height: calc(100vh - 68px);
+  height: calc(100vh - 68px);
   overflow-y: auto;
 }
 
@@ -216,7 +216,7 @@
        appear to jump/hide as soon as the page scrolls. */
     position: sticky; top: 68px; z-index: 100;
     align-self: stretch;
-    max-height: none;
+    height: auto;
     overflow-y: visible;
   }
 
@@ -332,7 +332,7 @@
 .roleBadge {
   align-self: flex-start;
   padding: .15rem .55rem; border-radius: 999px;
-  font-size: max(12px, .7rem); font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+  font-size: max(12px, .7rem); font-weight: 800; white-space: nowrap;
   color: var(--role, var(--primary-blue));
   background: color-mix(in srgb, var(--role, var(--primary-blue)) 13%, transparent);
 }

@@ -8,9 +8,10 @@ import {
 } from '@/lib/imageCompress';
 import { uploadMedia, isMediaUrl } from '@/lib/media';
 
+import styles from './ImageUploader.module.css';
+
 /** Gallery size cap, generous, but keeps a page from becoming a photo dump. */
 const MAX_PHOTOS = 24;
-import styles from './ImageUploader.module.css';
 
 /* Matches the onChange(key, value) contract already used by every initiative
  * form, so this drops into the curator, lead, and impact officer editors. */
@@ -19,9 +20,13 @@ interface Props {
   /** Gallery photos, newline-joined, the shape formToDoc() already splits on. */
   photos: string;
   onChange: (key: 'imageUrl' | 'images', value: string) => void;
+  /** Never keep a photo inside the document when its upload fails, for
+   *  documents that are read in bulk (news posts). */
+  uploadsOnly?: boolean;
+  maxPhotos?: number;
 }
 
-export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
+export default function ImageUploader({ coverUrl, photos, onChange, uploadsOnly, maxPhotos = MAX_PHOTOS }: Props) {
   const t = useTranslations('Dashboard');
 
   const coverInput   = useRef<HTMLInputElement>(null);
@@ -44,6 +49,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
     const code = err instanceof Error ? err.message : '';
     if (code === 'not-an-image')  return t('uploadNotAnImage');
     if (code === 'decode-failed') return t('uploadDecodeFailed');
+    if (code.startsWith('upload-failed') || code === 'not-signed-in') return t('uploadSendFailed');
     return t('uploadFailed');
   };
 
@@ -55,7 +61,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
       const url = await uploadMedia(await compressToDataUrl(file, MEDIA_OPTIONS));
       return { value: url, inlineBytes: 0 };
     } catch (err) {
-      if (err instanceof Error && (err.message === 'not-an-image' || err.message === 'decode-failed')) throw err;
+      if (uploadsOnly || (err instanceof Error && (err.message === 'not-an-image' || err.message === 'decode-failed'))) throw err;
       const inline = await compressToDataUrl(file);
       if (inlineUsed + byteSize(inline) > DOC_BUDGET_BYTES) return null;
       return { value: inline, inlineBytes: byteSize(inline) };
@@ -87,7 +93,7 @@ export default function ImageUploader({ coverUrl, photos, onChange }: Props) {
     let skipped = 0;
 
     for (const file of Array.from(files)) {
-      if (photoList.length + accepted.length >= MAX_PHOTOS) { skipped++; continue; }
+      if (photoList.length + accepted.length >= maxPhotos) { skipped++; continue; }
       try {
         const stored = await storePhoto(file, running);
         if (!stored) { skipped++; continue; }

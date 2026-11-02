@@ -17,6 +17,7 @@ import ShaperStatusPanel from './ShaperStatusPanel';
 import ViewMoreButton, { useViewMore } from '@/components/dashboard/ViewMore';
 import styles from './Members.module.css';
 import { ROLE_ACCENT } from '@/lib/roleColors';
+import { intlLocale } from '@/lib/dates';
 
 type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni';
 
@@ -321,7 +322,7 @@ export default function MembersPage() {
           {a.lastInvitedAt && (
             <div className={styles.invitedNote}>
               {t('lastInvited', {
-                date: new Date(a.lastInvitedAt).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                date: new Date(a.lastInvitedAt).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric', year: 'numeric' }),
                 count: a.inviteCount ?? 1,
               })}
             </div>
@@ -358,7 +359,7 @@ export default function MembersPage() {
         <td className={styles.noteCell}>{a.note || ''}</td>
         <td className={styles.dateCell}>
           {new Date(isJoined && a.joinedAt ? a.joinedAt : a.createdAt).toLocaleDateString(
-            locale === 'ar' ? 'ar-SA' : 'en-US',
+            intlLocale(locale),
             { month: 'short', day: 'numeric', year: 'numeric' }
           )}
         </td>

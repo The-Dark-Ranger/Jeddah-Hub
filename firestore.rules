@@ -346,20 +346,11 @@ service cloud.firestore {
     }
 
     // ── activity_requests ──────────────────────────────────────
-    // Same shape as initiative_requests, for a lead proposing a Hub
-    // Activity/workshop instead of a whole new initiative, curator or
-    // vice_curator/impact_officer review turns an approved one into a
-    // real initiatives doc tagged type:'hub_activity' (governed by the
-    // initiatives rules above, not this collection).
+    // The old proposal form, now retired: activity_change_requests below
+    // replaced it, so nothing new can arrive. Curators and impact officers
+    // can still review whatever was already waiting.
     match /activity_requests/{docId} {
-      allow create: if isAnyMember()
-                    && request.resource.data.proposedBy == request.auth.uid
-                    && request.resource.data.status == 'pending'
-                    && request.resource.data.keys().hasOnly(
-                         ['title', 'kind', 'eyebrow', 'subtitle', 'description', 'date', 'location',
-                          'ctaText', 'ctaUrl', 'proposedBy', 'proposedByName', 'status', 'requestedAt'])
-                    && optUrl(request.resource.data, 'ctaUrl')
-                    && isMyName(request.resource.data.proposedByName);
+      allow create: if false;
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
       allow update: if isCuratorOrImpact()
@@ -369,51 +360,81 @@ service cloud.firestore {
     }
 
     // ── activity_change_requests ────────────────────────────────
-    // Lets an initiative's leads manage Hub Activities without being able
-    // to write to the live `initiatives` collection directly, every
-    // create/edit/archive action lands here as a pending request instead,
-    // and only a curator/vice_curator/impact_officer applying it (via the
-    // existing isCuratorOrImpact() create/update rules on `initiatives`
-    // above) makes it real. `payload` carries whatever activity fields are
-    // being proposed (the full form for a create/edit, or just e.g.
-    // {archived: true} for a one-click archive), like
-    // activity_responses.answers, its inner keys aren't validated here
-    // since the shape is open-ended; the approval code applies an explicit
-    // field allowlist before writing it to `initiatives`, so a malicious
-    // payload can smuggle nothing past that even if a curator blindly
-    // approves.
+    // How members create and manage Hub Activities and workshops without
+    // being able to write to the live `initiatives` collection: every
+    // create, edit, archive or open/close lands here as a pending request,
+    // and only a reviewer applying it (through their own rights on
+    // `initiatives` above) makes it real.
     //
-    // A request must name the specific initiative (`initiativeId`) that
-    // makes the requester eligible, checked the same way
-    // leave_requests/removal_requests already scope a lead's write to
-    // "an initiative they actually lead" (isLeadOf()), for a 'create'
-    // that's just whichever led initiative the lead is proposing the
-    // activity for; for an 'update' it must additionally match the
-    // *target* activity's own recorded initiativeId, so a lead can't
-    // relabel someone else's activity as belonging to an initiative they
-    // lead just to pass the isLeadOf() check.
+    // Who may ask:
+    // - a new activity: any member. With no initiative (`initiativeId` is
+    //   empty) it belongs to the whole hub; naming an initiative requires
+    //   leading it.
+    // - a change to a live activity: the member who proposed it, or a lead of
+    //   the initiative it belongs to. `initiativeId` must match the target's
+    //   own, so nobody can relabel someone else's activity to pass the check.
+    //
+    // Who decides: the Curator or Vice Curator. Impact officers can also
+    // decide requests tied to an initiative; those for the whole hub they can
+    // only read.
+    //
+    // `payload` is the proposed fields: the full form for a create or edit, or
+    // just e.g. {archived: true} for a one-click archive. Its keys and links
+    // are checked here, and the approval code applies its own allowlist
+    // (pickActivityFields) before writing to `initiatives`.
+    function activityPayloadOk(p) {
+      return p is map
+             && p.keys().hasOnly(['title', 'eyebrow', 'subtitle', 'description', 'date', 'location',
+                                  'ctaText', 'ctaUrl', 'highlights', 'active', 'archived', 'kind',
+                                  'customForm', 'feedbackForm', 'imageUrl', 'images', 'color'])
+             && optStr(p, 'title', 300) && optStr(p, 'eyebrow', 300) && optStr(p, 'subtitle', 500)
+             && optStr(p, 'description', 10000) && optStr(p, 'date', 300) && optStr(p, 'location', 300)
+             && optStr(p, 'ctaText', 200) && optUrl(p, 'ctaUrl') && optColor(p);
+    }
+    function mayChangeActivity(d) {
+      let target = get(/databases/$(database)/documents/initiatives/$(d.activityId)).data;
+      return target.get('type', '') == 'hub_activity'
+             && d.initiativeId == target.get('initiativeId', '')
+             && (target.get('proposedBy', '') == request.auth.uid
+                 || (d.initiativeId != '' && isLeadOf(d.initiativeId)));
+    }
     match /activity_change_requests/{docId} {
-      allow create: if isSignedIn()
-                    && request.resource.data.proposedBy == request.auth.uid
-                    && request.resource.data.status == 'pending'
-                    && request.resource.data.changeType in ['create', 'update']
-                    && isLeadOf(request.resource.data.initiativeId)
-                    && (request.resource.data.changeType == 'create'
-                        || (request.resource.data.activityId is string
-                            && get(/databases/$(database)/documents/initiatives/$(request.resource.data.activityId)).data.initiativeId
-                               == request.resource.data.initiativeId))
-                    && request.resource.data.payload is map
+      allow create: if isAnyMember()
                     && request.resource.data.keys().hasOnly(
                          ['changeType', 'activityId', 'initiativeId', 'activityTitle', 'payload',
                           'proposedBy', 'proposedByName', 'status', 'requestedAt'])
+                    && request.resource.data.proposedBy == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.initiativeId is string
                     && isMyName(request.resource.data.proposedByName)
-                    && optStr(request.resource.data, 'activityTitle', 300);
+                    && optStr(request.resource.data, 'activityTitle', 300)
+                    && activityPayloadOk(request.resource.data.payload)
+                    && ((request.resource.data.changeType == 'create'
+                         && request.resource.data.get('activityId', null) == null
+                         && (request.resource.data.initiativeId == ''
+                             || isLeadOf(request.resource.data.initiativeId)))
+                        || (request.resource.data.changeType == 'update'
+                            && request.resource.data.activityId is string
+                            && mayChangeActivity(request.resource.data)));
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
-      allow update: if isCuratorOrImpact()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt']);
-      allow delete: if isCuratorOrImpact()
-                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid && resource.data.status == 'pending');
+      // A review records its outcome, who decided and an optional note. The
+      // sender can also correct their own request while it is still waiting.
+      allow update: if ((isCurator() || (isImpactOfficer() && resource.data.initiativeId != ''))
+                        && resource.data.status == 'pending'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'reviewNote'])
+                        && request.resource.data.status in ['approved', 'declined']
+                        && request.resource.data.reviewedBy == request.auth.uid
+                        && optStr(request.resource.data, 'reviewNote', 1000))
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid
+                        && resource.data.status == 'pending'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['payload', 'activityTitle', 'requestedAt'])
+                        && optStr(request.resource.data, 'activityTitle', 300)
+                        && activityPayloadOk(request.resource.data.payload));
+      allow delete: if isCurator()
+                    || (isSignedIn() && resource.data.proposedBy == request.auth.uid && resource.data.status in ['pending', 'declined']);
     }
 
     // A like list changed by at most one entry: unchanged, one added, or one removed.
@@ -448,7 +469,24 @@ service cloud.firestore {
     // with size limits.
     function blogBody(d) {
       return optStr(d, 'title', 300) && optStr(d, 'content', 100000) && optStr(d, 'excerpt', 1000)
-             && (!('tags' in d) || (d.tags is list && d.tags.size() <= 20));
+             && (!('tags' in d) || (d.tags is list && d.tags.size() <= 20))
+             && blogPhotos(d);
+    }
+
+    // A post's cover and extra photos: uploaded photos (/api/media/<id>) or
+    // http(s) links, never a photo stored inside the post (posts are read in
+    // bulk by the News page). The list is checked by joining it into one text.
+    function blogPhotos(d) {
+      return (!('imageUrl' in d) || d.imageUrl == ''
+              || (d.imageUrl is string && d.imageUrl.size() <= 500
+                  && d.imageUrl.matches('^(/api/media/[A-Za-z0-9]+|https?://[^\\s]+)$')))
+             && (!('images' in d)
+                 || (d.images is list && d.images.size() <= 12
+                     && (d.images.size() == 0
+                         || (d.images.join(' ').size() <= 6000
+                             // As many addresses as entries: none hides a space.
+                             && d.images.join(' ').split(' ').size() == d.images.size()
+                             && d.images.join(' ').matches('^(/api/media/[A-Za-z0-9]+|https?://[^\\s]+)( (/api/media/[A-Za-z0-9]+|https?://[^\\s]+))*$')))));
     }
 
     // ── blogs ─────────────────────────────────────────────────
@@ -480,7 +518,7 @@ service cloud.firestore {
                     && (isCuratorOrImpact()
                         || (request.resource.data.status in ['draft', 'pending_review']
                             && request.resource.data.keys().hasOnly(
-                                 ['title', 'content', 'excerpt', 'tags', 'status', 'updatedAt',
+                                 ['title', 'content', 'excerpt', 'tags', 'imageUrl', 'images', 'status', 'updatedAt',
                                   'authorId', 'authorName', 'authorRole', 'createdAt', 'likedBy'])
                             && request.resource.data.get('likedBy', []).size() == 0
                             && blogBody(request.resource.data)));
@@ -496,7 +534,7 @@ service cloud.firestore {
                         // Only what the editor changes: author, likes and
                         // anything else stay as they were.
                         && request.resource.data.diff(resource.data).affectedKeys()
-                             .hasOnly(['title', 'content', 'excerpt', 'tags', 'status', 'updatedAt'])
+                             .hasOnly(['title', 'content', 'excerpt', 'tags', 'imageUrl', 'images', 'status', 'updatedAt'])
                         && blogBody(request.resource.data)
                         && request.resource.data.status in ['draft', 'pending_review'])
                     // Likes: anyone (including anonymous visitors) may toggle only the
@@ -613,21 +651,23 @@ service cloud.firestore {
     }
 
     // ── charter_signatures ──
-    // A member's sign-off on the Community Charter, keyed by their uid:
-    // their name plus the form's "I confirm compliance with Community
-    // Charter". Only the member writes their own (never someone else's);
-    // curators and impact officers read everyone's to see who signed, and
-    // curators delete them to start a new signing round.
+    // A member's sign-off on the Community Charter, keyed by their uid: the
+    // name on their account plus the box saying they have read the Charter
+    // and will adhere to it. Only the member creates their own (never someone
+    // else's), and only in their own name. signedAtServer is the server's
+    // clock, so the record of when they signed can be trusted. A signature
+    // can't be edited afterwards; curators and impact officers read everyone's
+    // to see who signed, and curators delete them to start a new signing round.
     match /charter_signatures/{uid} {
       allow read: if isOwner(uid) || isCuratorOrImpact();
-      allow create, update: if isOwner(uid)
-                            && request.resource.data.keys().hasOnly(['uid', 'name', 'confirmed', 'signedAt'])
-                            && request.resource.data.uid == uid
-                            && request.resource.data.confirmed == true
-                            && request.resource.data.name is string
-                            && request.resource.data.name.size() > 0
-                            && request.resource.data.name.size() <= 120
-                            && request.resource.data.signedAt is string;
+      allow create: if isOwner(uid)
+                    && request.resource.data.keys().hasOnly(['uid', 'name', 'confirmed', 'signedAt', 'signedAtServer'])
+                    && request.resource.data.uid == uid
+                    && request.resource.data.confirmed == true
+                    && isMyName(request.resource.data.name)
+                    && request.resource.data.signedAt is string
+                    && request.resource.data.signedAt.size() <= 40
+                    && request.resource.data.signedAtServer == request.time;
       allow delete: if isCurator();
     }
 

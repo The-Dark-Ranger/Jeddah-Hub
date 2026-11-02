@@ -44,3 +44,7 @@ CLAUDE.md
 
 # Firebase emulator logs
 *-debug.log
+
+# Browser test output
+/test-results/
+/playwright-report/

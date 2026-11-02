@@ -1,5 +1,6 @@
 /* Builds the .xlsx a curator downloads from an activity's responses
  * (registration or after-event). Every cell is spreadsheet-safe. */
+import { downloadBlob } from '@/lib/download';
 import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 
@@ -59,11 +60,6 @@ export async function downloadActivityResponses(
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
   const safeName = activityTitle.replace(/[^a-z0-9]/gi, '_').substring(0, 40);
-  a.href = url;
-  a.download = `${safeName}_${fileLabel}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `${safeName}_${fileLabel}.xlsx`);
 }

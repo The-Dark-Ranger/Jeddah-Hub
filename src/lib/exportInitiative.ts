@@ -1,4 +1,5 @@
 /* Builds the .xlsx report for an initiative (details and team). */
+import { downloadBlob } from '@/lib/download';
 import { spreadsheetSafe } from '@/lib/sanitize';
 import ExcelJS from 'exceljs';
 
@@ -79,11 +80,6 @@ export async function downloadInitiativeReport(
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
   const safeName = init.title.replace(/[^a-z0-9]/gi, '_').substring(0, 40);
-  a.href = url;
-  a.download = `${safeName}_Impact_Report.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `${safeName}_Impact_Report.xlsx`);
 }

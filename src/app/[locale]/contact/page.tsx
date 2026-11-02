@@ -5,6 +5,7 @@
  * collects the message and shows the outcome. */
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { intlLocale } from '@/lib/dates';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import Honeypot from '@/components/Honeypot';
@@ -183,7 +184,7 @@ export default function ContactPage() {
                     className={styles.charCount + (formData.message.length > MESSAGE_MAX * 0.9 ? ' ' + styles.charCountNear : '')}
                     aria-live="polite"
                   >
-                    {formData.message.length.toLocaleString()} / {MESSAGE_MAX.toLocaleString()}
+                    {formData.message.length.toLocaleString(intlLocale(locale))} / {MESSAGE_MAX.toLocaleString(intlLocale(locale))}
                   </span>
                 </div>
 

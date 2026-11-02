@@ -15,7 +15,8 @@ recipes for the most common changes. For setup see the
 
 1. Branch from `main` (`feature/…`, `fix/…`, `docs/…`).
 2. Make the change, then run `npm run check`, plus `npm run test:rules` if
-   `firestore.rules` changed.
+   `firestore.rules` changed and `npm run test:e2e` if a page or server route
+   changed.
 3. Open a pull request. Vercel builds a preview; `main` only accepts the merge
    once that check passes.
 4. Squash-merge. Vercel deploys `jeddahhub.org`. If the rules changed, run
@@ -51,7 +52,9 @@ recipes for the most common changes. For setup see the
 - Every visible string lives in `messages/en.json` **and**
   `messages/ar.json` under the same key, read with
   `useTranslations('Namespace')`. Both files always have exactly the same keys.
-- Dates and numbers use the page's locale (`toLocaleDateString(locale)`).
+- Dates and numbers go through `formatDate` and `intlLocale` (`lib/dates.ts`),
+  so the server and the browser produce the same text. In Arabic messages write
+  `{count}`, not `#`, for the same reason.
 
 **Data**
 - Public pages read through `src/lib/publicData.ts` (server-side, cached for
@@ -100,6 +103,12 @@ Those pieces take HTML, so pass every value a person typed through
 `lib/email.ts`. Emails visitors can trigger also go through
 `withinEmailBudget()`.
 
+### Test a new function
+Add it to `tests/e2e/`. `seed.ts` writes the made-up members and content,
+`helpers.ts` has signing in and the common checks, and each test should follow
+what a person does, from start to finish. Test runs use Firebase's emulators
+(`src/lib/emulators.ts`), which can never switch on in a production build.
+
 ### Add an environment variable
 Read it on the server (only `NEXT_PUBLIC_*` reaches the browser), document it
 in `.env.example` and the README table, and set it in the Vercel project.
@@ -127,4 +136,7 @@ hides what a person can't use. When you change it:
 | Member roles | `normalizeRole` (`lib/role.ts`), `useRoleLabel` (`lib/roleLabel.tsx`) |
 | Photos | `uploadMedia` (`lib/media.ts`), `compressToDataUrl` (`lib/imageCompress.ts`) |
 | Spreadsheet reports | `downloadReport` (`lib/initiativeReport.ts`, loads ExcelJS on demand) |
+| Dates and numbers | `formatDate`, `intlLocale` (`lib/dates.ts`) |
+| Saving a built file | `downloadBlob`, `csvBlob` (`lib/download.ts`) |
+| Hub Activity list and editor | `ActivityCard`, `ActivityEditorModal` (`components/dashboard/`) |
 | Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/` |

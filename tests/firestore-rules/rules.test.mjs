@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import {
-  addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc,
+  addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where,
 } from 'firebase/firestore';
 
 let env;
@@ -19,6 +19,7 @@ const PEOPLE = {
   cur: { role: 'curator', displayName: 'Cara Curator' },
   vice: { role: 'vice_curator', displayName: 'Vic Vice' },
   impact: { role: 'impact_officer', displayName: 'Ima Impact' },
+  norole: { displayName: 'Noor Norole' },
 };
 const TEAM = [
   { userId: 'lead', role: 'Lead' }, { userId: 'colead', role: 'Co-Lead' },
@@ -34,6 +35,24 @@ async function seed() {
     });
     await setDoc(doc(db, 'blogs', 'pub'), { title: 'Hi', status: 'published', authorId: 'author', likedBy: ['mate'], visitorLikes: ['g_abc123xyz'] });
     await setDoc(doc(db, 'blogs', 'draft'), { title: 'Draft', content: 'c', status: 'draft', authorId: 'author', authorName: 'Ann Author', likedBy: [] });
+    await setDoc(doc(db, 'initiatives', 'mine'), { type: 'hub_activity', title: 'Mine', proposedBy: 'author' });
+    await setDoc(doc(db, 'initiatives', 'teamAct'), { type: 'hub_activity', title: 'Team', initiativeId: 'init1' });
+    await setDoc(doc(db, 'activity_change_requests', 'hubWide'), {
+      changeType: 'create', activityId: null, initiativeId: '', activityTitle: 'Hub', payload: { title: 'Hub' },
+      proposedBy: 'author', proposedByName: 'Ann Author', status: 'pending', requestedAt: 'x',
+    });
+    await setDoc(doc(db, 'activity_change_requests', 'teamReq'), {
+      changeType: 'update', activityId: 'teamAct', initiativeId: 'init1', activityTitle: 'Team', payload: { active: false },
+      proposedBy: 'lead', proposedByName: 'Lena Lead', status: 'pending', requestedAt: 'x',
+    });
+    await setDoc(doc(db, 'activity_change_requests', 'wasDeclined'), {
+      changeType: 'create', activityId: null, initiativeId: '', activityTitle: 'No', payload: { title: 'No' },
+      proposedBy: 'author', proposedByName: 'Ann Author', status: 'declined', requestedAt: 'x',
+    });
+    await setDoc(doc(db, 'activity_change_requests', 'wasApproved'), {
+      changeType: 'create', activityId: null, initiativeId: '', activityTitle: 'Yes', payload: { title: 'Yes' },
+      proposedBy: 'author', proposedByName: 'Ann Author', status: 'approved', requestedAt: 'x',
+    });
     await setDoc(doc(db, 'media', 'AbCdEfGhIjKlMnOpQrSt'), { data: 'data:image/jpeg;base64,/9j/', contentType: 'image/jpeg', uploadedBy: 'mate', createdAt: 'x' });
     await setDoc(doc(db, 'role_change_requests', 'pending1'), {
       initiativeId: 'init1', targetUserId: 'mate', fromRole: 'Member', toRole: 'Co-Lead',
@@ -151,6 +170,143 @@ describe('news posts and likes', () => {
     await assertSucceeds(updateDoc(doc(as('mate'), 'blogs', 'pub'), { likedBy: arrayRemove('mate') }));
     await assertFails(updateDoc(doc(as('author'), 'blogs', 'pub'), { likedBy: arrayUnion('cur') }));
   });
+});
+
+describe('news post photos', () => {
+  const post = (extra = {}) => ({ title: 'T', content: 'C', status: 'draft', authorId: 'author', authorName: 'Ann Author', likedBy: [], ...extra });
+  const newPost = (extra) => setDoc(doc(as('author'), 'blogs', 'p1'), post(extra));
+  it('a member adds a cover and extra photos', async () => {
+    await assertSucceeds(newPost({ imageUrl: '/api/media/AbC123', images: ['/api/media/XyZ9', 'https://example.org/a.jpg'] }));
+    await assertSucceeds(updateDoc(doc(as('author'), 'blogs', 'draft'), { imageUrl: '/api/media/AbC123', images: [] }));
+    await assertSucceeds(updateDoc(doc(as('author'), 'blogs', 'draft'), { imageUrl: '' }));
+  });
+  it('refuses a photo stored inside the post, or a non-web address', async () => {
+    await assertFails(newPost({ imageUrl: 'data:image/jpeg;base64,/9j/AAAA' }));
+    await assertFails(newPost({ imageUrl: 'javascript:alert(1)' }));
+    await assertFails(newPost({ images: ['data:image/jpeg;base64,/9j/AAAA'] }));
+    await assertFails(newPost({ images: ['/api/media/ok', 'javascript:alert(1)'] }));
+    await assertFails(newPost({ images: ['/api/media/ok /api/media/two'] }));
+    await assertFails(newPost({ images: 'not-a-list' }));
+  });
+  it('limits how many', () =>
+    assertFails(newPost({ images: Array.from({ length: 13 }, (_, i) => `/api/media/p${i}`) })));
+  it('still cannot publish by adding a photo', () =>
+    assertFails(updateDoc(doc(as('author'), 'blogs', 'draft'), { imageUrl: '/api/media/AbC123', status: 'published' })));
+});
+
+describe('Community Charter sign-off', () => {
+  const sign = (uid, extra = {}) => setDoc(doc(as(uid), 'charter_signatures', uid), {
+    uid, name: PEOPLE[uid]?.displayName, confirmed: true, signedAt: new Date().toISOString(), signedAtServer: serverTimestamp(), ...extra,
+  });
+  it('a member signs with their account name', () => assertSucceeds(sign('mate')));
+  it('refuses any other name', async () => {
+    await assertFails(sign('mate', { name: 'Someone Else' }));
+    await assertFails(sign('mate', { name: 'Cara Curator' }));
+  });
+  it('refuses a missing tick or a made-up time', async () => {
+    await assertFails(sign('mate', { confirmed: false }));
+    await assertFails(sign('mate', { signedAtServer: new Date('2020-01-01') }));
+  });
+  it('refuses signing for someone else', () =>
+    assertFails(setDoc(doc(as('lead'), 'charter_signatures', 'mate'), {
+      uid: 'mate', name: 'Lena Lead', confirmed: true, signedAt: 'x', signedAtServer: serverTimestamp(),
+    })));
+  it('a signature cannot be changed; only a curator clears it', async () => {
+    await sign('mate');
+    await assertFails(updateDoc(doc(as('mate'), 'charter_signatures', 'mate'), { signedAt: '2020-01-01' }));
+    await assertFails(deleteDoc(doc(as('mate'), 'charter_signatures', 'mate')));
+    await assertSucceeds(deleteDoc(doc(as('vice'), 'charter_signatures', 'mate')));
+  });
+  it('only the member and the curatorship read it', async () => {
+    await sign('mate');
+    await assertSucceeds(getDoc(doc(as('mate'), 'charter_signatures', 'mate')));
+    await assertSucceeds(getDoc(doc(as('impact'), 'charter_signatures', 'mate')));
+    await assertFails(getDoc(doc(as('lead'), 'charter_signatures', 'mate')));
+  });
+});
+
+describe('Hub Activity proposals', () => {
+  const reqs = db => collection(db, 'activity_change_requests');
+  const proposal = (uid, extra = {}) => ({
+    changeType: 'create', activityId: null, initiativeId: '', activityTitle: 'Beach clean-up',
+    payload: { title: 'Beach clean-up', kind: 'workshop', active: true, ctaUrl: 'https://example.org', color: '#0f5a9f' },
+    proposedBy: uid, proposedByName: PEOPLE[uid]?.displayName, status: 'pending', requestedAt: new Date().toISOString(), ...extra,
+  });
+  const change = (uid, extra) => proposal(uid, { changeType: 'update', activityId: 'mine', payload: { active: false }, ...extra });
+  const review = (uid, extra = {}) => ({ status: 'approved', reviewedAt: 'now', reviewedBy: uid, ...extra });
+  const request = (db, id) => doc(db, 'activity_change_requests', id);
+
+  it('any member proposes one for the whole hub', async () => {
+    await assertSucceeds(addDoc(reqs(as('mate')), proposal('mate')));
+    await assertSucceeds(addDoc(reqs(as('lead')), proposal('lead')));
+  });
+  it('someone with no role cannot', () => assertFails(addDoc(reqs(as('norole')), proposal('norole'))));
+  it('naming an initiative requires leading it', async () => {
+    await assertSucceeds(addDoc(reqs(as('lead')), proposal('lead', { initiativeId: 'init1' })));
+    await assertFails(addDoc(reqs(as('mate')), proposal('mate', { initiativeId: 'init1' })));
+  });
+  it('always as themselves and always waiting', async () => {
+    await assertFails(addDoc(reqs(as('mate')), proposal('mate', { status: 'approved' })));
+    await assertFails(addDoc(reqs(as('mate')), proposal('mate', { proposedBy: 'cur' })));
+    await assertFails(addDoc(reqs(as('mate')), proposal('mate', { proposedByName: 'Cara Curator' })));
+  });
+  it('checks what the proposal contains', async () => {
+    const withPayload = payload => addDoc(reqs(as('mate')), proposal('mate', { payload }));
+    await assertFails(withPayload({ title: 'x', type: 'initiative' }));
+    await assertFails(withPayload({ title: 'x', slug: 'someone-elses' }));
+    await assertFails(withPayload({ title: 'x', proposedBy: 'cur' }));
+    await assertFails(withPayload({ title: 'x', ctaUrl: 'javascript:alert(1)' }));
+    await assertFails(withPayload({ title: 'x', color: 'red;position:fixed' }));
+    await assertFails(addDoc(reqs(as('mate')), proposal('mate', { extra: 'x' })));
+  });
+  it('changing a live activity: its proposer, or its initiative\'s lead', async () => {
+    await assertSucceeds(addDoc(reqs(as('author')), change('author')));
+    await assertFails(addDoc(reqs(as('mate')), change('mate')));
+    await assertSucceeds(addDoc(reqs(as('lead')), change('lead', { activityId: 'teamAct', initiativeId: 'init1' })));
+    await assertFails(addDoc(reqs(as('mate')), change('mate', { activityId: 'teamAct', initiativeId: 'init1' })));
+  });
+  it('cannot relabel an activity to pass the check', async () => {
+    await assertFails(addDoc(reqs(as('lead')), change('lead', { activityId: 'mine', initiativeId: 'init1' })));
+    await assertFails(addDoc(reqs(as('lead')), change('lead', { activityId: 'init1', initiativeId: 'init1' })));
+  });
+  it('the Curator and Vice Curator decide proposals for the whole hub', async () => {
+    await assertSucceeds(updateDoc(request(as('vice'), 'hubWide'), review('vice', { reviewNote: 'Lovely' })));
+    await assertFails(updateDoc(request(as('cur'), 'hubWide'), review('cur')));
+  });
+  it('an impact officer can read them but not decide', async () => {
+    await assertSucceeds(getDoc(request(as('impact'), 'hubWide')));
+    await assertFails(updateDoc(request(as('impact'), 'hubWide'), review('impact')));
+    await assertSucceeds(updateDoc(request(as('impact'), 'teamReq'), review('impact')));
+  });
+  it('members cannot approve, not even their own', async () => {
+    await assertFails(updateDoc(request(as('author'), 'hubWide'), review('author')));
+    await assertFails(updateDoc(request(as('mate'), 'hubWide'), review('mate')));
+  });
+  it('a review names its real reviewer and changes nothing else', async () => {
+    await assertFails(updateDoc(request(as('cur'), 'hubWide'), review('vice')));
+    await assertFails(updateDoc(request(as('cur'), 'hubWide'), review('cur', { payload: { title: 'Changed' } })));
+    await assertFails(updateDoc(request(as('cur'), 'hubWide'), review('cur', { reviewNote: 'x'.repeat(1001) })));
+  });
+  it('the sender corrects it only while it is waiting', async () => {
+    await assertSucceeds(updateDoc(request(as('author'), 'hubWide'), { payload: { title: 'Better' }, activityTitle: 'Better' }));
+    await assertFails(updateDoc(request(as('author'), 'hubWide'), { payload: { title: 'x', type: 'other' } }));
+    await assertFails(updateDoc(request(as('author'), 'wasDeclined'), { payload: { title: 'x' } }));
+    await assertFails(updateDoc(request(as('mate'), 'hubWide'), { payload: { title: 'x' } }));
+  });
+  it('the sender can remove a waiting or declined one, not an approved one', async () => {
+    await assertSucceeds(deleteDoc(request(as('author'), 'hubWide')));
+    await assertSucceeds(deleteDoc(request(as('author'), 'wasDeclined')));
+    await assertFails(deleteDoc(request(as('author'), 'wasApproved')));
+    await assertFails(deleteDoc(request(as('mate'), 'teamReq')));
+  });
+  it('only the sender and the curatorship read them', async () => {
+    await assertSucceeds(getDocs(query(reqs(as('mate')), where('proposedBy', '==', 'mate'))));
+    await assertFails(getDoc(request(as('mate'), 'hubWide')));
+  });
+  it('the old proposal form is closed', () =>
+    assertFails(addDoc(collection(as('mate'), 'activity_requests'), {
+      title: 'x', proposedBy: 'mate', proposedByName: 'Mo Mate', status: 'pending', requestedAt: 'x',
+    })));
 });
 
 describe('role change requests (Roster)', () => {

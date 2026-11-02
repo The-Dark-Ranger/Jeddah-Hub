@@ -404,9 +404,12 @@ flowchart LR
     M -->|firestore.rules changed| DR[npm run deploy:rules]
 ```
 
-`main` is protected: a change reaches it only through a pull request whose
-Vercel check has passed, never by a direct or force push, and the history
-stays linear (squash merges). After a change to `firestore.rules` is merged,
+`main` is protected by the ruleset "Protect main: owner approval required".
+A change reaches it only through a pull request whose Vercel check has passed,
+never by a direct or force push, and only as a squash merge. Every pull request
+from a collaborator needs the maintainer's approval (code owner review), given
+after its latest push and with every review comment resolved. The maintainer
+is the only one who can merge their own pull requests without an approval. After a change to `firestore.rules` is merged,
 `npm run deploy:rules` publishes it to Firebase; run `npm run test:rules`
 first (see [DEVELOPMENT.md](DEVELOPMENT.md#security-rules)).
 

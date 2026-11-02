@@ -19,7 +19,8 @@ recipes for the most common changes. For setup see the
    changed.
 3. Open a pull request. Vercel builds a preview; `main` only accepts the merge
    once that check passes.
-4. Squash-merge. Vercel deploys `jeddahhub.org`. If the rules changed, run
+4. Squash-merge, once the maintainer has approved it. Collaborators can't merge
+   into `main` without that approval. Vercel deploys `jeddahhub.org`. If the rules changed, run
    `npm run deploy:rules`.
 5. Add a line to [CHANGELOG.md](CHANGELOG.md) describing the change in plain
    words.

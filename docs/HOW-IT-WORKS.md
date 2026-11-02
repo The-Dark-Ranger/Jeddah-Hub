@@ -242,7 +242,13 @@ ticking one box: *"I have read the Community Charter and I will adhere to it."*
 A different name is cleared and has to be typed again; capitals, spacing and
 Arabic spelling variants don't count as different. `firestore.rules` enforces
 the same thing, so the record always holds the account's name and the server's
-time, and a signature can't be edited afterwards.
+time, and a signature can't be edited afterwards. The dashboard's **Read & sign**
+button opens the Charter at the top, so members read down to the sign-off.
+
+The Curator and Vice Curator can download who has signed as Excel or CSV (name,
+email, role, name signed, time signed in UTC, member ID), including anyone who
+signed and has since left. It's the way to move this data to another system, and
+to keep a record before starting a new signing round.
 
 ```mermaid
 flowchart TD
@@ -252,6 +258,7 @@ flowchart TD
     B -->|no, or alumni| Q[No banner]
     F --> G[(charter_signatures/uid)]
     G --> P[Curator panel:<br/>X of Y Shapers signed]
+    P -->|any time| D[Download who signed<br/>as Excel or CSV]
     P -->|new term| R[Start a new signing round<br/>clears all signatures]
 ```
 

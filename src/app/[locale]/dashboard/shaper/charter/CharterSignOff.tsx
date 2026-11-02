@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from '@/i18n/routing';
@@ -23,14 +23,6 @@ export default function CharterSignOff() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const nameInput = useRef<HTMLInputElement>(null);
-
-  // The dashboard's "sign the Charter" link ends in #sign, but this card only
-  // appears once the status has loaded, too late for the browser's own jump.
-  useEffect(() => {
-    if (!loading && window.location.hash === '#sign') {
-      document.getElementById('sign')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [loading]);
 
   if (!user || loading) return null;
 

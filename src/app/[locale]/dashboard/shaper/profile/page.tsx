@@ -223,10 +223,7 @@ export default function MyProfile() {
           <span>{user.email}</span>
         </HeroLine>
       </RoleHero>
-      <div className={styles.pageIntro}>
-        <p className={styles.pageSubtitle}>{t('editProfileSubtitle')}</p>
-        <button type="button" className={styles.secondaryBtn} onClick={showPasswordForm}>{t('pwTitle')}</button>
-      </div>
+      <p className={styles.pageSubtitle}>{t('editProfileSubtitle')}</p>
 
     <form className={styles.formStack} onSubmit={handleSave}>
       {/* Profile info */}

@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 5 November (Test-Zone)
+- Calendar, first look (example events only, nothing is saved and no emails are sent): a Calendar page in the dashboard for every member, with a week view on phones and a large month view and a seven-column week on laptops; a calendar icon in the navbar on every page for signed-in members, showing this week's events; event details with who is on the team, who was invited and their replies, and double-booking warnings; and an add/edit form limited to what each role may manage. "Preview as" switches between the curator, initiative lead and member views without changing anyone's real role.
+
 ### 3 November
 - Sign-in is stronger: the server now limits attempts (10 per account every 15 minutes, 60 per network an hour), and clearing the browser can't reset that. A disabled account answers like a wrong password. A failed password is cleared from the field. "Keep me signed in on this device" can be unticked on a shared computer, which ends the session when the browser closes. The page warns when Caps Lock is on, and a member who is already signed in goes straight to the dashboard.
 

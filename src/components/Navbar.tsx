@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import CalendarShortcut from '@/components/calendar/CalendarShortcut';
 import ThemeLogo from './ThemeLogo';
 import styles from './Navbar.module.css';
 
@@ -197,8 +198,9 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Right controls: theme + lang + login + hamburger */}
+        {/* Right controls: calendar (members) + theme + lang + login + hamburger */}
         <div className={styles.actions}>
+          {user && <CalendarShortcut />}
           <button
             type="button"
             onClick={e => toggleTheme(e)}

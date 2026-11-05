@@ -130,6 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const ownPages: NavItem[] = [
     { href: '/dashboard/shaper/profile', label: 'myProfile', icon: 'profile' },
     { href: '/dashboard/shaper/my-projects', label: 'profileActiveProjects', icon: 'folder' },
+    { href: '/dashboard/shaper/calendar', label: 'calendar', icon: 'calendar' },
     ...(!isCurator && leadsATeam ? [{ href: '/dashboard/curator/roster', label: 'roster', icon: 'people' } as NavItem] : []),
   ];
   const charter: NavItem = { href: '/dashboard/shaper/charter', label: 'communityCharter', icon: 'book' };

@@ -1,11 +1,16 @@
 const SECRET = process.env.RECAPTCHA_SECRET_KEY;
 
-/** Sites a token may come from (Google reports the page's hostname). */
-const ALLOWED_HOSTS = new Set(['jeddahhub.org', 'www.jeddahhub.org', 'jeddah-hub.vercel.app',
-  // Tokens minted on a local page count only in development.
+/** The public site's addresses (Google reports the hostname of the page that
+ *  made the token). Tokens minted on a local page count only in development. */
+const SITE_HOSTS = new Set(['jeddahhub.org', 'www.jeddahhub.org',
   ...(process.env.NODE_ENV === 'production' ? [] : ['localhost'])]);
-/** This project's own Vercel preview deployments (not any *.vercel.app site). */
-const isOwnPreview = (host: string) => /^jeddah-[a-z0-9-]+-mohammed-alshawis-projects\.vercel\.app$/.test(host);
+
+/** The address a request was sent to, without its port. Vercel only delivers
+ *  requests for this project's own addresses, so a preview is recognised by
+ *  where it is reached rather than by a list of preview addresses here. */
+export function requestHost(req: Request): string {
+  return (req.headers.get('host') ?? '').split(':')[0].toLowerCase();
+}
 
 /**
  * Verifies a reCAPTCHA v3 token server-side. Fails closed: returns false if
@@ -16,7 +21,7 @@ const isOwnPreview = (host: string) => /^jeddah-[a-z0-9-]+-mohammed-alshawis-pro
  */
 export async function verifyRecaptchaToken(
   token: unknown,
-  { minScore = 0.5, action }: { minScore?: number; action?: string } = {},
+  { minScore = 0.5, action, host }: { minScore?: number; action?: string; host?: string } = {},
 ): Promise<boolean> {
   if (!SECRET || typeof token !== 'string' || !token || token.length > 4096) return false;
 
@@ -33,7 +38,9 @@ export async function verifyRecaptchaToken(
     if (data.success !== true) return false;
     if (typeof data.score === 'number' && data.score < minScore) return false;
     if (action && data.action !== action) return false;
-    if (data.hostname && !ALLOWED_HOSTS.has(data.hostname) && !isOwnPreview(data.hostname)) return false;
+    // The page that asked must be the public site, or the same address this
+    // request came to (a preview reached at its own address).
+    if (data.hostname && !SITE_HOSTS.has(data.hostname) && data.hostname !== host) return false;
     return true;
   } catch {
     return false;

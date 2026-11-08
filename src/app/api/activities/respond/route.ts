@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
-import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
+import { requestHost, verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { withinLimit, DAY } from '@/lib/persistentLimit';
 import { isValidEmail } from '@/lib/validateEmail';
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!activityId || !formType) return json({ error: 'invalid' }, 400);
 
   if (!process.env.RECAPTCHA_SECRET_KEY) return json({ error: 'unavailable' }, 503);
-  if (!(await verifyRecaptchaToken(body?.recaptchaToken, { action: 'activity_form' }))) return json({ error: 'bot_check_failed' }, 400);
+  if (!(await verifyRecaptchaToken(body?.recaptchaToken, { action: 'activity_form', host: requestHost(req) }))) return json({ error: 'bot_check_failed' }, 400);
   if (!(await withinLimit(`activity-ip:${ip}`, 25, DAY))) return json({ error: 'too_many' }, 429);
 
   const app = adminApp();

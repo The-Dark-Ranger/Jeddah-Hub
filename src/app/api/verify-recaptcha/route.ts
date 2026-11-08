@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
+import { requestHost, verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { readJsonBody } from '@/lib/http';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isBlockedBot } from '@/lib/botCheck';
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     console.warn('[verify-recaptcha] RECAPTCHA_SECRET_KEY not configured, rejecting request');
     return NextResponse.json({ ok: false, error: 'reCAPTCHA not configured' }, { status: 503 });
   }
-  const passed = await verifyRecaptchaToken(token, { action });
+  const passed = await verifyRecaptchaToken(token, { action, host: requestHost(req) });
   if (passed) return NextResponse.json({ ok: true });
   return NextResponse.json({ ok: false, error: 'reCAPTCHA verification failed' }, { status: 400 });
 }

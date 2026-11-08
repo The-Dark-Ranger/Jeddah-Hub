@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 8 November
+- Previews stay private: the code no longer names the preview address or the Vercel account. The bot check recognises a preview by the address it is reached at.
+
 ### 3 November
 - Sign-in is stronger: the server now limits attempts (10 per account every 15 minutes, 60 per network an hour), and clearing the browser can't reset that. A disabled account answers like a wrong password. A failed password is cleared from the field. "Keep me signed in on this device" can be unticked on a shared computer, which ends the session when the browser closes. The page warns when Caps Lock is on, and a member who is already signed in goes straight to the dashboard.
 

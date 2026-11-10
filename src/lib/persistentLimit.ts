@@ -16,8 +16,15 @@ export const DAY = 24 * HOUR;
  *  within `windowMs`. If the store can't be reached it allows the request:
  *  reCAPTCHA and the in-memory limits still apply. */
 export async function withinLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  return (await countUse(key, limit, windowMs)) <= limit;
+}
+
+/** Counts one use of `key` and returns how many uses its window now holds
+ *  (limit + 1 once it's over: refused uses aren't stored). 0 when the store
+ *  can't be reached. */
+export async function countUse(key: string, limit: number, windowMs: number): Promise<number> {
   const app = adminApp();
-  if (!app) return true;
+  if (!app) return 0;
   sweepExpired();
   const db = getFirestore(app);
   const ref = db.collection('rate_limits').doc(createHash('sha256').update(key).digest('hex').slice(0, 40));
@@ -28,14 +35,14 @@ export async function withinLimit(key: string, limit: number, windowMs: number):
       const start = snap.exists ? Number(snap.get('start')) || 0 : 0;
       const fresh = !snap.exists || now - start >= windowMs;
       const count = fresh ? 1 : (Number(snap.get('count')) || 0) + 1;
-      if (!fresh && count > limit) return false;
+      if (!fresh && count > limit) return limit + 1;
       const windowStart = fresh ? now : start;
       tx.set(ref, { start: windowStart, count, expiresAt: Timestamp.fromMillis(windowStart + windowMs) });
-      return true;
+      return count;
     });
   } catch (err) {
     console.error('[limit] store unavailable', err);
-    return true;
+    return 0;
   }
 }
 

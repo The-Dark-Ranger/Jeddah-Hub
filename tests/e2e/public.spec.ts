@@ -67,18 +67,36 @@ test('server routes refuse what they should', async ({ request }) => {
   expect((await request.post('/api/revalidate')).status()).toBe(401);
   // Account routes are for curators.
   expect((await request.post('/api/members/create-account', { data: {} })).status()).toBe(401);
-  // Forms refuse posts from other websites.
-  const crossSite = await request.post('/api/contact/send', { data: {}, headers: { origin: 'https://evil.example' } });
-  expect(crossSite.status()).toBe(403);
+  // Every change sent from another website's page is refused, before any
+  // route runs: forms, admin routes, and pages alike.
+  const evil = { origin: 'https://evil.example' };
+  expect((await request.post('/api/contact/send', { data: {}, headers: evil })).status()).toBe(403);
+  expect((await request.post('/api/members/create-account', { data: {}, headers: evil })).status()).toBe(403);
+  expect((await request.post('/api/revalidate', { headers: { 'sec-fetch-site': 'cross-site' } })).status()).toBe(403);
+  expect((await request.post('/api/media', { data: {}, headers: { 'sec-fetch-site': 'same-site' } })).status()).toBe(403);
+  expect((await request.post('/en/contact', { data: {}, headers: evil })).status()).toBe(403);
 });
 
-test('the server limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
-  const attempt = () => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'target@example.org' } });
-  // The first 10 get through to the bot check (refused here: no reCAPTCHA key in tests).
-  for (let i = 0; i < 10; i++) expect((await attempt()).status()).not.toBe(429);
+test('the server checks the sign-in form for bots too', async ({ request }) => {
+  const attempt = (extra: object) => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'bot-check@example.org', ...extra } });
+  // The hidden field filled in, sent instantly, or with no timing at all.
+  expect((await attempt({ website: 'spam', elapsedMs: 5000 })).status()).toBe(403);
+  expect((await attempt({ elapsedMs: 200 })).status()).toBe(403);
+  expect((await attempt({})).status()).toBe(403);
+});
+
+test('the server slows down and then limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
+  const attempt = () => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'target@example.org', website: '', elapsedMs: 5000 } });
+  // The first 10 get through to the bot check (refused here: no reCAPTCHA key
+  // in tests); from the fourth on, each is answered a second later (up to 5).
+  for (let i = 0; i < 10; i++) {
+    const started = Date.now();
+    expect((await attempt()).status()).not.toBe(429);
+    if (i >= 3) expect(Date.now() - started).toBeGreaterThanOrEqual(Math.min(i - 2, 5) * 1000 - 50);
+  }
   expect((await attempt()).status()).toBe(429);
   // Other accounts aren't affected.
-  const other = await request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'someone@example.org' } });
+  const other = await request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'someone@example.org', elapsedMs: 5000 } });
   expect(other.status()).not.toBe(429);
 });
 

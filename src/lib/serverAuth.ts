@@ -1,9 +1,12 @@
 /* Server-side checks for API routes: verifies a Firebase ID token and the
- * caller's role. */
+ * caller's role. The same session rules as firestore.rules: a confirmed
+ * email address, signed in within the last 14 days, and not signed out
+ * everywhere since (a new password or a removal, session_revocations). */
 import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose';
 import type { NextRequest } from 'next/server';
 import { FIRESTORE_REST, USE_EMULATORS } from './emulators';
 import { normalizeRole } from './role';
+import { MAX_SESSION_MS } from './sessionPolicy';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
@@ -19,23 +22,26 @@ interface VerifiedCaller {
 }
 
 /** Verifies a Firebase Auth ID token's signature/claims via Google's public JWKS, no firebase-admin/service-account needed. */
-async function verifyIdToken(idToken: string): Promise<VerifiedCaller | null> {
+async function verifyIdToken(idToken: string): Promise<(VerifiedCaller & { authTime: number }) | null> {
   if (!PROJECT_ID) return null;
   try {
     // The Auth emulator's tokens aren't signed. See emulators.ts: this branch
     // doesn't exist in a production build.
-    if (USE_EMULATORS) {
-      const test = decodeJwt(idToken);
-      return { uid: String(test.sub), email: typeof test.email === 'string' ? test.email : null };
-    }
-    const { payload } = await jwtVerify(idToken, JWKS, {
-      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
-      audience: PROJECT_ID,
-      // Firebase ID tokens are always RS256; refuse anything else outright.
-      algorithms: ['RS256'],
-    });
+    const payload = USE_EMULATORS
+      ? decodeJwt(idToken)
+      : (await jwtVerify(idToken, JWKS, {
+          issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+          audience: PROJECT_ID,
+          // Firebase ID tokens are always RS256; refuse anything else outright.
+          algorithms: ['RS256'],
+        })).payload;
     if (typeof payload.sub !== 'string' || !payload.sub) return null;
-    return { uid: payload.sub, email: typeof payload.email === 'string' ? payload.email : null };
+    // An unconfirmed email address gets nothing.
+    if (payload.email_verified !== true) return null;
+    // Neither does a sign-in older than 14 days.
+    const authTime = Number(payload.auth_time);
+    if (!Number.isFinite(authTime) || Date.now() - authTime * 1000 > MAX_SESSION_MS) return null;
+    return { uid: payload.sub, email: typeof payload.email === 'string' ? payload.email : null, authTime };
   } catch {
     return null;
   }
@@ -80,8 +86,10 @@ export async function requireRole(req: NextRequest, allowedRoles: string[]): Pro
   const caller = await verifyIdToken(idToken);
   if (!caller) return null;
 
+  // Read as the caller, so firestore.rules also applies its session checks
+  // (including a revocation since this sign-in) and refuses a stale one.
   const role = await getCallerRole(caller.uid, idToken);
   if (!role || !allowedRoles.includes(role)) return null;
 
-  return { ...caller, role };
+  return { uid: caller.uid, email: caller.email, role };
 }

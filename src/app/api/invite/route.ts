@@ -7,6 +7,7 @@
  * member's own inbox; the curator never sees it. */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/serverAuth';
+import { revokeSessions } from '@/lib/revokeSessions';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
 import { readJsonBody, asString } from '@/lib/http';
@@ -88,8 +89,9 @@ export async function POST(req: NextRequest) {
   if (!signedInBefore || newPassword) {
     tempPassword = generateTempPassword();
     await getAuth(app).updateUser(record.uid, { password: tempPassword });
-    // Whoever had their session (or old password) is signed out everywhere.
-    if (signedInBefore) await getAuth(app).revokeRefreshTokens(record.uid);
+    // Whoever had their session (or old password) is signed out everywhere,
+    // straight away (revokeSessions.ts).
+    if (signedInBefore) await revokeSessions(app, record.uid);
   }
 
   const lang = body?.locale === 'ar' ? 'ar' : 'en';

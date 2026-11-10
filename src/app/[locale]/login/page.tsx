@@ -1,24 +1,28 @@
 'use client';
 
 /* Member login: email/password with bot checks (honeypot, minimum fill time,
- * reCAPTCHA, BotID), a lockout after repeated failures in the browser and a
- * limit on the server, and a choice not to stay signed in on a shared device. */
+ * reCAPTCHA, BotID), a growing wait after each failure, a lockout in the
+ * browser and a limit on the server, and a choice not to stay signed in on
+ * a shared device. Someone whose email address isn't confirmed yet gets the
+ * link to confirm it here, and nothing else until they do. */
 import { useEffect, useRef, useState } from 'react';
 import {
-  browserSessionPersistence, indexedDBLocalPersistence, setPersistence, signInWithEmailAndPassword,
+  browserSessionPersistence, indexedDBLocalPersistence, sendEmailVerification, setPersistence,
+  signInWithEmailAndPassword, type User,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import PasswordInput from '@/components/PasswordInput';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { PASSWORD_FORM_HREF } from '@/lib/passwordForm';
 import ThemeLogo from '@/components/ThemeLogo';
 import { normalizeRole } from '@/lib/role';
 import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import Honeypot from '@/components/Honeypot';
+import { KEEP_KEY, markActive, readKeep, takeSignOutReason, type SignOutReason } from '@/lib/sessionPolicy';
 import styles from './Login.module.css';
 
 /* Bot/brute-force deterrents on top of reCAPTCHA and Firebase's own
@@ -26,17 +30,20 @@ import styles from './Login.module.css';
  *  - a hidden "website" field people never see; anything that fills it is a bot
  *  - a submission faster than a person can type is refused
  *  - email/password are validated (format, length) before anything is sent
+ *  - each failed attempt makes the next one wait: 1, 2, 4, then 8 seconds
  *  - after 5 failed attempts the form locks, 30s doubling up to 15 min
  *    (kept in localStorage so a reload doesn't reset it)
- *  - the server allows 10 attempts per account every 15 minutes and 60 per
- *    network an hour (api/verify-recaptcha), which clearing storage can't reset. */
+ *  - the server checks the hidden field and the fill time again, slows
+ *    down repeated attempts, and allows 10 per account every 15 minutes and
+ *    60 per network an hour (api/verify-recaptcha), which clearing storage
+ *    can't reset. */
 const MAX_FAILS = 5;
 const LOCK_BASE_MS = 30_000;
 const LOCK_MAX_MS = 15 * 60_000;
 const MIN_FILL_MS = 1500;
 const LOCK_KEY = 'jh-login-lock';
-/** The "Keep me signed in" choice, remembered on this device (not a secret). */
-const KEEP_KEY = 'jh-keep-signed-in';
+/** Seconds between "Send the link again" presses. */
+const RESEND_WAIT_S = 60;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
 type LockState = { fails: number; until: number };
@@ -50,12 +57,22 @@ function writeLock(s: LockState) {
   try { localStorage.setItem(LOCK_KEY, JSON.stringify(s)); } catch { /* storage blocked */ }
 }
 
-function readKeep(): boolean {
-  try { return localStorage.getItem(KEEP_KEY) !== '0'; } catch { return true; }
+/** When the next attempt may be made after `fails` failures in a row. */
+function nextAllowed(fails: number): number {
+  if (fails <= 0) return 0;
+  if (fails < MAX_FAILS) return Date.now() + 1000 * 2 ** (fails - 1);
+  return Date.now() + Math.min(LOCK_BASE_MS * 2 ** (fails - MAX_FAILS), LOCK_MAX_MS);
+}
+
+/** Emails the link that confirms the address, in the page's language. */
+async function sendConfirmLink(u: User, locale: string) {
+  auth.languageCode = locale;
+  await sendEmailVerification(u, { url: `${window.location.origin}/${locale}/login` });
 }
 
 export default function LoginPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, pendingEmail, loading: authLoading, logout } = useAuth();
+  const locale = useLocale();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [honeypot, setHoneypot] = useState('');
@@ -66,6 +83,13 @@ export default function LoginPage() {
   const [openedAt] = useState(() => performance.timeOrigin);
   const [keepSignedIn, setKeepSignedIn] = useState(readKeep);
   const [capsLock, setCapsLock] = useState(false);
+  // Seconds left before the next attempt is allowed (after a failure).
+  const [waitLeft, setWaitLeft] = useState(0);
+  const [endedReason, setEndedReason] = useState<SignOutReason | null>(null);
+  const [confirmNote, setConfirmNote] = useState('');
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [resendAt, setResendAt] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const router = useRouter();
   const t = useTranslations('LoginPage');
 
@@ -76,6 +100,61 @@ export default function LoginPage() {
     if (!authLoading && user && !signingIn.current) router.replace('/dashboard');
   }, [authLoading, user, router]);
 
+  // Why the last session ended (idle, too old, ended elsewhere), shown once.
+  // Looked at again shortly after: when a session is ended elsewhere,
+  // Firebase signs out a moment before the reason is noted.
+  useEffect(() => {
+    const read = () => { const r = takeSignOutReason(); if (r) setEndedReason(r); };
+    read();
+    const id = setTimeout(read, 1500);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Counts down the wait after a failed attempt (and a lockout left from before).
+  useEffect(() => {
+    const tick = () => {
+      setNow(Date.now());
+      setWaitLeft(Math.max(0, Math.ceil((readLock().until - Date.now()) / 1000)));
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, []);
+
+  /** Opened the link? Then straight in; the token is refreshed so the
+   *  database sees the confirmed address. */
+  const confirmDone = async () => {
+    const current = auth.currentUser;
+    if (!current) return;
+    setConfirmBusy(true);
+    setConfirmNote('');
+    try {
+      await current.reload();
+      if (current.emailVerified) {
+        await current.getIdToken(true);
+        window.location.reload(); // signed in afresh, confirmed: on to the dashboard
+        return;
+      }
+      setConfirmNote(t('confirmNotYet'));
+    } catch {
+      setConfirmNote(t('errorNetwork'));
+    }
+    setConfirmBusy(false);
+  };
+
+  const resendLink = async () => {
+    const current = auth.currentUser;
+    if (!current || Date.now() < resendAt) return;
+    setResendAt(Date.now() + RESEND_WAIT_S * 1000);
+    setConfirmNote('');
+    try {
+      await sendConfirmLink(current, locale);
+      setConfirmNote(t('confirmSent'));
+    } catch (err) {
+      setConfirmNote((err as { code?: string } | null)?.code === 'auth/too-many-requests' ? t('errorTooMany') : t('errorGeneral'));
+    }
+  };
+
   const onPasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => setCapsLock(e.getModifierState('CapsLock'));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +163,8 @@ export default function LoginPage() {
 
     const lock = readLock();
     if (lock.until > Date.now()) {
-      setError(t('errorLocked', { seconds: Math.ceil((lock.until - Date.now()) / 1000) }));
+      const seconds = Math.ceil((lock.until - Date.now()) / 1000);
+      setError(lock.fails >= MAX_FAILS ? t('errorLocked', { seconds }) : t('errorWait', { seconds }));
       return;
     }
     const cleanEmail = email.trim().toLowerCase();
@@ -105,8 +185,7 @@ export default function LoginPage() {
     setLoading(true);
     const recordFailure = () => {
       const fails = readLock().fails + 1;
-      const until = fails >= MAX_FAILS ? Date.now() + Math.min(LOCK_BASE_MS * 2 ** (fails - MAX_FAILS), LOCK_MAX_MS) : 0;
-      writeLock({ fails, until });
+      writeLock({ fails, until: nextAllowed(fails) });
     };
 
     try {
@@ -114,7 +193,8 @@ export default function LoginPage() {
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, action: 'login', email: cleanEmail }),
+        // The hidden field and the fill time go too: the server checks them again.
+        body: JSON.stringify({ token, action: 'login', email: cleanEmail, website: honeypot, elapsedMs: Date.now() - openedAt }),
       });
       if (!verify.ok) {
         setError(verify.status === 429 ? t('errorTooMany') : t('errorGeneral'));
@@ -130,6 +210,16 @@ export default function LoginPage() {
       signingIn.current = true;
       const cred    = await signInWithEmailAndPassword(auth, cleanEmail, password);
       writeLock({ fails: 0, until: 0 });
+      markActive();
+      // Not confirmed yet: send the link and stay here (the panel below).
+      if (!cred.user.emailVerified) {
+        signingIn.current = false;
+        setPassword('');
+        setResendAt(Date.now() + RESEND_WAIT_S * 1000);
+        await sendConfirmLink(cred.user, locale).catch(() => setResendAt(0));
+        setLoading(false);
+        return;
+      }
       // Remember (for this tab only) that the temporary password was used,
       // so the dashboard can ask the member to change it.
       try {
@@ -184,6 +274,24 @@ export default function LoginPage() {
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
 
+        {endedReason && !pendingEmail && (
+          <p className={styles.notice} role="status">{t(`ended_${endedReason}`)}</p>
+        )}
+
+        {pendingEmail ? (
+          <div className={styles.confirm} role="region" aria-labelledby="confirm-title">
+            <h2 id="confirm-title" className={styles.confirmTitle}>{t('confirmTitle')}</h2>
+            <p className={styles.confirmText}>{t('confirmText', { email: pendingEmail })}</p>
+            {confirmNote && <p className={styles.notice} role="status">{confirmNote}</p>}
+            <button type="button" className={'btn-primary ' + styles.submitBtn} onClick={confirmDone} disabled={confirmBusy}>
+              {confirmBusy ? <span className={styles.spinner} /> : t('confirmDone')}
+            </button>
+            <button type="button" className={'btn-ghost ' + styles.confirmBtn} onClick={resendLink} disabled={now < resendAt}>
+              {now < resendAt ? t('confirmResendIn', { seconds: Math.ceil((resendAt - now) / 1000) }) : t('confirmResend')}
+            </button>
+            <button type="button" className={styles.linkBtn} onClick={() => void logout()}>{t('confirmSignOut')}</button>
+          </div>
+        ) : (<>
         {error && (
           <div className={styles.errorBox}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -239,10 +347,11 @@ export default function LoginPage() {
             </span>
           </label>
 
-          <button type="submit" className={'btn-primary ' + styles.submitBtn} disabled={loading}>
-            {loading ? <span className={styles.spinner} /> : t('signIn')}
+          <button type="submit" className={'btn-primary ' + styles.submitBtn} disabled={loading || waitLeft > 0}>
+            {loading ? <span className={styles.spinner} /> : waitLeft > 0 ? t('waitButton', { seconds: waitLeft }) : t('signIn')}
           </button>
         </form>
+        </>)}
       </div>
     </main>
   );

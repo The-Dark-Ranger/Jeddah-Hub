@@ -61,7 +61,10 @@ async function seed() {
   });
 }
 
-const as = uid => env.authenticatedContext(uid, { email: `${uid}@test.dev` }).firestore();
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+/** A member's session: confirmed email, signed in a minute ago (unless the test says otherwise). */
+const as = (uid, token = {}) =>
+  env.authenticatedContext(uid, { email: `${uid}@test.dev`, email_verified: true, auth_time: nowSeconds() - 60, ...token }).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
 const init = db => doc(db, 'initiatives', 'init1');
 
@@ -364,5 +367,26 @@ describe('private data and roles', () => {
     await assertFails(addDoc(collection(anon(), 'contact_messages'), { name: 'x', message: 'y' }));
     await assertFails(addDoc(collection(anon(), 'newsletter_subscribers'), { email: 'a@b.co' }));
     await assertFails(addDoc(collection(as('mate'), 'activity_responses'), { activityId: 'a' }));
+  });
+});
+
+describe('sessions: confirmed email, 14-day limit, signed out everywhere', () => {
+  const ownDoc = db => getDoc(doc(db, 'users', 'mate'));
+  it('a confirmed, recent sign-in gets in', () => assertSucceeds(ownDoc(as('mate'))));
+  it('an unconfirmed email address gets nothing', async () => {
+    await assertFails(ownDoc(as('mate', { email_verified: false })));
+    await assertFails(getDoc(doc(as('cur', { email_verified: false }), 'users', 'mate')));
+  });
+  it('a sign-in older than 14 days gets nothing', () =>
+    assertFails(ownDoc(as('mate', { auth_time: nowSeconds() - 15 * 86400 }))));
+  it('a sign-in from before "sign out everywhere" gets nothing; a newer one does', async () => {
+    await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'session_revocations', 'mate'), { at: nowSeconds() - 30 }));
+    await assertFails(ownDoc(as('mate', { auth_time: nowSeconds() - 60 })));
+    await assertSucceeds(ownDoc(as('mate', { auth_time: nowSeconds() - 5 })));
+  });
+  it('nobody can read or change the revocations', async () => {
+    await assertFails(getDoc(doc(as('mate'), 'session_revocations', 'mate')));
+    await assertFails(setDoc(doc(as('mate'), 'session_revocations', 'mate'), { at: 0 }));
+    await assertFails(setDoc(doc(as('cur'), 'session_revocations', 'mate'), { at: 0 }));
   });
 });

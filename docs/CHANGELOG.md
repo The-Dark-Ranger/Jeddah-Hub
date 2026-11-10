@@ -5,6 +5,14 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 10 November
+- Only confirmed email addresses get in: a member whose address isn't confirmed is sent a link when they sign in and sees nothing else until they open it. The database and the server refuse an unconfirmed account too, so this can't be skipped.
+- Sessions have limits: every sign-in ends after 14 days, and on a shared computer ("Keep me signed in" unticked) after 30 minutes without activity. The sign-in page says why a session ended.
+- Signing out everywhere takes effect at once: when a curator sends a member a new password or removes them, every session that member had stops working straight away, not up to an hour later. Open pages notice within minutes, or as soon as the tab is used again.
+- Sign-in is slower to attack: each wrong password makes the next try wait (1, 2, 4, then 8 seconds) before the lockout, and the server answers repeated attempts on one account more slowly. The server now checks the sign-in form's hidden bot field and fill time too.
+- Forged requests are refused everywhere: any change sent from another website's page (a hidden form in a member's browser, for example) is turned away before it reaches any route or page, not only the forms.
+- Admin changes have daily limits that hold across every server: account changes (create, reset, remove) and refreshing the public pages, alongside the existing limits on invites and photo uploads.
+
 ### 8 November
 - Previews stay private: the code no longer names the preview address or the Vercel account. The bot check recognises a preview by the address it is reached at.
 

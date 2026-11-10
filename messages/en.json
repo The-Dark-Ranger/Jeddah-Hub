@@ -388,7 +388,20 @@
     "errorPasswordRenew": "For your security, this account needs a new password. Please contact the Jeddah Hub team and a curator will email you a new one-time password.",
     "keepSignedIn": "Keep me signed in on this device",
     "keepSignedInHint": "Untick on a shared or public computer: you will be signed out when the browser closes.",
-    "capsLockOn": "Caps Lock is on."
+    "capsLockOn": "Caps Lock is on.",
+    "errorWait": "Please wait {seconds} seconds before trying again.",
+    "waitButton": "Try again in {seconds}s",
+    "ended_idle": "You were signed out after 30 minutes without activity. Please sign in again.",
+    "ended_expired": "For your security, sign-ins last 14 days. Please sign in again.",
+    "ended_revoked": "Your session was ended (for example, a new password was sent). Please sign in again.",
+    "confirmTitle": "Confirm your email address",
+    "confirmText": "We sent a link to {email}. Open it to confirm the address is yours, then come back and press Continue. Check your spam folder if it isn't there.",
+    "confirmDone": "I've confirmed it, continue",
+    "confirmNotYet": "Not confirmed yet. Open the link in the email first, then press Continue.",
+    "confirmResend": "Send the link again",
+    "confirmResendIn": "Send again in {seconds}s",
+    "confirmSent": "A new link is on its way.",
+    "confirmSignOut": "Sign out"
   },
   "Common": {
     "email": "Email",

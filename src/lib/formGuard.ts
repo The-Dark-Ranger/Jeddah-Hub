@@ -14,16 +14,21 @@ export function isBotSubmission(body: Record<string, unknown> | null, minFillMs:
   return !!body?.website || !Number.isFinite(elapsed) || elapsed < minFillMs;
 }
 
-/** True for a post sent from another website's page (its Origin header
- *  names a different site), e.g. a hidden form submitting in a visitor's
- *  browser. The site's own pages, and tools that send no Origin at all,
- *  pass; those still face every other check. */
+/** True for a request sent from another website's page, e.g. a hidden form
+ *  submitting in a visitor's browser while they're signed in here. The
+ *  browser says so itself (Sec-Fetch-Site, which pages can't set), and the
+ *  Origin it sends names the other site. The site's own pages, and tools
+ *  that send neither header, pass; those still face every other check.
+ *  proxy.ts applies this to every change (POST, PUT, PATCH, DELETE) before
+ *  any route runs; the form routes check it again themselves. */
 export function isCrossSite(req: Request): boolean {
+  const fetchSite = req.headers.get('sec-fetch-site');
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') return true;
   const origin = req.headers.get('origin');
   if (!origin) return false;
   try {
     return new URL(origin).host !== req.headers.get('host');
   } catch {
-    return true;
+    return true; // "null" (a sandboxed frame) or garbage
   }
 }

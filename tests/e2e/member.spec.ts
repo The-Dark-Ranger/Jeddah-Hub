@@ -39,7 +39,91 @@ test.describe('signing in', () => {
     await page.goto('/en/login');
     await page.waitForURL(/\/dashboard/);
   });
+
+  test('each wrong password makes the next try wait a little longer', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    const submit = page.locator('form button[type="submit"]');
+    for (const seconds of [1, 2]) {
+      await page.locator('#login-email').fill(PEOPLE.leaver.email);
+      await page.locator('#login-password').fill('wrong-password');
+      await page.waitForTimeout(1_700);
+      await submit.click();
+      await expect(page.getByText('Invalid email or password.')).toBeVisible();
+      await expect(submit).toBeDisabled();
+      await expect(submit).toHaveText(`Try again in ${seconds}s`);
+      await expect(submit).toBeEnabled({ timeout: seconds * 1000 + 2000 });
+    }
+  });
+
+  test('an unconfirmed email address gets the link, and nothing else until it is opened', async ({ page, request }) => {
+    await signInOnly(page, PEOPLE.unconfirmed);
+    const heading = page.getByRole('heading', { name: 'Confirm your email address' });
+    const done = page.getByRole('button', { name: /confirmed it, continue/ });
+    await expect(heading).toBeVisible();
+    await expect(page.getByText(PEOPLE.unconfirmed.email)).toBeVisible();
+    // The dashboard sends them back here.
+    await page.goto('/en/dashboard');
+    await page.waitForURL(/\/login/);
+    await expect(heading).toBeVisible();
+    await done.click();
+    await expect(page.getByText('Not confirmed yet.', { exact: false })).toBeVisible();
+
+    // Open the link that was emailed (the Auth emulator keeps it).
+    const codes = await (await request.get(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/oobCodes`)).json();
+    const link = (codes.oobCodes as { email: string; requestType: string; oobLink: string }[])
+      .filter(c => c.email === PEOPLE.unconfirmed.email && c.requestType === 'VERIFY_EMAIL').at(-1)?.oobLink;
+    expect(link).toBeTruthy();
+    await request.get(link!);
+    await done.click();
+    await page.waitForURL(/\/dashboard/);
+  });
+
+  test('a shared-computer session ends after 30 minutes without activity', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    await page.getByRole('checkbox', { name: /Keep me signed in/ }).uncheck();
+    await signInOnly(page, PEOPLE.signer, false);
+    await page.waitForURL(/\/dashboard/);
+    await page.evaluate(() => localStorage.setItem('jh-last-active', String(Date.now() - 31 * 60_000)));
+    await page.reload();
+    await page.waitForURL(/\/login/);
+    await expect(page.getByText('You were signed out after 30 minutes without activity.', { exact: false })).toBeVisible();
+  });
+
+  test('a member signed out everywhere (new password, removal) loses access at once', async ({ page }) => {
+    await signIn(page, PEOPLE.leaver);
+    await signOutEverywhere(PEOPLE.leaver.uid);
+    await page.reload();
+    await page.waitForURL(/\/login/, { timeout: 20_000 });
+    await expect(page.getByText('Your session was ended', { exact: false })).toBeVisible();
+  });
 });
+
+const PROJECT = 'demo-jeddah-hub';
+
+/** Fills in and sends the sign-in form, without waiting for the dashboard. */
+async function signInOnly(page: Page, who: { email: string; password: string }, open = true) {
+  await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+  if (open) await page.goto('/en/login');
+  await page.locator('#login-email').fill(who.email);
+  await page.locator('#login-password').fill(who.password);
+  await page.waitForTimeout(1_700);
+  await page.locator('form button[type="submit"]').click();
+}
+
+/** What the server does on a new password or a removal (src/lib/revokeSessions.ts). */
+async function signOutEverywhere(uid: string) {
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+  const { getApps, initializeApp } = await import('firebase-admin/app');
+  const { getAuth } = await import('firebase-admin/auth');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  const app = getApps()[0] ?? initializeApp({ projectId: PROJECT });
+  await new Promise(r => setTimeout(r, 1100)); // a later second than the sign-in
+  await getFirestore(app).doc(`session_revocations/${uid}`).set({ at: Math.floor(Date.now() / 1000) });
+  await getAuth(app).revokeRefreshTokens(uid);
+}
 
 test.describe('changing a password', () => {
   test('My Profile has the form, and no extra button above it', async ({ page }) => {

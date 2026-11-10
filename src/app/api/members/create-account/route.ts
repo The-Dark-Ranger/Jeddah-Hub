@@ -6,6 +6,8 @@ import { requireRole } from '@/lib/serverAuth';
 import { readJsonBody } from '@/lib/http';
 import { isValidEmail } from '@/lib/validateEmail';
 import { isRateLimited } from '@/lib/rateLimit';
+import { withinLimit, DAY } from '@/lib/persistentLimit';
+import { revokeSessions } from '@/lib/revokeSessions';
 import { MEMBER_ROLES, type MemberRole } from '@/lib/memberAccounts';
 import { adminApp, generateTempPassword } from '@/lib/firebaseAdmin';
 import { normalizeRole } from '@/lib/role';
@@ -27,6 +29,9 @@ import { normalizeRole } from '@/lib/role';
  * `action: 'remove'` undoes this for a pending member removed from Role
  * Assignments, but only if they have never signed in, so it can never
  * delete a real member's account or profile. */
+
+/** Account changes one curator can make in a day (see POST). */
+const ACCOUNT_CHANGES_PER_DAY = 150;
 
 /** Fills in users/{uid} and public_profiles/{uid} for a newly added member. */
 async function upsertProfile(app: App, uid: string, email: string, displayName: string, role: MemberRole, hidden: boolean) {
@@ -145,6 +150,9 @@ async function deleteMember(app: App, uid: string, caller: { uid: string; role?:
   batch.delete(db.doc(`public_profiles/${uid}`));
   batch.delete(db.doc(`charter_signatures/${uid}`));
   if (email) batch.delete(db.doc(`role_assignments/${email}`));
+  // Signed out everywhere first: a session they still hold stops working
+  // now, not when its token runs out within the hour.
+  await revokeSessions(app, uid);
   await batch.commit();
 
   try {
@@ -163,6 +171,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await readJsonBody(req);
+
+  // Every change (creating, resetting or removing an account) also counts
+  // against a daily limit per curator that holds across every server
+  // instance, so a stolen session can't empty the member list in one go.
+  // Checking who has signed in only reads, and isn't counted.
+  if (body?.action !== 'signin-status' && !(await withinLimit(`account-change:${caller.uid}`, ACCOUNT_CHANGES_PER_DAY, DAY))) {
+    return NextResponse.json({ result: 'failed', reason: 'rate-limited' }, { status: 429 });
+  }
 
   // Which of these assignment emails have signed in, and when, so Role
   // Assignments can move them out of Pending. Only the sign-in time is

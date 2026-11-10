@@ -100,3 +100,21 @@
     padding: 2rem 1.5rem;
   }
 }
+
+/* A neutral message: why a session ended, or how confirming is going. */
+.notice {
+  margin: 0 0 1rem; padding: .7rem 1rem; border-radius: 10px;
+  background: rgba(37, 99, 235, .08); color: var(--text-main);
+  font-size: .9rem; line-height: 1.45;
+}
+
+/* Signed in, email address not confirmed yet. */
+.confirm { display: flex; flex-direction: column; gap: .75rem; }
+.confirm .notice { margin: 0; }
+.confirmTitle { margin: 0; font-size: 1.15rem; color: var(--text-main); }
+.confirmText { margin: 0; font-size: .92rem; line-height: 1.5; color: var(--text-muted); overflow-wrap: anywhere; }
+.confirmBtn { width: 100%; min-height: 44px; justify-content: center; }
+.linkBtn {
+  align-self: center; min-height: 44px; padding: 0 .75rem; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: .9rem; font-weight: 600; color: var(--primary-blue); text-decoration: underline;
+}

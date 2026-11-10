@@ -4,8 +4,21 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Helpers ──────────────────────────────────────────────
+    // A member's session counts only with an email address they have
+    // confirmed, a sign-in from the last 14 days, and no "sign out
+    // everywhere" since it (src/lib/sessionPolicy.ts, revokeSessions.ts).
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+             && request.auth.token.email_verified == true
+             && request.auth.token.auth_time * 1000 > request.time.toMillis() - 14 * 86400000
+             && notRevoked();
+    }
+
+    // A new password or a removal writes the time to session_revocations
+    // (server only); every sign-in from before then is refused at once.
+    function notRevoked() {
+      let rev = /databases/$(database)/documents/session_revocations/$(request.auth.uid);
+      return !exists(rev) || get(rev).data.at < request.auth.token.auth_time;
     }
 
     function isOwner(uid) {

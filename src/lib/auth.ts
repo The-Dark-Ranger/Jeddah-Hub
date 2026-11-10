@@ -6,6 +6,7 @@ import {
   collection, query, where, getDocs,
 } from 'firebase/firestore';
 import { normalizeRole } from './role';
+import { MAX_SESSION_MS, setSignOutReason, type SignOutReason } from './sessionPolicy';
 
 export type UserRole = 'curator' | 'vice_curator' | 'impact_officer' | 'shaper' | 'alumni' | null;
 
@@ -129,20 +130,63 @@ async function readUserProfile(uid: string, email?: string | null): Promise<User
   return null;
 }
 
-export function subscribeToAuthChanges(callback: (user: UserProfile | null) => void) {
-  if (!auth) { callback(null); return () => {}; }
+/** Is this Firebase session still allowed? Too old (14 days since the
+ *  password was typed), or ended elsewhere (new password, removed member):
+ *  the reason; otherwise null. Network trouble is not a reason. */
+export async function checkSession(firebaseUser: FirebaseUser, refresh = false): Promise<SignOutReason | null> {
+  try {
+    const { authTime } = await firebaseUser.getIdTokenResult(refresh);
+    if (Date.now() - new Date(authTime).getTime() > MAX_SESSION_MS) return 'expired';
+    return null;
+  } catch (err) {
+    return ENDED_CODES.has((err as { code?: string } | null)?.code ?? '') ? 'revoked' : null;
+  }
+}
+/** What Firebase answers when a session's sign-in has been cut off. */
+const ENDED_CODES = new Set(['auth/user-token-expired', 'auth/user-disabled', 'auth/user-not-found', 'auth/invalid-user-token']);
+
+/**
+ * Follows who is signed in. `pendingEmail` is set while someone is signed in
+ * but hasn't confirmed their email address: they get no profile and no
+ * access (the database refuses them too) until they open the link.
+ */
+export function subscribeToAuthChanges(callback: (user: UserProfile | null, pendingEmail: string | null) => void) {
+  if (!auth) { callback(null, null); return () => {}; }
   return onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-    if (firebaseUser) {
-      const profile = await getUserProfile(firebaseUser.uid, firebaseUser.email);
-      callback(profile ?? {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        role: null,
-        displayName: firebaseUser.displayName,
-      });
-    } else {
-      callback(null);
+    if (!firebaseUser) { callback(null, null); return; }
+
+    const ended = await checkSession(firebaseUser);
+    if (ended) {
+      setSignOutReason(ended);
+      await signOut(auth);
+      return; // fires again, signed out
     }
+
+    if (!firebaseUser.emailVerified) {
+      // They may have just opened the link in another tab or on their phone.
+      await firebaseUser.reload().catch(() => {});
+      if (!firebaseUser.emailVerified) { callback(null, firebaseUser.email); return; }
+      // The token must carry the confirmation before the database sees it.
+      await firebaseUser.getIdToken(true).catch(() => {});
+    }
+
+    const profile = await getUserProfile(firebaseUser.uid, firebaseUser.email);
+    if (!profile) {
+      // The database refused: maybe this session was ended elsewhere (a new
+      // password, a removal). Asking for a fresh token tells us.
+      const endedNow = await checkSession(firebaseUser, true);
+      if (endedNow) {
+        setSignOutReason(endedNow);
+        await signOut(auth);
+        return;
+      }
+    }
+    callback(profile ?? {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      role: null,
+      displayName: firebaseUser.displayName,
+    }, null);
   });
 }
 

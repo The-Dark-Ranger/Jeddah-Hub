@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import {routing} from './i18n/routing';
+import { isCrossSite } from './lib/formGuard';
 
 const intl = createMiddleware(routing);
 
@@ -12,6 +13,9 @@ const SCANNER_PATH =
   /(?:^|\/)(?:\.(?:env|git|svn|hg|aws|ssh|vscode|idea|htaccess|htpasswd|DS_Store)|wp-[a-z]+|wordpress|xmlrpc|phpmyadmin|pma|cgi-bin|vendor|server-status|actuator|boaform|HNAP1|administrator|backup)(?:$|[/.?])/i;
 const SCANNER_EXT = /\.(?:php\d?|aspx?|jsp|cgi|env|ini|bak|sql|old|swp|ya?ml|log|conf|config)$/i;
 
+/** Methods that read; every other method changes something. */
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
 export default function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (SCANNER_PATH.test(path) || SCANNER_EXT.test(path)) {
@@ -20,6 +24,12 @@ export default function proxy(request: NextRequest) {
       headers: { 'Cache-Control': 'public, max-age=86400', 'X-Robots-Tag': 'noindex' },
     });
   }
+  // A change sent from another website's page (a forged cross-site
+  // request) is refused before any route or page runs.
+  if (!SAFE_METHODS.has(request.method) && isCrossSite(request)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+  if (path.startsWith('/api/')) return NextResponse.next();
   return intl(request);
 }
 
@@ -27,6 +37,8 @@ export const config = {
   matcher: [
     // Internationalized pathnames
     '/', '/(ar|en)/:path*',
+    // Server routes: every change is checked for forged cross-site requests
+    '/api/:path*',
     // Common scanner probes outside them
     '/((?:\\.(?:env|git|svn|hg|aws|ssh|vscode|idea|htaccess|htpasswd|DS_Store)|wp-|wordpress|xmlrpc|phpmyadmin|pma|cgi-bin|vendor|server-status|actuator|boaform|HNAP1|administrator|backup).*)',
     '/(.*\\.(?:php\\d?|aspx?|jsp|cgi|env|ini|bak|sql|old|swp|ya?ml|log|conf|config))',

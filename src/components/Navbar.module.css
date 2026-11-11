@@ -224,11 +224,12 @@
   /* Logo stays proportional inside 68px navbar */
   .logo { height: 52px; }
 
-  /* Hide desktop-only elements */
+  /* Hide desktop-only elements: links, Member Login and the dashboard
+     buttons all live in the menu drawer on phones and tablets. */
   .navLinks { display: none; }
   .userMenu { display: none; }
+  .loginBtn { display: none; }
 
-  .loginBtn  { padding: 0 .8rem; font-size: .82rem; min-height: 40px; border-radius: 8px; }
   .iconBtn   { min-width: 40px; min-height: 40px; border-radius: 8px; }
   .langPill { height: 40px; border-radius: 8px; }
   .langActive, .langInactive { padding: 0 .55rem; font-size: max(12px, .72rem); }
@@ -277,9 +278,8 @@
 }
 .mobileFooter { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
 
-/* ── Narrow phones: login lives in the drawer, keeping the bar uncluttered ── */
+/* ── Narrow phones: a little less space between the bar's buttons ── */
 @media (max-width: 400px) {
-  .loginBtn { display: none; }
   .actions  { gap: .4rem; }
 }
 

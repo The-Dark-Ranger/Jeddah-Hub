@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 11 November
+- Phones and tablets: Member Login now sits only in the menu, like the Dashboard and Sign out buttons, so the top bar shows just the logo, theme, language and menu.
+
 ### 10 November
 - Only confirmed email addresses get in: a member whose address isn't confirmed is sent a link when they sign in and sees nothing else until they open it. The database and the server refuse an unconfirmed account too, so this can't be skipped.
 - Sessions have limits: every sign-in ends after 14 days, and on a shared computer ("Keep me signed in" unticked) after 30 minutes without activity. The sign-in page says why a session ended.

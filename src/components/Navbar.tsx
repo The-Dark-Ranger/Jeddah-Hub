@@ -73,8 +73,12 @@ export default function Navbar() {
    * its height (DashboardLayout.module.css), so a navbar that hides
    * mid-scroll would leave a gap of page content where it used to be. */
   const isDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+  // While the drawer is open the page is pinned (see below), so scroll
+  // events then are the pinning itself, not the reader moving.
+  const drawerOpenRef = useRef(false);
   useEffect(() => {
     const onScroll = () => {
+      if (drawerOpenRef.current) return;
       const y = window.scrollY;
       setScrolled(y > 8);
       if (isDashboard || y <= 72) {
@@ -99,12 +103,22 @@ export default function Navbar() {
   }, [isDashboard]);
 
   /* ── Drawer behaviour: Escape closes it, focus moves in and back out,
-   * and the page underneath can't scroll while it covers the screen. */
+   * and the page underneath can't scroll while it covers the screen.
+   * overflow: hidden alone doesn't stop phone browsers (iOS Safari above
+   * all) from scrolling the page, which also made the bar hide itself and
+   * left the drawer hanging below a gap. So the page is pinned where it
+   * is, and put back at the same place when the drawer closes. */
   useEffect(() => {
     if (!mobileOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    drawerRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+    drawerOpenRef.current = true;
+    const y = window.scrollY;
+    const body = document.body.style;
+    const prev = { overflow: body.overflow, position: body.position, top: body.top, width: body.width };
+    body.overflow = 'hidden';
+    body.position = 'fixed';
+    body.top = `-${y}px`;
+    body.width = '100%';
+    drawerRef.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -114,7 +128,12 @@ export default function Navbar() {
     };
     document.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      Object.assign(document.body.style, prev);
+      // Instantly, not with the site's smooth scrolling.
+      window.scrollTo({ top: y, behavior: 'instant' });
+      lastScrollY.current = y;
+      drawerOpenRef.current = false;
+      setNavHidden(false); // the bar stays where it was while the drawer was open
       document.removeEventListener('keydown', onKey);
     };
   }, [mobileOpen]);
@@ -162,7 +181,7 @@ export default function Navbar() {
 
   const navClass = [
     styles.navbar,
-    navHidden ? styles.navbarHidden : '',
+    navHidden && !mobileOpen ? styles.navbarHidden : '',
     scrolled ? styles.navbarScrolled : '',
   ].filter(Boolean).join(' ');
 

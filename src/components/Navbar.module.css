@@ -151,6 +151,8 @@
   transition: opacity .22s ease, transform .22s ease, visibility 0s .22s;
   display: flex; flex-direction: column;
   overflow-y: auto;
+  /* Scrolling to the end of the drawer doesn't carry on into the page. */
+  overscroll-behavior: contain;
 }
 [data-theme="dark"] .mobileDrawer {
   background: var(--sidebar-bg);

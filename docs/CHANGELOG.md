@@ -6,6 +6,7 @@ which has the full description and how it was tested.
 ## November 2026
 
 ### 11 November
+- Phones: with the menu open, the page underneath no longer scrolls and the top bar no longer slides away, which left the menu hanging below a gap. Closing the menu returns to the same place on the page.
 - Phones and tablets: Member Login now sits only in the menu, like the Dashboard and Sign out buttons, so the top bar shows just the logo, theme, language and menu.
 
 ### 10 November

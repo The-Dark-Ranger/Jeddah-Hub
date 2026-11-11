@@ -108,3 +108,29 @@ test('security headers are sent', async ({ request }) => {
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['x-powered-by']).toBeUndefined();
 });
+
+test('on a phone, the open menu stays put: the page does not scroll under it and the bar stays', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/en', { waitUntil: 'networkidle' });
+  const bar = page.getByRole('navigation', { name: 'Main navigation' });
+  // Partway down the page, then up a little so the bar is showing.
+  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
+  await expect(bar).toHaveClass(/navbarHidden/);
+  await page.evaluate(() => window.scrollTo({ top: 850, behavior: 'instant' }));
+  await expect(bar).not.toHaveClass(/navbarHidden/);
+  await expect.poll(async () => (await bar.boundingBox())?.y).toBe(0);
+  const before = await page.evaluate(() => window.scrollY);
+
+  await page.getByRole('button', { name: 'Toggle menu' }).click();
+  await expect(page.getByRole('link', { name: 'Member Login' }).last()).toBeVisible();
+  // Trying to scroll the page down while the menu is open (this used to
+  // move the page and tuck the bar away, leaving a gap above the menu).
+  await page.evaluate(() => window.scrollBy({ top: 1200, behavior: 'instant' }));
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0); // pinned: nothing to scroll
+  expect((await bar.boundingBox())?.y).toBe(0);
+
+  await page.keyboard.press('Escape');
+  // Back exactly where the reader was.
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(Math.round(before));
+});

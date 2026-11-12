@@ -21,8 +21,11 @@ interface VerifiedCaller {
   role?: string;
 }
 
-/** Verifies a Firebase Auth ID token's signature/claims via Google's public JWKS, no firebase-admin/service-account needed. */
-async function verifyIdToken(idToken: string): Promise<(VerifiedCaller & { authTime: number }) | null> {
+/** Verifies a Firebase Auth ID token's signature/claims via Google's public
+ *  JWKS, no firebase-admin/service-account needed. Only a confirmed email
+ *  address passes, unless `unconfirmed` asks for one that isn't confirmed
+ *  yet (the one thing such a session may do: ask for the confirmation link). */
+async function verifyIdToken(idToken: string, { unconfirmed = false } = {}): Promise<(VerifiedCaller & { authTime: number }) | null> {
   if (!PROJECT_ID) return null;
   try {
     // The Auth emulator's tokens aren't signed. See emulators.ts: this branch
@@ -36,8 +39,8 @@ async function verifyIdToken(idToken: string): Promise<(VerifiedCaller & { authT
           algorithms: ['RS256'],
         })).payload;
     if (typeof payload.sub !== 'string' || !payload.sub) return null;
-    // An unconfirmed email address gets nothing.
-    if (payload.email_verified !== true) return null;
+    // An unconfirmed email address gets nothing (and the link only goes to one).
+    if ((payload.email_verified === true) === unconfirmed) return null;
     // Neither does a sign-in older than 14 days.
     const authTime = Number(payload.auth_time);
     if (!Number.isFinite(authTime) || Date.now() - authTime * 1000 > MAX_SESSION_MS) return null;
@@ -76,12 +79,27 @@ async function getCallerRole(uid: string, idToken: string): Promise<string | nul
   }
 }
 
-/** Verifies the request's Bearer ID token and checks the caller's stored role is one of `allowedRoles`. */
-export async function requireRole(req: NextRequest, allowedRoles: string[]): Promise<VerifiedCaller | null> {
+/** The request's Bearer ID token, or null. Firebase ID tokens are ~1KB;
+ *  anything absurd is refused before verifying. */
+function bearerToken(req: NextRequest): string | null {
   const authHeader = req.headers.get('authorization') || '';
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-  // Firebase ID tokens are ~1KB; reject anything absurd before verifying.
-  if (!idToken || idToken.length > 4096) return null;
+  return idToken && idToken.length <= 4096 ? idToken : null;
+}
+
+/** Verifies the request's Bearer ID token for a sign-in whose email address
+ *  isn't confirmed yet (the confirmation email route). Null for anything
+ *  else, including a confirmed address. */
+export async function requireUnconfirmedCaller(req: NextRequest): Promise<{ uid: string; email: string } | null> {
+  const idToken = bearerToken(req);
+  const caller = idToken ? await verifyIdToken(idToken, { unconfirmed: true }) : null;
+  return caller?.email ? { uid: caller.uid, email: caller.email } : null;
+}
+
+/** Verifies the request's Bearer ID token and checks the caller's stored role is one of `allowedRoles`. */
+export async function requireRole(req: NextRequest, allowedRoles: string[]): Promise<VerifiedCaller | null> {
+  const idToken = bearerToken(req);
+  if (!idToken) return null;
 
   const caller = await verifyIdToken(idToken);
   if (!caller) return null;

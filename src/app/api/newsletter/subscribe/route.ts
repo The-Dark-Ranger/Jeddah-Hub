@@ -5,8 +5,10 @@
  *   rate limits → honeypot / fill-time trap → reCAPTCHA → real mail domain.
  * Each address is stored once: the document id is a hash of the address,
  * so a second signup (even two at the same moment) finds it already there.
- * New subscribers then get the welcome email in the language they used. */
-import { createHash } from 'node:crypto';
+ * New subscribers then get the welcome email in the language they used,
+ * with a link that takes them off the list again (a random token stored
+ * with the subscription; see ../unsubscribe/route.ts). */
+import { createHash, randomBytes } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
@@ -14,7 +16,8 @@ import { requestHost, verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
-import { readJsonBody } from '@/lib/http';
+import { readJsonBody, siteOrigin } from '@/lib/http';
+import { SITE_URL } from '@/lib/seo';
 import { json, isBotSubmission, isCrossSite } from '@/lib/formGuard';
 import { isBlockedBot } from '@/lib/botCheck';
 import { withinLimit, withinEmailBudget, DAY } from '@/lib/persistentLimit';
@@ -57,16 +60,17 @@ export async function POST(req: NextRequest) {
   if (!app) return json({ error: 'unavailable' }, 503);
   const db = getFirestore(app);
   const subscribers = db.collection('newsletter_subscribers');
+  const id = createHash('sha256').update(email).digest('hex');
+  const unsubToken = randomBytes(24).toString('base64url');
 
   try {
     // Older signups were stored under random ids; check by address too.
     const existing = await subscribers.where('email', '==', email).limit(1).get();
     if (!existing.empty) return json({ ok: true, status: 'already' });
 
-    const id = createHash('sha256').update(email).digest('hex');
     // create() fails if the document exists, so two signups racing each
     // other still end up as one.
-    await subscribers.doc(id).create({ email, subscribedAt: new Date().toISOString(), locale: lang });
+    await subscribers.doc(id).create({ email, subscribedAt: new Date().toISOString(), locale: lang, unsubToken });
   } catch (err) {
     if ((err as { code?: number }).code === 6) return json({ ok: true, status: 'already' }); // ALREADY_EXISTS
     console.error('[newsletter] save failed', err);
@@ -75,6 +79,13 @@ export async function POST(req: NextRequest) {
 
   // The subscription stands even if the welcome email can't be sent
   // (sendEmail logs its own failures) or the day's email budget is used up.
-  if (await withinEmailBudget()) await sendEmail(newsletterWelcome(lang, email));
+  const origin = siteOrigin(req, SITE_URL);
+  const leave = `id=${id}&t=${unsubToken}`;
+  if (await withinEmailBudget()) {
+    await sendEmail(newsletterWelcome(lang, email, {
+      page: `${origin}/${lang}/unsubscribe?${leave}`,
+      oneClick: `${origin}/api/newsletter/unsubscribe?${leave}&l=${lang}`,
+    }));
+  }
   return json({ ok: true, status: 'subscribed' });
 }

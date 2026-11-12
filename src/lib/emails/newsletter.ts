@@ -32,7 +32,9 @@ const COPY = {
       ['✨', 'Become a Shaper', 'Learn how to apply and join the hub.', '/become-a-shaper'],
     ],
     cta: 'Visit Jeddah Hub',
-    footer: (e: string) => `You are receiving this because ${e} subscribed to the newsletter at jeddahhub.org. To unsubscribe, reply to this email with "unsubscribe".`,
+    footer: (e: string) => `You are receiving this because ${e} subscribed to the newsletter at jeddahhub.org.`,
+    unsubscribe: 'Unsubscribe in one click',
+    unsubscribeByReply: 'To unsubscribe, reply to this email with "unsubscribe".',
   },
   ar: {
     from: 'نشرة مركز جدة',
@@ -55,18 +57,28 @@ const COPY = {
       ['✨', 'كن صانعاً', 'اعرف كيف تتقدّم وتنضم إلى المركز.', '/become-a-shaper'],
     ],
     cta: 'زر موقع مركز جدة',
-    footer: (e: string) => `وصلتك هذه الرسالة لأن ${e} اشترك في النشرة عبر jeddahhub.org. لإلغاء الاشتراك، ردّ على هذه الرسالة بكلمة "إلغاء".`,
+    footer: (e: string) => `وصلتك هذه الرسالة لأن ${e} اشترك في النشرة عبر jeddahhub.org.`,
+    unsubscribe: 'إلغاء الاشتراك بنقرة واحدة',
+    unsubscribeByReply: 'لإلغاء الاشتراك، ردّ على هذه الرسالة بكلمة "إلغاء".',
   },
 } as const;
 
-export function newsletterWelcome(lang: Lang, email: string) {
+/** Where a subscriber can leave the list: `page` for people (a page with a
+ *  button, so link scanners can't unsubscribe anyone by opening it) and
+ *  `oneClick` for mail apps' own Unsubscribe button (RFC 8058). */
+export interface UnsubscribeLinks { page: string; oneClick: string }
+
+export function newsletterWelcome(lang: Lang, email: string, unsubscribe?: UnsubscribeLinks) {
   const c = COPY[lang];
   const e = escapeHtml(email);
+  const leave = unsubscribe
+    ? `<a href="${escapeHtml(unsubscribe.page)}" style="color:#64748b;text-decoration:underline;">${c.unsubscribe}</a>`
+    : c.unsubscribeByReply;
   const html = emailLayout({
     lang,
     title: c.subject,
     preheader: c.preheader,
-    footerNote: c.footer(e),
+    footerNote: `${c.footer(e)} ${leave}`,
     body:
       heading(c.heading) +
       paragraph(c.intro(bold)) +
@@ -83,8 +95,13 @@ export function newsletterWelcome(lang: Lang, email: string) {
     c.expectTitle + ':', ...c.expect.map(([, t, d]) => `- ${t}: ${d}`), '',
     c.startTitle + ':', ...c.start.map(([, t, , path]) => `- ${t}: ${siteUrl(lang, path)}`), '',
     c.footer(email),
+    unsubscribe ? `${c.unsubscribe}: ${unsubscribe.page}` : c.unsubscribeByReply,
   ].join('\n');
 
+  const mailto = `<mailto:${CONTACT_INBOX}?subject=unsubscribe>`;
+  const headers: Record<string, string> = unsubscribe
+    ? { 'List-Unsubscribe': `<${unsubscribe.oneClick}>, ${mailto}`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+    : { 'List-Unsubscribe': mailto };
   return {
     from: sender(c.from, ADDRESS),
     to: email,
@@ -92,7 +109,7 @@ export function newsletterWelcome(lang: Lang, email: string) {
     html,
     text,
     replyTo: CONTACT_INBOX,
-    headers: { 'List-Unsubscribe': `<mailto:${CONTACT_INBOX}?subject=unsubscribe>` },
+    headers,
     attachments: LOGO_ATTACHMENTS,
   };
 }

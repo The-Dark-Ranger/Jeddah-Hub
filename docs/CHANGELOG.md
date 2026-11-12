@@ -5,6 +5,12 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 12 November (later)
+- The email that confirms a member's address now comes from members@jeddahhub.org, branded and in the language of the sign-in page, and its link opens jeddahhub.org. It replaced Firebase's plain English email ("Verify your email for project-460222031412", from a firebaseapp.com address). Opened on the same browser, the link goes straight on to the dashboard; on another device it confirms and asks the member to sign in; a used or expired link says so.
+- Newsletter: the welcome email has a working unsubscribe link (a page that asks first) and mail apps' one-click Unsubscribe button, instead of "reply with unsubscribe".
+- Dashboards: everyone starts on the Overview, now first in every sidebar. Its new "Waiting for you" list counts every queue the member's role decides on (messages, posts to review, initiative proposals, join, leave, add and removal requests, role changes, activity proposals and form answers; for leads, their teams' requests), each linking to where it's handled. Curators and impact officers see the member count. The Overview's cards and the sidebar share one set of icons, and "Mark as read" is easier to tap.
+- Cleanup: the Overview is shorter despite doing more; strings no longer used are removed.
+
 ### 12 November
 - Up to date and patched: Next.js 16.4.6, which fixes seven security problems in Next.js (among them a way past the image service's refusal of SVG files); Firebase 13.2, which fixes errors when a sign-in is restored from the browser's storage; the Firebase Admin SDK 14 on the server, with its newer database client; Speed Insights 2.1 and Playwright 1.65. The security audit is at 0 known vulnerabilities. The site is built and developed on Node.js 24, the same version as production.
 - Emails escape the names they carry everywhere, including the hidden preview line and the title, so a name can never add markup to an email. The plain-text version of an invite shows names as typed (an apostrophe used to show as "&#39;").

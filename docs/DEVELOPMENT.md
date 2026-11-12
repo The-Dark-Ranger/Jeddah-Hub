@@ -91,8 +91,10 @@ as `t('key', { name })`.
 ### Add a dashboard page
 1. Create it under `src/app/[locale]/dashboard/<role>/<name>/page.tsx`.
 2. Add it to the role's menu in `src/app/[locale]/dashboard/layout.tsx`
-   (`nav`).
-3. Check the role at the top of the page for the interface, and make sure
+   (`nav`), with an icon from `components/dashboard/DashIcon.tsx`.
+3. If it handles a queue of requests, count its pending ones on the Overview
+   (`waiting` in `dashboard/page.tsx`) so they show under "Waiting for you".
+4. Check the role at the top of the page for the interface, and make sure
    `firestore.rules` allows exactly what the page writes (see below).
 
 ### Add an API route
@@ -150,4 +152,5 @@ hides what a person can't use. When you change it:
 | Dates and numbers | `formatDate`, `intlLocale` (`lib/dates.ts`) |
 | Saving a built file | `downloadBlob`, `csvBlob` (`lib/download.ts`) |
 | Hub Activity list and editor | `ActivityCard`, `ActivityEditorModal` (`components/dashboard/`) |
-| Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/` |
+| Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/`; `siteOrigin` (`lib/http.ts`) for links that must open the site (or preview) the request came to |
+| Dashboard icons | `DashIcon` (`components/dashboard/DashIcon.tsx`) |

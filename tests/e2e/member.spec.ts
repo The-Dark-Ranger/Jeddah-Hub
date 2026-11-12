@@ -69,8 +69,19 @@ test.describe('signing in', () => {
     }
   });
 
-  test('an unconfirmed email address gets the link, and nothing else until it is opened', async ({ page, request }) => {
+  test('an unconfirmed email address gets the link, and nothing else until it is opened', async ({ page, request, browser }) => {
+    // The emailed link's code, which the Auth emulator keeps.
+    const emailedLink = async () => {
+      const codes = await (await request.get(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/oobCodes`)).json();
+      return (codes.oobCodes as { email: string; requestType: string; oobLink: string }[])
+        .filter(c => c.email === PEOPLE.unconfirmed.email && c.requestType === 'VERIFY_EMAIL').at(-1)?.oobLink;
+    };
+    // Test runs have no Resend key, so the hub's own email can't go out and
+    // the page asks Firebase for its email instead.
+    const asked = page.waitForResponse(r => r.url().includes('/api/members/confirm-email'));
     await signInOnly(page, PEOPLE.unconfirmed);
+    expect((await asked).status()).toBe(503);
+    await expect.poll(emailedLink).toBeTruthy();
     const heading = page.getByRole('heading', { name: 'Confirm your email address' });
     const done = page.getByRole('button', { name: /confirmed it, continue/ });
     await expect(heading).toBeVisible();
@@ -82,14 +93,25 @@ test.describe('signing in', () => {
     await done.click();
     await expect(page.getByText('Not confirmed yet.', { exact: false })).toBeVisible();
 
-    // Open the link that was emailed (the Auth emulator keeps it).
-    const codes = await (await request.get(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/oobCodes`)).json();
-    const link = (codes.oobCodes as { email: string; requestType: string; oobLink: string }[])
-      .filter(c => c.email === PEOPLE.unconfirmed.email && c.requestType === 'VERIFY_EMAIL').at(-1)?.oobLink;
-    expect(link).toBeTruthy();
-    await request.get(link!);
-    await done.click();
+    // The link opens this site's sign-in page with the one-time code; signed
+    // in here, it goes straight on to the dashboard.
+    const link = await emailedLink();
+    const confirmUrl = `/en/login?mode=verifyEmail&oobCode=${new URL(link!).searchParams.get('oobCode')}`;
+    await page.goto(confirmUrl);
     await page.waitForURL(/\/dashboard/);
+
+    // The code works once: opened again elsewhere, the page says so.
+    const elsewhere = await browser.newPage();
+    await elsewhere.goto(confirmUrl);
+    await expect(elsewhere.getByText('This link has expired or has already been used', { exact: false })).toBeVisible();
+    await expect(elsewhere).not.toHaveURL(/oobCode/);
+    await elsewhere.close();
+  });
+
+  test('the confirmation email route only serves a signed-in, unconfirmed account', async ({ request }) => {
+    expect((await request.post('/api/members/confirm-email', { data: { locale: 'en' } })).status()).toBe(401);
+    const bogus = await request.post('/api/members/confirm-email', { headers: { Authorization: 'Bearer not-a-token' }, data: {} });
+    expect(bogus.status()).toBe(401);
   });
 
   test('a shared-computer session ends after 30 minutes without activity', async ({ page }) => {
@@ -137,6 +159,32 @@ async function signOutEverywhere(uid: string) {
   await getFirestore(app).doc(`session_revocations/${uid}`).set({ at: Math.floor(Date.now() / 1000) });
   await getAuth(app).revokeRefreshTokens(uid);
 }
+
+test.describe('the Overview', () => {
+  const waiting = (page: Page) => page.getByRole('heading', { name: 'Waiting for you' });
+
+  test('everyone starts on the Overview; a curator sees what is waiting for them', async ({ page }) => {
+    await signIn(page, PEOPLE.curator);
+    await expect(page).toHaveURL(/\/en\/dashboard$/);
+    await expect(page.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    await expect(waiting(page)).toBeVisible();
+  });
+
+  test("a lead sees their teams' requests; a member who leads none gets no list", async ({ browser }) => {
+    const lead = await browser.newPage();
+    await signIn(lead, PEOPLE.lead);
+    await expect(waiting(lead)).toBeVisible();
+    await lead.close();
+
+    const member = await browser.newPage();
+    await signIn(member, PEOPLE.shaper);
+    await expect(member.getByRole('heading', { level: 1 })).toBeVisible();
+    // Once the counts have loaded, there is still nothing to list.
+    await expect(member.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(waiting(member)).toHaveCount(0);
+    await member.close();
+  });
+});
 
 test.describe('changing a password', () => {
   test('My Profile has the form, and no extra button above it', async ({ page }) => {

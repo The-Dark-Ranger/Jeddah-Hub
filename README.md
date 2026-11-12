@@ -104,6 +104,9 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 ### Member dashboard
 
+Every member starts on an **Overview** that lists what is waiting for them,
+queue by queue, with a link to each.
+
 | Role | What they can do |
 |---|---|
 | **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter. |

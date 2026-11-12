@@ -1,4 +1,5 @@
 /* The public site: every page opens in both languages, on phone and desktop. */
+import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { expectNoSidewaysScroll, PHOTO_PATH, PUBLISHED_POST, watchErrors } from './helpers';
 
@@ -133,4 +134,48 @@ test('on a phone, the open menu stays put: the page does not scroll under it and
   await page.keyboard.press('Escape');
   // Back exactly where the reader was.
   await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(Math.round(before));
+});
+
+/** The emulator's database, as the server sees it (Admin SDK). */
+async function serverDb() {
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+  const { getApps, initializeApp } = await import('firebase-admin/app');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  return getFirestore(getApps()[0] ?? initializeApp({ projectId: 'demo-jeddah-hub' }));
+}
+
+test('a newsletter link takes an address off the list, only with its own token', async ({ page, request }) => {
+  const db = await serverDb();
+  const subscribe = async (email: string, token: string) => {
+    const id = createHash('sha256').update(email).digest('hex');
+    await db.doc(`newsletter_subscribers/${id}`).set({ email, unsubToken: token, subscribedAt: new Date().toISOString(), locale: 'en' });
+    return id;
+  };
+  const listed = async (id: string) => (await db.doc(`newsletter_subscribers/${id}`).get()).exists;
+
+  const token = 'tok_abcdefghijklmnopqrstuvwx';
+  const id = await subscribe('leaving@example.com', token);
+  // A wrong token changes nothing, and answers like an address not on the list.
+  expect((await request.post('/api/newsletter/unsubscribe', { data: { id, t: 'not_the_right_token_12345' } })).status()).toBe(404);
+  // Opening the link (as link scanners do) only leads to the page.
+  const opened = await request.get(`/api/newsletter/unsubscribe?id=${id}&t=${token}&l=ar`, { maxRedirects: 0 });
+  expect(opened.status()).toBe(303);
+  expect(opened.headers().location).toContain(`/ar/unsubscribe?id=${id}&t=${token}`);
+  expect(await listed(id)).toBe(true);
+
+  // The page asks first, then takes the address off.
+  await page.goto(`/en/unsubscribe?id=${id}&t=${token}`);
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByRole('heading', { name: "You're unsubscribed" })).toBeVisible();
+  expect(await listed(id)).toBe(false);
+  // The same link again: nothing left to do.
+  await page.reload();
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByText("This link doesn't work any more", { exact: false })).toBeVisible();
+
+  // A mail app's own Unsubscribe button (RFC 8058 one-click).
+  const id2 = await subscribe('oneclick@example.com', 'tok_zyxwvutsrqponmlkjihgfedc');
+  const oneClick = await request.post(`/api/newsletter/unsubscribe?id=${id2}&t=tok_zyxwvutsrqponmlkjihgfedc&l=en`, { form: { 'List-Unsubscribe': 'One-Click' } });
+  expect(oneClick.status()).toBe(200);
+  expect(await listed(id2)).toBe(false);
 });

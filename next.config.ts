@@ -87,7 +87,7 @@ const nextConfig: NextConfig = {
       {
         // Members-only and sign-in pages stay out of search engines (and so
         // out of search-based reconnaissance), not just out of robots.txt.
-        source: '/:locale(en|ar)/:area(dashboard|login)/:path*',
+        source: '/:locale(en|ar)/:area(dashboard|login|unsubscribe)/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];

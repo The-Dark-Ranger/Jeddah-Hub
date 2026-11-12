@@ -7,19 +7,17 @@
  * link to confirm it here, and nothing else until they do. */
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  browserSessionPersistence, indexedDBLocalPersistence, sendEmailVerification, setPersistence,
+  applyActionCode, browserSessionPersistence, indexedDBLocalPersistence, sendEmailVerification, setPersistence,
   signInWithEmailAndPassword, type User,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { getUserProfile } from '@/lib/auth';
 import { useRouter } from '@/i18n/routing';
 import PasswordInput from '@/components/PasswordInput';
 import { useLocale, useTranslations } from 'next-intl';
 import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
 import { PASSWORD_FORM_HREF } from '@/lib/passwordForm';
 import ThemeLogo from '@/components/ThemeLogo';
-import { normalizeRole } from '@/lib/role';
 import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
 import Honeypot from '@/components/Honeypot';
 import { KEEP_KEY, markActive, readKeep, takeSignOutReason, type SignOutReason } from '@/lib/sessionPolicy';
@@ -67,11 +65,24 @@ function nextAllowed(fails: number): number {
 /** The device's remembered choice never changes behind the page's back. */
 const noSubscribe = () => () => {};
 
-/** Emails the link that confirms the address, in the page's language. */
+/** Emails the link that confirms the address, in the page's language: the
+ *  hub's own email from jeddahhub.org (api/members/confirm-email), or
+ *  Firebase's plainer one when that can't be sent. Too many requests is
+ *  passed on as such: Firebase's email must not go around the limit. */
 async function sendConfirmLink(u: User, locale: string) {
+  const res = await fetch('/api/members/confirm-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await u.getIdToken()}` },
+    body: JSON.stringify({ locale }),
+  }).catch(() => null);
+  if (res?.ok) return;
+  if (res?.status === 429) throw Object.assign(new Error('too many requests'), { code: 'auth/too-many-requests' });
   auth.languageCode = locale;
   await sendEmailVerification(u, { url: `${window.location.origin}/${locale}/login` });
 }
+
+/** What happened to a confirmation link opened on this page. */
+type LinkState = 'checking' | 'confirmed' | 'invalid';
 
 export default function LoginPage() {
   const { user, pendingEmail, loading: authLoading, logout } = useAuth();
@@ -116,6 +127,30 @@ export default function LoginPage() {
     read();
     const id = setTimeout(read, 1500);
     return () => clearTimeout(id);
+  }, []);
+
+  // A confirmation link from the email opens this page with Firebase's
+  // one-time code. Signed in on this browser: straight on to the dashboard.
+  // Opened elsewhere (say, on a phone): confirmed, and asked to sign in.
+  const [linkState, setLinkState] = useState<LinkState | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('oobCode');
+    if (params.get('mode') !== 'verifyEmail' || !code) return;
+    // The code works once: keep it out of the address bar and the history.
+    window.history.replaceState(null, '', window.location.pathname);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to the link in the address
+    setLinkState('checking');
+    applyActionCode(auth, code)
+      .then(async () => {
+        await auth.authStateReady();
+        const current = auth.currentUser;
+        if (!current) { setLinkState('confirmed'); return; }
+        await current.reload().catch(() => {});
+        await current.getIdToken(true).catch(() => {});
+        window.location.reload();
+      })
+      .catch(() => setLinkState('invalid'));
   }, []);
 
   // Counts down the wait after a failed attempt (and a lockout left from before).
@@ -234,20 +269,9 @@ export default function LoginPage() {
         if (isTemporaryPassword(password)) sessionStorage.setItem(MUST_CHANGE_PASSWORD_FLAG, '1');
         else sessionStorage.removeItem(MUST_CHANGE_PASSWORD_FLAG);
       } catch { /* storage blocked */ }
-      const profile = await getUserProfile(cred.user.uid);
-
-      const normRole = normalizeRole(profile?.role);
-      if (isTemporaryPassword(password)) {
-        router.push(PASSWORD_FORM_HREF);
-      } else if (normRole === 'curator' || normRole === 'vice_curator') {
-        router.push('/dashboard/curator/initiatives');
-      } else if (normRole === 'impact_officer') {
-        router.push('/dashboard/impact/projects');
-      } else if (normRole === 'shaper' || normRole === 'alumni') {
-        router.push('/dashboard/shaper/profile');
-      } else {
-        router.push('/dashboard');
-      }
+      // Everyone starts on the Overview, which lists what is waiting for
+      // them; a one-time password must be replaced first.
+      router.push(isTemporaryPassword(password) ? PASSWORD_FORM_HREF : '/dashboard');
     } catch (err) {
       signingIn.current = false;
       // A failed password doesn't stay on screen.
@@ -282,9 +306,10 @@ export default function LoginPage() {
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
 
-        {endedReason && !pendingEmail && (
+        {endedReason && !pendingEmail && !linkState && (
           <p className={styles.notice} role="status">{t(`ended_${endedReason}`)}</p>
         )}
+        {linkState && <p className={styles.notice} role="status">{t(`link_${linkState}`)}</p>}
 
         {pendingEmail ? (
           <div className={styles.confirm} role="region" aria-labelledby="confirm-title">

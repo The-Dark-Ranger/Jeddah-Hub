@@ -394,6 +394,9 @@
     "ended_idle": "You were signed out after 30 minutes without activity. Please sign in again.",
     "ended_expired": "For your security, sign-ins last 14 days. Please sign in again.",
     "ended_revoked": "Your session was ended (for example, a new password was sent). Please sign in again.",
+    "link_checking": "Confirming your email address…",
+    "link_confirmed": "Your email address is confirmed. Sign in to continue.",
+    "link_invalid": "This link has expired or has already been used. Sign in, and you can ask for a new one.",
     "confirmTitle": "Confirm your email address",
     "confirmText": "We sent a link to {email}. Open it to confirm the address is yours, then come back and press Continue. Check your spam folder if it isn't there.",
     "confirmDone": "I've confirmed it, continue",
@@ -507,8 +510,6 @@
     "actionBrowseInitiativesDesc": "Find projects to join",
     "actionPostBlog": "Post Blog",
     "actionPostBlogDesc": "Share your story",
-    "statUnreadMessages": "Unread Messages",
-    "statActivityResponses": "Activity Responses",
     "dashInitiativesCardTitle": "Initiatives",
     "dashInitiativesCardDesc": "Create, edit & archive projects",
     "dashRosterCardDesc": "Assign members, change roles, approve requests",
@@ -516,8 +517,6 @@
     "dashMessagesCardDesc": "View & reply to contact messages",
     "dashActivitiesCardTitle": "Hub Activities",
     "dashActivitiesCardDesc": "Manage activities & check form responses",
-    "dashActivityRequestsCardTitle": "Activity Requests",
-    "dashActivityRequestsCardDesc": "Review pending Hub Activity proposals & edits",
     "dashRoleAssignmentsCardDesc": "Manage member roles",
     "dashProjectsCardTitle": "Projects",
     "dashProjectsCardDesc": "Manage projects & assign shapers",
@@ -1041,7 +1040,22 @@
     "activityCtaUrlInvalid": "The button link isn't a valid web address. Use a full address such as https://example.org",
     "editorDraftRestored": "Your unsent proposal was restored.",
     "editorDraftDiscard": "Start over",
-    "dashMyActivitiesCardDesc": "Propose an activity or workshop and follow its approval"
+    "dashMyActivitiesCardDesc": "Propose an activity or workshop and follow its approval",
+    "overview": "Overview",
+    "waitingTitle": "Waiting for you",
+    "waitingNone": "Nothing is waiting for you right now.",
+    "waitPosts": "Posts to review",
+    "waitProposals": "Proposed initiatives",
+    "waitJoin": "Join requests",
+    "waitLeave": "Leave requests",
+    "waitAdd": "Add-member requests",
+    "waitRemoval": "Removal requests",
+    "waitRoleChanges": "Role change requests",
+    "waitActivities": "Activity proposals and changes",
+    "waitMessages": "Unread messages",
+    "waitResponses": "New activity form answers",
+    "waitTeamRequests": "Join and leave requests for your teams",
+    "statMembers": "Members"
   },
   "CharterPage": {
     "eyebrow": "Global Shapers Community",
@@ -1252,5 +1266,16 @@
     "retry": "Try again",
     "reload": "Reload page",
     "code": "Reference: {code}"
+  },
+  "Unsubscribe": {
+    "title": "Unsubscribe from the newsletter",
+    "body": "Press the button to stop receiving the Jeddah Hub newsletter. You can subscribe again any time from the website.",
+    "button": "Unsubscribe",
+    "busy": "Unsubscribing…",
+    "doneTitle": "You're unsubscribed",
+    "done": "You won't receive the Jeddah Hub newsletter any more. Thank you for having been with us.",
+    "invalid": "This link doesn't work any more. If you have already unsubscribed, there is nothing else to do; otherwise reply to any of our emails with \"unsubscribe\".",
+    "error": "Something went wrong. Please try again in a moment.",
+    "home": "Back to the home page"
   }
 }

@@ -123,9 +123,18 @@ flowchart TD
     R --> PW{Signed in with a<br/>one-time password?}
     R2 --> PW
     PW -->|yes| B[Must set their own password<br/>on My Profile before anything else]
-    PW -->|no| D[Dashboard for the role]
+    PW -->|no| D[Overview: what is waiting<br/>for them, by role]
     B --> D
 ```
+
+Every member starts on the **Overview** (`/dashboard`), also first in the
+sidebar. Its "Waiting for you" list shows each queue their role works on that
+has something in it, with a count and a link to where it's handled: for the
+Curator and Vice Curator, unread messages, posts to review, proposed
+initiatives, join, leave, add-member and removal requests, role changes,
+activity proposals and new form answers; for impact officers, posts and
+activity proposals; for initiative leads, their teams' join and leave
+requests. Members who decide nothing don't get the list.
 
 | Role | Can |
 |---|---|
@@ -341,6 +350,16 @@ flowchart TD
 The record's id is a hash of the lowercased address, and the save fails if
 that id already exists, so even two signups at the same moment end up as one.
 
+**Leaving the list.** Each new subscription stores a random token. The
+welcome email links to `/{locale}/unsubscribe?id=…&t=…`, a page that asks
+first (link scanners open every link) and then calls
+[`/api/newsletter/unsubscribe`](../src/app/api/newsletter/unsubscribe/route.ts),
+which deletes the record if the token matches. Mail apps' own Unsubscribe
+button posts to the same route directly (`List-Unsubscribe` and
+`List-Unsubscribe-Post`, RFC 8058). A wrong token and an address that is no
+longer on the list get the same answer, so the route can't reveal who is
+subscribed. Replying "unsubscribe" still works too.
+
 ## 10. Emails
 
 All email is sent through [Resend](https://resend.com) from the verified
@@ -352,6 +371,7 @@ flowchart LR
         NS[/api/newsletter/subscribe/]
         CS[/api/contact/send/]
         IN[/api/invite/]
+        CE[/api/members/confirm-email/]
     end
     subgraph Templates["src/lib/emails"]
         NL[newsletter.ts<br/>welcome]
@@ -361,15 +381,17 @@ flowchart LR
     NS --> NL
     CS --> CT
     IN --> MB[invite email]
+    CE --> CF[confirm.ts<br/>confirm your address]
     NL --> LY
     CT --> LY
+    CF --> LY
     LY --> SE[email.ts<br/>sendEmail]
     MB --> SE
     SE --> RS[Resend]
     RS -->|newsletter@| SUB([Subscriber])
     RS -->|contact@| HUBI([Hub inbox])
     RS -->|contact@| VIS([Visitor])
-    RS -->|members@| MEM([New member])
+    RS -->|members@| MEM([Member])
 ```
 
 | Email | Sender | Language | Replies go to |
@@ -379,9 +401,21 @@ flowchart LR
 | Contact: visitor's copy | `contact@` | The site language the visitor used | Hub inbox |
 | Member invite | `members@` | The curator's dashboard language | Hub inbox |
 | Invite record | `members@` | English, to the hub inbox; never contains the password | n/a |
+| Confirm your email address | `members@` | The language of the sign-in page | Hub inbox |
 
-- Every email has a plain-text version, and the welcome email has a
-  `List-Unsubscribe` header.
+- Every email has a plain-text version. The welcome email has a working
+  unsubscribe link and one-click `List-Unsubscribe` headers (section 9).
+- **Confirming an address.** At a member's first sign-in (and when they ask
+  again, at most once a minute), [`/api/members/confirm-email`](../src/app/api/members/confirm-email/route.ts)
+  asks Firebase for a one-time code with the Admin SDK and emails it from
+  `members@`, linking to `/{locale}/login?mode=verifyEmail&oobCode=…`. The
+  sign-in page applies the code: signed in on that browser, the member goes
+  straight on to the dashboard; on another device they are told it worked and
+  asked to sign in. Only if Resend can't send does the page fall back to
+  Firebase's own, plainer email.
+- The domain is set up for delivery: Resend's DKIM key and the `send.`
+  return-path SPF record are published, and a DMARC record (`p=none`,
+  reporting only) is in place.
 - The Jeddah Hub and World Economic Forum logos travel **inside** each email as
   inline images ([`logos.ts`](../src/lib/emails/logos.ts)), not as links to the
   site, so email apps always show them and they don't appear as separate

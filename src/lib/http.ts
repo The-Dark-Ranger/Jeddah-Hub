@@ -23,6 +23,15 @@ export async function readJsonBody(
   }
 }
 
+/** The site address a request came to, for links in the emails it sends:
+ *  a preview's links open that preview (whose own Firebase project issued
+ *  any code in them), and anything unexpected falls back to `fallback`. */
+export function siteOrigin(req: NextRequest, fallback: string): string {
+  const host = req.headers.get('host') ?? '';
+  if (/^(localhost|127\.0\.0\.1)(:\d{2,5})?$/.test(host)) return `http://${host}`;
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host) ? `https://${host.toLowerCase()}` : fallback;
+}
+
 /** A trimmed string no longer than `max`, or null for any other type. */
 export function asString(value: unknown, max = 500): string | null {
   if (typeof value !== 'string') return null;

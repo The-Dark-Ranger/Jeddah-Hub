@@ -24,6 +24,19 @@ test.describe('signing in', () => {
     await expect(page.locator('#login-password')).toHaveValue('');
   });
 
+  test('the sign-in page remembers an unticked "Keep me signed in", with no mismatch with the server', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto('/en/login');
+    // As a sign-in with the box unticked leaves it.
+    await page.evaluate(() => localStorage.setItem('jh-keep-signed-in', '0'));
+    await page.reload();
+    const keep = page.getByRole('checkbox', { name: /Keep me signed in/ });
+    await expect(keep).not.toBeChecked();
+    await keep.check();
+    await expect(keep).toBeChecked();
+    expect(errors).toEqual([]);
+  });
+
   test('not keeping the session means it ends with the browser; a signed-in visit to sign in goes to the dashboard', async ({ page }) => {
     await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
     await page.goto('/en/login');
@@ -152,6 +165,30 @@ test.describe('changing a password', () => {
     await page.getByRole('button', { name: 'Update password' }).click();
     await expect(page.getByText('Password updated.')).toBeVisible();
     await expect(banner).toHaveCount(0);
+  });
+});
+
+test.describe('profile photo', () => {
+  test('only a photo address is shown, and an uploaded photo is saved as its own photo', async ({ page }) => {
+    await signIn(page, PEOPLE.signer);
+    await page.goto('/en/dashboard/shaper/profile');
+    const pasted = page.getByLabel('…or paste an image URL');
+
+    // Anything that isn't a photo address is never loaded as one.
+    await pasted.fill('javascript:alert(1)');
+    await expect(page.locator('img[src^="javascript:"]')).toHaveCount(0);
+    await expect(page.getByText('That image link could not be loaded.')).toBeVisible();
+    await pasted.fill('');
+
+    await page.locator('input[type="file"]').setInputFiles(UPLOAD_FILE);
+    await expect(page.locator('img[src^="/api/media/"]:visible').first()).toBeVisible();
+    // An uploaded photo's own address isn't offered for editing.
+    await expect(pasted).toBeDisabled();
+    await page.getByRole('button', { name: 'Save Profile' }).click();
+    await expect(page.getByText('Profile updated!')).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('img[src^="/api/media/"]:visible').first()).toBeVisible();
   });
 });
 

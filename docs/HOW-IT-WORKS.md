@@ -45,8 +45,9 @@ flowchart LR
 - Photos stored inline in a document are served by
   [`/api/img`](../src/app/api/img/%5Bcollection%5D/%5Bid%5D/%5Bfield%5D/route.ts).
   Their URL carries a hash of the photo, so a changed photo gets a new URL.
-- If the server can't reach Firestore, each page falls back to loading the
-  same data in the browser.
+- A read that stalls or drops is tried again (three tries, 10 seconds each).
+  While a refresh fails, visitors keep getting the last cached copy; with no
+  copy at all, each page falls back to loading the same data in the browser.
 
 ## 2. Adding a member
 
@@ -82,6 +83,8 @@ sequenceDiagram
   It is shown to the curator once and never stored. **Send Invite** and
   **New one-time password** issue a fresh one, but only for someone who has
   never signed in; anyone who has keeps their own password.
+- At their first sign-in the member is emailed a link to confirm their
+  address, and gets no access until they open it (see section 3).
 - Removing a **pending** assignment also deletes the unused login and the
   public listing, but only if the person has never signed in.
 - A note containing **"Incoming"** (e.g. "Incoming Shaper") keeps the member
@@ -110,7 +113,9 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    S[Sign in] --> U{users/uid<br/>has a role?}
+    S[Sign in] --> E{Email address<br/>confirmed?}
+    E -->|no| L[A link is emailed;<br/>no access until it is opened]
+    E -->|yes| U{users/uid<br/>has a role?}
     U -->|yes| R[Use it]
     U -->|no| A{role_assignments<br/>for this email?}
     A -->|yes| R2[Apply the assigned role]
@@ -133,6 +138,26 @@ Each permission is enforced in the dashboard **and** in `firestore.rules`.
 The rules are the real boundary: a member can never give themselves any role
 or change it (only a curator can), can only edit their own profile fields, and
 only the Curator can change a curator's record or make someone a curator.
+
+**Sign-in attempts.** Each wrong password makes the next try wait (1, 2, 4,
+then 8 seconds), then the form locks (30 seconds, doubling up to 15
+minutes). The server ([`/api/verify-recaptcha`](../src/app/api/verify-recaptcha/route.ts))
+checks the bot trap and fill time again, answers repeated tries on one account
+more slowly, and allows 10 tries per account every 15 minutes and 60 per
+network an hour, counted in the database so clearing the browser doesn't
+reset them.
+
+**Sessions** ([`sessionPolicy.ts`](../src/lib/sessionPolicy.ts)):
+- Every sign-in ends 14 days after the password was typed, on any device.
+- With "Keep me signed in" unticked (a shared computer), the session also ends
+  after 30 minutes without activity and when the browser closes.
+- A new password from a curator, or a removal, writes the time to
+  `session_revocations/{uid}` ([`revokeSessions.ts`](../src/lib/revokeSessions.ts)).
+  The rules refuse every sign-in from before it at once; open pages notice
+  within minutes, or as soon as the tab is used again.
+- The database (`isSignedIn()` in the rules) and the server routes
+  ([`serverAuth.ts`](../src/lib/serverAuth.ts)) apply the same checks, so
+  none of this depends on the page. The sign-in page says why a session ended.
 
 ## 4. Initiatives: proposals, joining and leaving
 
@@ -400,6 +425,7 @@ fades.
 flowchart LR
     B[Branch] --> CHK[npm run check<br/>npm run test:rules<br/>npm run test:e2e] --> PR[Pull request]
     PR --> VP[Vercel preview<br/>build check]
+    PR --> CQ[CodeQL<br/>security scan]
     VP -->|passes| M[Squash-merge<br/>to main] --> PROD[Vercel deploys<br/>jeddahhub.org]
     M -->|firestore.rules changed| DR[npm run deploy:rules]
 ```
@@ -426,7 +452,8 @@ first (see [DEVELOPMENT.md](DEVELOPMENT.md#security-rules)).
 | `blogs` | News posts | Everyone if published, otherwise the author and reviewers |
 | `media` | Uploaded photos, written only by `POST /api/media` (a real JPEG under 1 MB, a daily limit per member) and served by `/api/media/<id>` | Everyone, one photo at a time by its id; nobody can list them |
 | `activity_responses` | Registration and after-event answers (`formType`), written only by the server after its checks | Curators, impact officers |
-| `rate_limits` | Server-side counters for the public forms and email (hashed keys) | Nobody (server only) |
+| `rate_limits` | Server-side counters for sign-in, the public forms, admin actions and email (hashed keys) | Nobody (server only) |
+| `session_revocations` | When each member was last signed out everywhere (a new password, a removal) | Nobody (server only; the rules check it) |
 | `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups, written only by the server after its checks | Curators |
 | `settings`, `charter_signatures` | Charter sign-off switch and signatures | Members / curators and impact officers |
 | `*_requests`, `notifications` | Proposals and membership requests | The requester and whoever reviews them |

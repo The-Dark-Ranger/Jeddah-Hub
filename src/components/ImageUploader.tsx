@@ -7,6 +7,7 @@ import {
   DOC_BUDGET_BYTES, MEDIA_OPTIONS,
 } from '@/lib/imageCompress';
 import { uploadMedia, isMediaUrl } from '@/lib/media';
+import { safeImageSrc } from '@/lib/sanitize';
 
 import styles from './ImageUploader.module.css';
 
@@ -135,7 +136,7 @@ export default function ImageUploader({ coverUrl, photos, onChange, uploadsOnly,
         >
           {coverUrl ? (
             <div className={styles.coverPreview}>
-              <img src={coverUrl} alt="" className={styles.coverImg} loading="lazy" />
+              <img src={safeImageSrc(coverUrl)} alt="" className={styles.coverImg} loading="lazy" />
               <span className={styles.originTag}>{label(coverUrl)}</span>
               <button
                 type="button"
@@ -199,7 +200,7 @@ export default function ImageUploader({ coverUrl, photos, onChange, uploadsOnly,
             <div className={styles.grid}>
               {photoList.map((src, i) => (
                 <div key={i} className={styles.thumb}>
-                  <img src={src} alt="" className={styles.thumbImg} loading="lazy" />
+                  <img src={safeImageSrc(src)} alt="" className={styles.thumbImg} loading="lazy" />
                   <button
                     type="button"
                     className={styles.removeBtn}

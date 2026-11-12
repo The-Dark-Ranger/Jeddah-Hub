@@ -18,7 +18,8 @@ recipes for the most common changes. For setup see the
    `firestore.rules` changed and `npm run test:e2e` if a page or server route
    changed.
 3. Open a pull request. Vercel builds a preview; `main` only accepts the merge
-   once that check passes.
+   once that check passes. GitHub's CodeQL also scans it: look into any alert
+   it raises before merging.
 4. Squash-merge, once the maintainer has approved it. Collaborators can't merge
    into `main` without that approval. Vercel deploys `jeddahhub.org`. If the rules changed, run
    `npm run deploy:rules`.
@@ -36,6 +37,13 @@ recipes for the most common changes. For setup see the
   `src/components/` or `src/components/dashboard/`.
 - Every file starts with a short comment saying what it is and why it exists.
   Comments explain *why*, not *what*.
+
+**Browser-only code**
+- Client components are also rendered on the server first, where there is
+  no `localStorage`, `sessionStorage` or `window` (and newer Node versions
+  log a warning when storage is touched). Read them in an effect, an event
+  handler, or with `useSyncExternalStore` and a server value (as the login
+  page does for "Keep me signed in"), never while rendering.
 
 **Styling**
 - CSS Modules next to the component (`Name.module.css`). Colours, radii and
@@ -99,7 +107,8 @@ Follow the existing routes in `src/app/api/`:
 
 ### Send a new kind of email
 Add a template in `src/lib/emails/` built from the pieces in `layout.ts`.
-Those pieces take HTML, so pass every value a person typed through
+An email's `title` and `preheader` are plain text (the layout escapes them);
+every other piece takes HTML, so pass every value a person typed through
 `escapeHtml` first (as `contact.ts` does). Send it with `sendEmail` from
 `lib/email.ts`. Emails visitors can trigger also go through
 `withinEmailBudget()`.
@@ -130,12 +139,13 @@ hides what a person can't use. When you change it:
 | Need | Use |
 |---|---|
 | Verify a member in an API route | `requireRole` (`lib/serverAuth.ts`) |
+| Session limits, signing a member out everywhere | `MAX_SESSION_MS`, `IDLE_LIMIT_MS` (`lib/sessionPolicy.ts`); `revokeSessions` (`lib/revokeSessions.ts`) |
 | Rate limits | `isRateLimited`, `clientIp` (`lib/rateLimit.ts`); `withinLimit`, `withinEmailBudget` (`lib/persistentLimit.ts`) |
 | Bot checks | `isBotSubmission`, `isCrossSite` (`lib/formGuard.ts`); `verifyRecaptchaToken` (`lib/serverRecaptcha.ts`); `isBlockedBot` (`lib/botCheck.ts`) |
 | Safe links, styles and exports | `safeExternalUrl`, `cssUrl`, `spreadsheetSafe` (`lib/sanitize.ts`); `safeColor` (`lib/activityTypes.ts`) |
 | Team roles | `TEAM_ROLES`, `isLeadRole`, `toTeamRole`, `withTeamRole` (`lib/types.ts`) |
 | Member roles | `normalizeRole` (`lib/role.ts`), `useRoleLabel` (`lib/roleLabel.tsx`) |
-| Photos | `uploadMedia` (`lib/media.ts`), `compressToDataUrl` (`lib/imageCompress.ts`) |
+| Photos (profiles, initiatives, activities, posts) | `uploadMedia` (`lib/media.ts`), `compressToDataUrl` (`lib/imageCompress.ts`) |
 | Spreadsheet reports | `downloadReport` (`lib/initiativeReport.ts`, loads ExcelJS on demand) |
 | Dates and numbers | `formatDate`, `intlLocale` (`lib/dates.ts`) |
 | Saving a built file | `downloadBlob`, `csvBlob` (`lib/download.ts`) |

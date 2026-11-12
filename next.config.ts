@@ -4,21 +4,21 @@ import { withBotId } from 'botid/next/config';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// Kept permissive on script/connect/frame sources deliberately, this app
-// talks to Firebase Auth/Firestore (googleapis.com), Google reCAPTCHA v3
-// (google.com/gstatic.com, loaded as a classic <script> in layout.tsx), and
-// and lets curators paste arbitrary external image URLs
-// (ImageUploader) alongside the base64 data-URI images it also stores,
-// hence img-src allows any https origin plus data:. A CSP that's too tight
-// to verify against a live Firebase project from this sandbox risks
-// silently breaking login; the meaningful hardening here is object-src
-// 'none' and frame-ancestors 'none' (clickjacking), not a narrow allowlist.
-// React's dev-mode-only debugging (HMR, component stack reconstruction)
-// calls eval() and gets hard-blocked without 'unsafe-eval', confirmed by
-// running the dev server against this CSP, which crashed every page with
-// a "eval() is not supported" console error overlay. React never calls
-// eval() in a production build, so this is scoped to dev only rather than
-// loosening the policy actually served to real visitors.
+// The Content Security Policy. What it allows, and why:
+//  - scripts: the site's own, plus Google reCAPTCHA v3 (google.com and
+//    gstatic.com, added on demand by src/lib/recaptcha.ts). 'unsafe-inline'
+//    stays because Next.js streams each page's data in inline <script> tags;
+//    removing it needs a per-request nonce, which turns off the CDN caching
+//    of every public page. React escapes all text, inline event handlers are
+//    refused (script-src-attr 'none') and links are checked
+//    (src/lib/sanitize.ts), so injected markup has no way to run.
+//  - connect: Firebase Auth and Firestore (googleapis.com) and reCAPTCHA.
+//  - images: any https address plus data:, because members may link a photo
+//    hosted elsewhere and older photos are stored inline.
+//  - no plugins (object-src 'none'), no framing by other sites
+//    (frame-ancestors 'none'), and forms only post to this site.
+// In development only, 'unsafe-eval' lets React's debugging tools run (they
+// call eval(), which a production build never does).
 const isDev = process.env.NODE_ENV !== 'production';
 // Local test runs talk to Firebase's emulators (src/lib/emulators.ts).
 const emulatorHosts = isDev && process.env.NEXT_PUBLIC_USE_EMULATORS === '1'
@@ -27,14 +27,17 @@ const emulatorHosts = isDev && process.env.NEXT_PUBLIC_USE_EMULATORS === '1'
 
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://www.google.com https://www.gstatic.com`,
+  // In development, Vercel Analytics and Speed Insights load debug versions
+  // from va.vercel-scripts.com; a deployed site serves them from /_vercel/.
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' https://va.vercel-scripts.com " : ''}https://www.google.com https://www.gstatic.com`,
   // No inline event-handler attributes (onerror=, onclick=…): React never
   // writes them, so even injected HTML can't run code through them.
   "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: https:",
-  `connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com https://*.firebaseio.com wss://*.firebaseio.com${emulatorHosts}`,
+  // No Realtime Database here, so no firebaseio.com.
+  `connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com${emulatorHosts}`,
   "frame-src https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",

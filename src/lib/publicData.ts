@@ -81,19 +81,23 @@ function externalizeImages(collection: string, d: Doc): Doc {
 
 type RestDoc = { name: string; fields?: Record<string, Value> };
 
-/** Firestore over the network from the server occasionally stalls (logged as
- *  "operation was aborted due to timeout" / ETIMEDOUT). Each request gets
- *  20 s, and a failed or timed-out request is tried once more after a short
- *  pause. If both fail, the cached copy keeps being served. */
+/** Firestore over the network from the server occasionally stalls or drops
+ *  the connection (logged as "operation was aborted due to timeout", "other
+ *  side closed", ECONNRESET), while a normal read takes 1 to 2 seconds. Each
+ *  try gets 10 s, and a failed, timed-out or overloaded (429, 5xx) read is
+ *  tried twice more after short pauses. If all three fail, the cached copy
+ *  keeps being served. */
+const RETRY_PAUSES_MS = [500, 1500];
 async function fetchWithRetry(url: string, init: RequestInit = {}): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
+    const last = attempt >= RETRY_PAUSES_MS.length;
     try {
-      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
-      if (res.ok || attempt >= 1 || res.status < 500) return res;
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(10_000) });
+      if (res.ok || last || (res.status < 500 && res.status !== 429)) return res;
     } catch (err) {
-      if (attempt >= 1) throw err;
+      if (last) throw err;
     }
-    await new Promise(r => setTimeout(r, 750));
+    await new Promise(r => setTimeout(r, RETRY_PAUSES_MS[attempt]));
   }
 }
 const toDoc = (d: RestDoc): Doc => ({ id: d.name.split('/').pop()!, ...fromFields(d.fields) });

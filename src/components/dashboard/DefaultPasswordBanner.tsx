@@ -10,6 +10,7 @@ import styles from './DefaultPasswordBanner.module.css';
 /** Shown across the dashboard while the member is still signed in with the
  *  temporary password a curator's account creation gave them. */
 const readFlag = () => {
+  if (typeof window === 'undefined') return false;
   try { return sessionStorage.getItem(MUST_CHANGE_PASSWORD_FLAG) === '1'; } catch { return false; }
 };
 

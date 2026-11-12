@@ -19,6 +19,17 @@ export function safePhotoUrl(raw: string): string {
   return /^\/api\/media\/[A-Za-z0-9]+$/.test(v) ? v : safeExternalUrl(v) ?? '';
 }
 
+/** A photo address someone typed or pasted, for an <img>: an inline photo,
+ *  one of the site's own photo routes, or an http(s) link. Anything else
+ *  (another scheme, stray text) gives undefined, so nothing is loaded. */
+export function safeImageSrc(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const v = raw.trim();
+  if (/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)) return v;
+  if (/^\/api\/(?:media|img)\/[A-Za-z0-9_./?=&%-]+$/.test(v)) return v;
+  return safeExternalUrl(v);
+}
+
 /** A user-entered link, only if it's an http(s) URL; anything else
  *  (javascript:, data:, vbscript:, relative paths) becomes undefined so the
  *  link isn't rendered. A bare "www.example.com" is treated as https. */

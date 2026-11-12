@@ -127,8 +127,8 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 ## Getting started
 
-**You need:** Node.js 24 LTS (the version production runs; Node 20 still
-works but no longer gets security fixes), and a Firebase project with
+**You need:** Node.js 24 LTS, the version production runs (set in
+`package.json` under `engines`), and a Firebase project with
 **Authentication** (Email/Password) and **Firestore** enabled. Java 17 or newer
 is only needed for the tests, which run Firebase's emulators.
 

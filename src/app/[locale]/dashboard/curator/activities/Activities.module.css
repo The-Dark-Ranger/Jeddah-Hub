@@ -42,11 +42,6 @@
 }
 .draftNote button { background:none;border:none;padding:.2rem 0;color:var(--primary-blue);font:inherit;font-weight:700;cursor:pointer; }
 .modalError { flex-basis:100%;margin:0;font-size:.84rem;font-weight:600;color:var(--danger); }
-.approveProposalBtn {
-  padding:.32rem .75rem;border-radius:7px;border:none;font-size:max(12px, .78rem);font-weight:600;
-  background:rgba(16,185,129,.12);color:#059669;cursor:pointer;transition:background .18s;
-}
-.approveProposalBtn:hover { background:rgba(16,185,129,.22); }
 .declineProposalBtn {
   padding:.32rem .75rem;border-radius:7px;border:1px solid var(--border-color);font-size:max(12px, .78rem);font-weight:600;
   background:transparent;color:var(--text-muted);cursor:pointer;transition:all .18s;

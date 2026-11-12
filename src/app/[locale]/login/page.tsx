@@ -5,7 +5,7 @@
  * browser and a limit on the server, and a choice not to stay signed in on
  * a shared device. Someone whose email address isn't confirmed yet gets the
  * link to confirm it here, and nothing else until they do. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   browserSessionPersistence, indexedDBLocalPersistence, sendEmailVerification, setPersistence,
   signInWithEmailAndPassword, type User,
@@ -64,6 +64,9 @@ function nextAllowed(fails: number): number {
   return Date.now() + Math.min(LOCK_BASE_MS * 2 ** (fails - MAX_FAILS), LOCK_MAX_MS);
 }
 
+/** The device's remembered choice never changes behind the page's back. */
+const noSubscribe = () => () => {};
+
 /** Emails the link that confirms the address, in the page's language. */
 async function sendConfirmLink(u: User, locale: string) {
   auth.languageCode = locale;
@@ -81,7 +84,12 @@ export default function LoginPage() {
   // Counted from when the page started opening: on a slow phone the form can
   // be filled long before it becomes interactive, and that isn't a bot.
   const [openedAt] = useState(() => performance.timeOrigin);
-  const [keepSignedIn, setKeepSignedIn] = useState(readKeep);
+  // "Keep me signed in": what this device chose last time, read in the
+  // browser only (the server renders it ticked and can't see storage),
+  // until the member changes it here.
+  const storedKeep = useSyncExternalStore(noSubscribe, readKeep, () => true);
+  const [keepChoice, setKeepChoice] = useState<boolean | null>(null);
+  const keepSignedIn = keepChoice ?? storedKeep;
   const [capsLock, setCapsLock] = useState(false);
   // Seconds left before the next attempt is allowed (after a failure).
   const [waitLeft, setWaitLeft] = useState(0);
@@ -340,7 +348,7 @@ export default function LoginPage() {
           </div>
 
           <label className={styles.keepRow}>
-            <input type="checkbox" checked={keepSignedIn} onChange={e => setKeepSignedIn(e.target.checked)} />
+            <input type="checkbox" checked={keepSignedIn} onChange={e => setKeepChoice(e.target.checked)} />
             <span>
               {t('keepSignedIn')}
               <span className={styles.keepHint}>{t('keepSignedInHint')}</span>

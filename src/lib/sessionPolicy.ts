@@ -9,20 +9,23 @@
  *  - A curator sending a new password, or removing a member, ends that
  *    member's sessions everywhere at once (session_revocations in the
  *    database, checked by the rules on every read and write). */
-export const MAX_SESSION_DAYS = 14;
+const MAX_SESSION_DAYS = 14;
 export const MAX_SESSION_MS = MAX_SESSION_DAYS * 24 * 60 * 60_000;
 export const IDLE_LIMIT_MS = 30 * 60_000;
 
 /** The "Keep me signed in" choice, remembered on this device (not a secret). */
 export const KEEP_KEY = 'jh-keep-signed-in';
 /** When this device last saw the member do something (any tab). */
-export const LAST_ACTIVE_KEY = 'jh-last-active';
+const LAST_ACTIVE_KEY = 'jh-last-active';
 /** Why the session was just ended, for the login page to explain. */
 const REASON_KEY = 'jh-signout-reason';
 
 export type SignOutReason = 'idle' | 'expired' | 'revoked';
 
+/** Ticked unless this device chose otherwise. On the server (no storage
+ *  there; newer Node versions warn when it is touched) always ticked. */
 export function readKeep(): boolean {
+  if (typeof window === 'undefined') return true;
   try { return localStorage.getItem(KEEP_KEY) !== '0'; } catch { return true; }
 }
 

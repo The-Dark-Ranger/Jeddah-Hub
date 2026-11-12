@@ -5,6 +5,17 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 12 November
+- Up to date and patched: Next.js 16.4.6, which fixes seven security problems in Next.js (among them a way past the image service's refusal of SVG files); Firebase 13.2, which fixes errors when a sign-in is restored from the browser's storage; the Firebase Admin SDK 14 on the server, with its newer database client; Speed Insights 2.1 and Playwright 1.65. The security audit is at 0 known vulnerabilities. The site is built and developed on Node.js 24, the same version as production.
+- Emails escape the names they carry everywhere, including the hidden preview line and the title, so a name can never add markup to an email. The plain-text version of an invite shows names as typed (an apostrophe used to show as "&#39;").
+- Photo previews in the dashboard only load addresses a photo can come from: an uploaded photo, an inline one, or an http(s) link.
+- Profile photos are saved as their own photo, like initiative photos, instead of inside the profile, so the profiles every public page reads get smaller as members update their photos.
+- Public pages read the database with three tries of 10 seconds instead of two of 20, after the server logs showed occasional dropped connections to Firestore. Visitors keep seeing the last copy while a refresh fails.
+- The sign-in page no longer reads "Keep me signed in" while the server builds the page, which logged a warning on every visit.
+- GitHub: CodeQL now checks every change for security problems, and the empty wiki tab is gone. The README, developer guide and How it works now describe the sign-in and session rules from 10 November.
+- Cleanup: an unused style, an unused function in the security rules, the Realtime Database addresses in the content security policy (the site doesn't use one) and out-of-date comments.
+- The security rules from 10 November are live on the database: only a confirmed email address, a sign-in from the last 14 days, and one not signed out everywhere since can read or change anything a member can.
+
 ### 11 November
 - Phones: with the menu open, the page underneath no longer scrolls and the top bar no longer slides away, which left the menu hanging below a gap. Closing the menu returns to the same place on the page.
 - Phones and tablets: Member Login now sits only in the menu, like the Dashboard and Sign out buttons, so the top bar shows just the logo, theme, language and menu.

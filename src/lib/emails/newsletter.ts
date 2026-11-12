@@ -3,7 +3,7 @@
 import { escapeHtml } from '@/lib/escapeHtml';
 import { sender } from '@/lib/email';
 import {
-  type Lang, emailLayout, heading, paragraph, sectionTitle, featureList, linkCards, button, siteUrl,
+  type Lang, type Mark, bold, plain, emailLayout, heading, paragraph, sectionTitle, featureList, linkCards, button, siteUrl,
 } from './layout';
 import { CONTACT_INBOX } from './contact';
 import { LOGO_ATTACHMENTS } from './logos';
@@ -16,7 +16,7 @@ const COPY = {
     subject: 'Welcome to the Jeddah Hub newsletter',
     preheader: 'You are subscribed. Here is what to expect and where to start.',
     heading: 'Welcome aboard, you are subscribed!',
-    intro: 'Thank you for joining the <strong>Jeddah Hub newsletter</strong>. You are now connected with a community of young leaders shaping the future of Jeddah through initiatives, events and grassroots action.',
+    intro: (b: Mark) => `Thank you for joining the ${b('Jeddah Hub newsletter')}. You are now connected with a community of young leaders shaping the future of Jeddah through initiatives, events and grassroots action.`,
     subscribedAs: (e: string) => `Subscribed as <strong>${e}</strong>.`,
     expectTitle: 'What you will receive',
     expect: [
@@ -39,7 +39,7 @@ const COPY = {
     subject: 'أهلاً بك في نشرة مركز جدة',
     preheader: 'تم اشتراكك بنجاح. إليك ما ستتلقاه ومن أين تبدأ.',
     heading: 'أهلاً بك، تم اشتراكك بنجاح!',
-    intro: 'شكراً لانضمامك إلى <strong>نشرة مركز جدة</strong>. أصبحت الآن على تواصل مع مجتمع من القادة الشباب يصنعون مستقبل جدة عبر المبادرات والفعاليات والعمل المجتمعي.',
+    intro: (b: Mark) => `شكراً لانضمامك إلى ${b('نشرة مركز جدة')}. أصبحت الآن على تواصل مع مجتمع من القادة الشباب يصنعون مستقبل جدة عبر المبادرات والفعاليات والعمل المجتمعي.`,
     subscribedAs: (e: string) => `البريد المشترك: <strong>${e}</strong>`,
     expectTitle: 'ما الذي ستتلقاه',
     expect: [
@@ -69,7 +69,7 @@ export function newsletterWelcome(lang: Lang, email: string) {
     footerNote: c.footer(e),
     body:
       heading(c.heading) +
-      paragraph(c.intro) +
+      paragraph(c.intro(bold)) +
       paragraph(c.subscribedAs(e)) +
       sectionTitle(c.expectTitle) +
       featureList(c.expect) +
@@ -79,7 +79,7 @@ export function newsletterWelcome(lang: Lang, email: string) {
       button(siteUrl(lang), c.cta),
   });
   const text = [
-    c.heading, '', c.intro.replace(/<[^>]+>/g, ''), '',
+    c.heading, '', c.intro(plain), '',
     c.expectTitle + ':', ...c.expect.map(([, t, d]) => `- ${t}: ${d}`), '',
     c.startTitle + ':', ...c.start.map(([, t, , path]) => `- ${t}: ${siteUrl(lang, path)}`), '',
     c.footer(email),

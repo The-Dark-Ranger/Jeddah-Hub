@@ -44,10 +44,6 @@ service cloud.firestore {
       return isCurator() || isImpactOfficer();
     }
 
-    function isShaper() {
-      return isSignedIn() && userRole() in ['shaper', 'alumni'];
-    }
-
     function isAnyMember() {
       return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator', 'impact_officer', 'impact officer', 'shaper', 'alumni'];
     }

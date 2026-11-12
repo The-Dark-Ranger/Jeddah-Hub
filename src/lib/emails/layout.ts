@@ -40,6 +40,12 @@ export const siteUrl = (lang: Lang, path = '') => `${SITE}/${lang}${path}`;
 
 const start = (lang: Lang) => (lang === 'ar' ? 'right' : 'left');
 
+/** How copy marks a phrase: `bold` in the HTML version, `plain` in the
+ *  plain-text one, so the text version never has tags to strip. */
+export type Mark = (s: string) => string;
+export const bold: Mark = s => `<strong>${s}</strong>`;
+export const plain: Mark = s => s;
+
 /* ── Building blocks ── */
 
 export const heading = (text: string) =>
@@ -129,6 +135,9 @@ const logo = (cid: string, width: number, height: number, alt: string) =>
   `style="display:block;width:${width}px;height:${height}px;border:0;outline:none;color:#ffffff;font-size:12px;font-weight:700;` +
   `-webkit-user-drag:none;user-select:none;-webkit-user-select:none;pointer-events:none;">`;
 
+/** `title` and `preheader` are plain text (escaped here, since some carry a
+ *  sender's or member's name); `body` and `footerNote` are HTML that the
+ *  caller has already escaped. */
 export function emailLayout({ lang, title, preheader, body, footerNote }: {
   lang: Lang; title: string; preheader: string; body: string; footerNote: string;
 }): string {
@@ -142,9 +151,9 @@ export function emailLayout({ lang, title, preheader, body, footerNote }: {
 
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${title}</title></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:#eef2f7;font-family:${font};">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:32px 12px;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" dir="${dir}" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(15,23,42,0.08);text-align:${start(lang)};">

@@ -1,10 +1,8 @@
 /**
- * Best-effort in-memory sliding-window rate limiter for a single Next.js
- * instance. Not distributed, a multi-instance/serverless deployment with
- * many concurrent cold starts won't share this state, so it's a speed bump
- * against casual abuse, not a hard guarantee. A KV-backed limiter (Upstash/
- * Vercel KV) is the correct fix if traffic/abuse actually grows; this repo
- * has no such store configured today.
+ * In-memory sliding-window rate limiter for one server instance: a quick
+ * first check that costs no database read. Each instance keeps its own
+ * counts, so the limits that must hold across every instance (sign-in
+ * attempts, daily budgets) are in persistentLimit.ts.
  */
 const hits = new Map<string, number[]>();
 

@@ -9,7 +9,7 @@ import styles from '@/app/[locale]/Home.module.css';
 import WaveDivider from './WaveDivider';
 import { slugify } from '@/lib/slug';
 import { safeColor } from '@/lib/activityTypes';
-import { safeExternalUrl } from '@/lib/sanitize';
+import { safeExternalUrl, sizedPhoto } from '@/lib/sanitize';
 
 interface Highlight { name: string; tag: string; }
 
@@ -76,7 +76,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
                 className={styles.retreatBtn + (accent ? ' ' + styles.retreatBtnAccent : '')}
               >
                 {activity.ctaText}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg className="flip-rtl" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -92,7 +92,7 @@ function ActivityCard({ activity, t }: { activity: Activity; t: ReturnType<typeo
           <div className={styles.retreatAside}>
             {activity.imageUrl && (
               <div className={styles.retreatMedia}>
-                <img src={activity.imageUrl} alt={activity.title} className={styles.retreatMediaImg} loading="lazy" decoding="async" />
+                <img src={sizedPhoto(activity.imageUrl, 768)} alt={activity.title} className={styles.retreatMediaImg} loading="lazy" decoding="async" />
               </div>
             )}
             {hasHighlights && (
@@ -209,7 +209,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
                   onClick={goPrev}
                   aria-label={t('previousActivity')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="flip-rtl" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="15 18 9 12 15 6"/>
                   </svg>
                 </button>
@@ -231,7 +231,7 @@ export default function HomeActivity({ initial }: { initial?: Activity[] }) {
                   onClick={goNext}
                   aria-label={t('nextActivity')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="flip-rtl" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
                 </button>

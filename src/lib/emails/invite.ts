@@ -25,7 +25,7 @@ const COPY = {
     subject: 'Your Jeddah Hub account is ready',
     preheader: 'Your sign-in details for the Jeddah Hub dashboard.',
     heading: (n: string) => `Welcome to Jeddah Hub${n ? `, ${n}` : ''}!`,
-    intro: (r: string, b: Mark = bold) => `You have been added to the Jeddah Hub dashboard as ${b(r)}. Sign in with the details below to see your hub, join initiatives, propose activities and write for the hub.`,
+    intro: (r: string, b: Mark = bold) => `You have been added to the Jeddah Hub dashboard as ${b(r)}. Sign in with the details below to open your dashboard, join initiatives, propose activities and write for the hub.`,
     details: 'Your sign-in details',
     email: 'Email', password: 'One-time password', role: 'Role',
     ownPassword: 'The password you already chose',
@@ -36,21 +36,21 @@ const COPY = {
       ['Sign in', 'Use the email and password above on the sign-in page.'],
       ['Choose your password', 'Pick a password only you know.'],
       ['Complete your profile', 'Add your photo, a short bio and your links; they appear on Who We Are.'],
-      ['Sign the Community Charter', 'Read the charter and confirm it from your dashboard.'],
+      ['Sign the Community Charter', 'Read the Charter and confirm it from your dashboard.'],
     ],
     help: 'Questions? Just reply to this email.',
-    footer: (e: string) => `You received this because a Jeddah Hub curator added ${e} to the hub. If you weren't expecting it, you can ignore this email.`,
+    footer: (e: string) => `You received this because a Jeddah Hub Curator added ${e} to the hub. If you weren't expecting it, you can ignore this email.`,
     reset: {
       subject: 'Your new Jeddah Hub password',
       preheader: 'A new one-time password for the Jeddah Hub dashboard.',
       heading: (n: string) => `A new password for you${n ? `, ${n}` : ''}`,
       nextTitle: 'Next steps',
-      intro: (r: string, b: Mark = bold) => `A Jeddah Hub curator has issued a new one-time password for your ${b(r)} account and signed it out of other devices. Use it to sign in, then choose your own password.`,
+      intro: (r: string, b: Mark = bold) => `A Jeddah Hub Curator has issued a new one-time password for your ${b(r)} account and signed it out of other devices. Use it to sign in, then choose your own password.`,
       next: [
         ['Sign in', 'Use the email and one-time password above on the sign-in page.'],
         ['Choose your password', 'You will be asked to pick a new password straight away.'],
       ],
-      footer: (e: string) => `You received this because a Jeddah Hub curator issued a new password for ${e}. If you weren't expecting it, reply to this email.`,
+      footer: (e: string) => `You received this because a Jeddah Hub Curator issued a new password for ${e}. If you weren't expecting it, reply to this email.`,
     },
   },
   ar: {
@@ -58,7 +58,7 @@ const COPY = {
     subject: 'حسابك في مركز جدة جاهز',
     preheader: 'بيانات الدخول إلى لوحة تحكم مركز جدة.',
     heading: (n: string) => `أهلاً بك في مركز جدة${n ? ` يا ${n}` : ''}!`,
-    intro: (r: string, b: Mark = bold) => `أُضفت إلى لوحة تحكم مركز جدة بصفة ${b(r)}. سجّل الدخول بالبيانات أدناه لتتابع المركز، وتنضم إلى المبادرات، وتقترح الأنشطة، وتكتب للمركز.`,
+    intro: (r: string, b: Mark = bold) => `أُضفت إلى لوحة تحكم مركز جدة بصفة ${b(r)}. سجّل الدخول بالبيانات أدناه لتفتح لوحة التحكم، وتنضم إلى المبادرات، وتقترح الأنشطة، وتكتب للمركز.`,
     details: 'بيانات الدخول',
     email: 'البريد الإلكتروني', password: 'كلمة المرور المؤقتة', role: 'الدور',
     ownPassword: 'كلمة المرور التي اخترتها سابقاً',
@@ -68,11 +68,11 @@ const COPY = {
     next: [
       ['سجّل الدخول', 'استخدم البريد وكلمة المرور أعلاه في صفحة تسجيل الدخول.'],
       ['اختر كلمة مرورك', 'اختر كلمة مرور لا يعرفها غيرك.'],
-      ['أكمل ملفك الشخصي', 'أضف صورتك ونبذة قصيرة وروابطك؛ ستظهر في صفحة من نحن.'],
+      ['أكمل ملفك الشخصي', 'أضف صورتك ونبذة قصيرة وروابطك؛ ستظهر في صفحة «من نحن».'],
       ['وقّع ميثاق المجتمع', 'اقرأ الميثاق وأكّد التزامك به من لوحة التحكم.'],
     ],
     help: 'لديك سؤال؟ ردّ على هذه الرسالة.',
-    footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أضاف ${e} إلى المركز. إن لم تكن تتوقعها، يمكنك تجاهلها.`,
+    footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أضاف ${e} إلى المركز. إن لم تكن تتوقعها، فيمكنك تجاهلها.`,
     reset: {
       subject: 'كلمة مرور جديدة لحسابك في مركز جدة',
       preheader: 'كلمة مرور مؤقتة جديدة للوحة تحكم مركز جدة.',
@@ -83,7 +83,7 @@ const COPY = {
         ['سجّل الدخول', 'استخدم البريد وكلمة المرور المؤقتة أعلاه في صفحة تسجيل الدخول.'],
         ['اختر كلمة مرورك', 'سيُطلب منك اختيار كلمة مرور جديدة مباشرةً.'],
       ],
-      footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أصدر كلمة مرور جديدة للحساب ${e}. إن لم تكن تتوقعها، ردّ على هذه الرسالة.`,
+      footer: (e: string) => `وصلتك هذه الرسالة لأن أحد منسقي مركز جدة أصدر كلمة مرور جديدة للحساب ${e}. إن لم تكن تتوقعها، فردّ على هذه الرسالة.`,
     },
   },
 } as const;
@@ -155,11 +155,11 @@ export function inviteRecord(r: {
     lang: 'en',
     title: what,
     preheader: r.newPassword ? `${who} was sent a new one-time password.` : `${who} was invited as ${role}.`,
-    footerNote: "Sent automatically each time a curator sends an invite from Role Assignments, for the hub's records. The password itself is never included.",
+    footerNote: "Sent automatically each time a Curator sends an invite from Role Assignments, for the hub's records. The password itself is never included.",
     body:
       heading(`${what}: ${escapeHtml(who)}`) +
       paragraph(r.newPassword
-        ? 'A curator issued a new one-time password from Role Assignments → Members; the member was signed out of other devices.'
+        ? 'A Curator issued a new one-time password from Role Assignments → Members; the member was signed out of other devices.'
         : 'A member invitation was emailed from Role Assignments.') +
       infoTable('en', [
         ['Invited', `${r.name ? `${escapeHtml(r.name)}<br>` : ''}<span dir="ltr">${escapeHtml(r.email)}</span>`],

@@ -1,8 +1,8 @@
 'use client';
 
-/* The loading screen shown on a visitor's first page in a session and on
- * every full reload (decided before first paint by SPLASH_INIT_SCRIPT), in
- * the site's light or dark theme.
+/* The loading screen shown on a visitor's first page in a session (decided
+ * before first paint by SPLASH_INIT_SCRIPT), in the site's light or dark
+ * theme.
  * It stays until the page has loaded and its fonts are ready, never less
  * than SPLASH_MIN_VISIBLE_MS (so it doesn't flicker) and never more than
  * SPLASH_MAX_VISIBLE_MS (so a slow network can't trap anyone behind it). */

@@ -100,9 +100,22 @@ export interface UserDoc {
   role?: string;
 }
 
-/** A short code for an error shown to a curator ("permission-denied", or
- *  the message when there is no code); empty when there is neither. */
+/** A short code for an error, for the console and logs ("permission-denied",
+ *  or the message when there is no code); empty when there is neither. */
 export function errorCode(err: unknown): string {
   const e = err as { code?: unknown; message?: unknown } | null;
   return typeof e?.code === 'string' ? e.code : typeof e?.message === 'string' ? e.message : '';
+}
+
+/** Which plain-language explanation (a key in the `Common` messages) fits a
+ *  failed Firebase call, so people never see raw codes such as
+ *  "permission-denied". Log `errorCode(err)` alongside for the details. */
+export type ErrorReason = 'errorPermission' | 'errorNetwork' | 'errorTooLarge' | 'errorGeneral';
+export function errorReason(err: unknown): ErrorReason {
+  const code = errorCode(err).replace(/^(auth|firestore)\//, '');
+  if (code === 'permission-denied' || code === 'unauthenticated') return 'errorPermission';
+  if (['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(code)) return 'errorNetwork';
+  const message = String((err as { message?: unknown } | null)?.message ?? '');
+  if (/exceeds the maximum|too large|maximum size/i.test(message)) return 'errorTooLarge';
+  return 'errorGeneral';
 }

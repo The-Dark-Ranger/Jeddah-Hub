@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
 import styles from './Exports.module.css';
 import { csvBlob, downloadBlob } from '@/lib/download';
 import { intlLocale } from '@/lib/dates';
@@ -25,12 +26,16 @@ export default function ExportEmails() {
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [subs, setSubs]       = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
+  // The list couldn't be read: say so with Try again, rather than "no
+  // subscribers yet" (or the misleading "Could not save").
+  const [loadFailed, setLoadFailed] = useState(false);
   const [search, setSearch]   = useState('');
   const [copied, setCopied]   = useState<'lines' | 'commas' | null>(null);
   const [now] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadFailed(false);
     try {
       const snap = await getDocs(collection(db, 'newsletter_subscribers'));
       setSubs(snap.docs
@@ -38,12 +43,14 @@ export default function ExportEmails() {
         .filter(s => !!s.email)
         .sort((a, b) => (b.subscribedAt ?? '').localeCompare(a.subscribedAt ?? '')));
     } catch (e) {
-      console.error(e);
-      alert(t('saveFailed'));
+      console.error('Subscribers failed to load:', e);
+      // Nothing stale left to copy or download while the list is hidden.
+      setSubs([]);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load
   useEffect(() => { if (isCurator) void load(); }, [isCurator, load]);
@@ -94,9 +101,9 @@ export default function ExportEmails() {
       {/* At a glance */}
       <div className={styles.stats}>
         {([
-          [t('newsletterSubscribers'), loading ? '…' : subs.length.toLocaleString(intlLocale(locale)), 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6'],
-          [t('newLast30Days'), loading ? '…' : `+${newThisMonth}`, 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6'],
-          [t('latestSignup'), loading ? '…' : fmt(subs[0]?.subscribedAt), 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2'],
+          [t('newsletterSubscribers'), loading ? '…' : loadFailed ? '-' : subs.length.toLocaleString(intlLocale(locale)), 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6'],
+          [t('newLast30Days'), loading ? '…' : loadFailed ? '-' : `+${newThisMonth}`, 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6'],
+          [t('latestSignup'), loading ? '…' : loadFailed ? '-' : fmt(subs[0]?.subscribedAt), 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2'],
         ] as const).map(([label, value, icon]) => (
           <div key={label} className={styles.stat}>
             <span className={styles.statIcon} aria-hidden="true">
@@ -131,6 +138,8 @@ export default function ExportEmails() {
 
         {loading ? (
           <DashSkeleton rows={4} header={false} label={t('loading')} />
+        ) : loadFailed ? (
+          <LoadFailed onRetry={() => void load()} message={t('subscribersLoadFailed')} />
         ) : visible.length === 0 ? (
           <p className={styles.empty}>{search ? t('noMatches') : t('noSubscribersYet')}</p>
         ) : (

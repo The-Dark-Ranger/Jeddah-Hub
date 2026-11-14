@@ -49,8 +49,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
   }
 
+  // Without email set up, nothing can be sent: say so, so the dashboard
+  // never reports an invite (or a password) as sent when it wasn't.
   if (!emailConfigured()) {
-    return NextResponse.json({ ok: true, skipped: 'No RESEND_API_KEY configured' });
+    console.error('[invite] RESEND_API_KEY is not set; no invite sent');
+    return NextResponse.json({ error: 'email_not_configured' }, { status: 503 });
   }
 
   // A member who has never signed in gets a fresh one-time password with
@@ -70,23 +73,38 @@ export async function POST(req: NextRequest) {
   let record;
   try {
     record = await getAuth(app).getUserByEmail(email);
-  } catch {
+  } catch (err) {
     // No login yet: the dashboard creates one before inviting, so this
     // only happens if it was removed in between.
-    return NextResponse.json({ error: 'no_account' }, { status: 409 });
+    if ((err as { code?: string } | null)?.code === 'auth/user-not-found') {
+      return NextResponse.json({ error: 'no_account' }, { status: 409 });
+    }
+    console.error('[invite] account lookup failed', err);
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 });
   }
   const signedInBefore = !!record.metadata.lastSignInTime;
-  if (newPassword && signedInBefore) {
-    // Not for your own account (My Profile changes it), and only the
-    // Curator can do it for a curator, as with every curator record.
-    if (record.uid === caller.uid) return NextResponse.json({ error: 'self' }, { status: 400 });
-    const target = await getFirestore(app).doc(`users/${record.uid}`).get().catch(() => null);
-    const targetRole = normalizeRole(String(target?.get('role') ?? ''));
-    if (targetRole === 'curator' && caller.role !== 'curator') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-    if (KNOWN_ROLES.has(targetRole)) role = targetRole;
+  // Not for your own account (My Profile changes it).
+  if (newPassword && signedInBefore && record.uid === caller.uid) return NextResponse.json({ error: 'self' }, { status: 400 });
+  const setsPassword = !signedInBefore || newPassword;
+  if (setsPassword) {
+    // Only the Curator can set a curator's password, signed in or not, as
+    // with every curator record: whoever holds it could take the role.
+    // If the record can't be read, refuse rather than assume it isn't a curator.
+    let targetRole: string;
+    try {
+      const target = await getFirestore(app).doc(`users/${record.uid}`).get();
+      targetRole = normalizeRole(String(target.get('role') ?? ''));
+    } catch (err) {
+      console.error('[invite] could not read the member record', err);
+      return NextResponse.json({ error: 'unavailable' }, { status: 503 });
+    }
+    if (caller.role !== 'curator' && (targetRole === 'curator' || role === 'curator')) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+    if (signedInBefore && KNOWN_ROLES.has(targetRole)) role = targetRole;
   }
   let tempPassword: string | null = null;
-  if (!signedInBefore || newPassword) {
+  if (setsPassword) {
     tempPassword = generateTempPassword();
     await getAuth(app).updateUser(record.uid, { password: tempPassword });
     // Whoever had their session (or old password) is signed out everywhere,
@@ -96,7 +114,9 @@ export async function POST(req: NextRequest) {
 
   const lang = body?.locale === 'ar' ? 'ar' : 'en';
   const result = await sendEmail(memberInvite({ lang, email, name: displayName, role, tempPassword, newPassword: newPassword && signedInBefore }));
-  if (!result.ok) return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
+  // The password (if any) has already changed: say so, so the dashboard can
+  // tell the curator a retry sends a fresh one.
+  if (!result.ok) return NextResponse.json({ error: 'email_failed', passwordChanged: !!tempPassword }, { status: 502 });
 
   // Record it: on the assignment (shown in Role Assignments) and as an
   // email to the hub inbox. Best effort; the invite itself has gone out.

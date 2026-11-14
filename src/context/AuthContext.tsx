@@ -6,7 +6,7 @@
  * the login and dashboard pages, and on public pages when this device has a
  * member signed in. Visitors who never sign in don't download it at all,
  * so public pages load and respond faster on phones. */
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { UserProfile } from '@/lib/auth';
 import { clearAllDrafts } from '@/lib/drafts';
@@ -58,11 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // dashboard never decides "signed out" before the session was checked.
   const loading = !resolved && (started || isAuthPath(pathname));
 
+  // The page where loading the sign-in code last failed: it is tried again
+  // on the next page the visitor opens, not over and over on this one.
+  const failedOn = useRef<string | null>(null);
+
   // Start the session check once it's needed: on an auth page, or when this
   // device has a member signed in. Re-evaluated as the visitor navigates.
   useEffect(() => {
-    if (!started && (isAuthPath(pathname) || hasMemberSession())) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to navigation
+    if (!started && failedOn.current !== pathname && (isAuthPath(pathname) || hasMemberSession())) {
       setStarted(true);
     }
   }, [pathname, started]);
@@ -84,7 +87,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           rememberMemberSession(!!profile);
         });
       })
-      .catch(() => setResolved(true)); // offline or blocked: behave as signed out
+      .catch(err => {
+        // Offline, or the sign-in code was blocked: behave as signed out
+        // for now, and try again on the next page the visitor opens.
+        console.error('[auth] could not load sign-in', err);
+        failedOn.current = window.location.pathname;
+        setResolved(true);
+        setStarted(false);
+      });
     return () => { cancelled = true; unsubscribe?.(); };
   }, [started]);
 

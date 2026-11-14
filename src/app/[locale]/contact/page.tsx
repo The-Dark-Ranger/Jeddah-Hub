@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { intlLocale } from '@/lib/dates';
-import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
+import { getRecaptchaToken, recaptchaConfigured, preloadRecaptcha } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import Honeypot from '@/components/Honeypot';
 import styles from './Contact.module.css';
@@ -18,7 +18,7 @@ const NAME_MAX    = 200;
 const MESSAGE_MIN = 10;
 const MESSAGE_MAX = 5000;
 
-type Status = 'idle' | 'loading' | 'success' | 'error' | 'invalid-email' | 'invalid-name' | 'invalid-message' | 'too-many-links' | 'too-many' | 'verify-failed';
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'invalid-email' | 'invalid-name' | 'invalid-message' | 'too-many-links' | 'too-many' | 'verify-failed' | 'check-blocked';
 
 /** Server error codes -> what the form shows. */
 const ERROR_STATUS: Record<string, Status> = {
@@ -28,6 +28,7 @@ const ERROR_STATUS: Record<string, Status> = {
 
 export default function ContactPage() {
   const t = useTranslations('ContactPage');
+  const tCommon = useTranslations('Common');
   const locale = useLocale();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [honeypot, setHoneypot] = useState('');
@@ -41,6 +42,7 @@ export default function ContactPage() {
     setStatus('loading');
     try {
       const recaptchaToken = await getRecaptchaToken('contact');
+      if (!recaptchaToken && recaptchaConfigured()) { setStatus('check-blocked'); return; }
       const res = await fetch('/api/contact/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,6 +71,7 @@ export default function ContactPage() {
     'too-many-links': t('tooManyLinks'),
     'too-many': t('tooMany'),
     'verify-failed': t('verifyFailed'),
+    'check-blocked': tCommon('checkBlocked'),
     error: t('error'),
   };
 

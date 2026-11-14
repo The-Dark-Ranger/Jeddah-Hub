@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import styles from './InitiativeCover.module.css';
+import { sizedPhoto } from '@/lib/sanitize';
 
 /** Two-letter monogram for a cover without a photo: "Tech J Shore" -> "TJ". */
 function monogram(title: string): string {
@@ -29,7 +30,8 @@ interface Props {
 export default function InitiativeCover({ src, title, accent, imgClassName, className, eager }: Props) {
   const [failed, setFailed] = useState(false);
   if (src && !failed) {
-    return <img src={src} alt="" className={imgClassName} loading={eager ? undefined : 'lazy'} decoding="async" onError={() => setFailed(true)} />;
+    // A card-sized copy, except for the large above-the-fold cover.
+    return <img src={eager ? src : sizedPhoto(src, 768)} alt="" className={imgClassName} loading={eager ? undefined : 'lazy'} decoding="async" onError={() => setFailed(true)} />;
   }
   return (
     <div className={styles.cover + (className ? ' ' + className : '')} style={{ '--cover-accent': accent } as React.CSSProperties} aria-hidden="true">

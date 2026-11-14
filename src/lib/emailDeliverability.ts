@@ -6,29 +6,27 @@ import dns from 'node:dns/promises';
  * actually receive mail, catching syntactically-valid-but-fake addresses
  * (e.g. someone@dfgdf.com) that isValidEmail()'s format check can't.
  */
+/** DNS answers that mean the domain really has no such record. Anything
+ *  else (SERVFAIL, a refused or unreachable resolver) says nothing about
+ *  the address, so it doesn't count against it. */
+const NO_RECORD = new Set(['ENOTFOUND', 'ENODATA']);
+const missing = (err: unknown) => NO_RECORD.has(String((err as { code?: unknown } | null)?.code));
+
 async function hasDeliverableDomain(email: string): Promise<boolean> {
   const domain = email.split('@')[1];
   if (!domain) return false;
 
-  try {
-    const mx = await dns.resolveMx(domain);
-    if (mx.length > 0) return true;
-  } catch { /* fall through to the A/AAAA fallback below */ }
-
   // RFC 5321 implicit MX: a domain with no MX record can still receive mail
-  // on its own A/AAAA record, checking only MX would reject some real
+  // on its own A/AAAA record, so checking only MX would reject some real
   // (if unusually configured) domains.
-  try {
-    await dns.resolve4(domain);
-    return true;
-  } catch { /* try AAAA below */ }
-
-  try {
-    await dns.resolve6(domain);
-    return true;
-  } catch {
-    return false;
+  for (const lookup of [() => dns.resolveMx(domain), () => dns.resolve4(domain), () => dns.resolve6(domain)]) {
+    try {
+      if ((await lookup()).length > 0) return true;
+    } catch (err) {
+      if (!missing(err)) return true;
+    }
   }
+  return false;
 }
 
 /** Same check, but never blocks longer than timeoutMs, a slow/unreachable

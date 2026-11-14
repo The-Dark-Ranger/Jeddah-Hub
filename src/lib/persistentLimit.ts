@@ -13,16 +13,20 @@ export const HOUR = 60 * 60_000;
 export const DAY = 24 * HOUR;
 
 /** Counts one use of `key`; false once it has been used `limit` times
- *  within `windowMs`. If the store can't be reached it allows the request:
- *  reCAPTCHA and the in-memory limits still apply. */
-export async function withinLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
-  return (await countUse(key, limit, windowMs)) <= limit;
+ *  within `windowMs`. If the store fails, it allows the request (reCAPTCHA
+ *  and the in-memory limits still apply) unless `failClosed` is set, for
+ *  limits that guard something costly, such as the email budget. */
+export async function withinLimit(
+  key: string, limit: number, windowMs: number, { failClosed = false } = {},
+): Promise<boolean> {
+  const uses = await countUse(key, limit, windowMs);
+  return uses === null ? !failClosed : uses <= limit;
 }
 
 /** Counts one use of `key` and returns how many uses its window now holds
- *  (limit + 1 once it's over: refused uses aren't stored). 0 when the store
- *  can't be reached. */
-export async function countUse(key: string, limit: number, windowMs: number): Promise<number> {
+ *  (limit + 1 once it's over: refused uses aren't stored). 0 when there is
+ *  no store configured (local runs); null when the store failed. */
+export async function countUse(key: string, limit: number, windowMs: number): Promise<number | null> {
   const app = adminApp();
   if (!app) return 0;
   sweepExpired();
@@ -42,16 +46,17 @@ export async function countUse(key: string, limit: number, windowMs: number): Pr
     });
   } catch (err) {
     console.error('[limit] store unavailable', err);
-    return 0;
+    return null;
   }
 }
 
 /** The day's budget for emails a visitor can trigger (receipts, welcomes,
  *  activity confirmations), so a flood can never use up the email quota
- *  or the domain's reputation. EMAIL_DAILY_LIMIT, default 200. */
+ *  or the domain's reputation. EMAIL_DAILY_LIMIT, default 200. If the
+ *  counter can't be read, no email is sent. */
 export function withinEmailBudget(): Promise<boolean> {
   const limit = Number(process.env.EMAIL_DAILY_LIMIT) || 200;
-  return withinLimit(`email-budget:${new Date().toISOString().slice(0, 10)}`, limit, DAY);
+  return withinLimit(`email-budget:${new Date().toISOString().slice(0, 10)}`, limit, DAY, { failClosed: true });
 }
 
 /** About one call in 25 also deletes up to 50 counters whose window has

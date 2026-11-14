@@ -10,7 +10,8 @@
 .input {
   width: 100%;
   min-height: 42px;
-  padding: .55rem 2.5rem .55rem 2.5rem;
+  padding-block: .55rem;
+  padding-inline: 2.5rem 2.75rem; /* search icon | clear button */
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--card-bg-solid);
@@ -25,14 +26,14 @@
   box-shadow: 0 0 0 3px var(--primary-blue-glow);
 }
 .count {
-  position: absolute; inset-inline-end: 2.4rem;
+  position: absolute; inset-inline-end: 2.85rem;
   font-size: max(12px, .72rem); font-weight: 600; color: var(--text-muted);
   white-space: nowrap; pointer-events: none;
 }
 .clear {
-  position: absolute; inset-inline-end: .45rem;
+  position: absolute; inset-inline-end: .1rem;
   display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; min-height: 30px; min-width: 30px; border-radius: 8px;
+  width: 40px; height: 40px; min-height: 40px; min-width: 40px; border-radius: 8px;
   background: none; border: none; color: var(--text-muted); cursor: pointer;
 }
 .clear:hover { background: var(--background-alt); color: var(--text-main); }

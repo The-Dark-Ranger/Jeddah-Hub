@@ -1,5 +1,7 @@
 'use client';
 
+/* The Charter page's sign-off: the member's confirmation form, or the
+ * record that they've already signed. */
 import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
@@ -7,6 +9,7 @@ import { Link } from '@/i18n/routing';
 import { matchAccountName, signCharter, useCharterStatus } from '@/lib/charterSignature';
 import styles from './CharterSign.module.css';
 import { intlLocale } from '@/lib/dates';
+import LoadFailed from '@/components/dashboard/LoadFailed';
 
 /** The member's sign-off at the end of the Charter: they type the name on
  *  their account (a different name is cleared and has to be typed again) and
@@ -16,7 +19,7 @@ export default function CharterSignOff() {
   const t = useTranslations('CharterPage');
   const locale = useLocale();
   const { user } = useAuth();
-  const { loading, required, signature } = useCharterStatus(user?.uid);
+  const { loading, failed, required, signature, retry } = useCharterStatus(user?.uid);
   const [name, setName] = useState('');
   const [nameRejected, setNameRejected] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -25,6 +28,9 @@ export default function CharterSignOff() {
   const nameInput = useRef<HTMLInputElement>(null);
 
   if (!user || loading) return null;
+  // Whether they've signed is unknown: never offer the form then, since a
+  // member who already signed can't sign again.
+  if (failed) return <LoadFailed onRetry={retry} message={t('signStatusLoadFailed')} />;
 
   const accountNames = [user.displayName, user.displayNameAr].filter((n): n is string => !!n?.trim());
   const shownNames = accountNames.join(' / ');

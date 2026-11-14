@@ -69,6 +69,12 @@ recipes for the most common changes. For setup see the
 - Public pages read through `src/lib/publicData.ts` (server-side, cached for
   60 s, tagged `public-data`). After a dashboard change that affects public
   pages, call `refreshPublicPages()` (`lib/spotlight.ts`).
+- Public pages are built ahead and served from the CDN. Keep them that way:
+  call `setRequestLocale(locale)` at the top of every page and layout, export
+  `revalidate = 60` where the page shows data, and never read `cookies()`,
+  `headers()` or `searchParams` while rendering one (any of these makes every
+  visit render the page again). `npm run build` lists each page as ● (built
+  ahead) or ƒ (rendered per visit).
 - Dashboards use the Firebase client SDK; `firestore.rules` decides what each
   person may read or write.
 - Anything that must not depend on the browser's honesty (accounts, public
@@ -82,7 +88,8 @@ namespace, then use `t('key')`. Placeholders look like `{name}` and are passed
 as `t('key', { name })`.
 
 ### Add a public page
-1. Create `src/app/[locale]/<name>/page.tsx` (server). Export its metadata,
+1. Create `src/app/[locale]/<name>/page.tsx` (server). Call
+   `setRequestLocale(locale)` first (see Data above). Export its metadata,
    with `alternateLanguages()` from `lib/seo.ts` for the English/Arabic links.
 2. Put browser-only parts in a `*Client.tsx` beside it.
 3. Add the link to the navbar or footer and, if it should be indexed, to
@@ -96,6 +103,10 @@ as `t('key', { name })`.
    (`waiting` in `dashboard/page.tsx`) so they show under "Waiting for you".
 4. Check the role at the top of the page for the interface, and make sure
    `firestore.rules` allows exactly what the page writes (see below).
+5. A failed load shows `<LoadFailed onRetry=… />`, never the empty state ("No
+   messages yet" after a failed load would be wrong). Errors shown to people
+   go through `errorReason()`, never a raw Firebase code. Buttons that save
+   are disabled while saving (`useBusy`), and windows use `useDialog`.
 
 ### Add an API route
 Follow the existing routes in `src/app/api/`:
@@ -120,6 +131,9 @@ Add it to `tests/e2e/`. `seed.ts` writes the made-up members and content,
 `helpers.ts` has signing in and the common checks, and each test should follow
 what a person does, from start to finish. Test runs use Firebase's emulators
 (`src/lib/emulators.ts`), which can never switch on in a production build.
+Tests have no reCAPTCHA key: to reach what comes after the check (the
+sign-in limits, say), send `TEST_PASS_TOKEN` from `lib/serverRecaptcha.ts`,
+which passes only while the emulators are on.
 
 ### Add an environment variable
 Read it on the server (only `NEXT_PUBLIC_*` reaches the browser), document it
@@ -154,3 +168,9 @@ hides what a person can't use. When you change it:
 | Hub Activity list and editor | `ActivityCard`, `ActivityEditorModal` (`components/dashboard/`) |
 | Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/`; `siteOrigin` (`lib/http.ts`) for links that must open the site (or preview) the request came to |
 | Dashboard icons | `DashIcon` (`components/dashboard/DashIcon.tsx`) |
+| A load that failed, plain-language errors | `LoadFailed` (`components/dashboard/`); `errorReason` (`lib/types.ts`, keys in `Common`); `useSaveFailed`, `orNull` (`lib/partialLoad.ts`) for parts of a page that load separately |
+| Windows (dialogs) | `useDialog` (`components/dashboard/useDialog.ts`): Escape, focus in and back out, page scroll locked |
+| One save at a time | `useBusy` (`components/dashboard/useBusy.ts`) |
+| Team membership changes | `addToTeam`, `removeFromTeam`, `approveOnce` (`lib/teamChanges.ts`): read fresh and save the request's outcome in one transaction |
+| Smaller photo copies | `sizedPhoto(src, width)` (`lib/sanitize.ts`) for avatars, thumbnails and cards; the photo routes make and cache them (`lib/photoResponse.ts`) |
+| A page behind an emailed link | `EmailLinkCard` (`components/`): asks before acting, since link scanners open every link; tokens in `lib/newsletterLinks.ts` |

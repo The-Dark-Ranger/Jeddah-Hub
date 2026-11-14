@@ -1,10 +1,9 @@
 /* Root layout for every /en and /ar page: fonts, theme, metadata, providers,
  * navbar and footer. */
 import {NextIntlClientProvider} from 'next-intl';
-import {getMessages} from 'next-intl/server';
+import {getMessages, setRequestLocale} from 'next-intl/server';
 import {routing} from '@/i18n/routing';
 import {notFound} from 'next/navigation';
-import {cookies} from 'next/headers';
 import '../globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -41,6 +40,9 @@ export const viewport: Viewport = {
   ],
   colorScheme: 'light dark',
 };
+
+/** Message namespaces read only in the dashboard or by server components. */
+const NOT_FOR_PUBLIC_PAGES = new Set(['Dashboard', 'BlogManager', 'CharterPage', 'PrivacyPolicyPage', 'TermsOfUsePage']);
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));
@@ -80,20 +82,24 @@ export default async function LocaleLayout({
   const { locale } = await params;
 
   if (!routing.locales.includes(locale as 'en' | 'ar')) notFound();
+  // The locale comes from the address, not the request, so pages can be
+  // built ahead and cached.
+  setRequestLocale(locale);
 
   const messages = await getMessages({ locale });
+  // Text only the dashboard (which provides its own, dashboard/layout.tsx)
+  // or server-rendered pages read stays out of every public page's payload:
+  // about half of the messages.
+  const pageMessages = Object.fromEntries(Object.entries(messages).filter(([ns]) => !NOT_FOR_PUBLIC_PAGES.has(ns)));
   const isRtl    = locale === 'ar';
 
-  // Read theme from cookie set by ThemeProvider, eliminates client-side flash.
-  const cookieStore = await cookies();
-  const savedTheme  = cookieStore.get('jh-theme')?.value;
-  const themeAttr   = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : undefined;
-
   return (
-    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-theme={themeAttr} data-scroll-behavior="smooth" className={`${inter.variable} ${tajawal.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} data-scroll-behavior="smooth" className={`${inter.variable} ${tajawal.variable}`} suppressHydrationWarning>
       <head>
-        {/* Must run before first paint: lock in the saved theme and decide
-            whether this load shows the splash, so neither flashes in late. */}
+        {/* Must run before first paint: apply the saved theme and decide
+            whether this load shows the splash, so neither flashes in late.
+            (The theme isn't read on the server: that would make every page
+            render per request instead of being served from the CDN.) */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + SPLASH_INIT_SCRIPT }} />
       </head>
       <body className={isRtl ? 'rtl' : 'ltr'}>
@@ -101,7 +107,7 @@ export default async function LocaleLayout({
             (src/lib/recaptcha.ts), not on every page. */}
         <SplashScreen locale={locale} />
         <LangSwitchHandler />
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={pageMessages}>
           <ScrollToTop />
           <ThemeProvider>
             <AuthProvider>

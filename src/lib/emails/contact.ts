@@ -1,8 +1,10 @@
 /* Contact-form emails, sent from their own address:
  *  - hubNotification: the message, delivered to the hub inbox (replying
  *    answers the visitor);
- *  - senderCopy: a receipt for the visitor with a copy of what they sent,
- *    in the language of the site they wrote from. */
+ *  - senderCopy: a receipt for the visitor, in the language of the site
+ *    they wrote from. It doesn't repeat their message: it goes to whatever
+ *    address was typed into the form, so repeating the text would let
+ *    anyone send their own words to anyone, under the hub's name. */
 import { escapeHtml } from '@/lib/escapeHtml';
 import { sender } from '@/lib/email';
 import {
@@ -15,13 +17,6 @@ const ADDRESS = process.env.CONTACT_EMAIL || 'contact@jeddahhub.org';
 /** Links in a message: full URLs, www. addresses and bare domains with
  *  common endings (the contact route allows at most a few). */
 export const LINK_RE = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|io|ru|xyz|top|info|biz|click|link|shop|site|online)\b/gi;
-
-/** The visitor's links as plain, unclickable text ("hxxps://example[.]com").
- *  Their copy goes to whatever address was typed into the form, so it must
- *  not carry working links that someone else may have written, under the
- *  hub's name. */
-const defangLinks = (text: string) =>
-  text.replace(LINK_RE, link => link.replace(/^http/i, 'hxxp').replace(/\./g, '[.]'));
 
 /** Where contact-form messages are delivered. */
 export const CONTACT_INBOX = process.env.CONTACT_INBOX || 'jeddahglobalshapers@gmail.com';
@@ -65,7 +60,7 @@ export function hubNotification(m: ContactMessage) {
       paragraph(`<strong>${name}</strong> sent a message through the contact form${m.lang === 'ar' ? ', from the <strong>Arabic</strong> site. Consider replying in Arabic' : ''}.`) +
       infoTable('en', [
         ['From', name],
-        ['Email', `<a href="mailto:${email}" style="color:#0f5a9f;">${email}</a>`],
+        ['Email', `<a href="mailto:${escapeHtml(encodeURIComponent(m.email))}" style="color:#0f5a9f;">${email}</a>`],
         ['Topic', escapeHtml(topic)],
         ['Site language', m.lang === 'ar' ? 'Arabic (العربية)' : 'English'],
         ['Received', escapeHtml(jeddahTime('en', m.at))],
@@ -74,7 +69,7 @@ export function hubNotification(m: ContactMessage) {
       sectionTitle('Message') +
       quote('en', m.message) +
       `<div style="height:14px"></div>` +
-      button(`mailto:${email}?subject=${replySubject}`, `Reply to ${name}`) +
+      button(`mailto:${escapeHtml(encodeURIComponent(m.email))}?subject=${replySubject}`, `Reply to ${name}`) +
       paragraph(`<a href="${SITE}/en/dashboard/curator/messages" style="color:#0f5a9f;">Open Messages in the dashboard</a>`),
   });
 
@@ -99,12 +94,11 @@ const COPY = {
   en: {
     from: 'Jeddah Hub',
     subject: (ref: string) => `We received your message${ref ? ` (${ref})` : ''}`,
-    preheader: 'Thank you for contacting Jeddah Hub. Here is a copy of your message.',
-    heading: (n: string) => `Thank you, ${n}. We received your message.`,
-    intro: 'This is a copy of the message you sent through the contact form at jeddahhub.org. We typically respond within 2–3 business days.',
+    preheader: 'Thank you for contacting Jeddah Hub. Your message reached us.',
+    heading: (n: string) => `Thank you${n ? `, ${n}` : ''}. We received your message.`,
+    intro: 'Your message from the contact form at jeddahhub.org reached the Jeddah Hub team. We typically respond within 2–3 business days.',
     summary: 'Summary',
     rows: { ref: 'Reference', topic: 'Topic', sent: 'Sent', email: 'We will reply to' },
-    yourMessage: 'Your message',
     nextTitle: 'What happens next',
     next: [
       ['Our team reads your message', 'It goes straight to the Jeddah Hub team.'],
@@ -122,12 +116,11 @@ const COPY = {
   ar: {
     from: 'مركز جدة',
     subject: (ref: string) => `وصلتنا رسالتك${ref ? ` (${ref})` : ''}`,
-    preheader: 'شكراً لتواصلك مع مركز جدة. إليك نسخة من رسالتك.',
-    heading: (n: string) => `شكراً لك يا ${n}، وصلتنا رسالتك.`,
-    intro: 'هذه نسخة من الرسالة التي أرسلتها عبر نموذج التواصل في jeddahhub.org. سنتواصل معك خلال يومين إلى ثلاثة أيام عمل.',
+    preheader: 'شكراً لتواصلك مع مركز جدة. وصلتنا رسالتك.',
+    heading: (n: string) => `شكراً لك${n ? ` يا ${n}` : ''}، وصلتنا رسالتك.`,
+    intro: 'وصلت رسالتك المرسلة عبر نموذج التواصل في jeddahhub.org إلى فريق مركز جدة. نردّ عادةً خلال يومين إلى ثلاثة أيام عمل.',
     summary: 'ملخص الرسالة',
     rows: { ref: 'رقم المرجع', topic: 'الموضوع', sent: 'وقت الإرسال', email: 'سنردّ على' },
-    yourMessage: 'رسالتك',
     nextTitle: 'ماذا بعد؟',
     next: [
       ['يقرأ فريقنا رسالتك', 'تصل رسالتك مباشرةً إلى فريق مركز جدة.'],
@@ -139,15 +132,17 @@ const COPY = {
       ['🚀', 'مبادراتنا', 'تعرّف على ما يعمل عليه المركز الآن.', '/projects'],
       ['📰', 'آخر الأخبار', 'اقرأ أحدث منشورات المركز.', '/news'],
     ],
-    cta: 'زر موقع مركز جدة',
-    footer: (e: string) => `وصلتك هذه الرسالة لأن ${e} استُخدم في نموذج التواصل على jeddahhub.org. إن لم تكن أنت، يمكنك تجاهل هذه الرسالة.`,
+    cta: 'زُر موقع مركز جدة',
+    footer: (e: string) => `وصلتك هذه الرسالة لأن البريد ${e} استُخدم في نموذج التواصل على jeddahhub.org. إن لم تكن أنت، فيمكنك تجاهل هذه الرسالة.`,
   },
 } as const;
 
 export function senderCopy(m: ContactMessage) {
   const c = COPY[m.lang];
   const ref = reference(m.ref);
-  const name = escapeHtml(m.name), email = escapeHtml(m.email);
+  // Only the first name, short: the whole field is free text from a stranger.
+  const firstName = m.name.trim().split(/\s+/)[0]?.slice(0, 30) ?? '';
+  const name = escapeHtml(firstName), email = escapeHtml(m.email);
   const topic = TOPICS[m.lang][m.topic];
 
   const html = emailLayout({
@@ -165,8 +160,6 @@ export function senderCopy(m: ContactMessage) {
         [c.rows.sent, escapeHtml(jeddahTime(m.lang, m.at))],
         [c.rows.email, email],
       ]) +
-      sectionTitle(c.yourMessage) +
-      quote(m.lang, defangLinks(m.message)) +
       sectionTitle(c.nextTitle) +
       steps(c.next) +
       sectionTitle(c.exploreTitle) +
@@ -184,10 +177,9 @@ export function senderCopy(m: ContactMessage) {
     html,
     attachments: LOGO_ATTACHMENTS,
     text: [
-      c.heading(m.name), '', c.intro, '',
+      c.heading(firstName), '', c.intro, '',
       ...(ref ? [`${c.rows.ref}: ${ref}`] : []),
       `${c.rows.topic}: ${topic}`, `${c.rows.sent}: ${jeddahTime(m.lang, m.at)}`, '',
-      `${c.yourMessage}:`, defangLinks(m.message), '',
       c.footer(m.email),
     ].join('\n'),
   };

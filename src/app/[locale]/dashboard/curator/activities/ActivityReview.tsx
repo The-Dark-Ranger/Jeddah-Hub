@@ -6,6 +6,9 @@
 import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 import { safeColor, type CustomForm, type Highlight } from '@/lib/activityTypes';
 import { errorCode } from '@/lib/types';
 import styles from './Activities.module.css';
@@ -94,28 +97,37 @@ export default function ActivityReview({ heading, details, fields, changesOnly, 
   const t = useTranslations('Dashboard');
   const headingId = useId();
   const noteId = useId();
+  const saveFailed = useSaveFailed();
+  const { run, isBusy } = useBusy();
+  const busy = isBusy('decide');
   const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const decide = async (action: (note: string) => Promise<void>) => {
-    setBusy(true); setError('');
+  // A note typed for the sender would be lost, so closing asks first.
+  const requestClose = () => {
+    if (note.trim() && !confirm(t('confirmDiscardChanges'))) return;
+    onClose();
+  };
+  const dialogRef = useDialog(true, requestClose);
+
+  // One decision at a time: a double click can't approve twice.
+  const decide = (action: (note: string) => Promise<void>) => run('decide', async () => {
+    setError('');
     try {
       await action(note.trim());
     } catch (err) {
-      console.error('Failed to save the review:', err);
-      setError(`${t('saveFailed')} (${errorCode(err) || 'unknown'})`);
-      setBusy(false);
+      console.error('Failed to save the review:', errorCode(err));
+      setError(saveFailed(err));
     }
-  };
+  });
 
   return (
     <ModalPortal>
-      <div className={styles.overlay} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={headingId}>
+      <div className={styles.overlay} onMouseDown={e => { if (e.target === e.currentTarget) requestClose(); }}>
+        <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1} ref={dialogRef}>
           <div className={styles.modalHeader}>
             <h2 id={headingId}>{heading}</h2>
-            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label={t('closeModal')}>✕</button>
+            <button type="button" className={styles.closeBtn} onClick={requestClose} aria-label={t('closeModal')}>✕</button>
           </div>
           <div className={styles.modalBody}>
             <div>
@@ -140,7 +152,7 @@ export default function ActivityReview({ heading, details, fields, changesOnly, 
           </div>
           <div className={styles.modalFooter}>
             {error && <p className={styles.modalError} role="alert">{error}</p>}
-            <button type="button" className={styles.cancelBtn} onClick={onClose}>{t('closeModal')}</button>
+            <button type="button" className={styles.cancelBtn} onClick={requestClose}>{t('closeModal')}</button>
             {canDecide && (
               <>
                 <button type="button" className={styles.declineProposalBtn} disabled={busy} onClick={() => decide(onDecline)}>{t('declineProposal')}</button>

@@ -17,7 +17,7 @@ const LINE = '#e2e8f0';
 const BRAND = {
   en: {
     network: 'Global Shapers Community', name: 'Jeddah Hub', tagline: 'From Jeddah to the Globe',
-    about: 'A Global Shapers Community Hub, an initiative of the World Economic Forum, uniting passionate young leaders in Jeddah.',
+    about: 'A hub of the Global Shapers Community, an initiative of the World Economic Forum, uniting passionate young leaders in Jeddah.',
     location: 'Jeddah, Saudi Arabia', copyright: 'Global Shapers Community, Jeddah Hub',
     links: [['Initiatives', '/projects'], ['News', '/news'], ['Who We Are', '/about'], ['Contact', '/contact']],
   },

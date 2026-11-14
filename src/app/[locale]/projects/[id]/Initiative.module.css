@@ -52,6 +52,7 @@
 .heroDescription {
   font-size: 1.1rem; color: var(--text-muted);
   line-height: 1.8; margin-bottom: 1.5rem; max-width: 640px;
+  overflow-wrap: anywhere;
 }
 
 .heroMeta {
@@ -103,6 +104,7 @@
 .sectionBody {
   font-size: 1rem; color: var(--text-muted);
   line-height: 1.85;
+  overflow-wrap: anywhere;
 }
 
 /* Impact Areas */
@@ -228,6 +230,7 @@
 .storyBody {
   padding: 1.1rem 1.25rem 1.2rem; border-radius: 16px;
   background: var(--card-bg-solid); border: 1px solid var(--border-color);
+  overflow-wrap: anywhere;
 }
 .storyLabel { margin: 0 0 .5rem; font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
 .storyBody .sectionBody { margin: 0; font-size: .97rem; line-height: 1.8; white-space: pre-line; }

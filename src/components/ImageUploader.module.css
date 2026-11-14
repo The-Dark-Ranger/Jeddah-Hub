@@ -75,6 +75,10 @@
   border: none; cursor: pointer; transition: background 0.15s ease;
 }
 .removeBtn:hover { background: var(--danger); }
+/* The 28px badge keeps its size on touch screens (beats globals.css's 44px
+   button rule) and gets an invisible 40px tap area around it instead. */
+.removeBtn.removeBtn.removeBtn { min-height: 28px; }
+.removeBtn::before { content: ''; position: absolute; inset: -6px; }
 
 /* ── Paste-a-URL fallback ── */
 .urlInput {

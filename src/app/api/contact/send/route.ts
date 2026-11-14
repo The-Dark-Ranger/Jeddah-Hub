@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
   if (!(await withinLimit(`contact-ip:${ip}`, 10, DAY)) || !(await withinLimit(`contact-from:${email}`, 5, DAY))) {
     return json({ error: 'too_many' }, 429);
   }
+  // A ceiling for the whole site, far above a normal day's messages, so a
+  // flood from many networks can't bury the inbox.
+  if (!(await withinLimit('contact-day', 300, DAY))) return json({ error: 'too_many' }, 429);
   if (!(await hasDeliverableDomainWithTimeout(email))) return json({ error: 'invalid_email' }, 400);
 
   const app = adminApp();

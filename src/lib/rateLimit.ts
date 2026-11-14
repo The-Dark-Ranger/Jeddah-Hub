@@ -38,12 +38,26 @@ export function isRateLimited(key: string, limit: number, windowMs: number): boo
 }
 
 /**
- * The client's IP. Vercel sets x-real-ip itself (clients can't spoof it), so
- * prefer that; x-forwarded-for's first hop is the fallback for other hosts.
+ * The client's network, for rate-limit keys. Vercel sets x-real-ip itself
+ * (clients can't spoof it), so prefer that; x-forwarded-for's first hop is
+ * the fallback for other hosts. An IPv6 address is cut to its /64: one
+ * connection is usually given a whole /64, so keying on the full address
+ * would let a single client rotate through billions of "different" IPs.
  */
 export function clientIp(req: Request): string {
   const real = req.headers.get('x-real-ip')?.trim();
-  if (real) return real;
-  const forwarded = req.headers.get('x-forwarded-for');
-  return forwarded?.split(',')[0]?.trim() || 'unknown';
+  const ip = real || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  return ip.includes(':') ? ipv6Network(ip) : ip;
+}
+
+function ipv6Network(ip: string): string {
+  const mapped = ip.match(/::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (mapped) return mapped[1];
+  const [head, tail] = ip.split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = tail === undefined
+    ? left
+    : [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return `${groups.slice(0, 4).map(g => (g || '0').toLowerCase().replace(/^0+(?=.)/, '')).join(':')}::/64`;
 }

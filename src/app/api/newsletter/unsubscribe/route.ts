@@ -10,20 +10,14 @@
  * with it when they subscribed, so only someone with the email can use it.
  * A wrong token and an address already off the list get the same answer,
  * so this can't be used to find out who is subscribed. */
-import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
 import { readJsonBody } from '@/lib/http';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
-
-const ID_RE = /^[a-f0-9]{64}$/;
-const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
+import { LINK_ID_RE, LINK_TOKEN_RE, sameToken } from '@/lib/newsletterLinks';
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status });
-
-const sameToken = (a: string, b: string) =>
-  a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 export function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
@@ -39,15 +33,14 @@ export async function POST(req: NextRequest) {
   const body = req.headers.get('content-type')?.includes('application/json') ? await readJsonBody(req) : null;
   const id = String(body?.id ?? q.get('id') ?? '');
   const token = String(body?.t ?? q.get('t') ?? '');
-  if (!ID_RE.test(id) || !TOKEN_RE.test(token)) return json({ error: 'not_found' }, 404);
+  if (!LINK_ID_RE.test(id) || !LINK_TOKEN_RE.test(token)) return json({ error: 'not_found' }, 404);
 
   const app = adminApp();
   if (!app) return json({ error: 'unavailable' }, 503);
   try {
     const ref = getFirestore(app).collection('newsletter_subscribers').doc(id);
     const snap = await ref.get();
-    const stored = snap.exists ? snap.get('unsubToken') : null;
-    if (typeof stored !== 'string' || !sameToken(stored, token)) return json({ error: 'not_found' }, 404);
+    if (!snap.exists || !sameToken(snap.get('unsubToken'), token)) return json({ error: 'not_found' }, 404);
     await ref.delete();
     return json({ ok: true });
   } catch (err) {

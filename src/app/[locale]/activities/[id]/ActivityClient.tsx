@@ -14,6 +14,7 @@ import InitiativeGallery from '@/components/InitiativeGallery';
 import ActivityForm from './ActivityForm';
 import styles from './Activity.module.css';
 import { safeExternalUrl } from '@/lib/sanitize';
+import ErrorPanel from '@/components/ErrorPanel';
 
 interface Highlight { name: string; tag: string; }
 
@@ -47,6 +48,10 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
 
   const [activity, setActivity] = useState<Activity | null | 'loading'>(initial === undefined ? 'loading' : initial);
   const [copied, setCopied]         = useState(false);
+  // A browser load that failed (as opposed to no activity matching the
+  // URL): shown as an error with Try again rather than "not found".
+  const [loadError, setLoadError]   = useState<Error | null>(null);
+  const [attempt, setAttempt]       = useState(0);
 
   useEffect(() => {
     if (initial !== undefined) {
@@ -57,6 +62,7 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
       }
       return;
     }
+    let cancelled = false;
     const load = async () => {
       try {
         const { collection, getDocs, getDoc, doc, query, where, db } = await loadFirestore();
@@ -80,13 +86,15 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
         }
 
         // Legacy: a bare doc-ID link from before this page had slugs at all.
-        if (!data) {
+        // A "/" can't be part of a doc id (doc() would throw): just no match.
+        if (!data && rawId && !rawId.includes('/')) {
           const legacySnap = await getDoc(doc(db, 'initiatives', rawId));
           if (legacySnap.exists() && legacySnap.data().type === 'hub_activity') {
             data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Activity, 'id'>) };
           }
         }
 
+        if (cancelled) return;
         if (data) {
           setActivity(data);
           const canonical = data.slug || slugify(data.title);
@@ -94,12 +102,18 @@ export default function ActivityClient({ initial }: { initial?: Activity | null 
         } else {
           setActivity(null);
         }
-      } catch {
-        setActivity(null);
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err : new Error(String(err)));
       }
     };
     load();
-  }, [rawId, initial, router]);
+    return () => { cancelled = true; };
+  }, [rawId, initial, router, attempt]);
+
+  const retry = () => { setLoadError(null); setActivity('loading'); setAttempt(a => a + 1); };
+
+  if (loadError) return <main className={styles.page}><ErrorPanel error={loadError} reset={retry} /></main>;
 
   if (activity === 'loading') {
     return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;

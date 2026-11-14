@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { expectNoSidewaysScroll, PHOTO_PATH, PUBLISHED_POST, watchErrors } from './helpers';
+import { TEST_PASS_TOKEN } from '../../src/lib/serverRecaptcha';
 
 const PAGES = ['', '/about', '/projects', '/projects/green-jeddah', '/news', `/news/${PUBLISHED_POST.slug}`,
   '/become-a-shaper', '/contact', '/login', '/privacy-policy', '/terms-of-use'];
@@ -87,9 +88,18 @@ test('the server checks the sign-in form for bots too', async ({ request }) => {
 });
 
 test('the server slows down and then limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
-  const attempt = () => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'target@example.org', website: '', elapsedMs: 5000 } });
-  // The first 10 get through to the bot check (refused here: no reCAPTCHA key
-  // in tests); from the fourth on, each is answered a second later (up to 5).
+  // `ip` stands in for the visitor's network (locally nothing else sets it),
+  // so this part doesn't share the per-network limit with the part below.
+  const send = (email: string, token: string, ip = '198.51.100.1') =>
+    request.post('/api/verify-recaptcha', { data: { token, action: 'login', email, website: '', elapsedMs: 5000 }, headers: { 'x-real-ip': ip } });
+  // Attempts that fail reCAPTCHA aren't counted: sending someone's address
+  // over and over can't lock them out.
+  for (let i = 0; i < 12; i++) expect((await send('victim@example.org', 'x', '198.51.100.2')).status()).toBe(400);
+  expect((await send('victim@example.org', TEST_PASS_TOKEN, '198.51.100.2')).status()).toBe(200);
+
+  // Attempts that pass it are: the first 10 go through, and from the fourth
+  // on each is answered a second later (up to 5).
+  const attempt = () => send('target@example.org', TEST_PASS_TOKEN);
   for (let i = 0; i < 10; i++) {
     const started = Date.now();
     expect((await attempt()).status()).not.toBe(429);
@@ -178,4 +188,64 @@ test('a newsletter link takes an address off the list, only with its own token',
   const oneClick = await request.post(`/api/newsletter/unsubscribe?id=${id2}&t=tok_zyxwvutsrqponmlkjihgfedc&l=en`, { form: { 'List-Unsubscribe': 'One-Click' } });
   expect(oneClick.status()).toBe(200);
   expect(await listed(id2)).toBe(false);
+});
+
+test('a newsletter signup joins the list only through its own confirmation link', async ({ page, request }) => {
+  const db = await serverDb();
+  const pending = async (email: string, token: string, ageMs = 0) => {
+    const id = createHash('sha256').update(email).digest('hex');
+    await db.doc(`newsletter_pending/${id}`).set({ email, token, locale: 'en', requestedAt: new Date(Date.now() - ageMs).toISOString() });
+    return id;
+  };
+  const listed = async (id: string) => (await db.doc(`newsletter_subscribers/${id}`).get()).exists;
+
+  const token = 'conf_abcdefghijklmnopqrstuv';
+  const id = await pending('joining@example.com', token);
+  // A wrong token changes nothing.
+  expect((await request.post('/api/newsletter/confirm', { data: { id, t: 'not_the_right_token_12345' } })).status()).toBe(404);
+  // Opening the link (as link scanners do) only leads to the page.
+  const opened = await request.get(`/api/newsletter/confirm?id=${id}&t=${token}&l=ar`, { maxRedirects: 0 });
+  expect(opened.status()).toBe(303);
+  expect(opened.headers().location).toContain(`/ar/newsletter/confirm?id=${id}&t=${token}`);
+  expect(await listed(id)).toBe(false);
+
+  // The page asks first, then puts the address on the list with its own
+  // unsubscribe token, and the pending request is gone.
+  await page.goto(`/en/newsletter/confirm?id=${id}&t=${token}`);
+  await page.getByRole('button', { name: 'Confirm Subscription' }).click();
+  await expect(page.getByRole('heading', { name: "You're subscribed" })).toBeVisible();
+  const saved = await db.doc(`newsletter_subscribers/${id}`).get();
+  expect(saved.get('email')).toBe('joining@example.com');
+  expect(String(saved.get('unsubToken'))).toMatch(/^[A-Za-z0-9_-]{32}$/);
+  expect((await db.doc(`newsletter_pending/${id}`).get()).exists).toBe(false);
+  // The same link again does nothing more.
+  await page.reload();
+  await page.getByRole('button', { name: 'Confirm Subscription' }).click();
+  await expect(page.getByText("This link doesn't work any more", { exact: false })).toBeVisible();
+
+  // A link older than 7 days no longer works.
+  const old = await pending('late@example.com', 'conf_zyxwvutsrqponmlkjihgfe', 8 * 24 * 60 * 60_000);
+  expect((await request.post('/api/newsletter/confirm', { data: { id: old, t: 'conf_zyxwvutsrqponmlkjihgfe' } })).status()).toBe(404);
+  expect(await listed(old)).toBe(false);
+});
+
+test('photos come in smaller copies on request, and only at the allowed widths', async ({ request }) => {
+  // A real 600 x 400 photo, stored the way uploads are.
+  const sharp = (await import('sharp')).default;
+  const jpeg = await sharp({ create: { width: 600, height: 400, channels: 3, background: '#0f5a9f' } }).jpeg().toBuffer();
+  const db = await serverDb();
+  await db.doc('media/ResizeTestPhoto00001').set({ data: `data:image/jpeg;base64,${jpeg.toString('base64')}` });
+  const path = '/api/media/ResizeTestPhoto00001';
+
+  const full = await request.get(path);
+  expect(full.headers()['content-type']).toBe('image/jpeg');
+  const small = await request.get(`${path}?w=96`);
+  expect(small.status()).toBe(200);
+  expect(small.headers()['content-type']).toBe('image/webp');
+  expect(small.headers()['cache-control']).toContain('immutable');
+  expect((await sharp(await small.body()).metadata()).width).toBe(96);
+  // Any other width is ignored: the CDN only ever keeps the listed sizes.
+  expect((await request.get(`${path}?w=97`)).headers()['content-type']).toBe('image/jpeg');
+  // A photo the image library can't read still arrives, full size.
+  expect((await request.get(`${PHOTO_PATH}?w=96`)).headers()['content-type']).toBe('image/jpeg');
 });

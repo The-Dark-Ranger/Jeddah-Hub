@@ -153,6 +153,8 @@
 .toggleOff:hover { background:rgba(107,114,128,.2); }
 .deleteBtn { padding:.35rem .8rem;border-radius:6px;border:none;background:rgba(239,68,68,.08);color:#dc2626;font-size:.8rem;cursor:pointer;transition:background .18s;margin-inline-start:auto;order:2; }
 .deleteBtn:hover { background:rgba(239,68,68,.18); }
+/* While that activity's change is being saved. */
+.toggleBtn:disabled, .deleteBtn:disabled, .declineProposalBtn:disabled, .viewProposalBtn:disabled { opacity:.55;cursor:progress; }
 
 /* ── Modal ── */
 .overlay {
@@ -163,7 +165,7 @@
 }
 .modal {
   background:var(--card-bg-solid);border-radius:14px;width:100%;max-width:760px;
-  max-height:90vh;display:flex;flex-direction:column;overflow:hidden;
+  max-height:90vh;max-height:90dvh;display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 24px 60px rgba(0,0,0,.25);
 }
 .modalHeader {
@@ -201,9 +203,10 @@
 /* ── Responses table ── */
 .responsesTableWrap { overflow-x: auto; }
 .responsesTable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+/* Long answers wrap within a readable column; the table scrolls sideways. */
 .responsesTable th, .responsesTable td {
   padding: .5rem .75rem; text-align: start; border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
+  white-space: normal; min-width: 10rem; max-width: 24rem; overflow-wrap: anywhere; vertical-align: top;
 }
 .responsesTable th { color: var(--text-muted); font-weight: 700; font-size: max(12px, .74rem); text-transform: uppercase; letter-spacing: .04em; }
 .responsesTable td { color: var(--text-main); }

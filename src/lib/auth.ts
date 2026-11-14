@@ -22,6 +22,9 @@ export interface UserProfile {
   linkedin?: string;
   twitter?: string;
   instagram?: string;
+  /** The profile couldn't be read (network trouble), so the role is
+   *  unknown, not missing: pages say "couldn't load", never "pending". */
+  profileError?: true;
 }
 
 interface RoleResult { role: UserRole; }
@@ -186,6 +189,7 @@ export function subscribeToAuthChanges(callback: (user: UserProfile | null, pend
       email: firebaseUser.email,
       role: null,
       displayName: firebaseUser.displayName,
+      profileError: true,
     }, null);
   });
 }

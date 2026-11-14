@@ -66,6 +66,8 @@ async function upsertProfile(app: App, uid: string, email: string, displayName: 
   });
 }
 
+const isUserNotFound = (err: unknown) => (err as { code?: string } | null)?.code === 'auth/user-not-found';
+
 /** True when Role Assignments holds a Curator role for this email. Only the
  *  Curator may create, reset or remove that account: whoever learns its
  *  one-time password could sign in first and take the Curator role. */
@@ -74,20 +76,31 @@ async function assignedCurator(app: App, email: string): Promise<boolean> {
   return snap.exists && normalizeRole(String(snap.get('role') ?? '')) === 'curator';
 }
 
+/** True when the target account is, or is assigned to be, a curator, so
+ *  only the Curator may change it. Stored roles are compared normalized
+ *  ("Curator", "curator" and "CURATOR" are the same role). */
+async function isCuratorAccount(app: App, uid: string, email: string | undefined): Promise<boolean> {
+  const target = (await getFirestore(app).doc(`users/${uid}`).get()).data();
+  if (normalizeRole(String(target?.role ?? '')) === 'curator') return true;
+  return !!email && await assignedCurator(app, email);
+}
+
 /** Removes a never-signed-in member's account and profile. */
 async function removePending(app: App, email: string, callerRole: string | undefined): Promise<'removed' | 'kept' | 'not-found'> {
   const auth = getAuth(app);
   let record;
   try {
     record = await auth.getUserByEmail(email);
-  } catch {
-    return 'not-found';
+  } catch (err) {
+    // Only a missing account is "not found"; any other failure is thrown
+    // (a 500) so the dashboard doesn't treat the member as removed.
+    if (isUserNotFound(err)) return 'not-found';
+    throw err;
   }
   if (record.metadata.lastSignInTime) return 'kept';
   const db = getFirestore(app);
   // Only the Curator may remove a curator's account.
-  const target = (await db.doc(`users/${record.uid}`).get()).data();
-  if (callerRole !== 'curator' && (target?.role === 'curator' || await assignedCurator(app, email))) return 'kept';
+  if (callerRole !== 'curator' && await isCuratorAccount(app, record.uid, email)) return 'kept';
   await Promise.all([db.doc(`public_profiles/${record.uid}`).delete(), db.doc(`users/${record.uid}`).delete()]);
   await auth.deleteUser(record.uid);
   return 'removed';
@@ -100,12 +113,12 @@ async function resetTempPassword(app: App, email: string, callerRole: string | u
   let record;
   try {
     record = await auth.getUserByEmail(email);
-  } catch {
-    return { result: 'not-found' };
+  } catch (err) {
+    if (isUserNotFound(err)) return { result: 'not-found' };
+    throw err;
   }
   if (record.metadata.lastSignInTime) return { result: 'kept' };
-  const target = (await getFirestore(app).doc(`users/${record.uid}`).get()).data();
-  if (callerRole !== 'curator' && (target?.role === 'curator' || await assignedCurator(app, email))) return { result: 'kept' };
+  if (callerRole !== 'curator' && await isCuratorAccount(app, record.uid, email)) return { result: 'kept' };
   const tempPassword = generateTempPassword();
   await auth.updateUser(record.uid, { password: tempPassword });
   return { result: 'reset', tempPassword };
@@ -126,7 +139,7 @@ async function deleteMember(app: App, uid: string, caller: { uid: string; role?:
     email ??= (await auth.getUser(uid)).email?.toLowerCase();
   } catch { /* no sign-in account */ }
   if (!user && !email) return 'not-found';
-  if (user?.role === 'curator' && caller.role !== 'curator') return 'kept';
+  if (caller.role !== 'curator' && await isCuratorAccount(app, uid, email)) return 'kept';
 
   // Initiatives: drop them from `leads` and from the `members` list.
   const initiatives = await db.collection('initiatives').get();
@@ -158,7 +171,7 @@ async function deleteMember(app: App, uid: string, caller: { uid: string; role?:
   try {
     await auth.deleteUser(uid);
   } catch (err) {
-    if ((err as { code?: string } | null)?.code !== 'auth/user-not-found') throw err;
+    if (!isUserNotFound(err)) throw err;
   }
   return 'removed';
 }

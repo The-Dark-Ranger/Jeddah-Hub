@@ -82,6 +82,8 @@
   border: 1px solid rgba(239,68,68,0.25); cursor: pointer; transition: all 0.15s ease;
 }
 .rejectBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+/* While that row's change is being saved. */
+.acceptBtn:disabled, .rejectBtn:disabled, .removeBtn:disabled { opacity: .55; cursor: progress; }
 
 .cardTitleRow { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .cardTitleRow .cardTitle { margin-bottom: 0; }

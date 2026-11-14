@@ -168,7 +168,7 @@
   font-size: max(12px, .72rem); font-weight: 600; background: var(--background-alt); color: var(--text-muted);
 }
 .accountReady { background: rgba(16, 185, 129, .12); color: var(--success); }
-.accountChip:has(.chipBtn) { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .4rem; border-radius: 10px; padding: .25rem .35rem .25rem .6rem; }
+.accountChip:has(.chipBtn) { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .4rem; border-radius: 10px; padding-block: .25rem; padding-inline: .6rem .35rem; }
 .tempPw {
   font-family: ui-monospace, Consolas, monospace; font-size: max(12px, .78rem); letter-spacing: .04em;
   color: var(--text-main); background: var(--card-bg-solid); padding: .05rem .4rem; border-radius: 6px;
@@ -211,7 +211,9 @@
   .noteCell:empty { display: none; }
   .actionsTd { grid-area: actions; }
   .actionsCell { flex-wrap: wrap; }
-  .actionsCell > button { flex: 1; min-height: 38px; }
+  .actionsCell > button { flex: 1; min-height: 40px; }
+  /* Copy / New temporary password: a full-size tap target on phones. */
+  .accountChip .chipBtn { min-height: 40px; padding-inline: .75rem; }
 }
 
 /* ── Dismiss / Restore (alumni set aside for later) ── */

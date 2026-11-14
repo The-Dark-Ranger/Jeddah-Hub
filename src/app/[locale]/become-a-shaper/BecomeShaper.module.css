@@ -94,7 +94,7 @@
 .sectionBody  { font-size:1rem;color:var(--text-muted);line-height:1.8;margin-bottom:1rem; }
 
 /* Criteria */
-.criteriaGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 1.5rem; }
+.criteriaGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 1.5rem; }
 .criteriaCard { background: var(--card-bg-solid); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; position: relative; }
 /* Decorative large number badge (01/02/03) - full blue, no opacity wash */
 .criteriaNum  { font-size: 2.5rem; font-weight: 800; color: var(--primary-blue); line-height: 1; margin-bottom: 0.75rem; }

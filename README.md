@@ -95,7 +95,7 @@ boundary and have their own [tests](#testing).
 | **Hub Activities** | A page per event, with an optional registration form and an after-event feedback form (star ratings) built by the organisers; answers export to Excel. |
 | **News** | Articles by Shapers and curators with a cover photo and a gallery, likes, sharing and related stories. |
 | **Become a Shaper** | Recruitment page with a live member count, linking to the World Economic Forum's application platform. |
-| **Contact** | Message form checked for bots and spam on the server; the hub gets a copy by email and the visitor a receipt in their language. Newsletter signup with a welcome email. |
+| **Contact** | Message form checked for bots and spam on the server; the hub gets a copy by email and the visitor a receipt in their language. Newsletter signup confirmed from the subscriber's inbox (double opt-in), then a welcome email with one-click unsubscribe. |
 | **Privacy Policy, Terms of Use** | What is collected and why. |
 
 Also: full right-to-left layout in Arabic, light and dark themes, readable
@@ -111,7 +111,7 @@ queue by queue, with a link to each.
 |---|---|
 | **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter. |
 | **Initiative lead (Lead / Co-Lead)** | Everything a Shaper can, plus run their initiative: edit its content and photos, review join and leave requests, ask for members to be added or removed or to change role (the Curator or Vice Curator approves), export a member report. |
-| **Impact Officer** | Manage initiatives and Hub Activities, pick the spotlight and publish posts. |
+| **Impact Officer** | Manage initiatives and Hub Activities, decide initiative proposals and team requests, pick the spotlight, and review and publish posts. |
 | **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off and downloading who signed, moderate posts, read contact messages, export the newsletter list. |
 
 ## Tech stack
@@ -184,7 +184,7 @@ src/
 │   │   ├── …                    #   with an interactive *Client.tsx
 │   │   └── dashboard/
 │   │       ├── curator/         # Curator / Vice Curator tools (initiatives, roster, members, …)
-│   │       ├── impact/          # Impact Officer tools
+│   │       ├── impact/          # Impact Officer posts (Initiatives and Activities are shared with curators)
 │   │       └── shaper/          # Pages every member has (profile, projects, charter, …)
 │   └── api/                     # Server routes: accounts, invites, forms, photos, checks
 ├── components/                  # Shared UI (navbar, footer, home sections, form builders)

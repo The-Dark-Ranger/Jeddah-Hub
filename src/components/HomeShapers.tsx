@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import styles from '@/app/[locale]/Home.module.css';
 import { AVATAR_GRADIENTS, avatarGradient, initials } from '@/lib/avatarUtils';
 import { normalizeRole } from '@/lib/role';
+import { sizedPhoto } from '@/lib/sanitize';
 
 export interface Shaper {
   uid: string;
@@ -83,7 +84,7 @@ export default function HomeShapers({ initial }: { initial?: Shaper[] }) {
         return (
           <div key={s.uid} className={styles.memberCard}>
             {s.photoURL
-              ? <img src={s.photoURL} alt={name} className={styles.memberAvatarImg}
+              ? <img src={sizedPhoto(s.photoURL, 192)} alt={name} className={styles.memberAvatarImg}
                   loading="lazy" decoding="async"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               : <div className={styles.memberAvatar} style={{ background: avatarGradient(s.uid, i) }}>

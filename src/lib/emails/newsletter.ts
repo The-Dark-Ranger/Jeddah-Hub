@@ -1,5 +1,6 @@
-/* Newsletter emails: the welcome sent to a new subscriber, in the language
- * of the site they subscribed from. Sent from its own address. */
+/* Newsletter emails, in the language of the site they subscribed from and
+ * from the newsletter's own address: the confirmation link a signup gets
+ * first, then the welcome once they've confirmed. */
 import { escapeHtml } from '@/lib/escapeHtml';
 import { sender } from '@/lib/email';
 import {
@@ -15,7 +16,7 @@ const COPY = {
     from: 'Jeddah Hub Newsletter',
     subject: 'Welcome to the Jeddah Hub newsletter',
     preheader: 'You are subscribed. Here is what to expect and where to start.',
-    heading: 'Welcome aboard, you are subscribed!',
+    heading: "Welcome aboard! You're subscribed.",
     intro: (b: Mark) => `Thank you for joining the ${b('Jeddah Hub newsletter')}. You are now connected with a community of young leaders shaping the future of Jeddah through initiatives, events and grassroots action.`,
     subscribedAs: (e: string) => `Subscribed as <strong>${e}</strong>.`,
     expectTitle: 'What you will receive',
@@ -56,12 +57,65 @@ const COPY = {
       ['🤝', 'من نحن', 'تعرّف على فريق الإشراف والصنّاع والخريجين.', '/about'],
       ['✨', 'كن صانعاً', 'اعرف كيف تتقدّم وتنضم إلى المركز.', '/become-a-shaper'],
     ],
-    cta: 'زر موقع مركز جدة',
-    footer: (e: string) => `وصلتك هذه الرسالة لأن ${e} اشترك في النشرة عبر jeddahhub.org.`,
+    cta: 'زُر موقع مركز جدة',
+    footer: (e: string) => `وصلتك هذه الرسالة لأن البريد ${e} مشترك في النشرة البريدية عبر jeddahhub.org.`,
     unsubscribe: 'إلغاء الاشتراك بنقرة واحدة',
-    unsubscribeByReply: 'لإلغاء الاشتراك، ردّ على هذه الرسالة بكلمة "إلغاء".',
+    unsubscribeByReply: 'لإلغاء الاشتراك، ردّ على هذه الرسالة بكلمة «إلغاء».',
   },
 } as const;
+
+/* The confirmation that comes first (double opt-in): nobody is on the list
+ * until the owner of the address presses its button, so the form can't put
+ * someone else's address on the list. */
+const CONFIRM = {
+  en: {
+    subject: 'Confirm your Jeddah Hub newsletter subscription',
+    preheader: 'One step left: confirm your address to start receiving the newsletter.',
+    heading: 'Confirm your subscription',
+    intro: (e: string, b: Mark = bold) => `Someone, hopefully you, asked to receive the ${b('Jeddah Hub newsletter')} at ${b(e)}. Press the button to confirm and you're on the list.`,
+    cta: 'Confirm my subscription',
+    fallback: "If the button doesn't work, copy and paste this link into your browser:",
+    expiry: 'This link works for 7 days.',
+    footer: "If you didn't ask for this, ignore this email: you won't be subscribed, and you won't hear from us again.",
+  },
+  ar: {
+    subject: 'أكّد اشتراكك في النشرة البريدية لمركز جدة',
+    preheader: 'خطوة أخيرة: أكّد بريدك لتبدأ باستلام النشرة.',
+    heading: 'أكّد اشتراكك',
+    intro: (e: string, b: Mark = bold) => `طلب أحدهم، ونأمل أن تكون أنت، استلام ${b('النشرة البريدية لمركز جدة')} على البريد ${b(e)}. اضغط الزر للتأكيد، وسيُضاف بريدك إلى القائمة.`,
+    cta: 'تأكيد اشتراكي',
+    fallback: 'إن لم يعمل الزر، فانسخ هذا الرابط والصقه في متصفحك:',
+    expiry: 'يعمل هذا الرابط لمدة ٧ أيام.',
+    footer: 'إن لم تطلب ذلك، فتجاهل هذه الرسالة؛ لن يُضاف بريدك، ولن تصلك منا رسائل أخرى.',
+  },
+} as const;
+
+export function newsletterConfirm(lang: Lang, email: string, url: string) {
+  const c = CONFIRM[lang];
+  const e = escapeHtml(email);
+  const u = escapeHtml(url);
+  const html = emailLayout({
+    lang,
+    title: c.subject,
+    preheader: c.preheader,
+    footerNote: c.footer,
+    body:
+      heading(c.heading) +
+      paragraph(c.intro(`<span dir="ltr">${e}</span>`)) +
+      button(u, c.cta) +
+      paragraph(`<span style="font-size:13px;color:#64748b;">${c.fallback}<br><a href="${u}" style="color:#0f5a9f;word-break:break-all;" dir="ltr">${u}</a></span>`) +
+      paragraph(`<span style="font-size:13px;color:#64748b;">${c.expiry}</span>`),
+  });
+  return {
+    from: sender(COPY[lang].from, ADDRESS),
+    to: email,
+    subject: c.subject,
+    html,
+    text: [c.heading, '', c.intro(email, plain), '', `${c.cta}: ${url}`, '', c.expiry, '', c.footer].join('\n'),
+    replyTo: CONTACT_INBOX,
+    attachments: LOGO_ATTACHMENTS,
+  };
+}
 
 /** Where a subscriber can leave the list: `page` for people (a page with a
  *  button, so link scanners can't unsubscribe anyone by opening it) and

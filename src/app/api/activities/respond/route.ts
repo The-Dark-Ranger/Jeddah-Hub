@@ -42,14 +42,24 @@ export async function POST(req: NextRequest) {
   if (!process.env.RECAPTCHA_SECRET_KEY) return json({ error: 'unavailable' }, 503);
   if (!(await verifyRecaptchaToken(body?.recaptchaToken, { action: 'activity_form', host: requestHost(req) }))) return json({ error: 'bot_check_failed' }, 400);
   if (!(await withinLimit(`activity-ip:${ip}`, 25, DAY))) return json({ error: 'too_many' }, 429);
+  // A ceiling for the whole site, far above a busy event's sign-ups, so a
+  // flood from many networks can't fill the database.
+  if (!(await withinLimit('activity-day', 3000, DAY))) return json({ error: 'too_many' }, 429);
 
   const app = adminApp();
   if (!app) return json({ error: 'unavailable' }, 503);
   const db = getFirestore(app);
 
   // The activity, and the form being answered, must exist, be on and be open.
-  const activity = await db.doc(`initiatives/${activityId}`).get().catch(() => null);
-  const data = activity?.exists ? activity.data()! : null;
+  let activity;
+  try {
+    activity = await db.doc(`initiatives/${activityId}`).get();
+  } catch (err) {
+    // A failed read is not a closed form: say "try later", not "closed".
+    console.error('[activity] could not read the activity', err);
+    return json({ error: 'unavailable' }, 503);
+  }
+  const data = activity.exists ? activity.data()! : null;
   if (!data || data.type !== 'hub_activity' || data.active === false || data.archived === true) return json({ error: 'closed' }, 409);
   const form = (formType === 'feedback' ? data.feedbackForm : data.customForm) as CustomForm | undefined;
   if (!form?.enabled || form.closed) return json({ error: 'closed' }, 409);

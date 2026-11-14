@@ -123,7 +123,7 @@ test.describe('signing in', () => {
     await page.evaluate(() => localStorage.setItem('jh-last-active', String(Date.now() - 31 * 60_000)));
     await page.reload();
     await page.waitForURL(/\/login/);
-    await expect(page.getByText('You were signed out after 30 minutes without activity.', { exact: false })).toBeVisible();
+    await expect(page.getByText('You were signed out after 30 minutes of inactivity.', { exact: false })).toBeVisible();
   });
 
   test('a member signed out everywhere (new password, removal) loses access at once', async ({ page }) => {
@@ -168,6 +168,22 @@ test.describe('the Overview', () => {
     await expect(page).toHaveURL(/\/en\/dashboard$/);
     await expect(page.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
     await expect(waiting(page)).toBeVisible();
+    // Every queue was checked (the curator may read all of them).
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByText("Couldn't check", { exact: false })).toHaveCount(0);
+  });
+
+  test('an impact officer checks the initiative queues too, and handles them on the Initiatives page', async ({ page }) => {
+    await signIn(page, PEOPLE.impact);
+    await expect(waiting(page)).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    // The security rules let impact officers read every queue they're shown.
+    await expect(page.getByText("Couldn't check", { exact: false })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Dashboard navigation' }).getByRole('link', { name: 'Initiatives', exact: true }))
+      .toHaveAttribute('href', '/en/dashboard/curator/initiatives');
+    // The old address of their Projects page still leads there.
+    await page.goto('/en/dashboard/impact/projects');
+    await page.waitForURL('**/dashboard/curator/initiatives');
   });
 
   test("a lead sees their teams' requests; a member who leads none gets no list", async ({ browser }) => {
@@ -560,7 +576,7 @@ test.describe('every dashboard page on a phone and a desktop', () => {
   const ROLE_PAGES = {
     curator: ['', '/shaper/profile', '/shaper/my-projects', '/curator/members', '/curator/initiatives', '/curator/roster',
       '/curator/blogs', '/curator/messages', '/curator/activities', '/curator/exports', '/shaper/charter'],
-    impact: ['', '/impact/projects', '/impact/blogs', '/curator/activities', '/shaper/charter'],
+    impact: ['', '/curator/initiatives', '/impact/blogs', '/curator/activities', '/shaper/charter'],
     shaper: ['', '/shaper/profile', '/shaper/my-projects', '/shaper/activities', '/shaper/initiatives', '/shaper/blogs', '/shaper/charter'],
   } as const;
 

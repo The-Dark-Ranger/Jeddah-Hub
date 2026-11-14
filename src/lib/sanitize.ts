@@ -30,6 +30,16 @@ export function safeImageSrc(raw: unknown): string | undefined {
   return safeExternalUrl(v);
 }
 
+/** For the site's own photo routes, the address of a copy `w` pixels wide
+ *  (made and cached by the route, lib/photoResponse.ts), so avatars,
+ *  thumbnails and cards don't download full-size photos. Any other address
+ *  (a link, an inline photo) is returned unchanged. Pick about twice the
+ *  displayed width, for sharp screens. */
+export function sizedPhoto<T extends string | undefined>(src: T, w: 96 | 192 | 384 | 768): T {
+  if (!src || !/^\/api\/(?:media|img)\//.test(src)) return src;
+  return `${src}${src.includes('?') ? '&' : '?'}w=${w}` as T;
+}
+
 /** A user-entered link, only if it's an http(s) URL; anything else
  *  (javascript:, data:, vbscript:, relative paths) becomes undefined so the
  *  link isn't rendered. A bare "www.example.com" is treated as https. */

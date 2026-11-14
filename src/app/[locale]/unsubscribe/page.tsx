@@ -3,7 +3,7 @@
  * link's id and token to /api/newsletter/unsubscribe. Kept out of search
  * engines. */
 import { getTranslations } from 'next-intl/server';
-import UnsubscribeClient from './UnsubscribeClient';
+import EmailLinkCard from '@/components/EmailLinkCard';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -12,5 +12,5 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default function UnsubscribePage() {
-  return <UnsubscribeClient />;
+  return <EmailLinkCard namespace="Unsubscribe" endpoint="/api/newsletter/unsubscribe" />;
 }

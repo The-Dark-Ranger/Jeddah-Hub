@@ -1,6 +1,8 @@
 /* Home page: hero, about, World Economic Forum section, impact numbers,
  * activities, featured initiatives, Shapers, partners and newsletter. */
+import { use } from 'react';
 import { useTranslations } from 'next-intl';
+import { setRequestLocale } from 'next-intl/server';
 import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import styles from './Home.module.css';
@@ -33,7 +35,12 @@ const ORGANIZATION_JSON_LD = {
   address: { '@type': 'PostalAddress', addressLocality: 'Jeddah', addressCountry: 'SA' },
 };
 
-export default function HomePage() {
+/* Built once and served from the CDN, rebuilt at most every 60 seconds
+ * and straight away when a dashboard edit refreshes the public data. */
+export const revalidate = 60;
+
+export default function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale(use(params).locale);
   const t   = useTranslations('HomePage');
   const nav = useTranslations('Navigation');
 

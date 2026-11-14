@@ -110,7 +110,8 @@
 .chevronOpen { transform: rotate(180deg); }
 
 .messagePreview {
-  padding: 0 1.25rem 0.9rem 2.75rem;
+  padding-block: 0 .9rem;
+  padding-inline: 2.75rem 1.25rem;
   font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
@@ -124,7 +125,7 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 0.83rem; color: var(--primary-blue); margin-bottom: 0.85rem;
   transition: opacity 0.15s; text-decoration: none;
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 .senderEmail:hover { opacity: 0.8; }
 .messageBody {
@@ -152,6 +153,7 @@
   transition: all 0.2s ease; margin-inline-start: auto;
 }
 .deleteBtn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+.deleteBtn:disabled { opacity: .55; cursor: progress; }
 
 /* Compose Modal */
 .overlay {
@@ -163,10 +165,12 @@
 .modal {
   background: var(--card-bg-solid); border-radius: 16px;
   border: 1px solid var(--border-color);
-  width: 100%; max-width: 520px; max-height: 90vh;
+  width: 100%; max-width: 520px; max-height: 90vh; max-height: 90dvh;
   box-shadow: 0 24px 64px rgba(0,0,0,0.2);
   display: flex; flex-direction: column;
 }
+/* Focus moves to the window itself when it opens; no ring around all of it. */
+.modal:focus { outline: none; }
 .modalHeader {
   display: flex; justify-content: space-between; align-items: center;
   padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color);
@@ -174,7 +178,7 @@
 .modalTitle { font-size: 1rem; font-weight: 700; color: var(--text-main); }
 .modalClose {
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 8px; border: none;
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 8px; border: none;
   background: var(--background); color: var(--text-muted); cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }

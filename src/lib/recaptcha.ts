@@ -4,6 +4,11 @@ declare global {
 
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
+/** Whether this build has a reCAPTCHA site key. With one, a missing token
+ *  means the check couldn't run here (a blocker or no connection), which
+ *  the forms can tell the person instead of failing with a vague error. */
+export const recaptchaConfigured = () => !!SITE_KEY;
+
 /** Adds Google's reCAPTCHA script to the page, once. It's ~350 KB, so it is
  *  loaded only when a visitor starts using a form that needs it (contact,
  *  sign-in, newsletter) rather than on every page. */
@@ -31,7 +36,11 @@ function waitForGrecaptcha(timeout: number): Promise<void> {
 }
 
 export async function getRecaptchaToken(action: string): Promise<string | null> {
-  if (!SITE_KEY || typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') return null;
+  if (!SITE_KEY) {
+    if (process.env.NODE_ENV === 'production') console.error('[recaptcha] NEXT_PUBLIC_RECAPTCHA_SITE_KEY is not set');
+    return null;
+  }
   try {
     preloadRecaptcha();
     // Longer wait than before: the script may only start loading now, on a
@@ -45,7 +54,8 @@ export async function getRecaptchaToken(action: string): Promise<string | null> 
           .catch(() => resolve(null));
       });
     });
-  } catch {
+  } catch (err) {
+    console.warn('[recaptcha] the check could not load', err);
     return null;
   }
 }

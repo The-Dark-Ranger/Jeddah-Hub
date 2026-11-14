@@ -72,15 +72,26 @@
 
 /* Table of contents */
 .toc { position: sticky; top: 92px; }
-.tocDetails {
+.tocBox {
   background: var(--card-bg-solid); border: 1px solid var(--border-color);
   border-radius: 14px; padding: .4rem;
 }
+/* Wide screens get the always-open list, narrow ones the collapsible one
+ * (closed until tapped), see page.tsx. */
+.tocNarrow { display: none; }
 .tocTitle {
-  list-style: none; cursor: pointer; padding: .7rem .8rem; margin: 0;
+  list-style: none; padding: .7rem .8rem; margin: 0;
   font-size: max(12px, .74rem); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted);
 }
 .tocTitle::-webkit-details-marker { display: none; }
+.tocToggle {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  min-height: 44px; cursor: pointer; border-radius: 10px;
+}
+/* The chevron shows the closed list is something to open. */
+.tocChevron { flex: none; transition: transform .2s ease; }
+.tocNarrow[open] .tocChevron { transform: rotate(180deg); }
+.tocToggle:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 1px; }
 .tocList { list-style: none; margin: 0; padding: 0 0 .3rem; display: flex; flex-direction: column; }
 .tocLink {
   display: flex; gap: .6rem; align-items: baseline;
@@ -111,6 +122,12 @@
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .toc { position: static; }
+  .tocWide { display: none; }
+  .tocNarrow { display: block; }
+  .tocLink { padding-block: .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tocChevron { transition: none; }
 }
 @media (max-width: 600px) {
   .header { flex-direction: column; align-items: flex-start; padding: 1.5rem 1.25rem; }

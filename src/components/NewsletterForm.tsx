@@ -1,11 +1,12 @@
 'use client';
 
-/* Newsletter signup. Everything (bot checks, saving each address once and
- * the welcome email) happens in /api/newsletter/subscribe; this form only
- * collects the address and shows the outcome. */
+/* Newsletter signup. Everything (bot checks, the confirmation email that
+ * must be opened before an address joins the list) happens in
+ * /api/newsletter/subscribe; this form only collects the address and asks
+ * the person to check their inbox. */
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
+import { getRecaptchaToken, preloadRecaptcha, recaptchaConfigured } from '@/lib/recaptcha';
 import { isValidEmail } from '@/lib/validateEmail';
 import Honeypot from '@/components/Honeypot';
 import styles from './NewsletterForm.module.css';
@@ -13,9 +14,9 @@ import styles from './NewsletterForm.module.css';
 /** How long the confirmation stays up before the form resets itself, so a
  *  second visitor on the same device isn't stuck behind a stale success
  *  message with no way to subscribe another address. */
-const SUCCESS_RESET_MS = 6000;
+const SUCCESS_RESET_MS = 10_000;
 
-type Status = 'idle' | 'loading' | 'success' | 'already' | 'error' | 'invalid-email' | 'too-many';
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'invalid-email' | 'too-many' | 'check-blocked';
 
 export default function NewsletterForm() {
   const t = useTranslations('HomePage');
@@ -27,7 +28,7 @@ export default function NewsletterForm() {
   const [status, setStatus] = useState<Status>('idle');
 
   useEffect(() => {
-    if (status !== 'success' && status !== 'already') return;
+    if (status !== 'success') return;
     const timer = setTimeout(() => setStatus('idle'), SUCCESS_RESET_MS);
     return () => clearTimeout(timer);
   }, [status]);
@@ -39,6 +40,7 @@ export default function NewsletterForm() {
     setStatus('loading');
     try {
       const recaptchaToken = await getRecaptchaToken('newsletter_subscribe');
+      if (!recaptchaToken && recaptchaConfigured()) { setStatus('check-blocked'); return; }
       const res = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,7 +48,8 @@ export default function NewsletterForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setStatus(data.status === 'already' ? 'already' : 'success');
+        // The same answer whether or not the address was on the list already.
+        setStatus('success');
         setEmail('');
       } else {
         setStatus(data.error === 'invalid_email' ? 'invalid-email' : res.status === 429 ? 'too-many' : 'error');
@@ -78,20 +81,21 @@ export default function NewsletterForm() {
           {status === 'loading' ? t('newsletterSubscribing') : t('subscribe')}
         </button>
       </form>
-      {(status === 'success' || status === 'already') && (
+      {status === 'success' && (
         <div className={styles.successBox} role="status">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
             <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
           </svg>
           <div>
-            <p className={styles.successTitle}>{t(status === 'already' ? 'newsletterAlreadyTitle' : 'newsletterSuccessTitle')}</p>
-            <p className={styles.successDetail}>{t(status === 'already' ? 'newsletterAlreadyDetail' : 'newsletterSuccessDetail')}</p>
+            <p className={styles.successTitle}>{t('newsletterSuccessTitle')}</p>
+            <p className={styles.successDetail}>{t('newsletterSuccessDetail')}</p>
           </div>
         </div>
       )}
       {status === 'invalid-email' && <p className={styles.errorMessage}>{t('newsletterInvalidEmail')}</p>}
       {status === 'too-many' && <p className={styles.errorMessage}>{t('newsletterTooMany')}</p>}
       {status === 'error' && <p className={styles.errorMessage}>{t('newsletterError')}</p>}
+      {status === 'check-blocked' && <p className={styles.errorMessage}>{tCommon('checkBlocked')}</p>}
     </div>
   );
 }

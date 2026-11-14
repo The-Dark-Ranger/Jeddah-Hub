@@ -12,7 +12,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 //    of every public page. React escapes all text, inline event handlers are
 //    refused (script-src-attr 'none') and links are checked
 //    (src/lib/sanitize.ts), so injected markup has no way to run.
-//  - connect: Firebase Auth and Firestore (googleapis.com) and reCAPTCHA.
+//  - connect: exactly the hosts Firebase Auth (identitytoolkit, securetoken)
+//    and Firestore call, plus reCAPTCHA, so injected code would have no
+//    wildcard Google host to send data to.
 //  - images: any https address plus data:, because members may link a photo
 //    hosted elsewhere and older photos are stored inline.
 //  - no plugins (object-src 'none'), no framing by other sites
@@ -37,7 +39,7 @@ const CSP = [
   "font-src 'self'",
   "img-src 'self' data: https:",
   // No Realtime Database here, so no firebaseio.com.
-  `connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com${emulatorHosts}`,
+  `connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.google.com https://www.gstatic.com${emulatorHosts}`,
   "frame-src https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -85,9 +87,9 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Members-only and sign-in pages stay out of search engines (and so
+        // Members-only, sign-in and email-link pages stay out of search engines (and so
         // out of search-based reconnaissance), not just out of robots.txt.
-        source: '/:locale(en|ar)/:area(dashboard|login|unsubscribe)/:path*',
+        source: '/:locale(en|ar)/:area(dashboard|login|unsubscribe|newsletter)/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ];

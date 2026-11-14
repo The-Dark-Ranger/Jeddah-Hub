@@ -15,6 +15,7 @@ import { slugify } from '@/lib/slug';
 import { useCategoryLabel } from '@/lib/categoryLabel';
 import InitiativeCover from '@/components/InitiativeCover';
 import { safeColor } from '@/lib/activityTypes';
+import ErrorPanel from '@/components/ErrorPanel';
 
 export interface Project extends PlaceholderProject { slug?: string; featured?: boolean; spotlight?: boolean; }
 
@@ -137,7 +138,7 @@ function ProjectCard({ project, archived, t, catLabel, index = 0 }: {
         )}
         <div className={styles.cardLink}>
           {t('exploreProject')}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+          <svg className="flip-rtl" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <line x1="5" y1="12" x2="19" y2="12" />
             <polyline points="12 5 19 12 12 19" />
           </svg>
@@ -171,11 +172,16 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
   const [projects, setProjects]     = useState<Project[]>(() =>
     initial ? (initial.length > 0 ? initial : PLACEHOLDER_PROJECTS) : []);
   const [loading, setLoading]       = useState(!initial);
+  // A browser load that failed: shown as an error with Try again, never as
+  // the sample initiatives, which visitors would take for real ones.
+  const [loadError, setLoadError]   = useState<Error | null>(null);
+  const [attempt, setAttempt]       = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch]         = useState('');
 
   useEffect(() => {
     if (initial) return;
+    let cancelled = false;
     const fetchProjects = async () => {
       try {
         const { collection, getDocs, db } = await loadFirestore();
@@ -183,14 +189,20 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
         const all = snap.docs
           .map(d => ({ id: d.id, ...d.data() } as Project))
           .filter(p => !(p as Project & { type?: string }).type);
+        if (cancelled) return;
+        // Samples only when there are genuinely no initiatives yet.
         setProjects(all.length > 0 ? all : PLACEHOLDER_PROJECTS);
-      } catch {
-        setProjects(PLACEHOLDER_PROJECTS);
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err : new Error(String(err)));
       }
       setLoading(false);
     };
     fetchProjects();
-  }, [initial]);
+    return () => { cancelled = true; };
+  }, [initial, attempt]);
+
+  const retry = () => { setLoadError(null); setLoading(true); setAttempt(a => a + 1); };
 
   // Built from whatever categories actually exist on fetched initiatives,
   // rather than a hardcoded/translated list, a curator picking any
@@ -279,6 +291,8 @@ export default function ProjectsClient({ initial }: { initial?: Project[] }) {
           <div className={styles.skeletonGrid}>
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
+        ) : loadError ? (
+          <ErrorPanel error={loadError} reset={retry} compact />
         ) : filtered.length === 0 ? (
           <div className={styles.empty}>
             <h3>{t('noResults')}</h3>

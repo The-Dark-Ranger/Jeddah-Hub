@@ -2,7 +2,7 @@
 .layout {
   position: relative; z-index: 1;
   display: flex;
-  min-height: calc(100svh - 64px);
+  min-height: calc(100svh - 68px); /* the navbar's height */
 }
 
 /* Loading Screen */
@@ -186,6 +186,9 @@
   padding: 2rem;
   background: var(--background);
 }
+/* Very wide screens: banners and the page keep a readable width, centred,
+   instead of stretching edge to edge. */
+.mainContent > * { max-width: 1280px; margin-inline: auto; }
 /* The page while the Charter check answers: laid out and loading, not shown. */
 .holding { visibility: hidden; }
 
@@ -305,7 +308,7 @@
   }
   .navList li { scroll-snap-align: center; }
   /* Comfortable tap targets for the pills. */
-  .navLink { min-height: 38px; }
+  .navLink { min-height: 40px; }
 }
 
 /* Brand mark with a drawn arc, same motif as the site splash. */

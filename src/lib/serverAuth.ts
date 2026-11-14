@@ -45,7 +45,11 @@ async function verifyIdToken(idToken: string, { unconfirmed = false } = {}): Pro
     const authTime = Number(payload.auth_time);
     if (!Number.isFinite(authTime) || Date.now() - authTime * 1000 > MAX_SESSION_MS) return null;
     return { uid: payload.sub, email: typeof payload.email === 'string' ? payload.email : null, authTime };
-  } catch {
+  } catch (err) {
+    // A bad or expired token is routine; failing to fetch Google's signing
+    // keys is an outage worth seeing in the logs.
+    const code = String((err as { code?: unknown } | null)?.code ?? '');
+    if (code.startsWith('ERR_JWKS')) console.error('[auth] could not check sign-in tokens:', code);
     return null;
   }
 }
@@ -70,11 +74,17 @@ async function getCallerRole(uid: string, idToken: string): Promise<string | nul
         signal: AbortSignal.timeout(8000),
       }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // 403/404: no profile or a revoked session, which is routine. Anything
+      // else (429, 5xx) means curators are being refused for an outage.
+      if (res.status !== 403 && res.status !== 404) console.error('[auth] role lookup failed', res.status);
+      return null;
+    }
     const data = await res.json();
     const raw = data?.fields?.role?.stringValue;
     return typeof raw === 'string' ? normalizeRole(raw) : null;
-  } catch {
+  } catch (err) {
+    console.error('[auth] role lookup failed', err);
     return null;
   }
 }

@@ -132,15 +132,17 @@ sidebar. Its "Waiting for you" list shows each queue their role works on that
 has something in it, with a count and a link to where it's handled: for the
 Curator and Vice Curator, unread messages, posts to review, proposed
 initiatives, join, leave, add-member and removal requests, role changes,
-activity proposals and new form answers; for impact officers, posts and
-activity proposals; for initiative leads, their teams' join and leave
-requests. Members who decide nothing don't get the list.
+activity proposals and new form answers; for impact officers, posts,
+proposed initiatives, leave, add-member and removal requests, and activity
+proposals; for initiative leads, their teams' join and leave requests.
+Members who decide nothing don't get the list. A queue that couldn't be
+checked (a dropped connection) is named as such, never shown as empty.
 
 | Role | Can |
 |---|---|
 | Shaper / Alumni | Edit their profile, join or leave initiatives, propose initiatives and activities, write posts, sign the Charter |
 | Initiative lead | Everything above, plus edit their own initiative, handle its join, add and remove requests, and ask for teammates' role changes in the Roster |
-| Impact Officer | Manage initiatives and activities, publish posts, pick the spotlight |
+| Impact Officer | Manage initiatives and activities (the same Initiatives page as curators, with its request queues), review and publish posts, pick the spotlight |
 | Curator / Vice Curator | Everything: roles and accounts, featured initiatives, messages, exports, Charter sign-off |
 
 Each permission is enforced in the dashboard **and** in `firestore.rules`.
@@ -151,10 +153,13 @@ only the Curator can change a curator's record or make someone a curator.
 **Sign-in attempts.** Each wrong password makes the next try wait (1, 2, 4,
 then 8 seconds), then the form locks (30 seconds, doubling up to 15
 minutes). The server ([`/api/verify-recaptcha`](../src/app/api/verify-recaptcha/route.ts))
-checks the bot trap and fill time again, answers repeated tries on one account
-more slowly, and allows 10 tries per account every 15 minutes and 60 per
-network an hour, counted in the database so clearing the browser doesn't
-reset them.
+checks the bot trap, the fill time and reCAPTCHA, then answers repeated tries
+on one account more slowly and allows 10 tries per account every 15 minutes
+and 60 per network an hour, counted in the database so clearing the browser
+doesn't reset them. Only attempts that pass reCAPTCHA are counted, so nobody
+can lock a member out just by sending their address. The password check
+itself is Firebase's, which has its own throttling. If the reCAPTCHA script
+is blocked (an ad blocker), the page says so instead of failing vaguely.
 
 **Sessions** ([`sessionPolicy.ts`](../src/lib/sessionPolicy.ts)):
 - Every sign-in ends 14 days after the password was typed, on any device.
@@ -320,7 +325,7 @@ flowchart TD
     DUP -->|no| SAVE[(contact_messages)]
     SAVE --> MSG[Dashboard → Messages]
     SAVE --> HUB[Email to the hub inbox<br/>reply goes to the visitor]
-    SAVE --> COPY[Copy to the visitor<br/>in their language]
+    SAVE --> COPY[Receipt to the visitor<br/>in their language]
 ```
 
 - The checks: a hidden "website" field and a minimum fill time catch simple bots;
@@ -328,27 +333,46 @@ flowchart TD
   form; the message must be 10 to 5,000 characters with at most 3 links;
   reCAPTCHA must pass (a missing key refuses everything rather than letting
   messages through).
-- The visitor's copy is limited per address, so the form can't be used to send
-  mail to someone else.
+- The visitor's receipt confirms the message arrived (topic, time, reference)
+  but doesn't repeat it, and greets them by first name only: it goes to
+  whatever address was typed in, so repeating the text would let anyone send
+  their own words to anyone under the hub's name. It is also limited per
+  address and counts against the day's email budget.
+- At most 300 messages a day are accepted site-wide, far above normal, so a
+  flood from many networks can't bury the inbox. Addresses may only use
+  letters, digits and `. _ + ' -` before the `@`, which keeps them from adding
+  fields to the dashboard's reply links.
 
 ## 9. Newsletter signup
 
-Same idea: [`/api/newsletter/subscribe`](../src/app/api/newsletter/subscribe/route.ts)
-is the only way onto the list, and each address is kept once.
+Double opt-in: nobody is on the list until the owner of the address confirms
+it from their inbox, so the form can't put someone else's address on the
+list. [`/api/newsletter/subscribe`](../src/app/api/newsletter/subscribe/route.ts)
+is the only way in.
 
 ```mermaid
 flowchart TD
     V([Visitor subscribes]) --> CHECKS[Rate limits, bot traps,<br/>reCAPTCHA, real mail domain]
     CHECKS -->|fails| ERR[Message in the<br/>visitor's language]
     CHECKS -->|passes| HAS{Address already<br/>on the list?}
-    HAS -->|yes| AL["Already subscribed message,<br/>no second email"]
-    HAS -->|no| ADD[(newsletter_subscribers<br/>id = hash of the address)]
-    ADD --> W[Welcome email<br/>in their language]
+    HAS -->|yes| SAME["'Check your inbox'<br/>(no email)"]
+    HAS -->|no| PEND[(newsletter_pending<br/>address + random token)]
+    PEND --> CE[Confirmation email<br/>in their language]
+    CE --> PAGE[/newsletter/confirm page:<br/>press Confirm/]
+    PAGE --> ADD[(newsletter_subscribers<br/>id = hash of the address)]
+    ADD --> W[Welcome email with<br/>unsubscribe links]
     ADD --> X[Curator: Export Emails]
 ```
 
-The record's id is a hash of the lowercased address, and the save fails if
-that id already exists, so even two signups at the same moment end up as one.
+- Every answer is the same "check your inbox", on the list already or not, so
+  the form can't reveal who is subscribed. At most three confirmation emails
+  go to one address a day.
+- The confirmation link opens a page that asks first (link scanners open every
+  link), then [`/api/newsletter/confirm`](../src/app/api/newsletter/confirm/route.ts)
+  checks the token and moves the address onto the list in one transaction.
+  Links work for 7 days; unused requests are cleared out over time.
+- The record's id is a hash of the lowercased address, so each address is on
+  the list once.
 
 **Leaving the list.** Each new subscription stores a random token. The
 welcome email links to `/{locale}/unsubscribe?id=…&t=…`, a page that asks
@@ -368,14 +392,14 @@ All email is sent through [Resend](https://resend.com) from the verified
 ```mermaid
 flowchart LR
     subgraph Site["Server routes"]
-        NS[/api/newsletter/subscribe/]
+        NS[/api/newsletter/subscribe<br/>and confirm/]
         CS[/api/contact/send/]
         IN[/api/invite/]
         CE[/api/members/confirm-email/]
     end
     subgraph Templates["src/lib/emails"]
-        NL[newsletter.ts<br/>welcome]
-        CT[contact.ts<br/>hub copy + visitor copy]
+        NL[newsletter.ts<br/>confirmation + welcome]
+        CT[contact.ts<br/>hub copy + visitor receipt]
         LY[layout.ts<br/>header with both logos,<br/>footer, EN/AR, RTL]
     end
     NS --> NL
@@ -396,9 +420,10 @@ flowchart LR
 
 | Email | Sender | Language | Replies go to |
 |---|---|---|---|
-| Newsletter welcome | `newsletter@` | The site language the visitor used | Hub inbox |
+| Newsletter confirmation | `newsletter@` | The site language the visitor used | Hub inbox |
+| Newsletter welcome (after confirming) | `newsletter@` | The site language the visitor used | Hub inbox |
 | Contact: hub copy | `contact@` | English (notes when the visitor wrote in Arabic) | The visitor |
-| Contact: visitor's copy | `contact@` | The site language the visitor used | Hub inbox |
+| Contact: visitor's receipt | `contact@` | The site language the visitor used | Hub inbox |
 | Member invite | `members@` | The curator's dashboard language | Hub inbox |
 | Invite record | `members@` | English, to the hub inbox; never contains the password | n/a |
 | Confirm your email address | `members@` | The language of the sign-in page | Hub inbox |
@@ -414,8 +439,10 @@ flowchart LR
   asked to sign in. Only if Resend can't send does the page fall back to
   Firebase's own, plainer email.
 - The domain is set up for delivery: Resend's DKIM key and the `send.`
-  return-path SPF record are published, and a DMARC record (`p=none`,
-  reporting only) is in place.
+  return-path SPF record are published, and DMARC is `p=quarantine`: mail
+  that claims to be from jeddahhub.org but fails those checks goes to spam.
+  Anything new that sends as the domain must be set up with Resend (or its own
+  DKIM) first, or its mail will be quarantined too.
 - The Jeddah Hub and World Economic Forum logos travel **inside** each email as
   inline images ([`logos.ts`](../src/lib/emails/logos.ts)), not as links to the
   site, so email apps always show them and they don't appear as separate
@@ -488,7 +515,8 @@ first (see [DEVELOPMENT.md](DEVELOPMENT.md#security-rules)).
 | `activity_responses` | Registration and after-event answers (`formType`), written only by the server after its checks | Curators, impact officers |
 | `rate_limits` | Server-side counters for sign-in, the public forms, admin actions and email (hashed keys) | Nobody (server only) |
 | `session_revocations` | When each member was last signed out everywhere (a new password, a removal) | Nobody (server only; the rules check it) |
-| `contact_messages`, `newsletter_subscribers` | Inbound messages and sign-ups, written only by the server after its checks | Curators |
+| `contact_messages`, `newsletter_subscribers` | Inbound messages and confirmed subscribers, written only by the server after its checks | Curators |
+| `newsletter_pending` | Signups waiting for their confirmation link (address, token, time) | Nobody: server only |
 | `settings`, `charter_signatures` | Charter sign-off switch and signatures | Members / curators and impact officers |
 | `*_requests`, `notifications` | Proposals and membership requests | The requester and whoever reviews them |
 

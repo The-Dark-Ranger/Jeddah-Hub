@@ -34,6 +34,8 @@
   font-weight: 500; font-size: .9rem;
   color: var(--text-muted); position: relative;
   padding: .25rem 0; transition: color .2s ease;
+  /* One line each; below 901px the links move into the menu drawer. */
+  white-space: nowrap;
 }
 .link::after {
   content: ''; position: absolute; bottom: -3px; inset-inline-start: 0;
@@ -202,14 +204,21 @@
   font-size: .95rem; font-weight: 600; color: var(--danger); width: 100%;
 }
 
-/* ── Responsive: 900px ── */
-@media (max-width: 900px) {
+/* ── Wide screens: bar content lines up with a 1280px column ── */
+@media (min-width: 901px) {
+  .navbar { padding-inline: max(1.5rem, calc((100% - 1280px) / 2)); }
+}
+
+/* ── Narrow desktops: tighter links so they fit on one line ── */
+@media (max-width: 1100px) {
   .navLinks { gap: 1rem; }
   .link { font-size: .85rem; }
 }
 
-/* ── Responsive: mobile 768px ── */
-@media (max-width: 768px) {
+/* ── Phones and tablets (≤900px): fixed bar + menu drawer ──
+   Keep in step with the matchMedia in Navbar.tsx and the .page-content
+   offset in globals.css. */
+@media (max-width: 900px) {
   .navbar {
     position: fixed;
     inset-inline-start: 0; inset-inline-end: 0; top: 0;

@@ -1,0 +1,12 @@
+.box {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .75rem 1rem;
+  margin: 1.5rem 0; padding: 1.25rem 1.5rem; text-align: center;
+  border: 1px solid rgba(245, 158, 11, .35); border-radius: 14px;
+  background: rgba(245, 158, 11, .08); color: var(--text-main);
+}
+.text { margin: 0; font-size: .95rem; line-height: 1.5; }
+.retry {
+  min-height: 40px; padding: 0 1.1rem; border-radius: 10px; cursor: pointer;
+  border: none; background: var(--primary-fill); color: #fff; font: inherit; font-weight: 700; font-size: .9rem;
+}
+.retry:focus-visible { outline: 2px solid var(--primary-blue); outline-offset: 2px; }

@@ -2,7 +2,9 @@
 
 /* One queue of requests waiting for a curator on the Initiatives page
  * (proposed initiatives, leave, removal and member-add requests): a titled
- * list with Approve and Decline on every row. Hidden while empty. */
+ * list with Approve and Decline on every row. Hidden while empty. A row's
+ * buttons are disabled while its decision is being saved, so it can't be
+ * sent twice. */
 import type { ReactNode } from 'react';
 import styles from './Initiatives.module.css';
 
@@ -19,11 +21,13 @@ interface Props<T> {
   declineLabel: string;
   onApprove: (item: T) => void;
   onDecline: (item: T) => void;
+  /** True while this row's approval or decline is being saved. */
+  isBusy: (item: T) => boolean;
 }
 
 export default function RequestQueue<T>({
   tone = 'default', icon, title, items, itemKey, name, meta,
-  approveLabel, declineLabel, onApprove, onDecline,
+  approveLabel, declineLabel, onApprove, onDecline, isBusy,
 }: Props<T>) {
   if (items.length === 0) return null;
   return (
@@ -34,18 +38,21 @@ export default function RequestQueue<T>({
         <span className={styles.queueBadge}>{items.length}</span>
       </h3>
       <div className={styles.queueList}>
-        {items.map(item => (
-          <div key={itemKey(item)} className={styles.queueRow}>
-            <div className={styles.queueInfo}>
-              <span className={styles.queueName}>{name(item)}</span>
-              <span className={styles.queueMeta}>{meta(item)}</span>
+        {items.map(item => {
+          const busy = isBusy(item);
+          return (
+            <div key={itemKey(item)} className={styles.queueRow} aria-busy={busy}>
+              <div className={styles.queueInfo}>
+                <span className={styles.queueName}>{name(item)}</span>
+                <span className={styles.queueMeta}>{meta(item)}</span>
+              </div>
+              <div className={styles.queueActions}>
+                <button type="button" className={styles.approveBtn} disabled={busy} onClick={() => onApprove(item)}>{approveLabel}</button>
+                <button type="button" className={styles.declineBtn} disabled={busy} onClick={() => onDecline(item)}>{declineLabel}</button>
+              </div>
             </div>
-            <div className={styles.queueActions}>
-              <button type="button" className={styles.approveBtn} onClick={() => onApprove(item)}>{approveLabel}</button>
-              <button type="button" className={styles.declineBtn} onClick={() => onDecline(item)}>{declineLabel}</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

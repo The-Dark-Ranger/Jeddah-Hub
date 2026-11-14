@@ -9,7 +9,10 @@ import { useLocale, useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import ModalPortal from '@/components/ModalPortal';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useDialog } from '@/components/dashboard/useDialog';
 import type { FormType, HubActivity } from '@/lib/activityTypes';
+import { errorCode } from '@/lib/types';
 import styles from './Activities.module.css';
 import { intlLocale } from '@/lib/dates';
 
@@ -34,10 +37,15 @@ interface Props {
 
 export default function ActivityResponsesModal({ activity, onClose, onRead }: Props) {
   const t = useTranslations('Dashboard');
+  const tc = useTranslations('Common');
   const locale = useLocale();
   const headingId = useId();
+  const dialogRef = useDialog(true, onClose);
   const [responses, setResponses] = useState<ActivityResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** Bumped by "Try again" to load once more. */
+  const [attempt, setAttempt] = useState(0);
   const [tab, setTab] = useState<FormType>(activity.customForm?.enabled ? 'registration' : 'feedback');
   const [downloadFailed, setDownloadFailed] = useState(false);
 
@@ -51,16 +59,22 @@ export default function ActivityResponsesModal({ activity, onClose, onRead }: Pr
         const unread = docs.filter(r => r.read === false);
         if (unread.length > 0) {
           Promise.all(unread.map(r => updateDoc(doc(db, 'activity_responses', r.id), { read: true })))
-            .catch(err => console.error('Failed to mark responses read:', err));
+            .catch(err => console.error('Failed to mark responses read:', errorCode(err)));
           onRead();
         }
       })
-      .catch(err => console.error('Failed to load responses:', err))
+      .catch(err => {
+        // Never "No responses yet" after a failed load: there may be many.
+        console.error('Failed to load responses:', errorCode(err));
+        if (live) setLoadFailed(true);
+      })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-    // Loads once per opened activity; onRead changes on every parent render.
+    // Loads once per opened activity (and per retry); onRead changes on every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity.id]);
+  }, [activity.id, attempt]);
+
+  const retry = () => { setLoadFailed(false); setLoading(true); setAttempt(n => n + 1); };
 
   // Older responses without formType are registrations.
   const shown = responses.filter(r => (r.formType ?? 'registration') === tab);
@@ -72,7 +86,7 @@ export default function ActivityResponsesModal({ activity, onClose, onRead }: Pr
       const { downloadActivityResponses } = await import('@/lib/exportActivityResponses');
       await downloadActivityResponses(activity.title, questions, shown, tab === 'feedback' ? 'Feedback' : 'Registrations');
     } catch (err) {
-      console.error('Failed to build the spreadsheet:', err);
+      console.error('Failed to build the spreadsheet:', errorCode(err));
       setDownloadFailed(true);
     }
   };
@@ -80,7 +94,7 @@ export default function ActivityResponsesModal({ activity, onClose, onRead }: Pr
   return (
     <ModalPortal>
       <div className={styles.overlay} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={headingId}>
+        <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1} ref={dialogRef}>
           <div className={styles.modalHeader}>
             <h2 id={headingId}>{t('responsesFor')}: {activity.title}</h2>
             <button type="button" className={styles.closeBtn} onClick={onClose} aria-label={t('closeModal')}>✕</button>
@@ -107,6 +121,8 @@ export default function ActivityResponsesModal({ activity, onClose, onRead }: Pr
             )}
             {loading ? (
               <DashSkeleton rows={3} header={false} label={t('loading')} />
+            ) : loadFailed ? (
+              <LoadFailed onRetry={retry} />
             ) : shown.length === 0 ? (
               <p className={styles.empty}>{t('noResponsesYet')}</p>
             ) : (
@@ -154,7 +170,7 @@ export default function ActivityResponsesModal({ activity, onClose, onRead }: Pr
             )}
           </div>
           <div className={styles.modalFooter}>
-            {downloadFailed && <p className={styles.modalError} role="alert">{t('saveFailed')}</p>}
+            {downloadFailed && <p className={styles.modalError} role="alert">{tc('downloadFailed')}</p>}
             <button type="button" className={styles.cancelBtn} onClick={onClose}>{t('closeModal')}</button>
             <button type="button" className={styles.saveBtn} onClick={download} disabled={shown.length === 0}>
               {t('downloadResponses')}

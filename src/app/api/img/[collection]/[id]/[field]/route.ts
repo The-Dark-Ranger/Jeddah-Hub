@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRawDoc, IMAGE_SOURCES } from '@/lib/publicData';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
+import { photoResponse, requestedWidth } from '@/lib/photoResponse';
 
 /* Serves a photo that is stored inline (as a data: URI) on a public
  * Firestore document, e.g. /api/img/initiatives/<id>/images.2?v=<hash>.
@@ -33,11 +34,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ collecti
   const match = typeof value === 'string' ? DATA_RE.exec(value) : null;
   if (!match) return new NextResponse(null, { status: 404 });
 
-  return new NextResponse(Buffer.from(match[2], 'base64'), {
-    headers: {
-      'Content-Type': match[1],
-      'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+  return photoResponse(Buffer.from(match[2], 'base64'), match[1], requestedWidth(req));
 }

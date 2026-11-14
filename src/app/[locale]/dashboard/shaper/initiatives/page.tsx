@@ -2,12 +2,17 @@
 
 /* Dashboard > Join Initiatives: browse initiatives, request to join or leave,
  * and propose a new one. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import {
   collection, getDocs, addDoc, query, where, deleteDoc, doc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ModalPortal from '@/components/ModalPortal';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
+import { orNull } from '@/lib/partialLoad';
 import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
@@ -19,7 +24,7 @@ import { Link } from '@/i18n/routing';
 import { slugify } from '@/lib/slug';
 import InitiativeCover from '@/components/InitiativeCover';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
-import { errorCode, isLeadRole, type MembershipRequest } from '@/lib/types';
+import { errorCode, type MembershipRequest } from '@/lib/types';
 
 type Member = string | { userId?: string; role?: string };
 
@@ -30,18 +35,29 @@ const tmpId = () => `tmp_${++tmpSeq}`;
 interface Initiative {
   id: string; title: string; description: string; status: string;
   category?: string; stat?: string; members?: Member[];
+  /** Who has lead rights (what firestore.rules checks). */
+  leads?: string[];
   imageUrl?: string; images?: string[]; color?: string; slug?: string;
 }
-interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'accepted' | 'rejected'; }
+/** An accepted request is deleted when its member is added, so only these remain. */
+interface JoinRequest { id: string; initiativeId: string; status: 'pending' | 'rejected'; }
 interface InitiativeProposal { id: string; title: string; status: 'pending' | 'approved' | 'declined'; }
 
 export default function JoinInitiatives() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
+  const titleId = useId();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
   const [myRequests, setMyRequests]   = useState<JoinRequest[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [loadFailed, setLoadFailed]   = useState(false);
+  /** Your leave requests didn't load: "Request to leave" waits for a retry,
+   *  so it can't be asked twice. */
+  const [leaveFailed, setLeaveFailed] = useState(false);
+  const [proposalsFailed, setProposalsFailed] = useState(false);
   const [search, setSearch]           = useState('');
   const [show, setShow]               = useState<'all' | 'mine'>('all');
 
@@ -52,20 +68,31 @@ export default function JoinInitiatives() {
   /* Propose-new-initiative modal */
   const [proposeOpen, setProposeOpen]     = useState(false);
   const [proposeForm, setProposeForm]     = useState<InitiativeFormShape>(emptyInitiativeForm);
-  const [proposeSaving, setProposeSaving] = useState(false);
+  const proposeSaving = isBusy('propose');
   const [myProposals, setMyProposals]     = useState<InitiativeProposal[]>([]);
 
   const handleProposeFormChange = useCallback((key: keyof InitiativeFormShape, value: string) => {
     setProposeForm(f => ({ ...f, [key]: value }));
   }, []);
 
-  const fetchData = useCallback(async () => {
+  /** Loads the page. `quiet` (retrying your requests) keeps it on screen. */
+  const fetchData = useCallback(async (quiet = false) => {
     if (!user) { setLoading(false); return; }
-    setLoading(true);
+    if (!quiet) { setLoading(true); setLoadFailed(false); }
     try {
-      const [initSnap, reqSnap] = await Promise.all([
+      const [initSnap, reqSnap, leaveReqSnap, proposalsSnap] = await Promise.all([
         getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active'))),
         getDocs(query(collection(db, 'join_requests'), where('userId', '==', user.uid))),
+        orNull('your leave requests', getDocs(query(
+          collection(db, 'leave_requests'),
+          where('userId', '==', user.uid),
+          where('status', '==', 'pending'),
+        ))),
+        // Any status, so they can see pending/approved/declined outcomes.
+        orNull('your proposals', getDocs(query(
+          collection(db, 'initiative_requests'),
+          where('proposedBy', '==', user.uid),
+        ))),
       ]);
 
       // Hub Activities (dashboard/curator/activities) are stored as
@@ -75,36 +102,20 @@ export default function JoinInitiatives() {
       const inits = initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as Initiative));
       const reqs  = reqSnap.docs.map(d => ({ id: d.id, ...d.data() } as JoinRequest));
 
-      // Initiatives this user leads are managed from the "Active Projects"
-      // tab instead, excluded here so this page stays a pure browse/join
-      // list, not mixed with a lead's own management tools.
-      const leadIds = inits
-        .filter(i => (i.members || []).some(m =>
-          typeof m === 'object' && m.userId === user.uid &&
-          isLeadRole(m.role)
-        ))
-        .map(i => i.id);
-
-      setInitiatives(inits.filter(i => !leadIds.includes(i.id)));
+      // Initiatives this user leads (by `leads`, what firestore.rules checks)
+      // are managed from the "Active Projects" tab instead, excluded here so
+      // this page stays a pure browse/join list, not mixed with a lead's own
+      // management tools.
+      setInitiatives(inits.filter(i => !(i.leads || []).includes(user.uid)));
       setMyRequests(reqs);
-
-      /* Fetch user's own leave requests */
-      const leaveReqSnap = await getDocs(query(
-        collection(db, 'leave_requests'),
-        where('userId', '==', user.uid),
-        where('status', '==', 'pending'),
-      ));
-      setMyLeaveRequests(leaveReqSnap.docs.map(d => ({ id: d.id, ...d.data() } as MembershipRequest)));
-
-      /* Fetch this user's own proposed-initiative requests, any status,
-       * so they can see pending/approved/declined outcomes. */
-      const proposalsSnap = await getDocs(query(
-        collection(db, 'initiative_requests'),
-        where('proposedBy', '==', user.uid),
-      )).catch(() => null);
-      setMyProposals(proposalsSnap ? proposalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as InitiativeProposal)) : []);
-    } catch {
-      /* Firestore not configured or permission error, show empty state */
+      setMyLeaveRequests((leaveReqSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as MembershipRequest)));
+      setLeaveFailed(!leaveReqSnap);
+      setMyProposals((proposalsSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as InitiativeProposal)));
+      setProposalsFailed(!proposalsSnap);
+      setLoadFailed(false);
+    } catch (err) {
+      console.error('Failed to load initiatives:', errorCode(err));
+      if (!quiet) setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -119,7 +130,7 @@ export default function JoinInitiatives() {
   const isAlreadyMember = (init: Initiative) =>
     (init.members || []).some(m => (typeof m === 'object' ? m.userId : m) === user?.uid);
 
-  const handleRequest = async (initId: string) => {
+  const handleRequest = (initId: string) => run(`init:${initId}`, async () => {
     if (!user) return;
     const rejected = myRequests.find(r => r.initiativeId === initId && r.status === 'rejected');
     if (rejected) {
@@ -128,9 +139,9 @@ export default function JoinInitiatives() {
         try {
           await deleteDoc(doc(db, 'join_requests', rejected.id));
         } catch (err) {
-          console.error(err);
+          console.error('Failed to clear the declined request:', errorCode(err));
           setMyRequests(prev => [...prev, rejected]);
-          alert(t('saveFailed'));
+          alert(saveFailed(err));
           return;
         }
       }
@@ -148,11 +159,11 @@ export default function JoinInitiatives() {
       });
       setMyRequests(prev => prev.map(r => r.id === optimistic.id ? { ...r, id: ref.id } : r));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to send the join request:', errorCode(err));
       setMyRequests(prev => prev.filter(r => r.id !== optimistic.id));
-      alert(t('saveFailed'));
+      alert(saveFailed(err));
     }
-  };
+  });
 
   const handleCancelRequest = async (reqId: string) => {
     const removed = myRequests.find(r => r.id === reqId);
@@ -161,14 +172,14 @@ export default function JoinInitiatives() {
     try {
       await deleteDoc(doc(db, 'join_requests', reqId));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to cancel the join request:', errorCode(err));
       if (removed) setMyRequests(prev => [...prev, removed]);
-      alert(t('saveFailed'));
+      alert(saveFailed(err));
     }
   };
 
   /* Leave request handlers */
-  const handleLeaveRequest = async (init: Initiative) => {
+  const handleLeaveRequest = (init: Initiative) => run(`init:${init.id}`, async () => {
     if (!user) return;
     const optimisticId = tmpId();
     setMyLeaveRequests(prev => [...prev, { id: optimisticId, initiativeId: init.id, status: 'pending' }]);
@@ -184,11 +195,11 @@ export default function JoinInitiatives() {
       });
       setMyLeaveRequests(prev => prev.map(r => r.id === optimisticId ? { ...r, id: ref.id } : r));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to send the leave request:', errorCode(err));
       setMyLeaveRequests(prev => prev.filter(r => r.id !== optimisticId));
-      alert(t('saveFailed'));
+      alert(saveFailed(err));
     }
-  };
+  });
 
   const handleCancelLeaveRequest = async (reqId: string) => {
     const removed = myLeaveRequests.find(r => r.id === reqId);
@@ -197,34 +208,40 @@ export default function JoinInitiatives() {
     try {
       await deleteDoc(doc(db, 'leave_requests', reqId));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to cancel the leave request:', errorCode(err));
       if (removed) setMyLeaveRequests(prev => [...prev, removed]);
-      alert(t('saveFailed'));
+      alert(saveFailed(err));
     }
   };
 
   const openPropose  = () => { setProposeForm(emptyInitiativeForm); setProposeOpen(true); };
   const closePropose = () => { setProposeOpen(false); setProposeForm(emptyInitiativeForm); };
+  /** Escape and a click outside ask first, but only when something was typed. */
+  const requestClosePropose = () => {
+    if (JSON.stringify(proposeForm) !== JSON.stringify(emptyInitiativeForm) && !confirm(t('confirmDiscardChanges'))) return;
+    closePropose();
+  };
+  const dialogRef = useDialog(proposeOpen, requestClosePropose);
 
-  const handleProposeSubmit = async (e: React.FormEvent) => {
+  const handleProposeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !proposeForm.title) return;
-    setProposeSaving(true);
-    try {
-      const docRef = await addDoc(collection(db, 'initiative_requests'), {
-        ...initiativeFormToDoc(proposeForm),
-        proposedBy: user.uid,
-        proposedByName: user.displayName || user.email || 'Shaper',
-        status: 'pending',
-        requestedAt: new Date().toISOString(),
-      });
-      setMyProposals(prev => [...prev, { id: docRef.id, title: proposeForm.title, status: 'pending' }]);
-      closePropose();
-    } catch (err) {
-      alert(`${t('saveFailed')} ${errorCode(err)}`);
-    } finally {
-      setProposeSaving(false);
-    }
+    void run('propose', async () => {
+      try {
+        const docRef = await addDoc(collection(db, 'initiative_requests'), {
+          ...initiativeFormToDoc(proposeForm),
+          proposedBy: user.uid,
+          proposedByName: user.displayName || user.email || 'Shaper',
+          status: 'pending',
+          requestedAt: new Date().toISOString(),
+        });
+        setMyProposals(prev => [...prev, { id: docRef.id, title: proposeForm.title, status: 'pending' }]);
+        closePropose();
+      } catch (err) {
+        console.error('Failed to send the proposal:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   };
 
   if (loading) return (
@@ -247,6 +264,10 @@ export default function JoinInitiatives() {
           </button>
         </div>
       </div>
+
+      {(leaveFailed || proposalsFailed) && !loadFailed && (
+        <LoadFailed onRetry={() => void fetchData(true)} message={t('requestsLoadFailed')} />
+      )}
 
       {/* My proposed initiatives, pending curator review */}
       {myProposals.length > 0 && (
@@ -277,11 +298,12 @@ export default function JoinInitiatives() {
         <ModalPortal>
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closePropose(); }}
+          onClick={e => { if (e.target === e.currentTarget) requestClosePropose(); }}
         >
-          <form className={styles.modal} onSubmit={handleProposeSubmit}>
+          <form ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}
+            className={styles.modal} onSubmit={handleProposeSubmit}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{t('proposeInitiativeTitle')}</h3>
+              <h3 id={titleId} className={styles.modalTitle}>{t('proposeInitiativeTitle')}</h3>
               <button type="button" className={styles.modalClose} onClick={closePropose} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -303,6 +325,7 @@ export default function JoinInitiatives() {
         </ModalPortal>
       )}
 
+      {loadFailed ? <LoadFailed onRetry={() => void fetchData()} /> : (<>
       {/* Search, and All / the ones I'm already in */}
       <div className={styles.toolbar}>
         <div className={styles.tabs} role="tablist">
@@ -325,6 +348,7 @@ export default function JoinInitiatives() {
           const req    = getRequestForInit(init.id);
           const member = isAlreadyMember(init);
           const team   = (init.members || []).length;
+          const busy   = isBusy(`init:${init.id}`);
           return (
             <div key={init.id} className={styles.card}>
               <div className={styles.cardCover}>
@@ -359,7 +383,7 @@ export default function JoinInitiatives() {
                           </svg>
                           {t('leaveRequestPending')}
                         </span>
-                        <button className={styles.cancelBtn} onClick={() => handleCancelLeaveRequest(leaveReq.id)}>{t('cancelLeaveRequest')}</button>
+                        <button className={styles.cancelBtn} disabled={busy} onClick={() => handleCancelLeaveRequest(leaveReq.id)}>{t('cancelLeaveRequest')}</button>
                       </div>
                     );
                     return (
@@ -370,9 +394,12 @@ export default function JoinInitiatives() {
                           </svg>
                           {t('alreadyMember')}
                         </span>
-                        <button className={styles.leaveBtn} onClick={() => handleLeaveRequest(init)}>
-                          {t('requestToLeave')}
-                        </button>
+                        {/* Not while your leave requests couldn't load: one may already be waiting. */}
+                        {!leaveFailed && (
+                          <button className={styles.leaveBtn} disabled={busy} onClick={() => void handleLeaveRequest(init)}>
+                            {t('requestToLeave')}
+                          </button>
+                        )}
                       </div>
                     );
                   })()
@@ -384,12 +411,10 @@ export default function JoinInitiatives() {
                       </svg>
                       {t('joinRequestPending')}
                     </span>
-                    <button className={styles.cancelBtn} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
+                    <button className={styles.cancelBtn} disabled={busy} onClick={() => handleCancelRequest(req.id)}>{t('cancelRequest')}</button>
                   </div>
-                ) : req?.status === 'accepted' ? (
-                  <span className={styles.memberBadge}>{t('joinRequestAccepted')}</span>
                 ) : (
-                  <button className={styles.joinBtn} onClick={() => handleRequest(init.id)}>
+                  <button className={styles.joinBtn} disabled={busy} onClick={() => void handleRequest(init.id)}>
                     {t('requestToJoin')}
                   </button>
                 )}
@@ -398,6 +423,7 @@ export default function JoinInitiatives() {
           );
         })}
       </div>
+      </>)}
     </div>
   );
 }

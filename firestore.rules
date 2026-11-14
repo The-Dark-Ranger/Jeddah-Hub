@@ -31,6 +31,13 @@ service cloud.firestore {
       return raw is string ? raw.lower() : '';
     }
 
+    // A role as stored on a document, lowercased with spaces as underscores
+    // (as the app's normalizeRole does), so "Curator", "Vice Curator" and
+    // "vice_curator" compare equal wherever a stored role is checked.
+    function normRole(r) {
+      return r is string ? r.lower().replace('\\s+', '_') : '';
+    }
+
     function isCurator() {
       return isSignedIn() && userRole() in ['curator', 'vice_curator', 'vice curator'];
     }
@@ -68,10 +75,11 @@ service cloud.firestore {
     }
 
     // Curators and vice curators edit member records, but only the Curator
-    // can change a curator's record or hand out the curator role.
+    // can change a curator's record or hand out the curator role. Compared
+    // normalised, so a record saved as "Curator" is just as protected.
     function curatorMayEdit(before, after) {
       return isFullCurator()
-             || (before.get('role', '') != 'curator' && after.get('role', '') != 'curator');
+             || (normRole(before.get('role', '')) != 'curator' && normRole(after.get('role', '')) != 'curator');
     }
 
     // Size/type limits on the profile fields members and curators write.
@@ -97,6 +105,73 @@ service cloud.firestore {
              && optStr(d, 'photoURL', 1000000);
     }
 
+    // A short list of short labels (a post's tags, an initiative's impact
+    // areas). The editors split what was typed on commas, so no entry holds
+    // one: joined with commas and split again it gives back the very same
+    // list (so every entry is text: join() turns a number into text, but the
+    // number never equals it), and each piece is 1 to maxLen characters.
+    function labelList(l, maxItems, maxLen) {
+      return l is list && l.size() <= maxItems
+             && (l.size() == 0
+                 || (l.join(',').split(',') == l
+                     && l.join(',').matches('^[^,]{1,' + string(maxLen) + '}(,[^,]{1,' + string(maxLen) + '})*$')));
+    }
+
+    // ── Photos on initiatives, proposals and activities ──
+    // What the photo picker (ImageUploader) saves: an uploaded photo
+    // (/api/media/<id>), a pasted http(s) or www. link, or, when an upload
+    // fails, the compressed photo itself inline (a data URI). Only inline
+    // photos are large, so a long value must be one; the picker keeps a
+    // document's inline photos under 880 KB in total. Any other value is one
+    // the site never shows (src/lib/sanitize.ts safeImageSrc), so refusing it
+    // loses nothing. These docs are read publicly and in bulk.
+    function photoCover(d) {
+      return !('imageUrl' in d) || d.imageUrl == null || d.imageUrl == ''
+             || (d.imageUrl is string && d.imageUrl.size() <= 900000
+                 && (d.imageUrl.matches('^data:image/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$')
+                     // A pasted link may carry stray spaces around it.
+                     || (d.imageUrl.size() <= 1000
+                         && d.imageUrl.matches('^\\s*(/api/media/[A-Za-z0-9]+|(https?://|www\\.)[^\\s]+)\\s*$'))));
+    }
+    // The gallery: at most 40 photos (the picker stops at 24), each one of
+    // the addresses above. Checked by joining the list into one text, as
+    // blogPhotos does; split again it must give back the same list, so every
+    // entry is text and none hides a space.
+    function photoGallery(d) {
+      return !('images' in d) || d.images == null
+             || (d.images is list && d.images.size() <= 40
+                 && (d.images.size() == 0 || photoList(d.images, d.images.join(' '))));
+    }
+    function photoList(l, joined) {
+      return joined.size() <= 950000
+             && joined.split(' ') == l
+             && joined.matches('^(data:image/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+|/api/media/[A-Za-z0-9]+|(https?://|www\\.)[^\\s]+)'
+                               + '( (data:image/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+|/api/media/[A-Za-z0-9]+|(https?://|www\\.)[^\\s]+))*$');
+    }
+
+    // The text and photos of an initiative (the shared initiative form,
+    // InitiativeFormFields initiativeFormToDoc): types and sizes, well above
+    // anything real. `keys` is which fields to check: all of a new proposal,
+    // but only what a lead's edit changes, so an initiative saved before these
+    // limits (photos stored inline, say) can still be edited.
+    function initiativeFieldsOk(d, keys) {
+      return (!keys.hasAny(['title']) || (d.title is string && d.title.size() > 0 && d.title.size() <= 300))
+             && (!keys.hasAny(['titleAr']) || optStr(d, 'titleAr', 300))
+             && (!keys.hasAny(['description']) || optStr(d, 'description', 10000))
+             && (!keys.hasAny(['descriptionAr']) || optStr(d, 'descriptionAr', 10000))
+             && (!keys.hasAny(['category']) || optStr(d, 'category', 200))
+             && (!keys.hasAny(['startDate']) || optStr(d, 'startDate', 40))
+             && (!keys.hasAny(['endDate']) || optStr(d, 'endDate', 40))
+             && (!keys.hasAny(['stat']) || optStr(d, 'stat', 500))
+             && (!keys.hasAny(['problem']) || optStr(d, 'problem', 10000))
+             && (!keys.hasAny(['objective']) || optStr(d, 'objective', 10000))
+             && (!keys.hasAny(['impact']) || optStr(d, 'impact', 10000))
+             && (!keys.hasAny(['impactAreas']) || !('impactAreas' in d) || d.impactAreas == null
+                 || labelList(d.impactAreas, 30, 100))
+             && (!keys.hasAny(['imageUrl']) || photoCover(d))
+             && (!keys.hasAny(['images']) || photoGallery(d));
+    }
+
     // ── Anti-spoofing ──
     // Names and emails shown to curators on requests, notifications and
     // posts must be the caller's own: the name saved on their profile (or
@@ -120,8 +195,10 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128
              && exists(/databases/$(database)/documents/initiatives/$(id));
     }
+    // One of the hub's roles, however it's capitalised or spaced (normalised
+    // the same way userRole() and the app read it back).
     function isRealRole(r) {
-      return r in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
+      return normRole(r) in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
     }
 
     // Does the given role_assignments doc belong to the caller? These docs
@@ -190,6 +267,8 @@ service cloud.firestore {
                     && (hasNoRole(request.resource.data) || request.resource.data.role == preassignedRole())
                     && validProfile(request.resource.data);
       // A curator's role change must be to a real role; uid and email never change.
+      // curatorMayEdit and isRealRole compare roles normalised (a stored
+      // "Curator" counts as the curator); "unchanged" is exact equality.
       allow update: if (isCurator() && curatorMayEdit(resource.data, request.resource.data)
                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'email'])
                         && (request.resource.data.get('role', null) == resource.data.get('role', null)
@@ -202,7 +281,8 @@ service cloud.firestore {
                         && (request.resource.data.get('role', null) == resource.data.get('role', null)
                             || (hasNoRole(resource.data) && request.resource.data.role == preassignedRole()))
                         && validProfile(request.resource.data));
-      allow delete: if isCurator() && (isFullCurator() || resource.data.get('role', '') != 'curator');
+      // Only the Curator removes a curator's record, however its role is written.
+      allow delete: if isCurator() && (isFullCurator() || normRole(resource.data.get('role', '')) != 'curator');
     }
 
     // ── public_profiles ───────────────────────────────────────
@@ -227,10 +307,12 @@ service cloud.firestore {
                          'linkedin', 'twitter', 'instagram', 'role', 'hidden'])
                    && (!('hidden' in request.resource.data) || request.resource.data.hidden is bool)
                    && validProfile(request.resource.data)
+                   // The owner's own real role, compared normalised: the app
+                   // writes "vice_curator" for a stored "Vice Curator".
                    && (isCurator()
                        || !('role' in request.resource.data)
                        || (resource != null && request.resource.data.role == resource.data.role)
-                       || request.resource.data.role == userRole());
+                       || normRole(request.resource.data.role) == normRole(userRole()));
       allow delete: if isCurator();
     }
 
@@ -296,14 +378,29 @@ service cloud.firestore {
                                'imageUrl', 'images', 'stat', 'problem', 'objective',
                                'impact', 'impactAreas', 'color', 'members',
                              ])
+                        // Sizes and types of what the edit changes (see initiativeFieldsOk).
+                        && initiativeFieldsOk(request.resource.data, request.resource.data.diff(resource.data).affectedKeys())
                         && leadTeamStep()));
+    }
+
+    // A curator's or impact officer's review of a join, removal or add
+    // request: only its outcome, plus who decided and when (the dashboards
+    // write just `status`), so the requester, target and initiative a
+    // request names can't be rewritten after the fact.
+    function reviewOnly() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['status', 'reviewedBy', 'reviewedAt'])
+             && request.resource.data.status in ['approved', 'declined', 'rejected']
+             && (!changed.hasAny(['reviewedBy']) || request.resource.data.reviewedBy == request.auth.uid)
+             && (!changed.hasAny(['reviewedAt']) || optStr(request.resource.data, 'reviewedAt', 40));
     }
 
     // ── join_requests ─────────────────────────────────────────
     // Shapers create requests for themselves.
     // Curators, impact officers, and that specific initiative's leads can
     // read/update/delete, update is scoped to only the `status` field so
-    // a lead can't rewrite anything else on the request doc.
+    // a lead can't rewrite anything else on the request doc (and the
+    // review fields for curators and impact officers, see reviewOnly).
     match /join_requests/{docId} {
       // Only as yourself (your own uid, email and name), pending, for a real initiative.
       allow create: if isAnyMember()
@@ -316,7 +413,7 @@ service cloud.firestore {
       allow read:   if isOwner(resource.data.userId)
                     || isCuratorOrImpact()
                     || isLeadOf(resource.data.initiativeId);
-      allow update: if isCuratorOrImpact()
+      allow update: if (isCuratorOrImpact() && reviewOnly())
                     || (isLeadOf(resource.data.initiativeId)
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isOwner(resource.data.userId)
@@ -343,9 +440,9 @@ service cloud.firestore {
                           'proposedBy', 'proposedByName', 'status', 'requestedAt'])
                     && isMyName(request.resource.data.proposedByName)
                     && optColor(request.resource.data)
-                    && optStr(request.resource.data, 'title', 300)
-                    && optStr(request.resource.data, 'description', 10000)
-                    && optStr(request.resource.data, 'descriptionAr', 10000);
+                    && optStr(request.resource.data, 'requestedAt', 40)
+                    // Every field's type and size, photos and impact areas included.
+                    && initiativeFieldsOk(request.resource.data, request.resource.data.keys());
       allow read:   if isCuratorOrImpact()
                     || (isSignedIn() && resource.data.proposedBy == request.auth.uid);
       allow update: if isCuratorOrImpact()
@@ -398,7 +495,20 @@ service cloud.firestore {
                                   'customForm', 'feedbackForm', 'imageUrl', 'images', 'color'])
              && optStr(p, 'title', 300) && optStr(p, 'eyebrow', 300) && optStr(p, 'subtitle', 500)
              && optStr(p, 'description', 10000) && optStr(p, 'date', 300) && optStr(p, 'location', 300)
-             && optStr(p, 'ctaText', 200) && optUrl(p, 'ctaUrl') && optColor(p);
+             && optStr(p, 'ctaText', 200) && optUrl(p, 'ctaUrl') && optColor(p)
+             // Photos as on initiatives (a change carries the live activity's own).
+             && photoCover(p) && photoGallery(p)
+             // Bounded lists: the "who's involved" highlights and both forms' questions.
+             && (!('highlights' in p) || p.highlights == null || (p.highlights is list && p.highlights.size() <= 50))
+             && activityFormOk(p, 'customForm') && activityFormOk(p, 'feedbackForm');
+    }
+    // A registration or after-event form (RegistrationFormBuilder): a map of
+    // its settings with at most 50 questions. Older forms carry extra keys
+    // (title, submitLabel), so only the count of keys is capped.
+    function activityFormOk(p, key) {
+      return !(key in p) || p[key] == null
+             || (p[key] is map && p[key].size() <= 20
+                 && (!('questions' in p[key]) || (p[key].questions is list && p[key].questions.size() <= 50)));
     }
     function mayChangeActivity(d) {
       let target = get(/databases/$(database)/documents/initiatives/$(d.activityId)).data;
@@ -476,9 +586,11 @@ service cloud.firestore {
 
     // A member's own post: the fields the post editor (BlogManager) writes,
     // with size limits.
+    // Tags: up to 20, each 1 to 60 characters (BlogManager splits the
+    // typed text on commas), see labelList.
     function blogBody(d) {
       return optStr(d, 'title', 300) && optStr(d, 'content', 100000) && optStr(d, 'excerpt', 1000)
-             && (!('tags' in d) || (d.tags is list && d.tags.size() <= 20))
+             && (!('tags' in d) || labelList(d.tags, 20, 60))
              && blogPhotos(d);
     }
 
@@ -519,7 +631,7 @@ service cloud.firestore {
                     && request.resource.data.authorId == request.auth.uid
                     && (!('authorRole' in request.resource.data)
                         || (request.resource.data.authorRole is string
-                            && request.resource.data.authorRole.lower().replace(' ', '_') == userRole().replace(' ', '_')))
+                            && normRole(request.resource.data.authorRole) == normRole(userRole())))
                     // The byline is the author's own name, not someone else's.
                     && (!('authorName' in request.resource.data) || isMyName(request.resource.data.authorName))
                     && optStr(request.resource.data, 'title', 300)
@@ -574,6 +686,12 @@ service cloud.firestore {
       allow read, update, delete: if isCurator();
     }
 
+    // The roles a role_assignments doc can grant, exactly as the pages write
+    // them (preassignedRole() copies the value onto the member's record).
+    function assignableRole(r) {
+      return r in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni'];
+    }
+
     // ── role_assignments ──────────────────────────────────────
     // Curators create/delete. Ownership is by email match (isAssignee()
     // above) since these docs never carry a `uid` field. The assignee
@@ -581,8 +699,8 @@ service cloud.firestore {
     // discover what role to self-apply on first login (src/lib/auth.ts,
     // lookupRoleAssignment), without it that lookup silently returns
     // nothing and no role, not even shaper/alumni, is ever applied.
-    // Deliberately no `update` rule: marking an assignment "joined" for a
-    // curator-facing notification is intentionally not supported.
+    // Marking an assignment "joined" for a curator-facing notification is
+    // intentionally not supported (see the update rule for what is).
     // Hardened create: the doc id must be the (lowercased) email it grants,
     // the role must be a real one, only the Curator can grant 'curator',
     // and only the fields the Role Assignments page writes are accepted.
@@ -592,18 +710,33 @@ service cloud.firestore {
                     && request.resource.data.email is string
                     && request.resource.data.email == docId
                     && docId == docId.lower()
-                    && request.resource.data.role in ['curator', 'vice_curator', 'impact_officer', 'shaper', 'alumni']
-                    && (request.resource.data.role != 'curator' || isFullCurator())
+                    && assignableRole(request.resource.data.role)
+                    && (normRole(request.resource.data.role) != 'curator' || isFullCurator())
                     && request.resource.data.keys().hasOnly(
                          ['email', 'displayName', 'role', 'note', 'status', 'createdAt', 'addedBy', 'account', 'joinedAt', 'dismissed', 'dismissedAt', 'lastInvitedAt', 'inviteCount'])
                     && optStr(request.resource.data, 'displayName', 100)
                     && optStr(request.resource.data, 'note', 300);
-      allow delete: if isCurator() || isAssignee(resource.data);
+      // As with create, only the Curator removes an assignment that grants
+      // the curator role (a vice curator could otherwise undo the grant).
+      // The invitee may still clear their own once it's been redeemed.
+      allow delete: if (isCurator() && (isFullCurator() || normRole(resource.data.get('role', '')) != 'curator'))
+                    || isAssignee(resource.data);
       // Curators can set an assignment aside (Dismissed, for alumni) and
-      // bring it back; nothing else about an assignment can be edited.
+      // bring it back, record the outcome of creating the member's login
+      // (`account`, curator/members handleCreateLogin) and change the role
+      // it grants (ShaperStatusPanel), in place, so a failed write can't
+      // lose the assignment. Same Curator guards as create and delete: an
+      // assignment for the curator role, before or after, is the Curator's
+      // alone (curatorMayEdit). Nothing else about an assignment can change.
       allow update: if isCurator()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissed', 'dismissedAt'])
-                    && (!('dismissed' in request.resource.data) || request.resource.data.dismissed is bool);
+                    && curatorMayEdit(resource.data, request.resource.data)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dismissed', 'dismissedAt', 'account', 'role'])
+                    && (!('dismissed' in request.resource.data) || request.resource.data.dismissed is bool)
+                    && optStr(request.resource.data, 'dismissedAt', 40)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['account'])
+                        || request.resource.data.get('account', null) in ['created', 'exists', 'failed', 'not-configured'])
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+                        || assignableRole(request.resource.data.get('role', null)));
     }
 
     // ── contact_messages ──────────────────────────────────────
@@ -719,7 +852,8 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId)
                   || isCuratorOrImpact()
                   || isLeadOf(resource.data.initiativeId);
-      allow update: if isCuratorOrImpact()
+      // Curators and impact officers record only a review (reviewOnly).
+      allow update: if (isCuratorOrImpact() && reviewOnly())
                     || (isLeadOf(resource.data.initiativeId)
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isOwner(resource.data.userId) || isCuratorOrImpact();
@@ -743,7 +877,8 @@ service cloud.firestore {
                     && isMyName(request.resource.data.requestedByName);
       allow read: if isCuratorOrImpact()
                   || isOwner(resource.data.requestedByUserId);
-      allow update: if isCuratorOrImpact();
+      // A review records only its outcome (reviewOnly).
+      allow update: if isCuratorOrImpact() && reviewOnly();
       allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
     }
 
@@ -765,7 +900,8 @@ service cloud.firestore {
                     && isMyName(request.resource.data.requestedByName);
       allow read: if isCuratorOrImpact()
                   || isOwner(resource.data.requestedByUserId);
-      allow update: if isCuratorOrImpact();
+      // A review records only its outcome (reviewOnly).
+      allow update: if isCuratorOrImpact() && reviewOnly();
       allow delete: if isOwner(resource.data.requestedByUserId) || isCuratorOrImpact();
     }
 

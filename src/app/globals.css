@@ -122,7 +122,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Grey flash on tap looks broken next to the custom active states. */
   -webkit-tap-highlight-color: transparent;
+  /* A long URL, email or word breaks onto the next line instead of being
+     cut off by html's overflow-x clip. Blocks of member-written text inside
+     grid/flex items also set `overflow-wrap: anywhere`, which (unlike
+     break-word) lets the item itself shrink below the long word. */
+  overflow-wrap: break-word;
 }
+
+/* Arabic letters join up; extra letter-spacing pulls them apart. */
+html[dir="rtl"] body * { letter-spacing: normal !important; }
 
 /* Anchor targets shouldn't hide behind the fixed mobile navbar. */
 :target { scroll-margin-top: 80px; }
@@ -352,6 +360,22 @@ input, textarea, select {
   color: var(--text-main);
 }
 
+/* iOS Safari zooms the page in when a field under 16px gets focus (html is
+   15px on small phones, and most fields are ~0.9rem). The :not() chain gives
+   this (0,3,1) specificity, so it beats the single-class field rules in the
+   CSS modules without each of them repeating it. */
+@media (max-width: 768px) {
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    font-size: 16px;
+  }
+}
+
+/* -- Direction-aware icons ---------------------------------- */
+/* Arrows and chevrons drawn pointing right ("forward"/"back") mirror in
+   Arabic. Hover nudges on these use the `translate` property so they don't
+   replace this transform. */
+[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+
 /* -- Buttons -------------------------------------------------- */
 .btn-primary {
   display: inline-flex;
@@ -418,10 +442,11 @@ input, textarea, select {
   button:not([role="switch"]):not([role="radio"]), a, [role="button"] { min-height: 44px; }
 }
 
-/* -- Mobile: fixed navbar offset & font scale -------------- */
-@media (max-width: 768px) {
-  /* Fixed navbar on mobile is ~57px tall; push page content below it */
-  .page-content { padding-top: 60px; }
+/* -- Phones/tablets: fixed navbar offset -------------------- */
+/* Up to 900px the navbar is position:fixed and 68px tall (Navbar.module.css,
+   same breakpoint), so page content starts below it. */
+@media (max-width: 900px) {
+  .page-content { padding-top: 68px; }
 }
 
 /* -- Scrollbar (webkit) ------------------------------------- */

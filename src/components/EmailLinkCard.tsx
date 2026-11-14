@@ -1,11 +1,14 @@
 'use client';
 
-/* The unsubscribe card: one button, then the outcome. */
+/* The card behind a link in a newsletter email (confirming a subscription,
+ * unsubscribing): one button, then the outcome. Nothing happens until the
+ * button is pressed, because link scanners open every link in an email.
+ * The link's id and token are sent to `endpoint`. */
 import { useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import ThemeLogo from '@/components/ThemeLogo';
-import styles from './Unsubscribe.module.css';
+import styles from './EmailLinkCard.module.css';
 
 type State = 'ready' | 'busy' | 'done' | 'invalid' | 'error';
 
@@ -16,8 +19,12 @@ const readLink = () => {
   return `${q.get('id') ?? ''} ${q.get('t') ?? ''}`;
 };
 
-export default function UnsubscribeClient() {
-  const t = useTranslations('Unsubscribe');
+export default function EmailLinkCard({ namespace, endpoint }: {
+  /** Messages with title, body, button, busy, doneTitle, done, invalid, error, home. */
+  namespace: 'Unsubscribe' | 'NewsletterConfirm';
+  endpoint: string;
+}) {
+  const t = useTranslations(namespace);
   const link = useSyncExternalStore<string | null>(noSubscribe, readLink, () => null);
   const [id, token] = (link ?? ' ').split(' ');
   const [state, setState] = useState<State>('ready');
@@ -25,10 +32,10 @@ export default function UnsubscribeClient() {
   // Until the browser has read the link, assume it's fine (no error flash).
   const badLink = link !== null && !hasLink;
 
-  const leave = async () => {
+  const act = async () => {
     setState('busy');
     try {
-      const res = await fetch('/api/newsletter/unsubscribe', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, t: token }),
@@ -48,7 +55,7 @@ export default function UnsubscribeClient() {
         <p className={styles.text} role="status">{message}</p>
         {state === 'error' && <p className={styles.error} role="alert">{t('error')}</p>}
         {hasLink && (state === 'ready' || state === 'busy' || state === 'error') && (
-          <button type="button" className={'btn-primary ' + styles.button} onClick={leave} disabled={state === 'busy'}>
+          <button type="button" className={'btn-primary ' + styles.button} onClick={act} disabled={state === 'busy'}>
             {state === 'busy' ? t('busy') : t('button')}
           </button>
         )}

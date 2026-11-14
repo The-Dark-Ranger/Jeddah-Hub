@@ -21,6 +21,7 @@ import styles from './DashboardHome.module.css';
 import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import { memberId, type MemberEntry } from '@/lib/types';
 import { intlLocale } from '@/lib/dates';
+import LoadFailed from '@/components/dashboard/LoadFailed';
 import DashIcon, { type DashIconName } from '@/components/dashboard/DashIcon';
 
 interface Stats {
@@ -79,6 +80,8 @@ export default function DashboardHome() {
   const [recentMessages, setRecentMessages] = useState<MessageLite[]>([]);
   const [stats, setStats] = useState<Stats>(NO_STATS);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Counts that couldn't be read (shown as "couldn't check", never as 0).
+  const [failedStats, setFailedStats] = useState<Set<keyof Stats>>(new Set());
 
   const fetchStats = async () => {
     const role      = normalizeRole(user?.role);
@@ -86,18 +89,25 @@ export default function DashboardHome() {
     const isImpact  = role === 'impact_officer';
 
     const next: Stats = { ...NO_STATS };
+    const failed = new Set<keyof Stats>();
 
-    /* Each stat is isolated: a collection the current role may not read must
-     * leave its own card at zero rather than blanking every other card. */
-    const safe = async (fn: () => Promise<void>) => {
-      try { await fn(); } catch { /* leave this stat at 0 */ }
+    /* Each stat is isolated, so one failed read leaves the others standing.
+     * A failure is remembered under `keys`, so "Waiting for you" can say it
+     * couldn't check rather than "nothing is waiting". */
+    const safe = async (keys: (keyof Stats)[], fn: () => Promise<void>) => {
+      try {
+        await fn();
+      } catch (err) {
+        console.error('[overview] could not load', keys.join(', ') || 'a panel', err);
+        keys.forEach(k => failed.add(k));
+      }
     };
 
     await Promise.all([
       // One read of the collection feeds every initiative count and list on
       // this page. Hub Activities are stored here too, as docs tagged
       // type:'hub_activity', and are kept apart from real initiatives.
-      safe(async () => {
+      safe(['initiatives', 'activeInitiatives', 'myProjects', 'ledTeams', 'teamRequests'], async () => {
         const docs = (await getDocs(collection(db, 'initiatives'))).docs;
         const real = docs.filter(d => !d.data().type);
         const active = real.filter(d => d.data().status === 'active');
@@ -116,14 +126,16 @@ export default function DashboardHome() {
         // A lead's teams: their open join and leave requests ('in' takes up to 30).
         const led = real.filter(d => (d.data().leads as string[] | undefined)?.includes(user?.uid ?? '')).map(d => d.id);
         next.ledTeams = led.length;
-        if (led.length && !isCurator) {
-          const teams = where('initiativeId', 'in', led.slice(0, 30));
-          const [join, leave] = await Promise.all([countPending('join_requests', teams), countPending('leave_requests', teams)]);
-          next.teamRequests = join + leave;
+        if (led.length && !isCurator && !isImpact) {
+          await safe(['teamRequests'], async () => {
+            const teams = where('initiativeId', 'in', led.slice(0, 30));
+            const [join, leave] = await Promise.all([countPending('join_requests', teams), countPending('leave_requests', teams)]);
+            next.teamRequests = join + leave;
+          });
         }
       }),
 
-      safe(async () => {
+      safe(['blogs'], async () => {
         // Non-curators may only read published posts, so the query has to say
         // so for the security rules to permit it at all.
         const target = isCurator
@@ -132,7 +144,7 @@ export default function DashboardHome() {
         next.blogs = (await getCountFromServer(target)).data().count;
       }),
 
-      safe(async () => {
+      safe([], async () => {
         let docs;
         try {
           docs = (await getDocs(query(collection(db, 'blogs'), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(3)))).docs;
@@ -148,30 +160,26 @@ export default function DashboardHome() {
       // Curator-only collections, never queried by other roles, so they no
       // longer fail the whole dashboard with a permission error.
       ...(isCurator ? [
-        safe(async () => {
+        safe(['subscribers'], async () => {
           next.subscribers = (await getCountFromServer(collection(db, 'newsletter_subscribers'))).data().count;
         }),
-        safe(async () => {
+        safe(['unreadMessages'], async () => {
           next.unreadMessages = (await getCountFromServer(
             query(collection(db, 'contact_messages'), where('read', '==', false)),
           )).data().count;
         }),
-        safe(async () => { next.pendingRoleChanges = await countPending('role_change_requests'); }),
-        safe(async () => { next.pendingProposals = await countPending('initiative_requests'); }),
-        safe(async () => { next.pendingJoin = await countPending('join_requests'); }),
-        safe(async () => { next.pendingLeave = await countPending('leave_requests'); }),
-        safe(async () => { next.pendingAdd = await countPending('member_add_requests'); }),
-        safe(async () => { next.pendingRemoval = await countPending('removal_requests'); }),
-        safe(async () => {
+        safe(['pendingRoleChanges'], async () => { next.pendingRoleChanges = await countPending('role_change_requests'); }),
+        safe(['pendingJoin'], async () => { next.pendingJoin = await countPending('join_requests'); }),
+        safe(['activityResponses'], async () => {
           next.activityResponses = (await getCountFromServer(
             query(collection(db, 'activity_responses'), where('read', '==', false)),
           )).data().count;
         }),
-        safe(async () => {
+        safe([], async () => {
           const snap = await getDocs(query(collection(db, 'contact_messages'), orderBy('submittedAt', 'desc'), limit(3)));
           setRecentMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<MessageLite, 'id'>) })));
         }),
-        safe(async () => {
+        safe([], async () => {
           // The panel renders at most 10, so only fetch 10.
           const notifSnap = await getDocs(
             query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(10)),
@@ -186,30 +194,41 @@ export default function DashboardHome() {
       // activity_requests, so anything sent before that form was retired
       // still surfaces here.
       ...(isCurator || isImpact ? [
-        safe(async () => {
+        safe(['pendingActivityRequests'], async () => {
           const [changes, legacy] = await Promise.all([countPending('activity_change_requests'), countPending('activity_requests')]);
           next.pendingActivityRequests = changes + legacy;
         }),
-        safe(async () => {
+        safe(['pendingPosts'], async () => {
           next.pendingPosts = (await getCountFromServer(
             query(collection(db, 'blogs'), where('status', '==', 'pending_review')),
           )).data().count;
         }),
-        safe(async () => { next.members = (await getCountFromServer(collection(db, 'users'))).data().count; }),
+        safe(['members'], async () => { next.members = (await getCountFromServer(collection(db, 'users'))).data().count; }),
+        // Initiative proposals and team changes: curators and impact
+        // officers both decide them (on the Initiatives page).
+        safe(['pendingProposals'], async () => { next.pendingProposals = await countPending('initiative_requests'); }),
+        safe(['pendingLeave'], async () => { next.pendingLeave = await countPending('leave_requests'); }),
+        safe(['pendingAdd'], async () => { next.pendingAdd = await countPending('member_add_requests'); }),
+        safe(['pendingRemoval'], async () => { next.pendingRemoval = await countPending('removal_requests'); }),
       ] : []),
     ]);
 
     setStats(next);
+    setFailedStats(failed);
     setStatsLoading(false);
   };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load stats once the user is known
     if (!loading && user?.role) fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the signed-in user changes
-  }, [loading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when who is signed in, or their role, changes (not on every profile edit)
+  }, [loading, user?.uid, user?.role]);
 
   if (loading) return null;
+
+  if (user?.profileError) {
+    return <LoadFailed message={t('profileLoadFailed')} onRetry={() => window.location.reload()} />;
+  }
 
   if (!user?.role) {
     return (
@@ -279,27 +298,39 @@ export default function DashboardHome() {
   };
 
   const unreadNotifs = notifications.filter(n => !n.read);
+  // In the reader's language when the notification says what happened (the
+  // stored message is in its sender's); otherwise the stored message.
+  const notifText = (n: Notification) =>
+    (n.type === 'archive_request' || n.type === 'restore_request') && n.initiativeTitle && n.fromUserName
+      ? t(n.type === 'archive_request' ? 'notifyInitiativeArchived' : 'notifyInitiativeRestored', { name: n.fromUserName, title: n.initiativeTitle })
+      : n.message;
 
   // Each queue this role works on, linking to where it's handled; only
   // those with something in them are listed.
-  const waiting: { label: string; count: number; href: string; icon: DashIconName }[] = isCurator ? [
-    { label: t('waitMessages'), count: stats.unreadMessages, href: '/dashboard/curator/messages', icon: 'message' },
-    { label: t('waitPosts'), count: stats.pendingPosts, href: '/dashboard/curator/blogs', icon: 'pen' },
-    { label: t('waitProposals'), count: stats.pendingProposals, href: '/dashboard/curator/initiatives', icon: 'folder' },
-    { label: t('waitJoin'), count: stats.pendingJoin, href: '/dashboard/curator/roster', icon: 'people' },
-    { label: t('waitLeave'), count: stats.pendingLeave, href: '/dashboard/curator/initiatives', icon: 'people' },
-    { label: t('waitAdd'), count: stats.pendingAdd, href: '/dashboard/curator/initiatives', icon: 'person' },
-    { label: t('waitRemoval'), count: stats.pendingRemoval, href: '/dashboard/curator/initiatives', icon: 'person' },
-    { label: t('waitRoleChanges'), count: stats.pendingRoleChanges, href: '/dashboard/curator/roster', icon: 'people' },
-    { label: t('waitActivities'), count: stats.pendingActivityRequests, href: '/dashboard/curator/activities', icon: 'bell' },
-    { label: t('waitResponses'), count: stats.activityResponses, href: '/dashboard/curator/activities', icon: 'check' },
+  type WaitItem = { label: string; stat: keyof Stats; href: string; icon: DashIconName };
+  const teamQueues: WaitItem[] = [
+    { label: t('waitProposals'), stat: 'pendingProposals', href: '/dashboard/curator/initiatives', icon: 'folder' },
+    { label: t('waitLeave'), stat: 'pendingLeave', href: '/dashboard/curator/initiatives', icon: 'people' },
+    { label: t('waitAdd'), stat: 'pendingAdd', href: '/dashboard/curator/initiatives', icon: 'person' },
+    { label: t('waitRemoval'), stat: 'pendingRemoval', href: '/dashboard/curator/initiatives', icon: 'person' },
+  ];
+  const waiting: WaitItem[] = isCurator ? [
+    { label: t('waitMessages'), stat: 'unreadMessages', href: '/dashboard/curator/messages', icon: 'message' },
+    { label: t('waitPosts'), stat: 'pendingPosts', href: '/dashboard/curator/blogs', icon: 'pen' },
+    { label: t('waitJoin'), stat: 'pendingJoin', href: '/dashboard/curator/roster', icon: 'people' },
+    ...teamQueues,
+    { label: t('waitRoleChanges'), stat: 'pendingRoleChanges', href: '/dashboard/curator/roster', icon: 'people' },
+    { label: t('waitActivities'), stat: 'pendingActivityRequests', href: '/dashboard/curator/activities', icon: 'bell' },
+    { label: t('waitResponses'), stat: 'activityResponses', href: '/dashboard/curator/activities', icon: 'check' },
   ] : isImpact ? [
-    { label: t('waitPosts'), count: stats.pendingPosts, href: '/dashboard/impact/blogs', icon: 'pen' },
-    { label: t('waitActivities'), count: stats.pendingActivityRequests, href: '/dashboard/curator/activities', icon: 'bell' },
-  ] : stats.ledTeams > 0 ? [
-    { label: t('waitTeamRequests'), count: stats.teamRequests, href: '/dashboard/shaper/my-projects', icon: 'people' },
+    { label: t('waitPosts'), stat: 'pendingPosts', href: '/dashboard/impact/blogs', icon: 'pen' },
+    ...teamQueues,
+    { label: t('waitActivities'), stat: 'pendingActivityRequests', href: '/dashboard/curator/activities', icon: 'bell' },
+  ] : stats.ledTeams > 0 || failedStats.has('ledTeams') ? [
+    { label: t('waitTeamRequests'), stat: 'teamRequests', href: '/dashboard/shaper/my-projects', icon: 'people' },
   ] : [];
-  const waitingNow = waiting.filter(w => w.count > 0);
+  const waitingNow = waiting.filter(w => stats[w.stat] > 0);
+  const waitingUnchecked = waiting.filter(w => failedStats.has(w.stat));
 
   const statCards: { label: string; value: number; colorVar: string; icon: DashIconName }[] = isCurator ? [
     { label: t('statActiveInitiatives'), value: stats.activeInitiatives, colorVar: 'blue', icon: 'folder' },
@@ -325,7 +356,7 @@ export default function DashboardHome() {
     { title: t('exportEmails'), desc: t('actionExportEmailsDesc'), href: '/dashboard/curator/exports', icon: 'download' },
     { title: t('dashActivitiesCardTitle'), desc: t('dashActivitiesCardDesc'), href: '/dashboard/curator/activities', icon: 'check' },
   ] : isImpact ? [
-    { title: t('dashProjectsCardTitle'), desc: t('dashProjectsCardDesc'), href: '/dashboard/impact/projects', icon: 'folder' },
+    { title: t('dashInitiativesCardTitle'), desc: t('dashInitiativesCardDesc'), href: '/dashboard/curator/initiatives', icon: 'folder' },
     { title: t('actionWriteBlog'), desc: t('dashImpactWriteBlogDesc'), href: '/dashboard/impact/blogs', icon: 'pen' },
     { title: t('dashActivitiesCardTitle'), desc: t('dashActivitiesCardDesc'), href: '/dashboard/curator/activities', icon: 'check' },
   ] : isShaper ? [
@@ -356,13 +387,18 @@ export default function DashboardHome() {
           <div className={styles.panelHeader}>
             <h2 className={styles.panelTitle}>{t('waitingTitle')}</h2>
             {!statsLoading && waitingNow.length > 0 && (
-              <span className={styles.countBadge}>{waitingNow.reduce((n, w) => n + w.count, 0)}</span>
+              <span className={styles.countBadge}>{waitingNow.reduce((n, w) => n + stats[w.stat], 0)}</span>
             )}
           </div>
+          {!statsLoading && waitingUnchecked.length > 0 && (
+            <p className={styles.panelEmpty} role="status">
+              {t('waitingUnchecked', { list: waitingUnchecked.map(w => w.label).join(locale === 'ar' ? '، ' : ', ') })}
+            </p>
+          )}
           {statsLoading ? (
             <div className={styles.panelSkeleton}><span /><span /></div>
           ) : waitingNow.length === 0 ? (
-            <p className={styles.panelEmpty}>{t('waitingNone')}</p>
+            waitingUnchecked.length === 0 && <p className={styles.panelEmpty}>{t('waitingNone')}</p>
           ) : (
             <ul className={styles.waitList}>
               {waitingNow.map(w => (
@@ -370,7 +406,7 @@ export default function DashboardHome() {
                   <Link href={w.href} className={styles.waitItem}>
                     <span className={styles.waitIcon}><DashIcon name={w.icon} /></span>
                     <span className={styles.waitLabel}>{w.label}</span>
-                    <span className={styles.waitCount}>{w.count}</span>
+                    <span className={styles.waitCount}>{stats[w.stat]}</span>
                   </Link>
                 </li>
               ))}
@@ -565,7 +601,7 @@ export default function DashboardHome() {
               <div key={n.id} className={styles.notifCard + (!n.read ? ' ' + styles.unread : '')}>
                 <div className={styles.notifIcon}><DashIcon name="refresh" /></div>
                 <div className={styles.notifBody}>
-                  <p className={styles.notifMsg}>{n.message}</p>
+                  <p className={styles.notifMsg}>{notifText(n)}</p>
                   <p className={styles.notifTime}>
                     {new Date(n.createdAt).toLocaleString(dateLocale)}
                   </p>

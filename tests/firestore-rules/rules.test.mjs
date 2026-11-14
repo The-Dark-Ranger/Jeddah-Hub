@@ -20,7 +20,13 @@ const PEOPLE = {
   vice: { role: 'vice_curator', displayName: 'Vic Vice' },
   impact: { role: 'impact_officer', displayName: 'Ima Impact' },
   norole: { displayName: 'Noor Norole' },
+  // Roles saved by hand or by an older app, not in the canonical spelling.
+  capcur: { role: 'Curator', displayName: 'Cap Curator' },
+  spacevice: { role: 'Vice Curator', displayName: 'Spacey Vice' },
+  spaceimpact: { role: 'Impact Officer', displayName: 'Ima Space' },
 };
+/** An inline (data URI) photo of about `n` characters, like the photo picker's fallback. */
+const inlinePhoto = n => 'data:image/jpeg;base64,/9j/' + 'A'.repeat(n);
 const TEAM = [
   { userId: 'lead', role: 'Lead' }, { userId: 'colead', role: 'Co-Lead' },
   { userId: 'mate', role: 'Member' }, 'legacyUid',
@@ -58,6 +64,16 @@ async function seed() {
       initiativeId: 'init1', targetUserId: 'mate', fromRole: 'Member', toRole: 'Co-Lead',
       requestedByUserId: 'lead', requestedByName: 'Lena Lead', status: 'pending', requestedAt: 'x',
     });
+    const assignment = (email, role) => setDoc(doc(db, 'role_assignments', email), { email, role, status: 'pending', createdAt: 'x' });
+    await assignment('boss@test.dev', 'curator');
+    await assignment('oldboss@test.dev', 'Curator');
+    await assignment('helper@test.dev', 'shaper');
+    const member = { userId: 'mate', userEmail: 'mate@test.dev', userName: 'Mo Mate', status: 'pending', requestedAt: 'x' };
+    await setDoc(doc(db, 'join_requests', 'jr1'), { initiativeId: 'init1', ...member });
+    await setDoc(doc(db, 'leave_requests', 'lr1'), { initiativeId: 'init1', initiativeTitle: 'Init', ...member });
+    const byLead = { initiativeId: 'init1', initiativeTitle: 'Init', targetUserId: 'mate', targetUserName: 'Mo Mate', requestedByUserId: 'lead', requestedByName: 'Lena Lead', status: 'pending', requestedAt: 'x' };
+    await setDoc(doc(db, 'removal_requests', 'rr1'), byLead);
+    await setDoc(doc(db, 'member_add_requests', 'ar1'), { ...byLead, targetUserId: 'author', targetUserName: 'Ann Author' });
   });
 }
 
@@ -67,6 +83,13 @@ const as = (uid, token = {}) =>
   env.authenticatedContext(uid, { email: `${uid}@test.dev`, email_verified: true, auth_time: nowSeconds() - 60, ...token }).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
 const init = db => doc(db, 'initiatives', 'init1');
+/** What the initiative form saves (InitiativeFormFields initiativeFormToDoc). */
+const initiativeForm = (extra = {}) => ({
+  title: 'Init', titleAr: null, description: 'What we do', descriptionAr: null, category: 'Environment',
+  startDate: '2026-01-15', endDate: '', imageUrl: '/api/media/AbC123', images: ['/api/media/XyZ9'],
+  stat: '120 trees planted', problem: 'p', objective: 'o', impact: 'i', impactAreas: ['Youth', 'Climate'], color: null, ...extra,
+});
+const many = (n, f) => Array.from({ length: n }, (_, i) => f(i));
 
 before(async () => {
   env = await initializeTestEnvironment({
@@ -123,6 +146,122 @@ describe('theme colours (they reach the page CSS)', () => {
     const proposal = { title: 'P', proposedBy: 'mate', proposedByName: 'Mo Mate', status: 'pending' };
     await assertFails(addDoc(collection(as('mate'), 'initiative_requests'), { ...proposal, color: 'red;x:y' }));
     await assertSucceeds(addDoc(collection(as('mate'), 'initiative_requests'), { ...proposal, color: '#123abc' }));
+  });
+});
+
+describe('initiative content a lead saves: sizes and types', () => {
+  const edit = data => updateDoc(init(as('lead')), data);
+  const legacy = db => doc(db, 'initiatives', 'legacy');
+  // Saved before these limits: photos kept inside the document, a long description.
+  const old = { imageUrl: inlinePhoto(230000), images: [inlinePhoto(160000), inlinePhoto(140000)], description: 'x'.repeat(12000) };
+  const seedLegacy = () => env.withSecurityRulesDisabled(c => setDoc(legacy(c.firestore()), {
+    title: 'Old', status: 'active', leads: ['lead'], members: [{ userId: 'lead', role: 'Lead' }], ...old,
+  }));
+
+  it('the whole edit form, up to the limits', async () => {
+    await assertSucceeds(edit(initiativeForm()));
+    await assertSucceeds(edit(initiativeForm({ description: 'x'.repeat(10000), impactAreas: ['y'.repeat(100), 'Youth'] })));
+  });
+  it('an initiative with inline photos and older, longer text still saves', async () => {
+    await seedLegacy();
+    // The form sends every field back; only the title (and new fields) change.
+    await assertSucceeds(updateDoc(legacy(as('lead')), initiativeForm({ title: 'Renamed', ...old })));
+    // Adding an uploaded photo checks the whole gallery, inline photos included.
+    await assertSucceeds(updateDoc(legacy(as('lead')), { images: [...old.images, '/api/media/New1'] }));
+    // A cover whose upload failed is kept inline.
+    await assertSucceeds(updateDoc(legacy(as('lead')), { imageUrl: inlinePhoto(250000) }));
+  });
+  it('pasted photo links, as typed', async () => {
+    await assertSucceeds(edit({ imageUrl: ' https://example.org/a.jpg ' }));
+    await assertSucceeds(edit({ imageUrl: 'www.example.org/a.jpg', images: ['https://example.org/b.jpg', '/api/media/Q1'] }));
+    await assertSucceeds(edit({ imageUrl: '', images: [] }));
+  });
+  it('refuses photos the site would never show, or text posing as one', async () => {
+    await assertFails(edit({ imageUrl: 'javascript:alert(1)' }));
+    await assertFails(edit({ imageUrl: 'data:text/html;base64,PHNjcmlwdD4=' }));
+    await assertFails(edit({ imageUrl: 'https://example.org/' + 'a'.repeat(2000) }));
+    await assertFails(edit({ imageUrl: 12345 }));
+    await assertFails(edit({ images: ['/api/media/ok', 'javascript:alert(1)'] }));
+    await assertFails(edit({ images: ['/api/media/ok javascript:alert(1)'] }));
+    await assertFails(edit({ images: ['/api/media/ok', 42] }));
+    await assertFails(edit({ images: 'not-a-list' }));
+    await assertFails(edit({ images: many(41, i => `/api/media/p${i}`) }));
+  });
+  it('refuses oversized or mistyped text', async () => {
+    await assertFails(edit({ title: '' }));
+    await assertFails(edit({ title: 'x'.repeat(301) }));
+    await assertFails(edit({ description: 'x'.repeat(10001) }));
+    await assertFails(edit({ problem: 'x'.repeat(10001) }));
+    await assertFails(edit({ impact: { html: '<b>' } }));
+    await assertFails(edit({ objective: 7 }));
+    await assertFails(edit({ stat: 'x'.repeat(501) }));
+    await assertFails(edit({ category: 'x'.repeat(201) }));
+    await assertFails(edit({ startDate: 'x'.repeat(41) }));
+    await assertFails(edit({ impactAreas: many(31, i => `area ${i}`) }));
+    await assertFails(edit({ impactAreas: ['x'.repeat(101)] }));
+    await assertFails(edit({ impactAreas: ['a,' + 'x'.repeat(150)] }));
+    await assertFails(edit({ impactAreas: [42] }));
+    await assertFails(edit({ impactAreas: 'Youth' }));
+  });
+});
+
+describe('initiative proposals: sizes and types', () => {
+  const propose = extra => addDoc(collection(as('mate'), 'initiative_requests'), {
+    ...initiativeForm(), proposedBy: 'mate', proposedByName: 'Mo Mate', status: 'pending', requestedAt: new Date().toISOString(), ...extra,
+  });
+  it('a member proposes with the full form, photos uploaded or inline', async () => {
+    await assertSucceeds(propose());
+    await assertSucceeds(propose({ imageUrl: inlinePhoto(200000), images: [inlinePhoto(150000), '/api/media/Abc'] }));
+  });
+  it('refuses oversized, mistyped or too many', async () => {
+    await assertFails(propose({ images: many(41, i => `/api/media/p${i}`) }));
+    await assertFails(propose({ images: ['javascript:alert(1)'] }));
+    await assertFails(propose({ imageUrl: 'x'.repeat(5000) }));
+    await assertFails(propose({ impactAreas: many(31, i => `a${i}`) }));
+    await assertFails(propose({ impactAreas: ['x'.repeat(101)] }));
+    await assertFails(propose({ stat: 'x'.repeat(501) }));
+    await assertFails(propose({ problem: 'x'.repeat(10001) }));
+    await assertFails(propose({ objective: ['not', 'text'] }));
+    await assertFails(propose({ impact: 'x'.repeat(10001) }));
+    await assertFails(propose({ titleAr: 'x'.repeat(301) }));
+    await assertFails(propose({ category: 7 }));
+    await assertFails(propose({ requestedAt: 'x'.repeat(41) }));
+  });
+});
+
+describe('Hub Activity proposals: photos and form sizes', () => {
+  /** What the activity editor sends as `payload` (ActivityFormData). */
+  const fullForm = (extra = {}) => ({
+    title: 'Beach clean-up', eyebrow: 'Workshop', subtitle: 's', description: 'd', date: 'Fri 3 May', location: 'Corniche',
+    ctaText: 'Join', ctaUrl: 'https://example.org', highlights: [{ name: 'Al-Balad', tag: 'Heritage' }], active: true, kind: 'workshop',
+    customForm: { enabled: true, questions: [{ id: 'q1', label: 'Why?', type: 'text', options: [], required: false }], intro: 'Hi', collectName: 'optional', collectEmail: 'required' },
+    feedbackForm: { enabled: false, questions: [], closed: true, collectName: 'optional', collectEmail: 'off' },
+    imageUrl: inlinePhoto(200000), images: ['/api/media/AbC1', inlinePhoto(100000)], color: '#0f5a9f', ...extra,
+  });
+  const send = (payload, uid = 'mate', extra = {}) => addDoc(collection(as(uid), 'activity_change_requests'), {
+    changeType: 'create', activityId: null, initiativeId: '', activityTitle: 'Beach clean-up', payload,
+    proposedBy: uid, proposedByName: PEOPLE[uid].displayName, status: 'pending', requestedAt: new Date().toISOString(), ...extra,
+  });
+  const change = payload => send(payload, 'author', { changeType: 'update', activityId: 'mine' });
+
+  it('the full editor form, photos uploaded or inline', () => assertSucceeds(send(fullForm())));
+  it('older forms with extra settings, and one-click changes', async () => {
+    await assertSucceeds(change(fullForm({ customForm: { enabled: true, questions: [], title: 'Old', submitLabel: 'Go', intro: 'x' } })));
+    await assertSucceeds(change({ customForm: { enabled: true, questions: [], closed: true } }));
+    await assertSucceeds(change({ archived: true, active: false }));
+  });
+  it('refuses too many highlights or questions, or a form that is not one', async () => {
+    await assertFails(send(fullForm({ highlights: many(51, i => ({ name: `n${i}`, tag: 't' })) })));
+    await assertFails(send(fullForm({ highlights: 'Al-Balad' })));
+    await assertFails(send(fullForm({ customForm: { enabled: true, questions: many(51, i => ({ id: `q${i}`, label: 'x', type: 'text', required: false })) } })));
+    await assertFails(send(fullForm({ feedbackForm: { enabled: true, questions: 'q' } })));
+    await assertFails(send(fullForm({ feedbackForm: 'closed' })));
+  });
+  it('refuses photos the site would never show', async () => {
+    await assertFails(send(fullForm({ imageUrl: 'javascript:alert(1)' })));
+    await assertFails(send(fullForm({ imageUrl: 'x'.repeat(5000) })));
+    await assertFails(send(fullForm({ images: ['/api/media/ok', 'vbscript:x'] })));
+    await assertFails(send(fullForm({ images: many(41, i => `/api/media/p${i}`) })));
   });
 });
 
@@ -195,6 +334,27 @@ describe('news post photos', () => {
     assertFails(newPost({ images: Array.from({ length: 13 }, (_, i) => `/api/media/p${i}`) })));
   it('still cannot publish by adding a photo', () =>
     assertFails(updateDoc(doc(as('author'), 'blogs', 'draft'), { imageUrl: '/api/media/AbC123', status: 'published' })));
+});
+
+describe('news post tags', () => {
+  const save = tags => updateDoc(doc(as('author'), 'blogs', 'draft'), { tags });
+  it('a member tags a post as the editor splits it', async () => {
+    await assertSucceeds(save(['Education', 'Sustainability', 'التعليم، الاستدامة']));
+    await assertSucceeds(save([]));
+    await assertSucceeds(save(many(20, i => `tag${i}`)));
+    await assertSucceeds(save(['x'.repeat(60)]));
+    await assertSucceeds(addDoc(collection(as('author'), 'blogs'), {
+      title: 'T', content: 'C', tags: ['Education'], status: 'draft', authorId: 'author', authorName: 'Ann Author', likedBy: [],
+    }));
+  });
+  it('refuses long, empty, mistyped or too many tags', async () => {
+    await assertFails(save(['x'.repeat(61)]));
+    await assertFails(save(['a,' + 'x'.repeat(70)]));
+    await assertFails(save(['ok', '']));
+    await assertFails(save(['ok', 7]));
+    await assertFails(save('Education'));
+    await assertFails(save(many(21, i => `tag${i}`)));
+  });
 });
 
 describe('Community Charter sign-off', () => {
@@ -368,6 +528,94 @@ describe('private data and roles', () => {
     await assertFails(addDoc(collection(anon(), 'newsletter_subscribers'), { email: 'a@b.co' }));
     await assertFails(addDoc(collection(as('mate'), 'activity_responses'), { activityId: 'a' }));
   });
+});
+
+describe('roles, however they are written', () => {
+  const user = (by, uid) => doc(as(by), 'users', uid);
+  it('a vice curator cannot edit or remove a record saved as "Curator"', async () => {
+    await assertFails(updateDoc(user('vice', 'capcur'), { bio: 'x' }));
+    await assertFails(deleteDoc(user('vice', 'capcur')));
+  });
+  it('the Curator can', async () => {
+    await assertSucceeds(updateDoc(user('cur', 'capcur'), { bio: 'x' }));
+    await assertSucceeds(deleteDoc(user('cur', 'capcur')));
+  });
+  it('a vice curator cannot hand out the curator role in any spelling', async () => {
+    await assertFails(updateDoc(user('vice', 'mate'), { role: 'Curator' }));
+    await assertFails(updateDoc(user('vice', 'mate'), { role: 'CURATOR' }));
+    await assertFails(updateDoc(user('vice', 'mate'), { role: 'superuser' }));
+    await assertSucceeds(updateDoc(user('vice', 'mate'), { role: 'Impact Officer' }));
+  });
+  it('a vice curator saved as "Vice Curator" works as one, and no more', async () => {
+    await assertSucceeds(updateDoc(user('spacevice', 'mate'), { bio: 'x' }));
+    await assertFails(updateDoc(user('spacevice', 'cur'), { bio: 'x' }));
+    await assertFails(deleteDoc(user('spacevice', 'capcur')));
+  });
+  it('an "Impact Officer" mirrors their role the way the app writes it, and only that', async () => {
+    const pub = doc(as('spaceimpact'), 'public_profiles', 'spaceimpact');
+    await assertSucceeds(setDoc(pub, { displayName: 'Ima Space', role: 'impact_officer' }));
+    await assertFails(setDoc(pub, { role: 'curator' }, { merge: true }));
+  });
+});
+
+describe('role assignments: the curator role stays with the Curator', () => {
+  const ra = (by, email) => doc(as(by), 'role_assignments', email);
+  it('a vice curator cannot remove a curator assignment, however it is spelled', async () => {
+    await assertFails(deleteDoc(ra('vice', 'boss@test.dev')));
+    await assertFails(deleteDoc(ra('vice', 'oldboss@test.dev')));
+    await assertSucceeds(deleteDoc(ra('vice', 'helper@test.dev')));
+    await assertSucceeds(deleteDoc(ra('cur', 'boss@test.dev')));
+  });
+  it('a curator records the login outcome in place', async () => {
+    await assertSucceeds(updateDoc(ra('vice', 'helper@test.dev'), { account: 'created' }));
+    await assertSucceeds(updateDoc(ra('cur', 'boss@test.dev'), { account: 'exists' }));
+    await assertFails(updateDoc(ra('cur', 'helper@test.dev'), { account: 'hacked' }));
+  });
+  it('a vice curator changes the role of a shaper assignment', () =>
+    assertSucceeds(updateDoc(ra('vice', 'helper@test.dev'), { role: 'alumni' })));
+  it('only the Curator touches a curator assignment or grants the role', async () => {
+    await assertFails(updateDoc(ra('vice', 'boss@test.dev'), { account: 'created' }));
+    await assertFails(updateDoc(ra('vice', 'oldboss@test.dev'), { role: 'shaper' }));
+    await assertFails(updateDoc(ra('vice', 'boss@test.dev'), { dismissed: true }));
+    await assertFails(updateDoc(ra('vice', 'helper@test.dev'), { role: 'curator' }));
+    await assertSucceeds(updateDoc(ra('cur', 'helper@test.dev'), { role: 'curator' }));
+    await assertSucceeds(updateDoc(ra('cur', 'boss@test.dev'), { role: 'vice_curator' }));
+  });
+  it('only real roles, and nothing else changes', async () => {
+    await assertFails(updateDoc(ra('cur', 'helper@test.dev'), { role: 'admin' }));
+    await assertFails(updateDoc(ra('cur', 'helper@test.dev'), { role: 'Curator' }));
+    await assertFails(updateDoc(ra('cur', 'helper@test.dev'), { email: 'other@test.dev' }));
+    await assertFails(updateDoc(ra('cur', 'helper@test.dev'), { account: 'created', note: 'x' }));
+  });
+  it('nobody else changes one, not even the invitee', async () => {
+    await assertFails(updateDoc(ra('impact', 'helper@test.dev'), { account: 'created' }));
+    await assertFails(updateDoc(ra('mate', 'helper@test.dev'), { role: 'alumni' }));
+    await assertFails(updateDoc(ra('helper', 'helper@test.dev'), { role: 'curator' }));
+  });
+  it('setting one aside still works', () =>
+    assertSucceeds(updateDoc(ra('vice', 'helper@test.dev'), { dismissed: true, dismissedAt: new Date().toISOString() })));
+});
+
+describe('reviews of join, leave, removal and add requests', () => {
+  const req = (by, coll, id) => doc(as(by), coll, id);
+  it('curators and impact officers record the outcome, as the dashboards do', async () => {
+    await assertSucceeds(updateDoc(req('cur', 'join_requests', 'jr1'), { status: 'rejected' }));
+    await assertSucceeds(updateDoc(req('impact', 'leave_requests', 'lr1'), { status: 'approved' }));
+    await assertSucceeds(updateDoc(req('impact', 'removal_requests', 'rr1'), { status: 'declined' }));
+    await assertSucceeds(updateDoc(req('vice', 'member_add_requests', 'ar1'), { status: 'approved', reviewedBy: 'vice', reviewedAt: new Date().toISOString() }));
+  });
+  it('a review cannot rewrite the request', async () => {
+    await assertFails(updateDoc(req('cur', 'join_requests', 'jr1'), { status: 'rejected', userId: 'cur' }));
+    await assertFails(updateDoc(req('cur', 'leave_requests', 'lr1'), { initiativeId: 'other' }));
+    await assertFails(updateDoc(req('impact', 'removal_requests', 'rr1'), { status: 'approved', targetUserId: 'lead' }));
+    await assertFails(updateDoc(req('impact', 'member_add_requests', 'ar1'), { requestedByUserId: 'impact' }));
+    await assertFails(updateDoc(req('cur', 'removal_requests', 'rr1'), { status: 'done' }));
+    await assertFails(updateDoc(req('cur', 'member_add_requests', 'ar1'), { status: 'approved', reviewedBy: 'vice' }));
+    await assertFails(updateDoc(req('cur', 'member_add_requests', 'ar1'), { status: 'approved', reviewedAt: 'x'.repeat(41) }));
+  });
+  it('a lead still declines a join request for their initiative', () =>
+    assertSucceeds(updateDoc(req('lead', 'join_requests', 'jr1'), { status: 'rejected' })));
+  it('nobody else reviews', () => assertFails(updateDoc(req('mate', 'removal_requests', 'rr1'), { status: 'approved' })));
 });
 
 describe('sessions: confirmed email, 14-day limit, signed out everywhere', () => {

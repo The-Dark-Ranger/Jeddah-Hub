@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@/i18n/routing';
 import PasswordInput from '@/components/PasswordInput';
 import { useLocale, useTranslations } from 'next-intl';
-import { getRecaptchaToken, preloadRecaptcha } from '@/lib/recaptcha';
+import { getRecaptchaToken, recaptchaConfigured, preloadRecaptcha } from '@/lib/recaptcha';
 import { PASSWORD_FORM_HREF } from '@/lib/passwordForm';
 import ThemeLogo from '@/components/ThemeLogo';
 import { isTemporaryPassword, MUST_CHANGE_PASSWORD_FLAG } from '@/lib/memberAccounts';
@@ -31,10 +31,11 @@ import styles from './Login.module.css';
  *  - each failed attempt makes the next one wait: 1, 2, 4, then 8 seconds
  *  - after 5 failed attempts the form locks, 30s doubling up to 15 min
  *    (kept in localStorage so a reload doesn't reset it)
- *  - the server checks the hidden field and the fill time again, slows
- *    down repeated attempts, and allows 10 per account every 15 minutes and
- *    60 per network an hour (api/verify-recaptcha), which clearing storage
- *    can't reset. */
+ *  - the server checks the hidden field, the fill time and reCAPTCHA, then
+ *    slows down repeated attempts and allows 10 per account every 15
+ *    minutes and 60 per network an hour (api/verify-recaptcha), which
+ *    clearing storage can't reset. Firebase throttles the password check
+ *    itself. */
 const MAX_FAILS = 5;
 const LOCK_BASE_MS = 30_000;
 const LOCK_MAX_MS = 15 * 60_000;
@@ -82,7 +83,7 @@ async function sendConfirmLink(u: User, locale: string) {
 }
 
 /** What happened to a confirmation link opened on this page. */
-type LinkState = 'checking' | 'confirmed' | 'invalid';
+type LinkState = 'checking' | 'confirmed' | 'invalid' | 'network';
 
 export default function LoginPage() {
   const { user, pendingEmail, loading: authLoading, logout } = useAuth();
@@ -111,6 +112,7 @@ export default function LoginPage() {
   const [now, setNow] = useState(() => Date.now());
   const router = useRouter();
   const t = useTranslations('LoginPage');
+  const tCommon = useTranslations('Common');
 
   // Already signed in: straight to the dashboard instead of a second sign-in.
   // Not while this page is signing someone in: it sends them on itself.
@@ -138,6 +140,7 @@ export default function LoginPage() {
     const code = params.get('oobCode');
     if (params.get('mode') !== 'verifyEmail' || !code) return;
     // The code works once: keep it out of the address bar and the history.
+    const linkUrl = window.location.href;
     window.history.replaceState(null, '', window.location.pathname);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to the link in the address
     setLinkState('checking');
@@ -150,7 +153,16 @@ export default function LoginPage() {
         await current.getIdToken(true).catch(() => {});
         window.location.reload();
       })
-      .catch(() => setLinkState('invalid'));
+      .catch(err => {
+        // No connection is not a used link: put the link back, so reloading
+        // the page tries it again.
+        if ((err as { code?: string } | null)?.code === 'auth/network-request-failed') {
+          window.history.replaceState(null, '', linkUrl);
+          setLinkState('network');
+        } else {
+          setLinkState('invalid');
+        }
+      });
   }, []);
 
   // Counts down the wait after a failed attempt (and a lockout left from before).
@@ -233,6 +245,11 @@ export default function LoginPage() {
 
     try {
       const token = await getRecaptchaToken('login');
+      if (!token && recaptchaConfigured()) {
+        setError(tCommon('checkBlocked'));
+        setLoading(false);
+        return;
+      }
       const verify = await fetch('/api/verify-recaptcha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,7 +276,11 @@ export default function LoginPage() {
         signingIn.current = false;
         setPassword('');
         setResendAt(Date.now() + RESEND_WAIT_S * 1000);
-        await sendConfirmLink(cred.user, locale).catch(() => setResendAt(0));
+        await sendConfirmLink(cred.user, locale).catch(err => {
+          // Say so, rather than leave them waiting for an email that isn't coming.
+          setResendAt(0);
+          setConfirmNote((err as { code?: string } | null)?.code === 'auth/too-many-requests' ? t('errorTooMany') : t('errorGeneral'));
+        });
         setLoading(false);
         return;
       }

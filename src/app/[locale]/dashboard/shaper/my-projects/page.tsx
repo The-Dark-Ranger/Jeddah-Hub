@@ -1,15 +1,22 @@
 'use client';
 
 /* Dashboard > Active Projects: the member's initiatives; leads also edit their
- * initiative and handle its join, leave, add and remove requests. */
-import { useState, useEffect, useCallback } from 'react';
+ * initiative and handle its join, leave, add and remove requests. Who leads
+ * comes from the initiative's `leads` array, which is what firestore.rules
+ * checks, not from the role text shown on the team. */
+import { useState, useEffect, useCallback, useId } from 'react';
 import {
   collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc, documentId,
-  arrayUnion, arrayRemove,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useReportDownload } from '@/components/dashboard/useReportDownload';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
+import { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import ModalPortal from '@/components/ModalPortal';
@@ -17,12 +24,14 @@ import SearchSelect from '@/components/dashboard/SearchSelect';
 import InitiativeFormFields, {
   emptyInitiativeForm, initiativeFormToDoc, initiativeToForm, type InitiativeFormShape,
 } from '@/components/InitiativeFormFields';
-import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
+import type { ReportInitiative } from '@/lib/initiativeReport';
+import { orNull } from '@/lib/partialLoad';
+import { addToTeam, removeFromTeam } from '@/lib/teamChanges';
 import { slugify } from '@/lib/slug';
 import styles from './MyProjects.module.css';
 import jiStyles from '../initiatives/JoinInitiatives.module.css';
 import { CategoryLabel } from '@/lib/categoryLabel';
-import { errorCode, isLeadEntry, memberId, type LeadRequest, type MemberEntry, type MembershipRequest } from '@/lib/types';
+import { errorCode, memberId, type LeadRequest, type MemberEntry, type MembershipRequest } from '@/lib/types';
 import { safeColor } from '@/lib/activityTypes';
 import { useRoleLabel } from '@/lib/roleLabel';
 import { cssUrl } from '@/lib/sanitize';
@@ -43,8 +52,12 @@ interface Project {
   endDate?: string;
   color?: string;
   members?: MemberEntry[];
+  /** Who has lead rights (what firestore.rules checks). */
+  leads?: string[];
   slug?: string;
 }
+
+type PendingRequest = { id: string; targetUserId: string; initiativeId: string };
 
 /** A project's photo and category. The whole photo shows over a blurred copy
  *  of itself, so logos and wide images aren't cropped; a project without one
@@ -65,18 +78,26 @@ export default function MyProjects() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
   const roleLabel = useRoleLabel();
+  const titleId = useId();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
+  const downloadReport = useReportDownload();
 
   const [projects, setProjects]   = useState<Project[]>([]);
   const [leadIds, setLeadIds]     = useState<string[]>([]);
   const [loaded, setLoaded]       = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** Some of a lead's requests or names didn't load: what's shown may be
+   *  incomplete, so the actions that depend on it wait for a retry. */
+  const [extrasFailed, setExtrasFailed] = useState(false);
 
   /* Lead-only extras, fetched only when the user leads at least one project */
   const [users, setUsers] = useState<{ id: string; displayName?: string; email?: string }[]>([]);
   const [memberPanelOpenId, setMemberPanelOpenId] = useState<string | null>(null);
   const [incomingRequests, setIncomingRequests] = useState<MembershipRequest[]>([]);
   const [incomingLeaveRequests, setIncomingLeaveRequests] = useState<MembershipRequest[]>([]);
-  const [pendingRemovals, setPendingRemovals] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
-  const [pendingAdds, setPendingAdds] = useState<{ id: string; targetUserId: string; initiativeId: string }[]>([]);
+  const [pendingRemovals, setPendingRemovals] = useState<PendingRequest[]>([]);
+  const [pendingAdds, setPendingAdds] = useState<PendingRequest[]>([]);
   /* Candidate shapers a lead can pick from to request adding, sourced from
    * public_profiles (leads can't read the private `users` collection, only
    * curators/impact officers can) rather than a per-member lookup. */
@@ -87,77 +108,73 @@ export default function MyProjects() {
   /* Lead edit modal */
   const [leadEditInit, setLeadEditInit] = useState<Project | null>(null);
   const [leadForm, setLeadForm]         = useState<InitiativeFormShape>(emptyInitiativeForm);
-  const [leadSaving, setLeadSaving]     = useState(false);
+  /** The form as it opened, to tell whether closing would lose anything. */
+  const [leadStart, setLeadStart]       = useState('');
 
   const handleFormChange = useCallback((key: keyof InitiativeFormShape, value: string) => {
     setLeadForm(f => ({ ...f, [key]: value }));
   }, []);
 
-  const fetchData = useCallback(async () => {
+  /** Loads the page. `quiet` (retrying the requests) keeps it on screen. */
+  const fetchData = useCallback(async (quiet = false) => {
     if (!user) { setLoaded(true); return; }
-    setLoaded(false);
+    if (!quiet) { setLoaded(false); setLoadFailed(false); }
     try {
       const snap = await getDocs(query(collection(db, 'initiatives'), where('status', '==', 'active')));
       const mine = snap.docs
         .filter(d => !d.data().type) // exclude Hub Activities
         .map(d => ({ id: d.id, ...d.data() } as Project))
-        .filter(p => (p.members || []).some(m => memberId(m) === user.uid));
+        .filter(p => (p.members || []).some(m => memberId(m) === user.uid) || (p.leads || []).includes(user.uid));
+      const leads = mine.filter(p => (p.leads || []).includes(user.uid)).map(p => p.id);
       setProjects(mine);
-
-      const leads = mine
-        .filter(p => (p.members || []).some(m => memberId(m) === user.uid && isLeadEntry(m)))
-        .map(p => p.id);
       setLeadIds(leads);
+      setLoadFailed(false);
 
-      if (leads.length > 0) {
-        const [joinSnap, leaveSnap, removalSnap, addSnap, directorySnap] = await Promise.all([
-          getDocs(query(collection(db, 'join_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending'))).catch(() => null),
-          getDocs(query(collection(db, 'leave_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending'))).catch(() => null),
-          getDocs(query(collection(db, 'removal_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending'))).catch(() => null),
-          getDocs(query(collection(db, 'member_add_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending'))).catch(() => null),
-          getDocs(query(collection(db, 'public_profiles'), where('role', 'in', ['shaper', 'alumni']))).catch(() => null),
-        ]);
-        setPendingAdds(addSnap ? addSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRequest)) : []);
-        setDirectory(directorySnap ? directorySnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; role?: string })) : []);
-
-        setIncomingRequests(joinSnap
-          ? joinSnap.docs.map(d => {
-              const data = d.data();
-              return { id: d.id, ...data, initiativeTitle: mine.find(p => p.id === data.initiativeId)?.title } as MembershipRequest;
-            })
-          : []);
-        setIncomingLeaveRequests(leaveSnap
-          ? leaveSnap.docs.map(d => {
-              const data = d.data();
-              return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || mine.find(p => p.id === data.initiativeId)?.title } as MembershipRequest;
-            })
-          : []);
-        setPendingRemovals(removalSnap ? removalSnap.docs.map(d => ({ id: d.id, ...d.data() } as LeadRequest)) : []);
-
-        const ledProjects = mine.filter(p => leads.includes(p.id));
-        const memberIds = ledProjects.flatMap(p => (p.members || []).map(memberId).filter(Boolean));
-        const applicantIds = joinSnap ? joinSnap.docs.map(d => d.data().userId).filter(Boolean) : [];
-        const neededIds = Array.from(new Set([...memberIds, ...applicantIds]));
-        if (neededIds.length > 0) {
-          const chunks: string[][] = [];
-          for (let i = 0; i < neededIds.length; i += 30) chunks.push(neededIds.slice(i, i + 30));
-          const userSnaps = await Promise.all(
-            chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))).catch(() => null))
-          );
-          setUsers(userSnaps.filter(Boolean).flatMap(s => s!.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string }))));
-        } else {
-          setUsers([]);
-        }
-      } else {
+      if (leads.length === 0) {
         setIncomingRequests([]);
         setIncomingLeaveRequests([]);
         setPendingRemovals([]);
         setPendingAdds([]);
         setDirectory([]);
         setUsers([]);
+        setExtrasFailed(false);
+        return;
       }
-    } catch {
-      setProjects([]);
+
+      const [joinSnap, leaveSnap, removalSnap, addSnap, directorySnap] = await Promise.all([
+        orNull('join requests', getDocs(query(collection(db, 'join_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending')))),
+        orNull('leave requests', getDocs(query(collection(db, 'leave_requests'), where('initiativeId', 'in', leads), where('status', '==', 'pending')))),
+        orNull('removal requests', getDocs(query(collection(db, 'removal_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending')))),
+        orNull('member add requests', getDocs(query(collection(db, 'member_add_requests'), where('requestedByUserId', '==', user.uid), where('status', '==', 'pending')))),
+        orNull('the member directory', getDocs(query(collection(db, 'public_profiles'), where('role', 'in', ['shaper', 'alumni'])))),
+      ]);
+      const titleOf = (id: string) => mine.find(p => p.id === id)?.title;
+      setIncomingRequests((joinSnap?.docs ?? []).map(d => {
+        const data = d.data();
+        return { id: d.id, ...data, initiativeTitle: titleOf(data.initiativeId) } as MembershipRequest;
+      }));
+      setIncomingLeaveRequests((leaveSnap?.docs ?? []).map(d => {
+        const data = d.data();
+        return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || titleOf(data.initiativeId) } as MembershipRequest;
+      }));
+      setPendingRemovals((removalSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as LeadRequest)));
+      setPendingAdds((addSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as LeadRequest)));
+      setDirectory((directorySnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; role?: string })));
+
+      // Names for the teams and the people asking to join.
+      const memberIds = mine.filter(p => leads.includes(p.id)).flatMap(p => (p.members || []).map(memberId).filter(Boolean));
+      const applicantIds = (joinSnap?.docs ?? []).map(d => d.data().userId).filter(Boolean);
+      const neededIds = Array.from(new Set([...memberIds, ...applicantIds]));
+      const chunks: string[][] = [];
+      for (let i = 0; i < neededIds.length; i += 30) chunks.push(neededIds.slice(i, i + 30));
+      const userSnaps = await Promise.all(chunks.map(chunk =>
+        orNull('member names', getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))))));
+      setUsers(userSnaps.flatMap(s => (s?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; email?: string }))));
+
+      setExtrasFailed([joinSnap, leaveSnap, removalSnap, addSnap, directorySnap, ...userSnaps].some(s => !s));
+    } catch (err) {
+      console.error('Failed to load your projects:', errorCode(err));
+      if (!quiet) setLoadFailed(true);
     } finally {
       setLoaded(true);
     }
@@ -167,124 +184,111 @@ export default function MyProjects() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const closeLeadEdit = () => { setLeadEditInit(null); setLeadForm(emptyInitiativeForm); };
-
-  /* Close modal on Escape / lock body scroll while open */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeLeadEdit(); };
-    if (leadEditInit) document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [leadEditInit]);
-  useEffect(() => {
-    document.body.style.overflow = leadEditInit ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [leadEditInit]);
+  /** Escape and a click outside ask first, but only when something would be lost. */
+  const requestCloseLeadEdit = () => {
+    if (JSON.stringify(leadForm) !== leadStart && !confirm(t('confirmDiscardChanges'))) return;
+    closeLeadEdit();
+  };
+  const dialogRef = useDialog(leadEditInit !== null, requestCloseLeadEdit);
 
   // Members who haven't signed in yet have no public profile to name them.
   const getUserLabel = (userId: string) => users.find(u => u.id === userId)?.displayName || t('pendingMemberName');
   const toggleMemberPanel = (id: string) => setMemberPanelOpenId(prev => prev === id ? null : id);
 
-  const openLeadEdit = (p: Project) => { setLeadEditInit(p); setLeadForm(initiativeToForm(p)); };
+  const openLeadEdit = (p: Project) => {
+    const start = initiativeToForm(p);
+    setLeadEditInit(p);
+    setLeadForm(start);
+    setLeadStart(JSON.stringify(start));
+  };
 
-  const handleLeadSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!leadEditInit || !leadForm.title) return;
-    setLeadSaving(true);
+  /** Changes one project on screen, once the same change is saved. */
+  const patchProject = (id: string, change: (p: Project) => Partial<Project>) =>
+    setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...change(p) } : p)));
+
+  /** Runs one change, one at a time per key; on failure says so. */
+  const attempt = (key: string, what: string, action: () => Promise<unknown>) => run(key, async () => {
     try {
+      await action();
+    } catch (err) {
+      console.error(`Failed to ${what}:`, errorCode(err));
+      alert(saveFailed(err));
+    }
+  });
+
+  const leadSaving = isBusy('leadSave');
+  const handleLeadSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const init = leadEditInit;
+    if (!init || !leadForm.title) return;
+    void attempt('leadSave', 'save the initiative', async () => {
       // The web address (slug) stays as it is: only curators and impact
       // officers set it, so a lead can't take over another project's URL.
       const updated = initiativeFormToDoc(leadForm);
-      await updateDoc(doc(db, 'initiatives', leadEditInit.id), updated);
-      setProjects(prev => prev.map(p => p.id === leadEditInit.id ? { ...p, ...updated, color: updated.color ?? undefined } : p));
+      await updateDoc(doc(db, 'initiatives', init.id), updated);
+      patchProject(init.id, () => ({ ...updated, color: updated.color ?? undefined }));
       closeLeadEdit();
-    } catch (err) {
-      alert(`${t('saveFailed')} ${errorCode(err)}`);
-    } finally {
-      setLeadSaving(false);
-    }
+    });
   };
 
-  const handleAcceptRequest = async (reqId: string, initiativeId: string, userId: string) => {
-    try {
-      await updateDoc(doc(db, 'initiatives', initiativeId), { members: arrayUnion({ userId, role: 'Member' }) });
-      await deleteDoc(doc(db, 'join_requests', reqId));
-      setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleAcceptRequest = (req: MembershipRequest) => attempt(`req:${req.id}`, 'accept the join request', async () => {
+    const added = await addToTeam(req.initiativeId, req.userId, tx => tx.delete(doc(db, 'join_requests', req.id)));
+    setIncomingRequests(prev => prev.filter(r => r.id !== req.id));
+    if (added) patchProject(req.initiativeId, p => ({ members: [...(p.members || []), { userId: req.userId, role: 'Member' }] }));
+  });
 
-  const handleRejectRequest = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
-      setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleRejectRequest = (reqId: string) => attempt(`req:${reqId}`, 'decline the join request', async () => {
+    await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
+    setIncomingRequests(prev => prev.filter(r => r.id !== reqId));
+  });
 
-  const handleApproveLeave = async (req: MembershipRequest) => {
-    const init = projects.find(p => p.id === req.initiativeId);
-    if (!init) return;
-    try {
-      const memberObj = (init.members || []).find(m => memberId(m) === req.userId);
-      if (memberObj) {
-        const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
-        if (isLeadEntry(memberObj)) payload.leads = arrayRemove(req.userId);
-        await updateDoc(doc(db, 'initiatives', req.initiativeId), payload);
-      }
-      await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
-      setIncomingLeaveRequests(prev => prev.filter(r => r.id !== req.id));
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  // Only for members who aren't leads: a lead can't take a fellow lead off
+  // the team or out of `leads` (firestore.rules), so those requests wait for
+  // the Curator or Vice Curator, and the buttons aren't offered.
+  const handleApproveLeave = (req: MembershipRequest) => attempt(`req:${req.id}`, 'approve the leave request', async () => {
+    await removeFromTeam(req.initiativeId, req.userId, {
+      keepLeads: true,
+      settle: tx => tx.update(doc(db, 'leave_requests', req.id), { status: 'approved' }),
+    });
+    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== req.id));
+    patchProject(req.initiativeId, p => ({ members: (p.members || []).filter(m => memberId(m) !== req.userId) }));
+  });
 
-  const handleDeclineLeave = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
-      setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleDeclineLeave = (reqId: string) => attempt(`req:${reqId}`, 'decline the leave request', async () => {
+    await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
+    setIncomingLeaveRequests(prev => prev.filter(r => r.id !== reqId));
+  });
 
-  const handleRequestRemoval = async (init: Project, member: MemberEntry) => {
+  const handleRequestRemoval = (init: Project, member: MemberEntry) => {
     if (!user) return;
-    const memberName = getUserLabel(memberId(member));
+    const targetId = memberId(member);
+    const memberName = getUserLabel(targetId);
     if (!confirm(t('confirmRequestRemoval', { member: memberName, initiative: init.title }))) return;
-    try {
+    void attempt(`member:${init.id}:${targetId}`, 'request the removal', async () => {
       const ref = await addDoc(collection(db, 'removal_requests'), {
         initiativeId: init.id,
         initiativeTitle: init.title,
-        targetUserId: memberId(member),
+        targetUserId: targetId,
         targetUserName: memberName,
         requestedByUserId: user.uid,
         requestedByName: user.displayName || user.email,
         status: 'pending',
         requestedAt: new Date().toISOString(),
       });
-      setPendingRemovals(prev => [...prev, { id: ref.id, targetUserId: memberId(member), initiativeId: init.id }]);
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+      setPendingRemovals(prev => [...prev, { id: ref.id, targetUserId: targetId, initiativeId: init.id }]);
+    });
   };
 
-  const handleCancelRemoval = async (reqId: string) => {
-    const removed = pendingRemovals.find(r => r.id === reqId);
-    setPendingRemovals(prev => prev.filter(r => r.id !== reqId));
+  /** Cancels a removal or add request: gone from the screen at once, and
+   *  back if deleting it fails. */
+  const cancelPending = async (collectionName: string, req: PendingRequest, setList: React.Dispatch<React.SetStateAction<PendingRequest[]>>) => {
+    setList(prev => prev.filter(r => r.id !== req.id));
     try {
-      await deleteDoc(doc(db, 'removal_requests', reqId));
+      await deleteDoc(doc(db, collectionName, req.id));
     } catch (err) {
-      console.error(err);
-      if (removed) setPendingRemovals(prev => [...prev, removed]);
-      alert(t('saveFailed'));
+      console.error('Failed to cancel the request:', errorCode(err));
+      setList(prev => [...prev, req]);
+      alert(saveFailed(err));
     }
   };
 
@@ -293,10 +297,10 @@ export default function MyProjects() {
   // join_requests + handleAcceptRequest above already covers); this is for
   // a lead-initiated invite of someone specific, reviewed by the
   // curatorship before it actually lands on the initiative's roster.
-  const handleRequestAddMember = async (init: Project, targetId: string) => {
+  const handleRequestAddMember = (init: Project, targetId: string) => {
     if (!user || !targetId) return;
     const targetName = directory.find(d => d.id === targetId)?.displayName || targetId;
-    try {
+    void attempt(`add:${init.id}`, 'request adding the member', async () => {
       const ref = await addDoc(collection(db, 'member_add_requests'), {
         initiativeId: init.id,
         initiativeTitle: init.title,
@@ -310,22 +314,7 @@ export default function MyProjects() {
       setPendingAdds(prev => [...prev, { id: ref.id, targetUserId: targetId, initiativeId: init.id }]);
       setAddPickerOpenId(null);
       setAddPickerTarget('');
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  const handleCancelAddRequest = async (reqId: string) => {
-    const removed = pendingAdds.find(r => r.id === reqId);
-    setPendingAdds(prev => prev.filter(r => r.id !== reqId));
-    try {
-      await deleteDoc(doc(db, 'member_add_requests', reqId));
-    } catch (err) {
-      console.error(err);
-      if (removed) setPendingAdds(prev => [...prev, removed]);
-      alert(t('saveFailed'));
-    }
+    });
   };
 
   if (!user || !loaded) return <DashSkeleton rows={3} label={t('loading')} />;
@@ -343,6 +332,10 @@ export default function MyProjects() {
         )}
       </div>
 
+      {extrasFailed && !loadFailed && (
+        <LoadFailed onRetry={() => void fetchData(true)} message={t('requestsLoadFailed')} />
+      )}
+
       {/* Incoming join requests (for led projects) */}
       {incomingRequests.length > 0 && (
         <div className={jiStyles.incomingSection}>
@@ -358,8 +351,8 @@ export default function MyProjects() {
                   <span className={jiStyles.incomingMeta}>{t('wantsToJoin')} <strong>{req.initiativeTitle}</strong></span>
                 </div>
                 <div className={jiStyles.incomingActions}>
-                  <button className={jiStyles.acceptBtn} onClick={() => handleAcceptRequest(req.id, req.initiativeId, req.userId)}>{t('acceptRequest')}</button>
-                  <button className={jiStyles.rejectBtn} onClick={() => handleRejectRequest(req.id)}>{t('rejectRequest')}</button>
+                  <button className={jiStyles.acceptBtn} disabled={isBusy(`req:${req.id}`)} onClick={() => void handleAcceptRequest(req)}>{t('acceptRequest')}</button>
+                  <button className={jiStyles.rejectBtn} disabled={isBusy(`req:${req.id}`)} onClick={() => void handleRejectRequest(req.id)}>{t('rejectRequest')}</button>
                 </div>
               </div>
             ))}
@@ -375,18 +368,24 @@ export default function MyProjects() {
             <span className={jiStyles.badge} style={{ background: 'var(--danger)' }}>{incomingLeaveRequests.length}</span>
           </h3>
           <div className={jiStyles.requestList}>
-            {incomingLeaveRequests.map(req => (
-              <div key={req.id} className={jiStyles.incomingRow}>
-                <div className={jiStyles.incomingInfo}>
-                  <span className={jiStyles.incomingUser}>{req.userName || req.userEmail}</span>
-                  <span className={jiStyles.incomingMeta}>{t('wantsToLeave')} <strong>{req.initiativeTitle}</strong></span>
+            {incomingLeaveRequests.map(req => {
+              const leavingLead = !!projects.find(p => p.id === req.initiativeId)?.leads?.includes(req.userId);
+              return (
+                <div key={req.id} className={jiStyles.incomingRow}>
+                  <div className={jiStyles.incomingInfo}>
+                    <span className={jiStyles.incomingUser}>{req.userName || req.userEmail}</span>
+                    <span className={jiStyles.incomingMeta}>{t('wantsToLeave')} <strong>{req.initiativeTitle}</strong></span>
+                    {leavingLead && <span className={jiStyles.incomingMeta}>{t('leadLeaveCuratorOnly')}</span>}
+                  </div>
+                  {!leavingLead && (
+                    <div className={jiStyles.incomingActions}>
+                      <button className={jiStyles.acceptBtn} disabled={isBusy(`req:${req.id}`)} onClick={() => void handleApproveLeave(req)}>{t('approveLeave')}</button>
+                      <button className={jiStyles.rejectBtn} disabled={isBusy(`req:${req.id}`)} onClick={() => void handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
+                    </div>
+                  )}
                 </div>
-                <div className={jiStyles.incomingActions}>
-                  <button className={jiStyles.acceptBtn} onClick={() => handleApproveLeave(req)}>{t('approveLeave')}</button>
-                  <button className={jiStyles.rejectBtn} onClick={() => handleDeclineLeave(req.id)}>{t('declineLeave')}</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -394,10 +393,11 @@ export default function MyProjects() {
       {/* Lead edit modal */}
       {leadEditInit && (
         <ModalPortal>
-        <div className={jiStyles.modalOverlay} onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeLeadEdit(); }}>
-          <form className={jiStyles.modal} onSubmit={handleLeadSave}>
+        <div className={jiStyles.modalOverlay} onClick={e => { if (e.target === e.currentTarget) requestCloseLeadEdit(); }}>
+          <form ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}
+            className={jiStyles.modal} onSubmit={handleLeadSave}>
             <div className={jiStyles.modalHeader}>
-              <h3 className={jiStyles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
+              <h3 id={titleId} className={jiStyles.modalTitle}>{t('editLeadInitiative')}: {leadEditInit.title}</h3>
               <button type="button" className={jiStyles.modalClose} onClick={closeLeadEdit} aria-label={t('close')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -418,7 +418,9 @@ export default function MyProjects() {
         </ModalPortal>
       )}
 
-      {projects.length === 0 ? (
+      {loadFailed ? (
+        <LoadFailed onRetry={() => void fetchData()} />
+      ) : projects.length === 0 ? (
         <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -509,15 +511,17 @@ export default function MyProjects() {
                             <div key={mid + idx} className={jiStyles.memberPanelItem}>
                               <div className={jiStyles.memberPanelInfo}>
                                 <span className={jiStyles.memberPanelName}>{getUserLabel(mid)}</span>
-                                <span className={jiStyles.memberPanelRole}>{(typeof m === 'string' ? '' : m.role) || 'Member'}</span>
+                                <span className={jiStyles.memberPanelRole}>{teamRoleLabel(t, typeof m === 'string' ? undefined : m.role)}</span>
                               </div>
                               {removal ? (
                                 <div className={jiStyles.memberPanelActions}>
                                   <span className={jiStyles.removalPendingBadge}>{t('removalPending')}</span>
-                                  <button className={jiStyles.cancelRemovalBtn} onClick={() => handleCancelRemoval(removal.id)}>{t('cancelRemoval')}</button>
+                                  <button className={jiStyles.cancelRemovalBtn} onClick={() => void cancelPending('removal_requests', removal, setPendingRemovals)}>{t('cancelRemoval')}</button>
                                 </div>
                               ) : (
-                                <button className={jiStyles.requestRemovalBtn} onClick={() => handleRequestRemoval(p, m)}>{t('requestRemoval')}</button>
+                                // Waits for a retry while earlier requests couldn't load, so it isn't asked twice.
+                                <button className={jiStyles.requestRemovalBtn} disabled={extrasFailed || isBusy(`member:${p.id}:${mid}`)}
+                                  onClick={() => handleRequestRemoval(p, m)}>{t('requestRemoval')}</button>
                               )}
                             </div>
                           );
@@ -532,7 +536,7 @@ export default function MyProjects() {
                           </div>
                           <div className={jiStyles.memberPanelActions}>
                             <span className={jiStyles.removalPendingBadge}>{t('addMemberPending')}</span>
-                            <button className={jiStyles.cancelRemovalBtn} onClick={() => handleCancelAddRequest(r.id)}>{t('cancelRemoval')}</button>
+                            <button className={jiStyles.cancelRemovalBtn} onClick={() => void cancelPending('member_add_requests', r, setPendingAdds)}>{t('cancelRemoval')}</button>
                           </div>
                         </div>
                       ))}
@@ -556,7 +560,7 @@ export default function MyProjects() {
                           />
                           <button
                             className={jiStyles.addMemberSubmitBtn}
-                            disabled={!addPickerTarget}
+                            disabled={!addPickerTarget || isBusy(`add:${p.id}`)}
                             onClick={() => handleRequestAddMember(p, addPickerTarget)}
                           >
                             {t('sendRequest')}
@@ -566,7 +570,7 @@ export default function MyProjects() {
                           </button>
                         </div>
                       ) : (
-                        <button className={jiStyles.addMemberBtn} onClick={() => setAddPickerOpenId(p.id)}>
+                        <button className={jiStyles.addMemberBtn} disabled={extrasFailed} onClick={() => setAddPickerOpenId(p.id)}>
                           + {t('requestAddMember')}
                         </button>
                       )}

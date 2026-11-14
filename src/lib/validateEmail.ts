@@ -1,9 +1,11 @@
 /** Shared email format check, anywhere the app collects an address before
- *  writing it to Firestore or sending a real email through it. Besides the
- *  basic shape, it refuses characters that could turn one address into
- *  several or into a display name when used as a recipient or reply-to
- *  (commas, semicolons, angle brackets, quotes, parentheses). */
-const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:".]{2,}$/;
+ *  writing it to Firestore or sending a real email through it. The part
+ *  before the @ is limited to letters, digits and `. _ + ' -`: that covers
+ *  real addresses, and refuses anything that could turn one address into
+ *  several, into a display name, or (`? & = % /`) into extra fields of a
+ *  mailto: link, such as `name?bcc=someone@else.com`. The domain must be
+ *  ordinary labels with a letter TLD (or a punycode one). */
+const EMAIL_RE = /^[A-Za-z0-9._+'-]{1,64}@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:[A-Za-z]{2,63}|xn--[A-Za-z0-9-]{1,59})$/;
 
 export function isValidEmail(email: string): boolean {
   return typeof email === 'string' && email.trim().length <= 254 && EMAIL_RE.test(email.trim());

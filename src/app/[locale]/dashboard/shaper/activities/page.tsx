@@ -19,9 +19,13 @@ import { normalizeRole } from '@/lib/role';
 import ActivityCard from '@/components/dashboard/ActivityCard';
 import ActivityEditorModal from '@/components/dashboard/ActivityEditorModal';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 // Same page structure and classes as the curators' Hub Activities page.
 import styles from '../../curator/activities/Activities.module.css';
 import { intlLocale } from '@/lib/dates';
+import { errorCode } from '@/lib/types';
 
 interface LedInitiative { id: string; title: string; }
 
@@ -44,6 +48,8 @@ export default function MyHubActivitiesPage() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
   const locale = useLocale();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
 
   const [ledInitiatives, setLedInitiatives] = useState<LedInitiative[]>([]);
   const [activities, setActivities] = useState<HubActivity[]>([]);
@@ -57,9 +63,11 @@ export default function MyHubActivitiesPage() {
 
   const uid = user?.uid;
 
-  const fetchAll = useCallback(async () => {
+  /** Loads the page. `quiet` (after sending a request) keeps the page on
+   *  screen instead of going back to the skeleton. */
+  const fetchAll = useCallback(async (quiet = false) => {
     if (!uid) { setLoading(false); return; }
-    setLoading(true); setLoadFailed(false);
+    if (!quiet) { setLoading(true); setLoadFailed(false); }
     try {
       const [ledSnap, activitySnap, requestSnap] = await Promise.all([
         getDocs(query(collection(db, 'initiatives'), where('leads', 'array-contains', uid))),
@@ -78,9 +86,10 @@ export default function MyHubActivitiesPage() {
       setRequests(requestSnap.docs
         .map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }))
         .sort((a, b) => (b.requestedAt ?? '').localeCompare(a.requestedAt ?? '')));
+      setLoadFailed(false);
     } catch (err) {
-      console.error('Failed to load activities:', err);
-      setLoadFailed(true);
+      console.error('Failed to load activities:', errorCode(err));
+      if (!quiet) setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -128,29 +137,34 @@ export default function MyHubActivitiesPage() {
     }
     setEditor(null);
     setJustSent(true);
-    fetchAll();
+    void fetchAll(true);
   }
 
-  /** A one-click request on a live activity (hide, archive, open a form…). */
-  async function requestChange(a: HubActivity, payload: Record<string, unknown>) {
-    try {
-      await addDoc(collection(db, 'activity_change_requests'), newRequest('update', a.id, a.initiativeId ?? '', a.title, payload));
-      setJustSent(true);
-      fetchAll();
-    } catch (err) {
-      console.error('Failed to send the request:', err);
-      alert(t('saveFailed'));
-    }
+  /** A one-click request on a live activity (hide, archive, open a form…),
+   *  one at a time per activity so a double click can't send it twice. */
+  function requestChange(a: HubActivity, payload: Record<string, unknown>) {
+    return run(`activity:${a.id}`, async () => {
+      try {
+        await addDoc(collection(db, 'activity_change_requests'), newRequest('update', a.id, a.initiativeId ?? '', a.title, payload));
+        setJustSent(true);
+        await fetchAll(true);
+      } catch (err) {
+        console.error('Failed to send the request:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   }
 
-  async function removeRequest(id: string) {
-    try {
-      await deleteDoc(doc(db, 'activity_change_requests', id));
-      setRequests(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
-      console.error('Failed to remove the request:', err);
-      alert(t('saveFailed'));
-    }
+  function removeRequest(id: string) {
+    return run(`request:${id}`, async () => {
+      try {
+        await deleteDoc(doc(db, 'activity_change_requests', id));
+        setRequests(prev => prev.filter(r => r.id !== id));
+      } catch (err) {
+        console.error('Failed to remove the request:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   }
 
   if (loading) return <DashSkeleton rows={3} label={t('loading')} />;
@@ -182,7 +196,7 @@ export default function MyHubActivitiesPage() {
       </div>
 
       {justSent && <p className={styles.successNote} role="status">{t('proposalSent')}</p>}
-      {loadFailed && <p className={styles.modalError} role="alert">{t('activitiesLoadFailed')}</p>}
+      {loadFailed && <LoadFailed onRetry={() => void fetchAll()} />}
 
       {pending.length > 0 && (
         <section className={styles.proposalsSection} aria-labelledby="my-pending-title">
@@ -204,7 +218,7 @@ export default function MyHubActivitiesPage() {
                   {hasFullForm(r) && (
                     <button type="button" className={styles.viewProposalBtn} onClick={() => { setJustSent(false); setEditor({ mode: 'correct', request: r }); }}>{t('editProposal')}</button>
                   )}
-                  <button type="button" className={styles.declineProposalBtn} onClick={() => removeRequest(r.id)}>{t('cancelChangeRequest')}</button>
+                  <button type="button" className={styles.declineProposalBtn} disabled={isBusy(`request:${r.id}`)} onClick={() => removeRequest(r.id)}>{t('cancelChangeRequest')}</button>
                 </div>
               </div>
             ))}
@@ -218,6 +232,8 @@ export default function MyHubActivitiesPage() {
           <div className={styles.list}>
             {activities.map(a => {
               const f = a.customForm, fb = a.feedbackForm;
+              // While one of this activity's requests is on its way.
+              const busy = isBusy(`activity:${a.id}`);
               return (
                 <ActivityCard key={a.id} activity={a}>
                   {pendingForActivity(a.id) ? (
@@ -226,23 +242,23 @@ export default function MyHubActivitiesPage() {
                     <>
                       <button type="button" className={styles.editBtn} onClick={() => { setJustSent(false); setEditor({ mode: 'change', activity: a }); }}>{t('editActivity')}</button>
                       {f?.enabled && (
-                        <button type="button" className={styles.toggleBtn + ' ' + (f.closed ? styles.toggleOn : styles.toggleOff)}
+                        <button type="button" className={styles.toggleBtn + ' ' + (f.closed ? styles.toggleOn : styles.toggleOff)} disabled={busy}
                           onClick={() => requestChange(a, { customForm: { ...f, closed: !f.closed } })}>
                           {f.closed ? t('regOpenAction') : t('regCloseAction')}
                         </button>
                       )}
                       {fb?.enabled && (
-                        <button type="button" className={styles.toggleBtn + ' ' + (fb.closed ? styles.toggleOn : styles.toggleOff)}
+                        <button type="button" className={styles.toggleBtn + ' ' + (fb.closed ? styles.toggleOn : styles.toggleOff)} disabled={busy}
                           onClick={() => requestChange(a, { feedbackForm: { ...fb, closed: !fb.closed } })}>
                           {fb.closed ? t('fbOpenAction') : t('fbCloseAction')}
                         </button>
                       )}
-                      <button type="button" className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
+                      <button type="button" className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)} disabled={busy}
                         onClick={() => requestChange(a, { active: !a.active })}>
                         {a.active ? t('setHidden') : t('setActive')}
                       </button>
                       {/* Archiving something still live also asks to hide it, as on the curators' page. */}
-                      <button type="button" className={styles.toggleBtn + ' ' + styles.toggleOff}
+                      <button type="button" className={styles.toggleBtn + ' ' + styles.toggleOff} disabled={busy}
                         onClick={() => requestChange(a, { archived: !a.archived, ...(!a.archived && a.active ? { active: false } : {}) })}>
                         {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
                       </button>
@@ -281,7 +297,7 @@ export default function MyHubActivitiesPage() {
                     {hasFullForm(r) && (
                       <button type="button" className={styles.viewProposalBtn} onClick={() => { setJustSent(false); setEditor({ mode: 'resend', request: r }); }}>{t('editAndResend')}</button>
                     )}
-                    <button type="button" className={styles.declineProposalBtn} onClick={() => removeRequest(r.id)}>{t('dismissRequest')}</button>
+                    <button type="button" className={styles.declineProposalBtn} disabled={isBusy(`request:${r.id}`)} onClick={() => removeRequest(r.id)}>{t('dismissRequest')}</button>
                   </div>
                 )}
               </div>

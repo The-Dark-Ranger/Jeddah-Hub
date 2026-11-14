@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { alternateLanguages } from '@/lib/seo';
 import { countListedShapers, getPublicProfiles } from '@/lib/publicData';
 import styles from './BecomeShaper.module.css';
@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function BecomeAShaperPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: 'BecomeShaperPage' });
   // Same count as "Our Shapers" on Who We Are.
   const profiles = await getPublicProfiles();
@@ -108,7 +109,7 @@ export default async function BecomeAShaperPage({ params }: { params: Promise<{ 
             className={styles.heroBtn}
           >
             {t('applyNow')}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg className="flip-rtl" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="5" y1="12" x2="19" y2="12"/>
               <polyline points="12 5 19 12 12 19"/>
             </svg>

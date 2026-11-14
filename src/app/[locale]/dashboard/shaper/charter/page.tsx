@@ -2,7 +2,6 @@
 
 /* Dashboard > Community Charter: the charter text, the sign-off form, and
  * (for curators) the sign-off switch and who has signed. */
-import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CHARTER_INTRO, CHARTER_SECTIONS, type CharterSection, type CharterBlock } from './charterContent';
 import WefLogo from '@/components/WefLogo';
@@ -69,12 +68,18 @@ export default function CommunityCharterPage() {
   const { user } = useAuth();
   const role = normalizeRole(user?.role);
   const isCurator = role === 'curator' || role === 'vice_curator';
-  // On phones the 12-item contents list would push the Charter itself far
-  // down the page, so it starts collapsed there (one tap opens it).
-  const tocRef = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    if (tocRef.current && window.matchMedia('(max-width: 768px)').matches) tocRef.current.open = false;
-  }, []);
+  const tocList = (
+    <ol className={styles.tocList}>
+      {CHARTER_SECTIONS.map((s, i) => (
+        <li key={s.id}>
+          <a href={`#${s.id}`} className={styles.tocLink}>
+            <span className={styles.tocNum}>{String(i + 1).padStart(2, '0')}</span>
+            {s.title}
+          </a>
+        </li>
+      ))}
+    </ol>
+  );
 
   return (
     <div className={styles.page}>
@@ -94,19 +99,23 @@ export default function CommunityCharterPage() {
       </header>
 
       <div className={styles.layout}>
+        {/* Beside the Charter on wide screens, the contents are always open.
+          * Above it on narrow ones (phones), the 12-item list would push the
+          * Charter far down, so it starts closed and one tap opens it. CSS
+          * shows one or the other, so neither flashes open or shut. */}
         <nav className={styles.toc} aria-label={t('tableOfContents')}>
-          <details open ref={tocRef} className={styles.tocDetails}>
-            <summary className={styles.tocTitle}>{t('tableOfContents')}</summary>
-            <ol className={styles.tocList}>
-              {CHARTER_SECTIONS.map((s, i) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`} className={styles.tocLink}>
-                    <span className={styles.tocNum}>{String(i + 1).padStart(2, '0')}</span>
-                    {s.title}
-                  </a>
-                </li>
-              ))}
-            </ol>
+          <div className={styles.tocBox + ' ' + styles.tocWide}>
+            <p className={styles.tocTitle}>{t('tableOfContents')}</p>
+            {tocList}
+          </div>
+          <details className={styles.tocBox + ' ' + styles.tocNarrow}>
+            <summary className={styles.tocTitle + ' ' + styles.tocToggle}>
+              {t('tableOfContents')}
+              <svg className={styles.tocChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </summary>
+            {tocList}
           </details>
         </nav>
 

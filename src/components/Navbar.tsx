@@ -140,7 +140,7 @@ export default function Navbar() {
 
   // Drawer is only reachable at mobile widths, close it if the window grows.
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 769px)');
+    const mq = window.matchMedia('(min-width: 901px)'); // drawer breakpoint, see Navbar.module.css
     const onChange = () => { if (mq.matches) setMobileOpen(false); };
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);

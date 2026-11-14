@@ -6,6 +6,18 @@ import { randomInt } from 'node:crypto';
 import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { USE_EMULATORS } from './emulators';
 
+let warned = false;
+/** A deployed site without the service account silently loses every limit
+ *  that holds across servers and every account route, so say so once per
+ *  server in its logs. */
+function missing(reason: string): null {
+  if (!warned && process.env.NODE_ENV === 'production') {
+    warned = true;
+    console.error(`[firebase-admin] ${reason}: account routes and shared rate limits are off`);
+  }
+  return null;
+}
+
 /** The Admin app, or null when FIREBASE_SERVICE_ACCOUNT isn't configured. */
 export function adminApp(): App | null {
   const existing = getApps().find(a => a.name === 'member-admin');
@@ -15,16 +27,15 @@ export function adminApp(): App | null {
   // Tolerate a byte-order mark or stray whitespace: values piped in from a
   // Windows shell (e.g. `... | vercel env add`) arrive with a leading BOM.
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.replace(/^﻿/, '').trim();
-  if (!raw) return null;
+  if (!raw) return missing('FIREBASE_SERVICE_ACCOUNT is not set');
   try {
     const sa = JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string };
-    if (!sa.client_email || !sa.private_key) return null;
+    if (!sa.client_email || !sa.private_key) return missing('FIREBASE_SERVICE_ACCOUNT lacks client_email or private_key');
     return initializeApp({
       credential: cert({ projectId: sa.project_id, clientEmail: sa.client_email, privateKey: sa.private_key.replace(/\\n/g, '\n') }),
     }, 'member-admin');
   } catch {
-    console.error('FIREBASE_SERVICE_ACCOUNT is not valid JSON');
-    return null;
+    return missing('FIREBASE_SERVICE_ACCOUNT is not valid JSON');
   }
 }
 

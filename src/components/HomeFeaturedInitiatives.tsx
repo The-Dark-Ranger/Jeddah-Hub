@@ -10,7 +10,7 @@ import { CATEGORY_COLORS, PLACEHOLDER_PROJECTS } from '@/lib/placeholderProjects
 import { slugify } from '@/lib/slug';
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { safeColor } from '@/lib/activityTypes';
-import { cssUrl } from '@/lib/sanitize';
+import { cssUrl, sizedPhoto } from '@/lib/sanitize';
 
 const PROJECT_GRADIENTS = [
   'linear-gradient(135deg,#0f5a9f,#1a7fd4)',
@@ -58,7 +58,9 @@ function cardImage(init: Initiative): string | undefined {
 
 function cardGradient(init: Initiative, fallback: string): string {
   // Leads can edit these fields, so only checked values reach the CSS.
-  const img = cssUrl(cardImage(init));
+  // A card-sized copy: these load with the page, so full photos would
+  // compete with everything else on a phone.
+  const img = cssUrl(sizedPhoto(cardImage(init), 768));
   if (img) {
     return `linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.6) 100%),${img}`;
   }

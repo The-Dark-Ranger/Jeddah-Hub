@@ -4,10 +4,13 @@
  * and members' My Hub Activities. It holds the form while it is open, checks
  * it, and hands the finished activity to the page, which decides what saving
  * means (a direct save, or a request for approval). */
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import ActivityFormFields from '@/components/ActivityFormFields';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 import {
   activityToForm, highlightsToText, parseHighlights, type ActivityFormData,
 } from '@/lib/activityTypes';
@@ -35,7 +38,9 @@ interface EditorState { form: ActivityFormData; highlightsText: string }
 export default function ActivityEditorModal({ heading, submitLabel, initial, draftKey, children, onClose, onSubmit }: Props) {
   const t = useTranslations('Dashboard');
   const headingId = useId();
-  const dialog = useRef<HTMLDivElement>(null);
+  const saveFailed = useSaveFailed();
+  const { run, isBusy } = useBusy();
+  const saving = isBusy('save');
 
   const [start] = useState<EditorState>(() => ({ form: initial, highlightsText: highlightsToText(initial.highlights) }));
   const [restored, setRestored] = useState(() => (draftKey ? readDraft<EditorState>(draftKey) : null) !== null);
@@ -47,7 +52,6 @@ export default function ActivityEditorModal({ heading, submitLabel, initial, dra
     const draft = draftKey ? readDraft<EditorState>(draftKey) : null;
     return draft ? draft.highlightsText : start.highlightsText;
   });
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const current = JSON.stringify({ form, highlightsText });
@@ -59,20 +63,7 @@ export default function ActivityEditorModal({ heading, submitLabel, initial, dra
     if (dirty && !draftKey && !confirm(t('confirmDiscardChanges'))) return;
     onClose();
   };
-  const closeRef = useRef(requestClose);
-  useEffect(() => { closeRef.current = requestClose; });
-
-  useEffect(() => {
-    dialog.current?.focus();
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeRef.current(); };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, []);
+  const dialog = useDialog(true, requestClose);
 
   const discardDraft = () => {
     if (draftKey) clearDraft(draftKey);
@@ -81,19 +72,21 @@ export default function ActivityEditorModal({ heading, submitLabel, initial, dra
     setRestored(false);
   };
 
-  const submit = async () => {
+  // One save at a time: a double click can't send the activity twice.
+  const submit = () => {
     const typedUrl = form.ctaUrl.trim();
     const ctaUrl = typedUrl ? safeExternalUrl(withHttps(typedUrl)) : '';
     if (ctaUrl === undefined) { setError(t('activityCtaUrlInvalid')); return; }
-    setSaving(true); setError('');
-    try {
-      await onSubmit({ ...form, title: form.title.trim(), ctaUrl, highlights: parseHighlights(highlightsText) });
-      if (draftKey) clearDraft(draftKey);
-    } catch (err) {
-      console.error('Failed to save activity:', err);
-      setError(`${t('saveFailed')} (${errorCode(err) || 'unknown'})`);
-      setSaving(false);
-    }
+    void run('save', async () => {
+      setError('');
+      try {
+        await onSubmit({ ...form, title: form.title.trim(), ctaUrl, highlights: parseHighlights(highlightsText) });
+        if (draftKey) clearDraft(draftKey);
+      } catch (err) {
+        console.error('Failed to save activity:', errorCode(err));
+        setError(saveFailed(err));
+      }
+    });
   };
 
   return (

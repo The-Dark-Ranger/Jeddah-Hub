@@ -4,7 +4,10 @@
 import { expect, test } from '@playwright/test';
 import { confirmEmail } from '../../src/lib/emails/confirm';
 import { inviteRecord, memberInvite } from '../../src/lib/emails/invite';
-import { newsletterWelcome } from '../../src/lib/emails/newsletter';
+import { newsletterConfirm, newsletterWelcome } from '../../src/lib/emails/newsletter';
+import { senderCopy } from '../../src/lib/emails/contact';
+import { isValidEmail } from '../../src/lib/validateEmail';
+import { clientIp } from '../../src/lib/rateLimit';
 import { safeImageSrc } from '../../src/lib/sanitize';
 import { PHOTO_PATH, PHOTO_URI } from './helpers';
 
@@ -51,6 +54,46 @@ test('the newsletter welcome offers one-click unsubscribe', () => {
   expect(m.text).toContain(links.page);
   // Without links (older code paths), replying still works.
   expect(newsletterWelcome('en', 'a@example.com').headers['List-Unsubscribe-Post']).toBeUndefined();
+});
+
+test('the newsletter confirmation comes from the newsletter address and links to this site', () => {
+  const url = 'https://jeddahhub.org/en/newsletter/confirm?id=1&t=2';
+  const m = newsletterConfirm('en', 'new@example.com', url);
+  expect(m.from).toBe('Jeddah Hub Newsletter <newsletter@jeddahhub.org>');
+  expect(m.html).toContain('href="https://jeddahhub.org/en/newsletter/confirm?id=1&amp;t=2"');
+  expect(m.text).toContain(url);
+  expect(m.text).not.toContain('<strong>');
+  // Nothing in it lets someone leave a list they haven't joined yet.
+  expect(m.html).not.toContain('unsubscribe');
+});
+
+test("the contact receipt doesn't repeat the message, and uses only a short first name", () => {
+  const m = senderCopy({
+    name: 'Sam Claim your prize now', email: 'sam@example.com', topic: 'general', lang: 'en',
+    message: 'Visit example.com to claim your refund', ref: 'abcdefgh1234',
+  });
+  expect(m.subject).toBe('We received your message (JH-ABCDEFGH)');
+  expect(m.text).toContain('Thank you, Sam. We received your message.');
+  for (const part of [m.html, m.text]) {
+    expect(part).not.toContain('claim your refund');
+    expect(part).not.toContain('prize');
+  }
+});
+
+test('email addresses that could add mailto: fields are refused', () => {
+  for (const ok of ['sam@example.com', "o'brien+news@mail.example.co", 'a.b-c_d@example.xn--mgberp4a5d4ar']) expect(isValidEmail(ok), ok).toBe(true);
+  for (const bad of ['victim?bcc=me@example.com', 'a&b@example.com', 'a%40b@example.com', 'a/b@example.com', 'a@b', 'a@-b.com', 'a@b.c', 'a b@example.com']) {
+    expect(isValidEmail(bad), bad).toBe(false);
+  }
+});
+
+test('rate limits count an IPv6 client by its /64, not its full address', () => {
+  const ip = (real: string) => clientIp(new Request('https://x.test', { headers: { 'x-real-ip': real } }));
+  expect(ip('2001:db8:1:2:aaaa::1')).toBe('2001:db8:1:2::/64');
+  expect(ip('2001:db8:1:2:bbbb:cccc:dddd:eeee')).toBe('2001:db8:1:2::/64');
+  expect(ip('2001:db8::1')).toBe('2001:db8:0:0::/64');
+  expect(ip('::ffff:203.0.113.9')).toBe('203.0.113.9');
+  expect(ip('203.0.113.9')).toBe('203.0.113.9');
 });
 
 test('only photo addresses are loaded as photos', () => {

@@ -120,7 +120,7 @@
   font-size: max(12px, .7rem); font-weight: 800; text-transform: uppercase; letter-spacing: .09em;
   color: var(--role); background: color-mix(in srgb, var(--role) 12%, transparent);
 }
-.curatorBio  { font-size: .87rem; color: var(--text-muted); line-height: 1.7; margin-top: .3rem; }
+.curatorBio  { font-size: .87rem; color: var(--text-muted); line-height: 1.7; margin-top: .3rem; overflow-wrap: anywhere; }
 .curatorBioClamped {
   display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -160,8 +160,10 @@
   border: 1px solid var(--border-color);
   border-radius: 18px;
   transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-  /* Cards mounting for the first time (page load or "View more") ease in. */
-  animation: shaperCardIn .4s ease both;
+  /* Cards mounting for the first time (page load or "View more") ease in.
+     `backwards`, not `both`: a held final keyframe pins transform and
+     cancels the hover lift below. */
+  animation: shaperCardIn .4s ease backwards;
 }
 /* Role accent along the start edge, revealed on hover. */
 .shaperCard::before {
@@ -220,6 +222,7 @@
 
 .shaperBio {
   font-size: .84rem; color: var(--text-muted); line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .shaperBioClamped {
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;

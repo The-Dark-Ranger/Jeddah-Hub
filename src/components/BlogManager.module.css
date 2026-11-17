@@ -406,7 +406,12 @@
 
 @media (max-width: 700px) {
   .formRow { grid-template-columns: 1fr; }
-  .postItem { flex-direction: column; }
+  /* Stacked, the card's parts take its full width (with flex-start they
+   * sized to their content, so a long one-line title made the whole page
+   * wider than the phone and the browser zoomed out). On a phone the full
+   * title wraps instead of being cut off. */
+  .postItem { flex-direction: column; align-items: stretch; }
+  .postTitle { white-space: normal; overflow-wrap: anywhere; }
   .postThumb { width: 100%; height: 150px; }
   .postActions { flex-direction: row; flex-wrap: wrap; }
 }

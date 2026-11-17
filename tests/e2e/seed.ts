@@ -44,6 +44,14 @@ export default async function seed() {
     authorRole: 'curator', createdAt: '2026-02-01T00:00:00.000Z', likedBy: [],
   });
 
+  // A draft with a long title: on a phone it must wrap, not widen the page.
+  await db.doc('blogs/long-title-draft').set({
+    title: 'A Full Circle Moment: How One Book Travelled from Lisbon to Jeddah and Back Again',
+    content: 'A draft kept for the phone layout test.', excerpt: 'A draft kept for the phone layout test.',
+    status: 'draft', authorId: PEOPLE.curator.uid, authorName: PEOPLE.curator.name,
+    authorRole: 'curator', createdAt: '2026-01-15T00:00:00.000Z', likedBy: [], tags: [],
+  });
+
   await db.doc('settings/charter').set({ requireSignature: true });
 
   // Compile the most used pages up front: the dev server builds each page on

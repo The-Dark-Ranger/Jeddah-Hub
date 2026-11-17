@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { FIRESTORE_REST } from '@/lib/emulators';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
+import { photoResponse, requestedWidth } from '@/lib/photoResponse';
 
 /* Serves a photo stored in the Firestore `media` collection (one document per
  * photo, see src/lib/media.ts) as a real image, so pages keep using a plain
- * <img src="/api/media/<id>">. Media documents are immutable, a new upload
+ * <img src="/api/media/<id>"> (with ?w= for a smaller copy, see
+ * lib/photoResponse.ts). Media documents are immutable, a new upload
  * always gets a new id, so responses are cached for a year at the CDN.
  * What reaches this code missed that cache and costs a database read, so
  * one visitor gets a generous but limited number per minute. */
@@ -33,11 +35,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const match = doc?.fields?.data?.stringValue?.match(DATA_RE);
   if (!match) return new NextResponse(null, { status: 404 });
 
-  return new NextResponse(Buffer.from(match[2], 'base64'), {
-    headers: {
-      'Content-Type': match[1],
-      'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+  return photoResponse(Buffer.from(match[2], 'base64'), match[1], requestedWidth(req));
 }

@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { adminApp } from '@/lib/firebaseAdmin';
-import { verifyRecaptchaToken } from '@/lib/serverRecaptcha';
+import { requestHost, verifyRecaptchaToken } from '@/lib/serverRecaptcha';
 import { isRateLimited, clientIp } from '@/lib/rateLimit';
 import { isValidEmail } from '@/lib/validateEmail';
 import { hasDeliverableDomainWithTimeout } from '@/lib/emailDeliverability';
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   // Fail closed: without a working reCAPTCHA check, nothing gets through.
   if (!process.env.RECAPTCHA_SECRET_KEY) return json({ error: 'unavailable' }, 503);
-  if (!(await verifyRecaptchaToken(body?.recaptchaToken, { action: 'contact', minScore: MIN_SCORE }))) {
+  if (!(await verifyRecaptchaToken(body?.recaptchaToken, { action: 'contact', minScore: MIN_SCORE, host: requestHost(req) }))) {
     return json({ error: 'bot_check_failed' }, 400);
   }
 
@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
   if (!(await withinLimit(`contact-ip:${ip}`, 10, DAY)) || !(await withinLimit(`contact-from:${email}`, 5, DAY))) {
     return json({ error: 'too_many' }, 429);
   }
+  // A ceiling for the whole site, far above a normal day's messages, so a
+  // flood from many networks can't bury the inbox.
+  if (!(await withinLimit('contact-day', 300, DAY))) return json({ error: 'too_many' }, 429);
   if (!(await hasDeliverableDomainWithTimeout(email))) return json({ error: 'invalid_email' }, 400);
 
   const app = adminApp();

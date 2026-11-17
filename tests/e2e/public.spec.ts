@@ -1,6 +1,8 @@
 /* The public site: every page opens in both languages, on phone and desktop. */
+import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { expectNoSidewaysScroll, PHOTO_PATH, PUBLISHED_POST, watchErrors } from './helpers';
+import { TEST_PASS_TOKEN } from '../../src/lib/serverRecaptcha';
 
 const PAGES = ['', '/about', '/projects', '/projects/green-jeddah', '/news', `/news/${PUBLISHED_POST.slug}`,
   '/become-a-shaper', '/contact', '/login', '/privacy-policy', '/terms-of-use'];
@@ -67,18 +69,45 @@ test('server routes refuse what they should', async ({ request }) => {
   expect((await request.post('/api/revalidate')).status()).toBe(401);
   // Account routes are for curators.
   expect((await request.post('/api/members/create-account', { data: {} })).status()).toBe(401);
-  // Forms refuse posts from other websites.
-  const crossSite = await request.post('/api/contact/send', { data: {}, headers: { origin: 'https://evil.example' } });
-  expect(crossSite.status()).toBe(403);
+  // Every change sent from another website's page is refused, before any
+  // route runs: forms, admin routes, and pages alike.
+  const evil = { origin: 'https://evil.example' };
+  expect((await request.post('/api/contact/send', { data: {}, headers: evil })).status()).toBe(403);
+  expect((await request.post('/api/members/create-account', { data: {}, headers: evil })).status()).toBe(403);
+  expect((await request.post('/api/revalidate', { headers: { 'sec-fetch-site': 'cross-site' } })).status()).toBe(403);
+  expect((await request.post('/api/media', { data: {}, headers: { 'sec-fetch-site': 'same-site' } })).status()).toBe(403);
+  expect((await request.post('/en/contact', { data: {}, headers: evil })).status()).toBe(403);
 });
 
-test('the server limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
-  const attempt = () => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'target@example.org' } });
-  // The first 10 get through to the bot check (refused here: no reCAPTCHA key in tests).
-  for (let i = 0; i < 10; i++) expect((await attempt()).status()).not.toBe(429);
+test('the server checks the sign-in form for bots too', async ({ request }) => {
+  const attempt = (extra: object) => request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'bot-check@example.org', ...extra } });
+  // The hidden field filled in, sent instantly, or with no timing at all.
+  expect((await attempt({ website: 'spam', elapsedMs: 5000 })).status()).toBe(403);
+  expect((await attempt({ elapsedMs: 200 })).status()).toBe(403);
+  expect((await attempt({})).status()).toBe(403);
+});
+
+test('the server slows down and then limits sign-in attempts per account, whatever the browser does', async ({ request }) => {
+  // `ip` stands in for the visitor's network (locally nothing else sets it),
+  // so this part doesn't share the per-network limit with the part below.
+  const send = (email: string, token: string, ip = '198.51.100.1') =>
+    request.post('/api/verify-recaptcha', { data: { token, action: 'login', email, website: '', elapsedMs: 5000 }, headers: { 'x-real-ip': ip } });
+  // Attempts that fail reCAPTCHA aren't counted: sending someone's address
+  // over and over can't lock them out.
+  for (let i = 0; i < 12; i++) expect((await send('victim@example.org', 'x', '198.51.100.2')).status()).toBe(400);
+  expect((await send('victim@example.org', TEST_PASS_TOKEN, '198.51.100.2')).status()).toBe(200);
+
+  // Attempts that pass it are: the first 10 go through, and from the fourth
+  // on each is answered a second later (up to 5).
+  const attempt = () => send('target@example.org', TEST_PASS_TOKEN);
+  for (let i = 0; i < 10; i++) {
+    const started = Date.now();
+    expect((await attempt()).status()).not.toBe(429);
+    if (i >= 3) expect(Date.now() - started).toBeGreaterThanOrEqual(Math.min(i - 2, 5) * 1000 - 50);
+  }
   expect((await attempt()).status()).toBe(429);
   // Other accounts aren't affected.
-  const other = await request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'someone@example.org' } });
+  const other = await request.post('/api/verify-recaptcha', { data: { token: 'x', action: 'login', email: 'someone@example.org', elapsedMs: 5000 } });
   expect(other.status()).not.toBe(429);
 });
 
@@ -89,4 +118,134 @@ test('security headers are sent', async ({ request }) => {
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['x-powered-by']).toBeUndefined();
+});
+
+test('on a phone, the open menu stays put: the page does not scroll under it and the bar stays', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/en', { waitUntil: 'networkidle' });
+  const bar = page.getByRole('navigation', { name: 'Main navigation' });
+  // Partway down the page, then up a little so the bar is showing.
+  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
+  await expect(bar).toHaveClass(/navbarHidden/);
+  await page.evaluate(() => window.scrollTo({ top: 850, behavior: 'instant' }));
+  await expect(bar).not.toHaveClass(/navbarHidden/);
+  await expect.poll(async () => (await bar.boundingBox())?.y).toBe(0);
+  const before = await page.evaluate(() => window.scrollY);
+
+  await page.getByRole('button', { name: 'Toggle menu' }).click();
+  await expect(page.getByRole('link', { name: 'Member Login' }).last()).toBeVisible();
+  // Trying to scroll the page down while the menu is open (this used to
+  // move the page and tuck the bar away, leaving a gap above the menu).
+  await page.evaluate(() => window.scrollBy({ top: 1200, behavior: 'instant' }));
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0); // pinned: nothing to scroll
+  expect((await bar.boundingBox())?.y).toBe(0);
+
+  await page.keyboard.press('Escape');
+  // Back exactly where the reader was.
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(Math.round(before));
+});
+
+/** The emulator's database, as the server sees it (Admin SDK). */
+async function serverDb() {
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+  const { getApps, initializeApp } = await import('firebase-admin/app');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  return getFirestore(getApps()[0] ?? initializeApp({ projectId: 'demo-jeddah-hub' }));
+}
+
+test('a newsletter link takes an address off the list, only with its own token', async ({ page, request }) => {
+  const db = await serverDb();
+  const subscribe = async (email: string, token: string) => {
+    const id = createHash('sha256').update(email).digest('hex');
+    await db.doc(`newsletter_subscribers/${id}`).set({ email, unsubToken: token, subscribedAt: new Date().toISOString(), locale: 'en' });
+    return id;
+  };
+  const listed = async (id: string) => (await db.doc(`newsletter_subscribers/${id}`).get()).exists;
+
+  const token = 'tok_abcdefghijklmnopqrstuvwx';
+  const id = await subscribe('leaving@example.com', token);
+  // A wrong token changes nothing, and answers like an address not on the list.
+  expect((await request.post('/api/newsletter/unsubscribe', { data: { id, t: 'not_the_right_token_12345' } })).status()).toBe(404);
+  // Opening the link (as link scanners do) only leads to the page.
+  const opened = await request.get(`/api/newsletter/unsubscribe?id=${id}&t=${token}&l=ar`, { maxRedirects: 0 });
+  expect(opened.status()).toBe(303);
+  expect(opened.headers().location).toContain(`/ar/unsubscribe?id=${id}&t=${token}`);
+  expect(await listed(id)).toBe(true);
+
+  // The page asks first, then takes the address off.
+  await page.goto(`/en/unsubscribe?id=${id}&t=${token}`);
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByRole('heading', { name: "You're unsubscribed" })).toBeVisible();
+  expect(await listed(id)).toBe(false);
+  // The same link again: nothing left to do.
+  await page.reload();
+  await page.getByRole('button', { name: 'Unsubscribe' }).click();
+  await expect(page.getByText("This link doesn't work any more", { exact: false })).toBeVisible();
+
+  // A mail app's own Unsubscribe button (RFC 8058 one-click).
+  const id2 = await subscribe('oneclick@example.com', 'tok_zyxwvutsrqponmlkjihgfedc');
+  const oneClick = await request.post(`/api/newsletter/unsubscribe?id=${id2}&t=tok_zyxwvutsrqponmlkjihgfedc&l=en`, { form: { 'List-Unsubscribe': 'One-Click' } });
+  expect(oneClick.status()).toBe(200);
+  expect(await listed(id2)).toBe(false);
+});
+
+test('a newsletter signup joins the list only through its own confirmation link', async ({ page, request }) => {
+  const db = await serverDb();
+  const pending = async (email: string, token: string, ageMs = 0) => {
+    const id = createHash('sha256').update(email).digest('hex');
+    await db.doc(`newsletter_pending/${id}`).set({ email, token, locale: 'en', requestedAt: new Date(Date.now() - ageMs).toISOString() });
+    return id;
+  };
+  const listed = async (id: string) => (await db.doc(`newsletter_subscribers/${id}`).get()).exists;
+
+  const token = 'conf_abcdefghijklmnopqrstuv';
+  const id = await pending('joining@example.com', token);
+  // A wrong token changes nothing.
+  expect((await request.post('/api/newsletter/confirm', { data: { id, t: 'not_the_right_token_12345' } })).status()).toBe(404);
+  // Opening the link (as link scanners do) only leads to the page.
+  const opened = await request.get(`/api/newsletter/confirm?id=${id}&t=${token}&l=ar`, { maxRedirects: 0 });
+  expect(opened.status()).toBe(303);
+  expect(opened.headers().location).toContain(`/ar/newsletter/confirm?id=${id}&t=${token}`);
+  expect(await listed(id)).toBe(false);
+
+  // The page asks first, then puts the address on the list with its own
+  // unsubscribe token, and the pending request is gone.
+  await page.goto(`/en/newsletter/confirm?id=${id}&t=${token}`);
+  await page.getByRole('button', { name: 'Confirm Subscription' }).click();
+  await expect(page.getByRole('heading', { name: "You're subscribed" })).toBeVisible();
+  const saved = await db.doc(`newsletter_subscribers/${id}`).get();
+  expect(saved.get('email')).toBe('joining@example.com');
+  expect(String(saved.get('unsubToken'))).toMatch(/^[A-Za-z0-9_-]{32}$/);
+  expect((await db.doc(`newsletter_pending/${id}`).get()).exists).toBe(false);
+  // The same link again does nothing more.
+  await page.reload();
+  await page.getByRole('button', { name: 'Confirm Subscription' }).click();
+  await expect(page.getByText("This link doesn't work any more", { exact: false })).toBeVisible();
+
+  // A link older than 7 days no longer works.
+  const old = await pending('late@example.com', 'conf_zyxwvutsrqponmlkjihgfe', 8 * 24 * 60 * 60_000);
+  expect((await request.post('/api/newsletter/confirm', { data: { id: old, t: 'conf_zyxwvutsrqponmlkjihgfe' } })).status()).toBe(404);
+  expect(await listed(old)).toBe(false);
+});
+
+test('photos come in smaller copies on request, and only at the allowed widths', async ({ request }) => {
+  // A real 600 x 400 photo, stored the way uploads are.
+  const sharp = (await import('sharp')).default;
+  const jpeg = await sharp({ create: { width: 600, height: 400, channels: 3, background: '#0f5a9f' } }).jpeg().toBuffer();
+  const db = await serverDb();
+  await db.doc('media/ResizeTestPhoto00001').set({ data: `data:image/jpeg;base64,${jpeg.toString('base64')}` });
+  const path = '/api/media/ResizeTestPhoto00001';
+
+  const full = await request.get(path);
+  expect(full.headers()['content-type']).toBe('image/jpeg');
+  const small = await request.get(`${path}?w=96`);
+  expect(small.status()).toBe(200);
+  expect(small.headers()['content-type']).toBe('image/webp');
+  expect(small.headers()['cache-control']).toContain('immutable');
+  expect((await sharp(await small.body()).metadata()).width).toBe(96);
+  // Any other width is ignored: the CDN only ever keeps the listed sizes.
+  expect((await request.get(`${path}?w=97`)).headers()['content-type']).toBe('image/jpeg');
+  // A photo the image library can't read still arrives, full size.
+  expect((await request.get(`${PHOTO_PATH}?w=96`)).headers()['content-type']).toBe('image/jpeg');
 });

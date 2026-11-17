@@ -15,6 +15,7 @@ import { useCategoryLabel } from '@/lib/categoryLabel';
 import { safeColor } from '@/lib/activityTypes';
 import { cssUrl } from '@/lib/sanitize';
 import { formatDate } from '@/lib/dates';
+import ErrorPanel from '@/components/ErrorPanel';
 
 /** The initiative's story, in reading order. */
 const STORY = [
@@ -82,6 +83,10 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
     initial ? (initial.initiative ?? placeholderFor(rawId)) : null);
   const [users, setUsers]           = useState<UserRecord[]>(initial?.users ?? []);
   const [loading, setLoading]       = useState(!initial);
+  // A browser load that failed (as opposed to no initiative matching the
+  // URL): shown as an error with Try again rather than "not found".
+  const [loadError, setLoadError]   = useState<Error | null>(null);
+  const [attempt, setAttempt]       = useState(0);
   const [related, setRelated]       = useState<Initiative[]>(initial?.related ?? []);
   const [copied, setCopied]         = useState(false);
   // Captured once so the timeline doesn't shift between re-renders.
@@ -98,6 +103,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
       }
       return;
     }
+    let cancelled = false;
     const load = async () => {
       try {
         let data: Initiative | null = null;
@@ -128,14 +134,16 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
           if (match) data = { id: match.id, ...(match.data() as Omit<Initiative, 'id'>) };
         }
 
-        if (!data) {
-          const legacyId = rawId.includes('--') ? rawId.slice(rawId.lastIndexOf('--') + 2) : rawId;
+        const legacyId = rawId.includes('--') ? rawId.slice(rawId.lastIndexOf('--') + 2) : rawId;
+        // A "/" can't be part of a doc id (doc() would throw): just no match.
+        if (!data && legacyId && !legacyId.includes('/')) {
           const legacySnap = await getDoc(doc(db, 'initiatives', legacyId));
           if (legacySnap.exists() && !legacySnap.data().type) {
             data = { id: legacySnap.id, ...(legacySnap.data() as Omit<Initiative, 'id'>) };
           }
         }
 
+        if (cancelled) return;
         if (data) {
           setInitiative(data);
 
@@ -158,26 +166,35 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
           // names, in chunks of 30 (Firestore 'in' query limit), from the
           // public_profiles mirror (no email field, see firestore.rules),
           // this is a public page, so the private `users` collection isn't
-          // readable here anyway.
+          // readable here anyway. Names are a nice-to-have: if they fail,
+          // the initiative still shows and each member reads "Shaper".
           const memberIds = Array.from(new Set((data.members || []).map(m => m.userId).filter(Boolean)));
           if (memberIds.length > 0) {
-            const chunks: string[][] = [];
-            for (let i = 0; i < memberIds.length; i += 30) chunks.push(memberIds.slice(i, i + 30));
-            const snaps = await Promise.all(
-              chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))))
-            );
-            setUsers(snaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord))));
+            try {
+              const chunks: string[][] = [];
+              for (let i = 0; i < memberIds.length; i += 30) chunks.push(memberIds.slice(i, i + 30));
+              const snaps = await Promise.all(
+                chunks.map(chunk => getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', chunk))))
+              );
+              if (!cancelled) setUsers(snaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserRecord))));
+            } catch (err) {
+              console.error('Initiative member names failed to load:', err);
+            }
           }
         } else {
-          setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === rawId) as Initiative ?? null);
+          setInitiative(placeholderFor(rawId));
         }
-      } catch {
-        setInitiative(PLACEHOLDER_PROJECTS.find(p => p.id === rawId) as Initiative ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err : new Error(String(err)));
       }
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
     load();
-  }, [rawId, initial, router]);
+    return () => { cancelled = true; };
+  }, [rawId, initial, router, attempt]);
+
+  const retry = () => { setLoadError(null); setLoading(true); setAttempt(a => a + 1); };
 
   const getUserName = (userId: string) => {
     const u = users.find(u => u.id === userId);
@@ -197,6 +214,8 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
   };
 
   if (loading) return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
+
+  if (loadError) return <main><ErrorPanel error={loadError} reset={retry} /></main>;
 
   if (!initiative) return (
     <div className={styles.notFound}>
@@ -293,7 +312,7 @@ export default function ProjectClient({ initial }: { initial?: InitiativeData })
 
       <div className={styles.container}>
         <Link href="/projects" className={styles.back}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+          <svg className="flip-rtl" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           {t('backToProjects')}

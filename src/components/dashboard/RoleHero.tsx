@@ -2,6 +2,7 @@
  * photo (or initial) on a background in their role's colour, so both pages
  * share one look. */
 import { roleStyle } from '@/lib/roleColors';
+import { safeImageSrc } from '@/lib/sanitize';
 import styles from './RoleHero.module.css';
 
 interface Props {
@@ -19,13 +20,15 @@ interface Props {
 }
 
 export default function RoleHero({ role, photoURL, name, eyebrow, title, as: Heading = 'h2', children }: Props) {
+  // On My Profile this is the photo address being typed, so it is checked.
+  const photo = safeImageSrc(photoURL);
   return (
     <div className={styles.hero} style={roleStyle(role)}>
       <span className={styles.ring1} aria-hidden="true" />
       <span className={styles.ring2} aria-hidden="true" />
       <div className={styles.avatar} aria-hidden="true">
-        {photoURL
-          ? <img src={photoURL} alt="" />
+        {photo
+          ? <img src={photo} alt="" />
           : <span>{(name || '?').trim().charAt(0).toUpperCase()}</span>}
       </div>
       <div className={styles.text}>

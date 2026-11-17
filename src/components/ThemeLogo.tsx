@@ -22,7 +22,9 @@ export default function ThemeLogo({
     width: 512,
     height: 491,
     className,
-    sizes: '160px',
+    // Widest rendering: the desktop navbar's 64px-tall logo (~67px wide);
+    // footer, login and email cards draw it at 48px tall.
+    sizes: '68px',
     loading: priority ? ('eager' as const) : ('lazy' as const),
   };
   return (

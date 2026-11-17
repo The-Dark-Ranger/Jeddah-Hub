@@ -1,21 +1,33 @@
 'use client';
 
-/* Dashboard > Initiatives (curators): create, edit, archive and feature
- * initiatives, manage teams, and review proposals and membership requests. */
-import { useState, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where, arrayUnion, arrayRemove } from 'firebase/firestore';
+/* Dashboard > Initiatives (curators and impact officers): create, edit,
+ * archive and feature initiatives, manage teams, and review proposals and
+ * membership requests. Featuring on the homepage is the curatorship's call
+ * alone (firestore.rules agrees); when an impact officer archives or
+ * restores an initiative, the curators get a notice on their Overview. */
+import { useState, useEffect, useCallback, useId, type Dispatch, type SetStateAction } from 'react';
+import {
+  collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where, arrayUnion, type QuerySnapshot,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
-import { downloadReport, type ReportInitiative } from '@/lib/initiativeReport';
+import type { ReportInitiative } from '@/lib/initiativeReport';
 import InitiativeCover from '@/components/InitiativeCover';
 import { uniqueInitiativeSlug } from '@/lib/slug';
 import { normalizeRole } from '@/lib/role';
 import { intlLocale } from '@/lib/dates';
 import { setSpotlight } from '@/lib/spotlight';
 import SearchSelect from '@/components/dashboard/SearchSelect';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useReportDownload } from '@/components/dashboard/useReportDownload';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 import { omitKeys } from '@/lib/omitKeys';
+import { orNull } from '@/lib/partialLoad';
+import { addToTeam, approveOnce, removeFromTeam } from '@/lib/teamChanges';
 import ModalPortal from '@/components/ModalPortal';
 import InitiativeFormFields, {
   emptyInitiativeForm as emptyForm, initiativeFormToDoc as formToDoc, initiativeToForm,
@@ -26,7 +38,10 @@ import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSe
 import { CategoryLabel } from '@/lib/categoryLabel';
 import { safeColor } from '@/lib/activityTypes';
 import RequestQueue from './RequestQueue';
-import { errorCode, isLeadRole, type InitiativeMember, type MembershipRequest, type LeadRequest, type Proposal, type TeamRole } from '@/lib/types';
+import {
+  errorCode, isLeadRole,
+  type InitiativeMember, type MemberEntry, type MembershipRequest, type LeadRequest, type Proposal, type TeamRole,
+} from '@/lib/types';
 
 interface Initiative {
   id: string;
@@ -44,14 +59,20 @@ interface Initiative {
   impact?: string;
   impactAreas?: string[];
   color?: string;
+  slug?: string;
   createdAt: string;
+  /** Always objects here: older bare-id entries are read as { userId }. */
   members?: InitiativeMember[];
+  /** Who has lead rights (what firestore.rules checks). */
+  leads?: string[];
   /** Hand-picked for the homepage's Featured Initiatives section. */
   featured?: boolean;
   /** The one initiative shown in the Initiatives page's Spotlight card. */
   spotlight?: boolean;
   featuredAt?: string;
 }
+
+interface UserLite { id: string; displayName?: string; displayNameAr?: string; email?: string }
 
 /** How many initiatives the homepage's Featured section shows at most. */
 const MAX_FEATURED = 3;
@@ -136,16 +157,21 @@ export default function ManageInitiatives() {
   const { user } = useAuth();
   const t        = useTranslations('Dashboard');
   const locale   = useLocale();
+  const titleId  = useId();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
+  const downloadReport = useReportDownload();
 
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [users, setUsers]             = useState<{ id: string; displayName?: string; displayNameAr?: string; email?: string }[]>([]);
+  const [users, setUsers]             = useState<UserLite[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<MembershipRequest[]>([]);
   const [removalRequests, setRemovalRequests] = useState<LeadRequest[]>([]);
   const [addRequests, setAddRequests] = useState<LeadRequest[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [seeding, setSeeding]   = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** Some request queue didn't load, so the queues shown may be incomplete. */
+  const [queuesFailed, setQueuesFailed] = useState(false);
   const [filter, setFilter]     = useState<'all' | 'active' | 'archived'>('all');
   const [search, setSearch]     = useState('');
 
@@ -154,93 +180,92 @@ export default function ManageInitiatives() {
   const [editingId, setEditingId]       = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [form, setForm]                 = useState<FormShape>(emptyForm);
+  /** The form as it opened, to tell whether closing would lose anything. */
+  const [formStart, setFormStart]       = useState(() => JSON.stringify(emptyForm));
 
   /* Team panel state */
   const [teamOpenId, setTeamOpenId] = useState<string | null>(null);
   const [assignUser, setAssignUser] = useState('');
   const [assignRole, setAssignRole] = useState<TeamRole>('Member');
-  const [assigning, setAssigning]   = useState(false);
 
   const role      = normalizeRole(user?.role);
   const canManage = role === 'curator' || role === 'vice_curator' || role === 'impact_officer';
   // Choosing what the homepage features is the curatorship's call
   // (firestore.rules enforces the same split).
   const canFeature = role === 'curator' || role === 'vice_curator';
+  const isImpact   = role === 'impact_officer';
 
   /* Stable onChange for FormFields */
   const handleFormChange = useCallback((key: keyof FormShape, value: string) => {
     setForm(f => ({ ...f, [key]: value }));
   }, []);
 
-  const fetchAll = async () => {
-    setLoading(true);
+  /** Loads the page. `quiet` (after a change, or retrying the queues) keeps
+   *  what's on screen instead of going back to the spinner. */
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) { setLoading(true); setLoadFailed(false); }
+    const pending = (name: string) =>
+      orNull(name, getDocs(query(collection(db, name), where('status', '==', 'pending'))));
     try {
-      const [initSnap, usersSnap] = await Promise.all([
+      const [initSnap, usersSnap, leaveSnap, removalSnap, addSnap, proposalSnap] = await Promise.all([
         getDocs(query(collection(db, 'initiatives'), orderBy('createdAt', 'desc'))),
         getDocs(collection(db, 'users')),
+        pending('leave_requests'), pending('removal_requests'), pending('member_add_requests'), pending('initiative_requests'),
       ]);
+      // Hub Activities share the collection (they carry a `type`); very old
+      // teams stored bare user ids.
       const inits = initSnap.docs
-        .map(d => ({ id: d.id, ...d.data() } as Initiative))
-        .filter(i => !(i as Initiative & { type?: string }).type);
+        .filter(d => !d.data().type)
+        .map(d => {
+          const data = d.data();
+          const members = ((data.members || []) as MemberEntry[]).map(m => (typeof m === 'string' ? { userId: m } : m));
+          return { id: d.id, ...data, members } as Initiative;
+        });
+      const titled = <R,>(snap: QuerySnapshot | null): R[] => (snap?.docs ?? []).map(d => {
+        const data = d.data();
+        const title = data.initiativeTitle || inits.find(i => i.id === data.initiativeId)?.title || data.initiativeId;
+        return { id: d.id, ...data, initiativeTitle: title } as R;
+      });
       setInitiatives(inits);
-      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; displayName?: string; displayNameAr?: string; email?: string })));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserLite)));
+      setLeaveRequests(titled<MembershipRequest>(leaveSnap));
+      setRemovalRequests(titled<LeadRequest>(removalSnap));
+      setAddRequests(titled<LeadRequest>(addSnap));
+      setProposals((proposalSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as Proposal)));
+      setQueuesFailed(!leaveSnap || !removalSnap || !addSnap || !proposalSnap);
+      setLoadFailed(false);
+    } catch (err) {
+      console.error('Failed to load initiatives:', errorCode(err));
+      // After a change the list on screen is still right; only a first load
+      // (or a retry) shows the failure instead of the list.
+      if (!quiet) setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // Leave requests (non-critical, catch separately)
-      try {
-        const leaveSnap = await getDocs(query(collection(db, 'leave_requests'), where('status', '==', 'pending')));
-        setLeaveRequests(leaveSnap.docs.map(d => {
-          const data = d.data();
-          const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as MembershipRequest;
-        }));
-      } catch { setLeaveRequests([]); }
+  // Only for those who may use this page; anyone else sees "restricted".
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once the role is known
+  useEffect(() => { if (canManage) load(); }, [load, canManage]);
 
-      // Removal requests (non-critical, catch separately)
-      try {
-        const removalSnap = await getDocs(query(collection(db, 'removal_requests'), where('status', '==', 'pending')));
-        setRemovalRequests(removalSnap.docs.map(d => {
-          const data = d.data();
-          const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as LeadRequest;
-        }));
-      } catch { setRemovalRequests([]); }
-
-      // Member-add requests (non-critical, catch separately)
-      try {
-        const addSnap = await getDocs(query(collection(db, 'member_add_requests'), where('status', '==', 'pending')));
-        setAddRequests(addSnap.docs.map(d => {
-          const data = d.data();
-          const init = inits.find(i => i.id === data.initiativeId);
-          return { id: d.id, ...data, initiativeTitle: data.initiativeTitle || init?.title || data.initiativeId } as LeadRequest;
-        }));
-      } catch { setAddRequests([]); }
-
-      // Proposed initiatives from shapers (non-critical, catch separately)
-      try {
-        const proposalSnap = await getDocs(query(collection(db, 'initiative_requests'), where('status', '==', 'pending')));
-        setProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
-      } catch { setProposals([]); }
-    } catch { /* Firestore not configured */ }
-    setLoading(false);
-  };
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
-  useEffect(() => { fetchAll(); }, []);
+  /** Changes one initiative in the list on screen, once the same change is saved. */
+  const patch = (id: string, change: (i: Initiative) => Partial<Initiative>) =>
+    setInitiatives(prev => prev.map(i => (i.id === id ? { ...i, ...change(i) } : i)));
+  const dropMember = (initiativeId: string, userId: string) => patch(initiativeId, i => ({
+    members: (i.members || []).filter(m => m.userId !== userId),
+    leads: (i.leads || []).filter(id => id !== userId),
+  }));
 
   /* ── Modal helpers ── */
-  const openCreate = () => {
-    setForm(emptyForm);
-    setEditingId(null);
-    setEditingTitle('');
-    setModalMode('create');
+  const openModal = (mode: 'create' | 'edit', start: FormShape, init?: Initiative) => {
+    setForm(start);
+    setFormStart(JSON.stringify(start));
+    setEditingId(init?.id ?? null);
+    setEditingTitle(init?.title ?? '');
+    setModalMode(mode);
   };
-
-  const openEdit = (init: Initiative) => {
-    setEditingId(init.id);
-    setEditingTitle(init.title);
-    setForm(initiativeToForm(init));
-    setModalMode('edit');
-  };
+  const openCreate = () => openModal('create', emptyForm);
+  const openEdit = (init: Initiative) => openModal('edit', initiativeToForm(init), init);
 
   const closeModal = () => {
     setModalMode(null);
@@ -248,134 +273,133 @@ export default function ManageInitiatives() {
     setEditingTitle('');
   };
 
-  /* Close on Escape key */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal(); };
-    if (modalMode) document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [modalMode]);
+  /** Escape and a click outside ask first, but only when something would be lost. */
+  const requestClose = () => {
+    if (JSON.stringify(form) !== formStart && !confirm(t('confirmDiscardChanges'))) return;
+    closeModal();
+  };
+  const dialogRef = useDialog(modalMode !== null, requestClose);
 
-  /* Prevent body scroll when modal is open */
-  useEffect(() => {
-    document.body.style.overflow = modalMode ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [modalMode]);
-
-  /* ── Form helpers ── */
   /* ── CRUD handlers ── */
-  const handleCreate = async (e: React.FormEvent) => {
+  const saving = isBusy('save');
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title) return;
-    setSaving(true);
-    try {
-      const slug = await uniqueInitiativeSlug(form.title);
-      await addDoc(collection(db, 'initiatives'), {
-        // leads starts empty (not omitted) so firestore.rules' lead-update
-        // branch (which requires 'leads' in resource.data) has something
-        // to check against from the moment the doc exists, rather than
-        // failing outright on a brand-new initiative before anyone's
-        // assigned as lead yet.
-        ...formToDoc(form), status: 'active', members: [], leads: [], createdAt: new Date().toISOString(), slug,
-      });
-      closeModal();
-      fetchAll();
-    } catch (err) {
-      alert(`${t('saveFailed')} ${errorCode(err)}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingId || !form.title) return;
-    setSaving(true);
-    try {
-      const slug = await uniqueInitiativeSlug(form.title, editingId);
-      await updateDoc(doc(db, 'initiatives', editingId), { ...formToDoc(form), slug });
-      closeModal();
-      fetchAll();
-    } catch (err) {
-      alert(`${t('saveFailed')} ${errorCode(err)}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSeedDefaults = async () => {
-    if (!confirm(t('seedDefaultsConfirm'))) return;
-    setSeeding(true);
-    try {
-      const now = new Date();
-      for (const init of DEFAULT_INITIATIVES) {
-        const d = new Date(now);
-        d.setSeconds(d.getSeconds() - DEFAULT_INITIATIVES.indexOf(init));
-        await addDoc(collection(db, 'initiatives'), {
-          ...init, members: [], leads: [], images: [], createdAt: d.toISOString(),
-        });
+    void run('save', async () => {
+      try {
+        const fields = formToDoc(form);
+        if (modalMode === 'create') {
+          const slug = await uniqueInitiativeSlug(form.title);
+          await addDoc(collection(db, 'initiatives'), {
+            // leads starts empty (not omitted) so firestore.rules' lead-update
+            // branch (which requires 'leads' in resource.data) has something
+            // to check against from the moment the doc exists, rather than
+            // failing outright on a brand-new initiative before anyone's
+            // assigned as lead yet.
+            ...fields, status: 'active', members: [], leads: [], createdAt: new Date().toISOString(), slug,
+          });
+          void load(true);
+        } else if (editingId) {
+          const slug = await uniqueInitiativeSlug(form.title, editingId);
+          await updateDoc(doc(db, 'initiatives', editingId), { ...fields, slug });
+          patch(editingId, () => ({ ...fields, slug, color: fields.color ?? undefined }));
+        }
+        closeModal();
+      } catch (err) {
+        console.error('Failed to save the initiative:', errorCode(err));
+        alert(saveFailed(err));
       }
-      await fetchAll();
+    });
+  };
+
+  const handleSeedDefaults = () => {
+    if (!confirm(t('seedDefaultsConfirm'))) return;
+    void run('seed', async () => {
+      try {
+        const now = Date.now();
+        for (const [n, init] of DEFAULT_INITIATIVES.entries()) {
+          await addDoc(collection(db, 'initiatives'), {
+            ...init, members: [], leads: [], images: [], createdAt: new Date(now - n * 1000).toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error('Failed to add the default initiatives:', errorCode(err));
+        alert(saveFailed(err));
+      }
+      // After a partial failure too, so what was added shows (and the button goes).
+      await load(true);
+    });
+  };
+
+  /** Impact officers' archive and restore show on the curators' Overview: one
+   *  notice for the whole curatorship (only curators can read notifications). */
+  const notifyCurators = async (type: 'archive_request' | 'restore_request', init: Initiative) => {
+    const name = user?.displayName || user?.email;
+    if (!user || !name) return;
+    const message = t(type === 'archive_request' ? 'notifyInitiativeArchived' : 'notifyInitiativeRestored', { name, title: init.title });
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        type, initiativeId: init.id, initiativeTitle: init.title.slice(0, 300),
+        fromUserId: user.uid, fromUserName: name, message: message.slice(0, 1000),
+        read: false, createdAt: new Date().toISOString(),
+      });
     } catch (err) {
-      alert(`${t('saveFailed')} ${errorCode(err)}`);
-    } finally {
-      setSeeding(false);
+      // The change itself is saved; only the curators' heads-up is missing.
+      console.error('Failed to notify the curators:', errorCode(err));
     }
   };
 
-  const handleArchive = async (id: string) => {
-    if (!confirm(t('archiveInitiativeConfirm'))) return;
-    try {
+  const setArchived = (init: Initiative, archive: boolean) => {
+    if (archive && !confirm(t('archiveInitiativeConfirm'))) return;
+    void run(`status:${init.id}`, async () => {
       // An archived initiative can't stay on the homepage's Featured row
       // or in the Initiatives page's Spotlight.
-      await updateDoc(doc(db, 'initiatives', id), {
-        status: 'archived', archivedAt: new Date().toISOString(), spotlight: false,
-        ...(canFeature ? { featured: false } : {}),
-      });
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+      const change: Partial<Initiative> = archive
+        ? { status: 'archived', spotlight: false, ...(canFeature ? { featured: false } : {}) }
+        : { status: 'active' };
+      try {
+        await updateDoc(doc(db, 'initiatives', init.id), { ...change, archivedAt: archive ? new Date().toISOString() : null });
+      } catch (err) {
+        console.error('Failed to archive or restore the initiative:', errorCode(err));
+        alert(saveFailed(err));
+        return;
+      }
+      patch(init.id, () => change);
+      if (isImpact) await notifyCurators(archive ? 'archive_request' : 'restore_request', init);
+    });
   };
 
   const featuredCount = initiatives.filter(i => i.featured && i.status === 'active').length;
 
-  const handleToggleFeatured = async (init: Initiative) => {
+  const handleToggleFeatured = (init: Initiative) => {
     if (!init.featured && featuredCount >= MAX_FEATURED) {
       alert(t('featuredLimit', { n: MAX_FEATURED }));
       return;
     }
-    try {
-      await updateDoc(doc(db, 'initiatives', init.id), {
-        featured: !init.featured,
-        featuredAt: !init.featured ? new Date().toISOString() : null,
-      });
-      setInitiatives(prev => prev.map(i => i.id === init.id ? { ...i, featured: !init.featured } : i));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+    void run(`feature:${init.id}`, async () => {
+      try {
+        await updateDoc(doc(db, 'initiatives', init.id), {
+          featured: !init.featured,
+          featuredAt: !init.featured ? new Date().toISOString() : null,
+        });
+        patch(init.id, () => ({ featured: !init.featured }));
+      } catch (err) {
+        console.error('Failed to change what the homepage features:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   };
 
-  const handleToggleSpotlight = async (init: Initiative) => {
+  // One key for every card: setting a spotlight also clears the previous one.
+  const handleToggleSpotlight = (init: Initiative) => run('spotlight', async () => {
     try {
       await setSpotlight(init.spotlight ? null : init.id, initiatives);
       setInitiatives(prev => prev.map(i => ({ ...i, spotlight: !init.spotlight && i.id === init.id })));
     } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
+      console.error('Failed to change the spotlight:', errorCode(err));
+      alert(saveFailed(err));
     }
-  };
-
-  const handleRestore = async (id: string) => {
-    try {
-      await updateDoc(doc(db, 'initiatives', id), { status: 'active', archivedAt: null });
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  });
 
   /* ── Team helpers ── */
   const toggleTeam = (id: string) => {
@@ -383,192 +407,101 @@ export default function ManageInitiatives() {
     setAssignUser(''); setAssignRole('Member');
   };
 
-  const handleAssign = async (initiativeId: string) => {
-    if (!assignUser) return;
-    setAssigning(true);
-    try {
-      const role = assignRole;
-      const isLead = isLeadRole(role);
-      await updateDoc(doc(db, 'initiatives', initiativeId), {
-        members: arrayUnion({ userId: assignUser, role }),
-        ...(isLead ? { leads: arrayUnion(assignUser) } : {}),
-      });
-      setAssignUser(''); setAssignRole('Member');
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    } finally {
-      setAssigning(false);
-    }
-  };
-
-  const handleRemoveMember = async (initiativeId: string, userId: string) => {
-    if (!confirm(t('confirmRemoveMember'))) return;
-    const init = initiatives.find(i => i.id === initiativeId);
-    if (!init) return;
-    try {
-      const wasLead = (init.members || []).some(
-        (m: InitiativeMember) => m.userId === userId && isLeadRole(m.role)
-      );
-      const updated = (init.members || []).filter((m: InitiativeMember) => m.userId !== userId);
-      await updateDoc(doc(db, 'initiatives', initiativeId), {
-        members: updated,
-        ...(wasLead ? { leads: arrayRemove(userId) } : {}),
-      });
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  /* Leave request handlers */
-  const handleApproveLeave = async (req: MembershipRequest) => {
-    const init = initiatives.find(i => i.id === req.initiativeId);
-    try {
-      if (init) {
-        const memberObj = (init.members || []).find((m: InitiativeMember) => m.userId === req.userId);
-        if (memberObj) {
-          const payload: Record<string, unknown> = { members: arrayRemove(memberObj) };
-          // A departing lead must also lose their `leads` entry, that's
-          // the array firestore.rules actually checks, so leaving it
-          // behind would grant a former member permanent write access.
-          if (isLeadRole(memberObj.role)) {
-            payload.leads = arrayRemove(req.userId);
-          }
-          await updateDoc(doc(db, 'initiatives', req.initiativeId), payload);
-        }
+  const handleAssign = (initiativeId: string) => {
+    const userId = assignUser, teamRole = assignRole;
+    if (!userId) return;
+    void run(`assign:${initiativeId}`, async () => {
+      const lead = isLeadRole(teamRole);
+      try {
+        await updateDoc(doc(db, 'initiatives', initiativeId), {
+          members: arrayUnion({ userId, role: teamRole }),
+          // Lead rights come from the `leads` array, not the role text.
+          ...(lead ? { leads: arrayUnion(userId) } : {}),
+        });
+        patch(initiativeId, i => ({
+          members: [...(i.members || []), { userId, role: teamRole }],
+          leads: lead ? Array.from(new Set([...(i.leads || []), userId])) : i.leads,
+        }));
+        setAssignUser(''); setAssignRole('Member');
+      } catch (err) {
+        console.error('Failed to add the team member:', errorCode(err));
+        alert(saveFailed(err));
       }
-      await updateDoc(doc(db, 'leave_requests', req.id), { status: 'approved' });
-      setLeaveRequests(prev => prev.filter(r => r.id !== req.id));
-      setInitiatives(prev => prev.map(i =>
-        i.id === req.initiativeId
-          ? { ...i, members: (i.members || []).filter((m: InitiativeMember) => m.userId !== req.userId) }
-          : i
-      ));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+    });
   };
 
-  const handleDeclineLeave = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'leave_requests', reqId), { status: 'declined' });
-      setLeaveRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+  const handleRemoveMember = (initiativeId: string, userId: string) => {
+    if (!confirm(t('confirmRemoveMember'))) return;
+    void run(`member:${initiativeId}:${userId}`, async () => {
+      try {
+        await removeFromTeam(initiativeId, userId);
+        dropMember(initiativeId, userId);
+      } catch (err) {
+        console.error('Failed to remove the team member:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   };
 
-  /* Proposed-initiative handlers */
-  const handleApproveProposal = async (proposal: Proposal) => {
-    try {
-      const { proposedBy } = proposal;
-      const fields = omitKeys(proposal, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
-      const slug = await uniqueInitiativeSlug(String(fields.title || ''));
-      // The proposer automatically becomes the new initiative's lead,
-      // they're the one who wants to run it, and this is what actually
-      // lets them edit it afterward (leads is the array firestore.rules
-      // checks, not the members[].role display text).
-      await addDoc(collection(db, 'initiatives'), {
+  /* ── Requests waiting for a decision ── */
+  /** Approves or declines one request, one click at a time per row; the row
+   *  leaves its queue once the decision is saved. */
+  function decide<R extends { id: string }>(req: R, setQueue: Dispatch<SetStateAction<R[]>>, action: () => Promise<unknown>) {
+    return run(`req:${req.id}`, async () => {
+      try {
+        await action();
+        setQueue(prev => prev.filter(r => r.id !== req.id));
+      } catch (err) {
+        console.error('Failed to save the decision:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
+  }
+  const reqBusy = (req: { id: string }) => isBusy(`req:${req.id}`);
+  const decline = (collectionName: string, id: string, extra: Record<string, unknown> = {}) =>
+    updateDoc(doc(db, collectionName, id), { status: 'declined', ...extra });
+
+  const approveProposal = (proposal: Proposal) => decide(proposal, setProposals, async () => {
+    const fields = omitKeys(proposal, ['id', 'proposedBy', 'proposedByName', 'status', 'requestedAt']);
+    const slug = await uniqueInitiativeSlug(String(fields.title || ''));
+    // Only while the proposal is still pending, so a retry can't create the
+    // initiative twice. The proposer automatically becomes its lead: they're
+    // the one who wants to run it, and `leads` (what firestore.rules checks,
+    // not the members[].role text) is what lets them edit it.
+    await approveOnce(doc(db, 'initiative_requests', proposal.id), { reviewedAt: new Date().toISOString() }, tx => {
+      tx.set(doc(collection(db, 'initiatives')), {
         ...fields,
         status: 'active',
-        members: [{ userId: proposedBy, role: 'Lead' }],
-        leads: [proposedBy],
+        members: [{ userId: proposal.proposedBy, role: 'Lead' }],
+        leads: [proposal.proposedBy],
         createdAt: new Date().toISOString(),
         slug,
       });
-      await updateDoc(doc(db, 'initiative_requests', proposal.id), {
-        status: 'approved', reviewedAt: new Date().toISOString(),
-      });
-      setProposals(prev => prev.filter(p => p.id !== proposal.id));
-      await fetchAll();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+    });
+    void load(true);
+  });
+  const declineProposal = (p: Proposal) =>
+    decide(p, setProposals, () => decline('initiative_requests', p.id, { reviewedAt: new Date().toISOString() }));
 
-  const handleDeclineProposal = async (proposalId: string) => {
-    try {
-      await updateDoc(doc(db, 'initiative_requests', proposalId), {
-        status: 'declined', reviewedAt: new Date().toISOString(),
-      });
-      setProposals(prev => prev.filter(p => p.id !== proposalId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  /* Removal request handlers */
-  const handleApproveRemoval = async (req: LeadRequest) => {
-    const init = initiatives.find(i => i.id === req.initiativeId);
-    try {
-      if (init) {
-        const memberObj = (init.members || []).find((m: InitiativeMember) => m.userId === req.targetUserId);
-        const wasLead = memberObj && isLeadRole(memberObj.role);
-        if (memberObj) {
-          await updateDoc(doc(db, 'initiatives', req.initiativeId), {
-            members: arrayRemove(memberObj),
-            ...(wasLead ? { leads: arrayRemove(req.targetUserId) } : {}),
-          });
-        }
-      }
-      await updateDoc(doc(db, 'removal_requests', req.id), { status: 'approved' });
-      setRemovalRequests(prev => prev.filter(r => r.id !== req.id));
-      setInitiatives(prev => prev.map(i =>
-        i.id === req.initiativeId
-          ? { ...i, members: (i.members || []).filter((m: InitiativeMember) => m.userId !== req.targetUserId) }
-          : i
-      ));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  const handleDeclineRemoval = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'removal_requests', reqId), { status: 'declined' });
-      setRemovalRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  /* Member-add request handlers */
-  const handleApproveAddMember = async (req: LeadRequest) => {
-    try {
-      await updateDoc(doc(db, 'initiatives', req.initiativeId), {
-        members: arrayUnion({ userId: req.targetUserId, role: 'Member' }),
-      });
-      await updateDoc(doc(db, 'member_add_requests', req.id), { status: 'approved' });
-      setAddRequests(prev => prev.filter(r => r.id !== req.id));
-      setInitiatives(prev => prev.map(i =>
-        i.id === req.initiativeId
-          ? { ...i, members: [...(i.members || []), { userId: req.targetUserId, role: 'Member' }] }
-          : i
-      ));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
-
-  const handleDeclineAddMember = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'member_add_requests', reqId), { status: 'declined' });
-      setAddRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  // A departing member also leaves `leads`, or a former lead would keep
+  // write access to the initiative.
+  const approveLeave = (req: MembershipRequest) => decide(req, setLeaveRequests, async () => {
+    await removeFromTeam(req.initiativeId, req.userId, {
+      settle: tx => tx.update(doc(db, 'leave_requests', req.id), { status: 'approved' }),
+    });
+    dropMember(req.initiativeId, req.userId);
+  });
+  const approveRemoval = (req: LeadRequest) => decide(req, setRemovalRequests, async () => {
+    await removeFromTeam(req.initiativeId, req.targetUserId, {
+      settle: tx => tx.update(doc(db, 'removal_requests', req.id), { status: 'approved' }),
+    });
+    dropMember(req.initiativeId, req.targetUserId);
+  });
+  const approveAdd = (req: LeadRequest) => decide(req, setAddRequests, async () => {
+    const added = await addToTeam(req.initiativeId, req.targetUserId,
+      tx => tx.update(doc(db, 'member_add_requests', req.id), { status: 'approved' }));
+    if (added) patch(req.initiativeId, i => ({ members: [...(i.members || []), { userId: req.targetUserId, role: 'Member' }] }));
+  });
 
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
@@ -576,7 +509,7 @@ export default function ManageInitiatives() {
   };
 
   const getMemberNames = (init: Initiative) =>
-    Object.fromEntries((init.members || []).map((m: InitiativeMember) => [m.userId, getUserLabel(m.userId)]));
+    Object.fromEntries((init.members || []).map(m => [m.userId, getUserLabel(m.userId)]));
 
   const filtered      = initiatives.filter(i => (filter === 'all' || i.status === filter)
     && matchesQuery(search, i.title, i.description, i.category, i.stat));
@@ -588,6 +521,9 @@ export default function ManageInitiatives() {
   );
 
   const isCreate = modalMode === 'create';
+  // Impact officers' archive and restore also tell the curators.
+  const archiveLabel = isImpact ? `${t('archiveLabel')} · ${t('notifyCurator')}` : t('archiveLabel');
+  const restoreLabel = isImpact ? `${t('restoreLabel')} · ${t('notifyCurator')}` : t('restoreLabel');
 
   return (
     <div className={styles.page}>
@@ -599,9 +535,10 @@ export default function ManageInitiatives() {
           <p className={styles.pageSubtitle}>{activeCount} {t('filterActive').toLowerCase()} · {archivedCount} {t('filterArchived').toLowerCase()}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {initiatives.length === 0 && !loading && (
-            <button className={styles.seedBtn} onClick={handleSeedDefaults} disabled={seeding}>
-              {seeding ? t('seeding') : t('loadDefaultInitiatives')}
+          {/* Only after a load that worked: a failed one isn't an empty list. */}
+          {!loading && !loadFailed && initiatives.length === 0 && (
+            <button className={styles.seedBtn} onClick={handleSeedDefaults} disabled={isBusy('seed')}>
+              {isBusy('seed') ? t('seeding') : t('loadDefaultInitiatives')}
             </button>
           )}
           <button className={styles.createBtn} onClick={openCreate}>
@@ -618,15 +555,20 @@ export default function ManageInitiatives() {
         <ModalPortal>
         <div
           className={styles.modalOverlay}
-          onClick={e => { if (e.target === e.currentTarget && confirm(t('confirmDiscardChanges'))) closeModal(); }}
+          onClick={e => { if (e.target === e.currentTarget) requestClose(); }}
         >
           <form
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className={styles.modal}
-            onSubmit={isCreate ? handleCreate : handleSaveEdit}
+            onSubmit={handleSubmit}
           >
             {/* Modal header */}
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>
+              <h3 id={titleId} className={styles.modalTitle}>
                 {isCreate ? t('createInitiative') : `${t('editInitiativeTitle')}: ${editingTitle}`}
               </h3>
               <button type="button" className={styles.modalClose} onClick={closeModal} aria-label={t('close')}>
@@ -695,6 +637,9 @@ export default function ManageInitiatives() {
       </div>
 
       {/* ── Requests waiting for a curator ── */}
+      {queuesFailed && !loadFailed && (
+        <LoadFailed onRetry={() => void load(true)} message={t('requestsLoadFailed')} />
+      )}
       <RequestQueue
         icon={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>}
         title={t('proposedInitiatives')}
@@ -702,8 +647,9 @@ export default function ManageInitiatives() {
         itemKey={p => p.id}
         name={p => p.title}
         meta={p => <>{t('proposedBy')} <strong>{p.proposedByName}</strong></>}
-        approveLabel={t('approveProposal')} onApprove={handleApproveProposal}
-        declineLabel={t('declineProposal')} onDecline={p => handleDeclineProposal(p.id)}
+        approveLabel={t('approveProposal')} onApprove={approveProposal}
+        declineLabel={t('declineProposal')} onDecline={declineProposal}
+        isBusy={reqBusy}
       />
       <RequestQueue
         icon={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>}
@@ -712,8 +658,9 @@ export default function ManageInitiatives() {
         itemKey={r => r.id}
         name={r => r.userName || r.userEmail}
         meta={r => <>{t('wantsToLeave')} <strong>{r.initiativeTitle}</strong></>}
-        approveLabel={t('approveLeave')} onApprove={handleApproveLeave}
-        declineLabel={t('declineLeave')} onDecline={r => handleDeclineLeave(r.id)}
+        approveLabel={t('approveLeave')} onApprove={approveLeave}
+        declineLabel={t('declineLeave')} onDecline={r => decide(r, setLeaveRequests, () => decline('leave_requests', r.id))}
+        isBusy={reqBusy}
       />
       <RequestQueue
         tone="remove"
@@ -723,8 +670,9 @@ export default function ManageInitiatives() {
         itemKey={r => r.id}
         name={r => r.targetUserName || r.targetUserId}
         meta={r => <>{t('requestedToRemove')} <strong>{r.initiativeTitle}</strong>{r.requestedByName && <> · {t('by')} {r.requestedByName}</>}</>}
-        approveLabel={t('approveRemoval')} onApprove={handleApproveRemoval}
-        declineLabel={t('declineRemoval')} onDecline={r => handleDeclineRemoval(r.id)}
+        approveLabel={t('approveRemoval')} onApprove={approveRemoval}
+        declineLabel={t('declineRemoval')} onDecline={r => decide(r, setRemovalRequests, () => decline('removal_requests', r.id))}
+        isBusy={reqBusy}
       />
       <RequestQueue
         icon={<><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/><path d="M2 21v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2"/></>}
@@ -733,13 +681,16 @@ export default function ManageInitiatives() {
         itemKey={r => r.id}
         name={r => r.targetUserName || r.targetUserId}
         meta={r => <>{t('requestedToAdd')} <strong>{r.initiativeTitle}</strong>{r.requestedByName && <> · {t('by')} {r.requestedByName}</>}</>}
-        approveLabel={t('approveAdd')} onApprove={handleApproveAddMember}
-        declineLabel={t('declineAdd')} onDecline={r => handleDeclineAddMember(r.id)}
+        approveLabel={t('approveAdd')} onApprove={approveAdd}
+        declineLabel={t('declineAdd')} onDecline={r => decide(r, setAddRequests, () => decline('member_add_requests', r.id))}
+        isBusy={reqBusy}
       />
 
       {/* ── Cards ── */}
       {loading ? (
         <div className={styles.loading}><div className={styles.spinner} /></div>
+      ) : loadFailed ? (
+        <LoadFailed onRetry={() => void load()} />
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
@@ -754,6 +705,7 @@ export default function ManageInitiatives() {
         <div className={styles.grid}>
           {filtered.map(init => {
             const fallbackColor = init.color || '#0f5a9f';
+            const statusBusy = isBusy(`status:${init.id}`);
             return (
             <div
               key={init.id}
@@ -824,6 +776,7 @@ export default function ManageInitiatives() {
                       type="button"
                       className={styles.featureBtn + (init.featured ? ' ' + styles.featureBtnOn : '')}
                       onClick={() => handleToggleFeatured(init)}
+                      disabled={isBusy(`feature:${init.id}`)}
                       aria-pressed={!!init.featured}
                       title={init.featured ? t('unfeature') : t('featureOnHome')}
                     >
@@ -836,7 +789,8 @@ export default function ManageInitiatives() {
                   <button
                     type="button"
                     className={styles.spotlightBtn + (init.spotlight ? ' ' + styles.spotlightBtnOn : '')}
-                    onClick={() => handleToggleSpotlight(init)}
+                    onClick={() => void handleToggleSpotlight(init)}
+                    disabled={isBusy('spotlight')}
                     aria-pressed={!!init.spotlight}
                     title={init.spotlight ? t('removeSpotlight') : t('setSpotlight')}
                   >
@@ -883,8 +837,8 @@ export default function ManageInitiatives() {
                   </svg>
                 </button>
                 {init.status === 'active' ? (
-                  <button type="button" className={styles.archiveBtn + ' ' + styles.iconOnly} onClick={() => handleArchive(init.id)}
-                    title={t('archiveLabel')} aria-label={t('archiveLabel')}>
+                  <button type="button" className={styles.archiveBtn + ' ' + styles.iconOnly} onClick={() => setArchived(init, true)}
+                    disabled={statusBusy} title={archiveLabel} aria-label={archiveLabel}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <polyline points="21 8 21 21 3 21 3 8"/>
                       <rect x="1" y="3" width="22" height="5"/>
@@ -892,8 +846,8 @@ export default function ManageInitiatives() {
                     </svg>
                   </button>
                 ) : (
-                  <button type="button" className={styles.restoreBtn + ' ' + styles.iconOnly} onClick={() => handleRestore(init.id)}
-                    title={t('restoreLabel')} aria-label={t('restoreLabel')}>
+                  <button type="button" className={styles.restoreBtn + ' ' + styles.iconOnly} onClick={() => setArchived(init, false)}
+                    disabled={statusBusy} title={restoreLabel} aria-label={restoreLabel}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <polyline points="1 4 1 10 7 10"/>
                       <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
@@ -910,7 +864,7 @@ export default function ManageInitiatives() {
                     <SearchSelect
                       className={styles.teamSelectSearch}
                       options={users
-                        .filter(u => !(init.members || []).some((m: InitiativeMember) => m.userId === u.id))
+                        .filter(u => !(init.members || []).some(m => m.userId === u.id))
                         .map(u => ({ value: u.id, label: u.displayName || u.email || u.id, hint: u.email, keywords: u.displayNameAr }))
                         .sort((a, b) => a.label.localeCompare(b.label))}
                       value={assignUser}
@@ -920,8 +874,8 @@ export default function ManageInitiatives() {
                       clearLabel={t('clearSelection')}
                     />
                     <TeamRoleSelect value={assignRole} onChange={setAssignRole} className={styles.teamRoleInput} />
-                    <button className={styles.assignBtn} onClick={() => handleAssign(init.id)} disabled={!assignUser || assigning}>
-                      {assigning ? '…' : t('addToTeam')}
+                    <button className={styles.assignBtn} onClick={() => handleAssign(init.id)} disabled={!assignUser || isBusy(`assign:${init.id}`)}>
+                      {isBusy(`assign:${init.id}`) ? '…' : t('addToTeam')}
                     </button>
                   </div>
                   {(init.members || []).length === 0 ? (
@@ -932,7 +886,8 @@ export default function ManageInitiatives() {
                         <div key={m.userId + idx} className={styles.memberRow}>
                           <span className={styles.memberName}>{getUserLabel(m.userId)}</span>
                           <span className={styles.memberRole}>{teamRoleLabel(t, m.role)}</span>
-                          <button className={styles.removeBtn} onClick={() => handleRemoveMember(init.id, m.userId)}>
+                          <button className={styles.removeBtn} onClick={() => handleRemoveMember(init.id, m.userId)}
+                            disabled={isBusy(`member:${init.id}:${m.userId}`)}>
                             {t('removeMember')}
                           </button>
                         </div>

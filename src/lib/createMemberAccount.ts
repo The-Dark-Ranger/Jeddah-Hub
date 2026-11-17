@@ -28,32 +28,40 @@ export async function createMemberAccount(email: string, displayName: string, ro
   }
 }
 
-/** A new one-time password for a member who has never signed in; null when
- *  they already have (they keep their own) or on any failure. */
-export async function resetTempPassword(email: string): Promise<string | null> {
+/** A new one-time password for a member who has never signed in. 'kept'
+ *  means they already have (they keep their own password) or the server
+ *  refused (a curator's account, for a vice curator). */
+export async function resetTempPassword(email: string): Promise<{ result: 'reset' | 'kept' | 'not-found' | 'failed'; tempPassword?: string }> {
   try {
     const data = await post({ email, action: 'reset-temp' });
-    return data?.result === 'reset' && data.tempPassword ? data.tempPassword : null;
+    if (data?.result === 'reset' && data.tempPassword) return { result: 'reset', tempPassword: data.tempPassword };
+    return { result: data?.result === 'kept' || data?.result === 'not-found' ? data.result : 'failed' };
+  } catch {
+    return { result: 'failed' };
+  }
+}
+
+/** When each of these emails last signed in (only those that have).
+ *  Curators only; null when the check failed, so nobody is wrongly shown
+ *  as never having signed in. */
+export async function getSignInStatus(emails: string[]): Promise<Record<string, string> | null> {
+  try {
+    const data = await post({ action: 'signin-status', emails }) as { result?: string; signedIn?: Record<string, string> } | null;
+    return data?.result === 'ok' ? data.signedIn ?? {} : null;
   } catch {
     return null;
   }
 }
 
-/** When each of these emails last signed in (only those that have).
- *  Curators only; empty on any failure. */
-export async function getSignInStatus(emails: string[]): Promise<Record<string, string>> {
-  try {
-    const data = await post({ action: 'signin-status', emails }) as { signedIn?: Record<string, string> } | null;
-    return data?.signedIn ?? {};
-  } catch {
-    return {};
-  }
-}
-
 /** Undoes createMemberAccount for a pending member who has never signed in
- *  (the server keeps anyone who has). Best-effort. */
-export async function removePendingMember(email: string): Promise<void> {
-  try { await post({ email, action: 'remove' }); } catch { /* best-effort */ }
+ *  (the server keeps anyone who has: 'kept'). */
+export async function removePendingMember(email: string): Promise<'removed' | 'kept' | 'not-found' | 'failed'> {
+  try {
+    const r = (await post({ email, action: 'remove' }))?.result;
+    return r === 'removed' || r === 'kept' || r === 'not-found' ? r : 'failed';
+  } catch {
+    return 'failed';
+  }
 }
 
 /** Removes a member who already has an account from the Hub entirely

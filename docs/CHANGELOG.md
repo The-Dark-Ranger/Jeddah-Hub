@@ -5,6 +5,49 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 14 November
+- Faster everywhere: public pages are built ahead and served from Vercel's CDN instead of being rendered on every visit (a cookie read in the page frame made every page render per request), and refresh within a minute of a dashboard edit as before. About half of the site's text (the dashboard's and the legal pages') no longer travels with every public page. Avatars, gallery thumbnails and cards load photo copies sized for them instead of the full photo. The site icon is 16 KB instead of 295 KB. The loading screen shows only on the first page of a visit, and briefly.
+- Newsletter: signing up now sends a link to confirm the address, and only then is it on the list (double opt-in), so nobody can sign up someone else. Every signup gets the same "check your inbox" answer, so the form can't reveal who is subscribed.
+- Contact form: the visitor's receipt confirms the message arrived but no longer repeats it, so the form can't be used to send someone else's words from the hub's address.
+- Sign-in: attempts count against an account only once reCAPTCHA has passed, so nobody can lock a member out just by sending their address. A blocked reCAPTCHA (an ad blocker) is named as the problem. A confirmation link opened without a connection says so, instead of "expired".
+- Security: email addresses can't carry extra fields into reply links; only the Curator can set a curator's password or remove their account, however the role is written; limits count an IPv6 connection as one network; a site-wide daily ceiling on contact messages and form answers; the email budget stops sending if it can't be checked; emails link only to jeddahhub.org in production; a narrower content security policy. The database rules now check sizes and types on initiatives, proposals, activity requests and post tags, compare roles however they are capitalised, and let reviewers change only a request's outcome.
+- Dashboards: impact officers can review and publish everyone's posts (they could only see their own), and use the curators' Initiatives page with its proposal and team-change queues (their separate Projects page left a removed lead able to edit). A failed load now says so with a Try Again button everywhere, instead of showing "No messages yet" or an empty list, and a dropped connection at sign-in no longer shows "pending role assignment". Buttons can't save twice (one click, one initiative); team changes read the team fresh and save the request's outcome in the same step. Windows close with Escape and keep keyboard focus inside. Profile changes show in the sidebar straight away. Messages are marked replied only once you say you sent the reply. Notifications show in the reader's language. Plain explanations replace raw error codes.
+- Phones and tablets: form fields no longer zoom the page on iPhone, long links and addresses wrap instead of being cut off, arrows point the right way in Arabic, Arabic text keeps its letter joins, buttons are at least 40 px to tap, dashboard windows fit the screen with the browser's toolbars, the navbar switches to the menu below 900 px instead of wrapping its links, and very wide screens keep a readable width.
+- Language: 176 English and 141 Arabic strings edited for grammar, consistency and flow (for example "Initiatives" throughout the dashboard instead of "Projects", and one Arabic term for each idea).
+- Up to date: Firebase 13.3, Firebase Admin 14.5.1, next-intl 4.15, jose 6.2.17, BotID 1.5.13, Playwright 1.65.1. 0 known vulnerabilities.
+
+### 12 November (later)
+- The email that confirms a member's address now comes from members@jeddahhub.org, branded and in the language of the sign-in page, and its link opens jeddahhub.org. It replaced Firebase's plain English email ("Verify your email for project-460222031412", from a firebaseapp.com address). Opened on the same browser, the link goes straight on to the dashboard; on another device it confirms and asks the member to sign in; a used or expired link says so.
+- Newsletter: the welcome email has a working unsubscribe link (a page that asks first) and mail apps' one-click Unsubscribe button, instead of "reply with unsubscribe".
+- Dashboards: everyone starts on the Overview, now first in every sidebar. Its new "Waiting for you" list counts every queue the member's role decides on (messages, posts to review, initiative proposals, join, leave, add and removal requests, role changes, activity proposals and form answers; for leads, their teams' requests), each linking to where it's handled. Curators and impact officers see the member count. The Overview's cards and the sidebar share one set of icons, and "Mark as read" is easier to tap.
+- Cleanup: the Overview is shorter despite doing more; strings no longer used are removed.
+
+### 12 November
+- Up to date and patched: Next.js 16.4.6, which fixes seven security problems in Next.js (among them a way past the image service's refusal of SVG files); Firebase 13.2, which fixes errors when a sign-in is restored from the browser's storage; the Firebase Admin SDK 14 on the server, with its newer database client; Speed Insights 2.1 and Playwright 1.65. The security audit is at 0 known vulnerabilities. The site is built and developed on Node.js 24, the same version as production.
+- Emails escape the names they carry everywhere, including the hidden preview line and the title, so a name can never add markup to an email. The plain-text version of an invite shows names as typed (an apostrophe used to show as "&#39;").
+- Photo previews in the dashboard only load addresses a photo can come from: an uploaded photo, an inline one, or an http(s) link.
+- Profile photos are saved as their own photo, like initiative photos, instead of inside the profile, so the profiles every public page reads get smaller as members update their photos.
+- Public pages read the database with three tries of 10 seconds instead of two of 20, after the server logs showed occasional dropped connections to Firestore. Visitors keep seeing the last copy while a refresh fails.
+- The sign-in page no longer reads "Keep me signed in" while the server builds the page, which logged a warning on every visit.
+- GitHub: CodeQL now checks every change for security problems, and the empty wiki tab is gone. The README, developer guide and How it works now describe the sign-in and session rules from 10 November.
+- Cleanup: an unused style, an unused function in the security rules, the Realtime Database addresses in the content security policy (the site doesn't use one) and out-of-date comments.
+- The security rules from 10 November are live on the database: only a confirmed email address, a sign-in from the last 14 days, and one not signed out everywhere since can read or change anything a member can.
+
+### 11 November
+- Phones: with the menu open, the page underneath no longer scrolls and the top bar no longer slides away, which left the menu hanging below a gap. Closing the menu returns to the same place on the page.
+- Phones and tablets: Member Login now sits only in the menu, like the Dashboard and Sign out buttons, so the top bar shows just the logo, theme, language and menu.
+
+### 10 November
+- Only confirmed email addresses get in: a member whose address isn't confirmed is sent a link when they sign in and sees nothing else until they open it. The database and the server refuse an unconfirmed account too, so this can't be skipped.
+- Sessions have limits: every sign-in ends after 14 days, and on a shared computer ("Keep me signed in" unticked) after 30 minutes without activity. The sign-in page says why a session ended.
+- Signing out everywhere takes effect at once: when a curator sends a member a new password or removes them, every session that member had stops working straight away, not up to an hour later. Open pages notice within minutes, or as soon as the tab is used again.
+- Sign-in is slower to attack: each wrong password makes the next try wait (1, 2, 4, then 8 seconds) before the lockout, and the server answers repeated attempts on one account more slowly. The server now checks the sign-in form's hidden bot field and fill time too.
+- Forged requests are refused everywhere: any change sent from another website's page (a hidden form in a member's browser, for example) is turned away before it reaches any route or page, not only the forms.
+- Admin changes have daily limits that hold across every server: account changes (create, reset, remove) and refreshing the public pages, alongside the existing limits on invites and photo uploads.
+
+### 8 November
+- Previews stay private: the code no longer names the preview address or the Vercel account. The bot check recognises a preview by the address it is reached at.
+
 ### 5 November (Test-Zone)
 - Calendar, first look (example events only, nothing is saved and no emails are sent): a Calendar page in the dashboard for every member, with a week view on phones and a large month view and a seven-column week on laptops; a calendar icon in the navbar on every page for signed-in members, showing this week's events; event details with who is on the team, who was invited and their replies, and double-booking warnings; and an add/edit form limited to what each role may manage. "Preview as" switches between the curator, initiative lead and member views without changing anyone's real role.
 

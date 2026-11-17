@@ -1,7 +1,9 @@
 'use client';
 
-/* Dashboard > Messages: messages sent through the Contact page. */
-import { useState, useEffect, useId } from 'react';
+/* Dashboard > Messages: messages sent through the Contact page. Replies are
+ * written in the curator's own email app (a mailto: link); a message is
+ * marked as replied only once the curator says the reply went out. */
+import { useState, useEffect, useId, useCallback } from 'react';
 import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -9,8 +11,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import { isValidEmail } from '@/lib/validateEmail';
 import { normalizeRole } from '@/lib/role';
+import { errorCode } from '@/lib/types';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useDialog } from '@/components/dashboard/useDialog';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 import styles from './Messages.module.css';
 import { intlLocale } from '@/lib/dates';
 
@@ -49,8 +56,18 @@ const SUBJECT_KEYS: Record<string, string> = {
   join: 'subjectJoin', media: 'subjectMedia', other: 'subjectOther',
 };
 
+/** A mailto: link. The address is encoded too, so nothing in it can add
+ *  recipients or fields to the link. */
+const mailto = (address: string, fields: Record<string, string> = {}) => {
+  const params = Object.entries(fields).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  return `mailto:${encodeURIComponent(address.trim())}${params ? `?${params}` : ''}`;
+};
+
 export default function MessagesPage() {
   const formId = useId();
+  const titleId = useId();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
   const { user } = useAuth();
   const locale   = useLocale();
   const t  = useTranslations('Dashboard');
@@ -61,6 +78,7 @@ export default function MessagesPage() {
   };
   const [messages, setMessages]       = useState<ContactMessage[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [loadFailed, setLoadFailed]   = useState(false);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
   const [filter, setFilter]           = useState('all');
   const [status, setStatus]           = useState<'all' | 'unread' | 'replied' | 'awaiting'>('all');
@@ -69,23 +87,42 @@ export default function MessagesPage() {
   const [composeTo, setComposeTo]     = useState('');
   const [composeSubj, setComposeSubj] = useState('');
   const [composeBody, setComposeBody] = useState('');
-  const [sending, setSending]         = useState(false);
   const [replyingId, setReplyingId]   = useState<string | null>(null);
+  /** What the compose window opened with, to tell whether closing loses anything. */
+  const [composeStart, setComposeStart] = useState('');
+  /** The email app was opened for a reply: now asking whether it was sent. */
+  const [askSent, setAskSent]         = useState(false);
 
   const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
 
-  useEffect(() => {
-    if (!isCurator) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const snap = await getDocs(query(collection(db, 'contact_messages'), orderBy('submittedAt', 'desc')));
-        setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as ContactMessage)));
-      } catch { /* not configured */ }
+  const load = useCallback(async () => {
+    setLoading(true); setLoadFailed(false);
+    try {
+      const snap = await getDocs(query(collection(db, 'contact_messages'), orderBy('submittedAt', 'desc')));
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as ContactMessage)));
+    } catch (err) {
+      // Never "No messages yet" after a failed load: there may be many.
+      console.error('Failed to load messages:', errorCode(err));
+      setLoadFailed(true);
+    } finally {
       setLoading(false);
-    })();
-  }, [isCurator]);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once the role is known
+    if (isCurator) load();
+  }, [isCurator, load]);
+
+  const closeCompose = () => { setComposeOpen(false); setReplyingId(null); setAskSent(false); };
+  /** Escape and a click outside ask first, but only when a draft would be lost. */
+  const requestCloseCompose = () => {
+    const dirty = !askSent && JSON.stringify([composeTo, composeSubj, composeBody]) !== composeStart;
+    if (dirty && !confirm(t('confirmDiscardChanges'))) return;
+    closeCompose();
+  };
+  const dialogRef = useDialog(composeOpen, requestCloseCompose);
 
   if (!isCurator) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
 
@@ -101,63 +138,63 @@ export default function MessagesPage() {
         // read-flag write just leaves the unread badge stale rather than
         // blocking anything; an alert() here would be a false alarm for
         // an action the curator didn't explicitly take.
-        console.error(err);
+        console.error('Failed to mark the message as read:', errorCode(err));
       }
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm(t('confirmDeleteMessage'))) return;
-    try {
-      await deleteDoc(doc(db, 'contact_messages', id));
-      setMessages(prev => prev.filter(m => m.id !== id));
-      if (expandedId === id) setExpandedId(null);
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+    void run(`delete:${id}`, async () => {
+      try {
+        await deleteDoc(doc(db, 'contact_messages', id));
+        setMessages(prev => prev.filter(m => m.id !== id));
+        if (expandedId === id) setExpandedId(null);
+      } catch (err) {
+        console.error('Failed to delete the message:', errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
+  };
+
+  const openCompose = (to = '', subj = '', body = '', replyTo: string | null = null) => {
+    setComposeTo(to); setComposeSubj(subj); setComposeBody(body);
+    setComposeStart(JSON.stringify([to, subj, body]));
+    setReplyingId(replyTo);
+    setAskSent(false);
+    setComposeOpen(true);
   };
 
   const openReply = (msg: ContactMessage) => {
     const quote = `\n\n---\nOn ${new Date(msg.submittedAt).toLocaleDateString()}, ${msg.name} wrote:\n"${msg.message}"`;
-    setComposeTo(msg.email);
-    setComposeSubj(`Re: ${subjectLabel(msg.subject)}`);
-    setComposeBody(quote);
-    setReplyingId(msg.id);
-    setComposeOpen(true);
+    openCompose(msg.email, `Re: ${subjectLabel(msg.subject)}`, quote, msg.id);
   };
 
-  const openCompose = (to = '', subj = '', body = '') => {
-    setComposeTo(to); setComposeSubj(subj); setComposeBody(body);
-    setReplyingId(null);
-    setComposeOpen(true);
-  };
-
-  const handleSend = async () => {
+  const handleSend = () => {
     if (!isValidEmail(composeTo)) { alert(t('invalidEmail')); return; }
-    setSending(true);
     try {
-      const mailUrl = `mailto:${composeTo}?subject=${encodeURIComponent(composeSubj)}&body=${encodeURIComponent(composeBody)}`;
-      window.open(mailUrl);
-
-      if (replyingId) {
-        await updateDoc(doc(db, 'contact_messages', replyingId), {
-          replied: true, repliedAt: new Date().toISOString(),
-        });
-        setMessages(prev => prev.map(m =>
-          m.id === replyingId ? { ...m, replied: true, repliedAt: new Date().toISOString() } : m
-        ));
-      }
-
-      setComposeOpen(false);
-      setReplyingId(null);
+      window.open(mailto(composeTo, { subject: composeSubj, body: composeBody }));
     } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    } finally {
-      setSending(false);
+      console.error('Failed to open the email app:', errorCode(err));
+      alert(t('openMailFailed'));
+      return;
     }
+    // Only the curator knows whether the reply actually went out.
+    if (replyingId) setAskSent(true);
+    else closeCompose();
   };
+
+  const markReplied = (id: string) => run(`replied:${id}`, async () => {
+    const repliedAt = new Date().toISOString();
+    try {
+      await updateDoc(doc(db, 'contact_messages', id), { replied: true, repliedAt });
+      setMessages(prev => prev.map(m => (m.id === id ? { ...m, replied: true, repliedAt } : m)));
+      closeCompose();
+    } catch (err) {
+      console.error('Failed to mark the message as replied:', errorCode(err));
+      alert(saveFailed(err));
+    }
+  });
 
   const filtered = messages.filter(m =>
     (filter === 'all' || m.subject === filter)
@@ -234,6 +271,8 @@ export default function MessagesPage() {
       {/* Message list */}
       {loading ? (
         <DashSkeleton rows={5} header={false} label={t('loading')} />
+      ) : loadFailed ? (
+        <LoadFailed onRetry={() => void load()} />
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
@@ -284,7 +323,7 @@ export default function MessagesPage() {
 
                 {isExpanded && (
                   <div className={styles.messageExpanded}>
-                    <a href={`mailto:${msg.email}`} className={styles.senderEmail}>
+                    <a href={mailto(msg.email)} className={styles.senderEmail}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/>
                       </svg>
@@ -304,7 +343,7 @@ export default function MessagesPage() {
                         </svg>
                         {t('replyByEmail')}
                       </button>
-                      <button className={styles.deleteBtn} onClick={() => handleDelete(msg.id)}>
+                      <button className={styles.deleteBtn} onClick={() => handleDelete(msg.id)} disabled={isBusy(`delete:${msg.id}`)}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3 6 5 6 21 6"/>
                           <path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
@@ -324,16 +363,28 @@ export default function MessagesPage() {
       {/* Compose / Reply modal */}
       {composeOpen && (
         <ModalPortal>
-        <div className={styles.overlay} onClick={() => { if (confirm(t('confirmDiscardChanges'))) setComposeOpen(false); }}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+        <div className={styles.overlay} onClick={requestCloseCompose}>
+          <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId}
+            className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>{replyingId ? t('replyModalTitle') : t('newMessageModalTitle')}</h3>
-              <button className={styles.modalClose} onClick={() => setComposeOpen(false)} aria-label={t('closeModal')}>
+              <h3 id={titleId} className={styles.modalTitle}>{replyingId ? t('replyModalTitle') : t('newMessageModalTitle')}</h3>
+              <button className={styles.modalClose} onClick={closeCompose} aria-label={t('closeModal')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
+            {askSent && replyingId ? (<>
+            <div className={styles.modalBody}>
+              <p className={styles.mailtoNote} role="status">{t('replySentQuestion')}</p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={closeCompose}>{t('notSentYet')}</button>
+              <button className={styles.sendBtn} onClick={() => void markReplied(replyingId)} disabled={isBusy(`replied:${replyingId}`)}>
+                {t('markAsReplied')}
+              </button>
+            </div>
+            </>) : (<>
             <div className={styles.modalBody}>
               <div className={styles.modalField}>
                 <label htmlFor={`${formId}-composeTo`} className={styles.modalLabel}>{t('toLabel')}</label>
@@ -355,19 +406,20 @@ export default function MessagesPage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                {t('mailtoNote')}
+                {t('mailtoNoteConfirm')}
               </p>
             </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setComposeOpen(false)}>{t('cancel')}</button>
-              <button className={styles.sendBtn} onClick={handleSend} disabled={!composeTo || sending}>
+              <button className={styles.cancelBtn} onClick={closeCompose}>{t('cancel')}</button>
+              <button className={styles.sendBtn} onClick={handleSend} disabled={!composeTo}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="22" y1="2" x2="11" y2="13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
-                {sending ? t('opening') : replyingId ? t('sendReply') : t('send')}
+                {replyingId ? t('sendReply') : t('send')}
               </button>
             </div>
+            </>)}
           </div>
         </div>
         </ModalPortal>

@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useId } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
 import { collection, getDocs, setDoc, deleteDoc, updateDoc, deleteField, doc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -42,6 +43,10 @@ interface RoleAssignment {
 
 interface KnownUser { email: string; displayName?: string; }
 
+/** Whether the assignment's sign-in account exists ('failed' and
+ *  'not-configured' are recorded too, and mean there is none). */
+const hasLogin = (a: RoleAssignment) => a.account === 'created' || a.account === 'exists';
+
 
 export default function MembersPage() {
   const formId = useId();
@@ -51,6 +56,9 @@ export default function MembersPage() {
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
   const [knownUsers, setKnownUsers]   = useState<KnownUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // The server couldn't say who has signed in, so Pending may be out of date.
+  const [signinUnknown, setSigninUnknown] = useState(false);
   const [name, setName]   = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole]   = useState<UserRole>('shaper');
@@ -75,8 +83,10 @@ export default function MembersPage() {
     { value: 'alumni',         label: t('roleLabelAlumni') },
   ];
 
-  const fetchAssignments = useCallback(async () => {
-    setLoading(true);
+  const fetchAssignments = useCallback(async ({ quiet = false } = {}) => {
+    // A quiet reload (after a change) keeps the list on screen.
+    if (!quiet) setLoading(true);
+    setLoadFailed(false);
     try {
       const snap = await getDocs(query(collection(db, 'role_assignments'), orderBy('createdAt', 'desc')));
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as RoleAssignment));
@@ -85,13 +95,15 @@ export default function MembersPage() {
       // joined" (Acknowledge clears them). Sign-in times come from the
       // server, the only place that can read them.
       const signedIn = await getSignInStatus(list.filter(a => a.status !== 'joined').map(a => a.email));
-      if (Object.keys(signedIn).length) {
+      setSigninUnknown(signedIn === null);
+      if (signedIn && Object.keys(signedIn).length) {
         setAssignments(list.map(a => signedIn[a.email.toLowerCase()]
           ? { ...a, status: 'joined', joinedAt: a.joinedAt ?? signedIn[a.email.toLowerCase()] }
           : a));
       }
     } catch (err) {
-      console.error(err);
+      console.error('[role assignments] load failed', err);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -107,8 +119,9 @@ export default function MembersPage() {
     } catch { /* users collection may not exist */ }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
-  useEffect(() => { fetchAssignments(); fetchKnownUsers(); }, [fetchAssignments]);
+  // Only for curators; anyone else sees "restricted" and has nothing to load.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once the role is known
+  useEffect(() => { if (isCurator) { fetchAssignments(); fetchKnownUsers(); } }, [fetchAssignments, isCurator]);
 
   const handleEmailBlur = () => {
     if (!name.trim()) {
@@ -136,11 +149,13 @@ export default function MembersPage() {
       // Check the domain can actually receive mail before creating a
       // pending assignment for it, a regex alone accepts gibberish like
       // someone@dfgdf.com, and the invite email would just bounce.
+      // Only a definite "no" blocks: a network hiccup or a busy check
+      // (429) shouldn't stop a real addition.
       const check = await fetch('/api/validate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailLower }),
-      }).then(r => r.json()).catch(() => ({ ok: true })); // network hiccup shouldn't block a real submission
+      }).then(r => (r.status === 400 ? r.json() : { ok: true })).catch(() => ({ ok: true }));
       if (!check.ok) {
         setError(t('invalidEmail'));
         setSaving(false);
@@ -156,18 +171,26 @@ export default function MembersPage() {
       // Keyed by the lowercased email (not an auto-id) so the Firestore
       // rules' preassignedRole() can look this doc up directly by path
       // when this person applies their own pre-assigned role on first login.
-      await setDoc(doc(db, 'role_assignments', emailLower), {
-        email: emailLower,
-        displayName: name.trim() || null,
-        role,
-        note: note.trim(),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        addedBy: user?.email,
-        account,
-      });
+      try {
+        await setDoc(doc(db, 'role_assignments', emailLower), {
+          email: emailLower,
+          displayName: name.trim() || null,
+          role,
+          note: note.trim(),
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          addedBy: user?.email,
+          account,
+        });
+      } catch (err) {
+        // Nothing would track the login just made: take it back off, so a
+        // retry starts clean instead of finding an account with no record.
+        if (account === 'created') await removePendingMember(emailLower);
+        setTempPasswords(m => { const next = { ...m }; delete next[emailLower]; return next; });
+        throw err;
+      }
       setEmail(''); setName(''); setNote(''); setRole('shaper');
-      await fetchAssignments();
+      await fetchAssignments({ quiet: true });
     } catch (err) {
       console.error(err);
       setError(t('saveFailed'));
@@ -182,7 +205,13 @@ export default function MembersPage() {
       // Take a not-yet-signed-in member back off the Who We Are page and
       // delete their unused login; anyone who has signed in is kept.
       const a = assignments.find(x => x.id === id);
-      if (a && a.status !== 'joined' && a.account) await removePendingMember(a.email);
+      if (a && a.status !== 'joined' && hasLogin(a)) {
+        const removed = await removePendingMember(a.email);
+        // Keep the assignment if the login couldn't be removed, so the
+        // curator can see it and try again.
+        if (removed === 'failed') { setError(t('memberRemoveFailed')); return; }
+        if (removed === 'kept') { setError(t('memberRemoveRefused')); return; }
+      }
       await deleteDoc(doc(db, 'role_assignments', id));
       setAssignments(prev => prev.filter(a => a.id !== id));
     } catch (err) {
@@ -201,8 +230,8 @@ export default function MembersPage() {
     }
   };
 
-  /* For assignments made before accounts were created automatically.
-   * role_assignments has no update rule, so the doc is rewritten. */
+  /* For assignments made before accounts were created automatically, or
+   * whose account couldn't be made at the time. */
   const [creatingLogin, setCreatingLogin] = useState<string | null>(null);
   /** Creates the member's login; true when they have one afterwards. */
   const handleCreateLogin = async (a: RoleAssignment): Promise<boolean> => {
@@ -211,11 +240,10 @@ export default function MembersPage() {
       const { result: account, tempPassword } = await createMemberAccount(a.email, resolveName(a) ?? '', a.role, hideUntilSignIn(a.note));
       if (account === 'not-configured') { setError(t('accountNotConfigured')); return false; }
       if (account === 'failed') { setError(t('accountCreateFailed')); return false; }
-      const { id, ...data } = a;
-      await deleteDoc(doc(db, 'role_assignments', id));
-      await setDoc(doc(db, 'role_assignments', id), { ...data, account });
-      setAssignments(prev => prev.map(x => x.id === id ? { ...x, account } : x));
+      const id = a.id;
       if (tempPassword) setTempPasswords(m => ({ ...m, [id]: tempPassword }));
+      await updateDoc(doc(db, 'role_assignments', id), { account });
+      setAssignments(prev => prev.map(x => x.id === id ? { ...x, account } : x));
       return true;
     } catch (err) {
       console.error(err);
@@ -230,9 +258,9 @@ export default function MembersPage() {
   const [resettingId, setResettingId] = useState<string | null>(null);
   const handleResetTemp = async (a: RoleAssignment) => {
     setResettingId(a.id); setError('');
-    const pw = await resetTempPassword(a.email);
-    if (pw) setTempPasswords(m => ({ ...m, [a.id]: pw }));
-    else setError(t('saveFailed'));
+    const { result, tempPassword } = await resetTempPassword(a.email);
+    if (tempPassword) setTempPasswords(m => ({ ...m, [a.id]: tempPassword }));
+    else setError(result === 'kept' ? t('resetTempKept') : t('saveFailed'));
     setResettingId(null);
   };
 
@@ -248,7 +276,7 @@ export default function MembersPage() {
     setInviteState(s => ({ ...s, [a.id]: 'sending' }));
     try {
       // The invite carries their sign-in details, so they need a login first.
-      if (!a.account && !(await handleCreateLogin(a))) {
+      if (!hasLogin(a) && !(await handleCreateLogin(a))) {
         setInviteState(s => ({ ...s, [a.id]: 'failed' }));
         setTimeout(() => setInviteState(s => ({ ...s, [a.id]: 'idle' })), 3000);
         return;
@@ -263,6 +291,11 @@ export default function MembersPage() {
         body: JSON.stringify({ email: a.email, displayName: resolveName(a), role: a.role, locale }),
       });
       setInviteState(s => ({ ...s, [a.id]: res.ok ? 'sent' : 'failed' }));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === 'email_not_configured') setError(t('emailNotConfigured'));
+        else if (data.passwordChanged) setError(t('inviteNotSentPasswordChanged'));
+      }
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
         if (data.lastInvitedAt) setAssignments(prev => prev.map(x => x.id === a.id ? { ...x, lastInvitedAt: data.lastInvitedAt, inviteCount: data.inviteCount } : x));
@@ -306,6 +339,7 @@ export default function MembersPage() {
   // Long pending list: 10 at a time, starting over when the search changes.
   const pendingPage = useViewMore(pending, search);
   const joinedPage  = useViewMore(joined, search);
+  const dismissedPage = useViewMore(dismissed, search);
 
   if (!isCurator) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('accessRestricted')}</div>;
@@ -488,8 +522,11 @@ export default function MembersPage() {
 
       {loading ? (
         <DashSkeleton rows={4} header={false} label={t('loading')} />
+      ) : loadFailed ? (
+        <LoadFailed onRetry={() => void fetchAssignments()} />
       ) : (
         <>
+          {signinUnknown && <p className={styles.tableSubtitle} role="status">{t('signinCheckFailed')}</p>}
           {/* Recently Joined, needs acknowledgement */}
           {joined.length > 0 && (
             <div className={styles.tableWrap}>
@@ -528,19 +565,20 @@ export default function MembersPage() {
       )}
 
       {/* Dismissed alumni: set aside to review later; invite or restore any time. */}
-      {!loading && dismissed.length > 0 && (
+      {!loading && !loadFailed && dismissed.length > 0 && (
         <details className={styles.tableWrap + ' ' + styles.dismissedWrap}>
           <summary className={styles.tableHeader + ' ' + styles.dismissedSummary}>
             <span>{t('dismissedSection')}</span>
             <span className={styles.count}>{dismissed.length}</span>
           </summary>
           <p className={styles.tableSubtitle}>{t('dismissedSubtitle')}</p>
-          {renderTable(dismissed, false)}
+          {renderTable(dismissedPage.shown, false)}
+          <ViewMoreButton hiddenCount={dismissedPage.hiddenCount} expanded={dismissedPage.expanded} onMore={dismissedPage.more} onLess={dismissedPage.less} />
         </details>
       )}
 
       {/* Shaper ⇄ Alumni for members who already have an account */}
-      <ShaperStatusPanel onChanged={fetchAssignments} />
+      <ShaperStatusPanel onChanged={() => void fetchAssignments({ quiet: true })} />
     </div>
   );
 }

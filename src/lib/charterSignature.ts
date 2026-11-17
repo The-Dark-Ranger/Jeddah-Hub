@@ -1,7 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
-import { doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-
 /* Charter sign-off: the member types the name on their account and ticks one
  * box saying they have read the Charter and will adhere to it.
  *
@@ -10,6 +6,9 @@ import { db } from '@/lib/firebase';
  * one per member; firestore.rules let a member create only their own, with
  * their own account name, and only curators / impact officers read everyone's.
  * A signature can't be edited: a new signing round deletes them all. */
+import { useCallback, useEffect, useState } from 'react';
+import { doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const CHARTER_SETTINGS = { collection: 'settings', id: 'charter' } as const;
 /** Roles asked to sign: active Shapers, including the curatorship.
@@ -74,17 +73,25 @@ export async function signCharter(uid: string, accountName: string) {
 }
 
 /** What the dashboard needs to know about the member's Charter sign-off:
- *  whether sign-off is switched on, and this member's own signature. */
+ *  whether sign-off is switched on, and this member's own signature.
+ *  `failed`: either couldn't be read, so the status is unknown. Nothing may
+ *  then ask the member to sign: they may well have signed already, and the
+ *  rules refuse a second signature. `retry` reads both again. */
 export type CharterStatus = ReturnType<typeof useCharterStatus>;
 
 export function useCharterStatus(uid: string | null | undefined) {
-  const [state, setState] = useState<{ loading: boolean; required: boolean; signature: CharterSignature | null }>(
-    { loading: true, required: false, signature: null });
+  const [state, setState] = useState<{
+    loading: boolean; failed: boolean; required: boolean; signature: CharterSignature | null;
+  }>({ loading: true, failed: false, required: false, signature: null });
 
   const load = useCallback(() => {
     if (!uid) return;
-    Promise.all([getRequireSignature().catch(() => false), getMySignature(uid).catch(() => null)])
-      .then(([required, signature]) => setState({ loading: false, required, signature }));
+    Promise.all([getRequireSignature(), getMySignature(uid)])
+      .then(([required, signature]) => setState({ loading: false, failed: false, required, signature }))
+      .catch(err => {
+        console.error('Charter status failed to load:', err);
+        setState({ loading: false, failed: true, required: false, signature: null });
+      });
   }, [uid]);
 
   useEffect(() => {
@@ -93,5 +100,12 @@ export function useCharterStatus(uid: string | null | undefined) {
     return () => window.removeEventListener(CHARTER_EVENT, load);
   }, [load]);
 
-  return state;
+  // Through the event, so the dashboard banner's copy of the status (the
+  // layout reads its own) is read again too.
+  const retry = useCallback(() => {
+    setState(s => ({ ...s, loading: true }));
+    window.dispatchEvent(new Event(CHARTER_EVENT));
+  }, []);
+
+  return { ...state, retry };
 }

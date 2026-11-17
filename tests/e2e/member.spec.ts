@@ -24,6 +24,19 @@ test.describe('signing in', () => {
     await expect(page.locator('#login-password')).toHaveValue('');
   });
 
+  test('the sign-in page remembers an unticked "Keep me signed in", with no mismatch with the server', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto('/en/login');
+    // As a sign-in with the box unticked leaves it.
+    await page.evaluate(() => localStorage.setItem('jh-keep-signed-in', '0'));
+    await page.reload();
+    const keep = page.getByRole('checkbox', { name: /Keep me signed in/ });
+    await expect(keep).not.toBeChecked();
+    await keep.check();
+    await expect(keep).toBeChecked();
+    expect(errors).toEqual([]);
+  });
+
   test('not keeping the session means it ends with the browser; a signed-in visit to sign in goes to the dashboard', async ({ page }) => {
     await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
     await page.goto('/en/login');
@@ -38,6 +51,154 @@ test.describe('signing in', () => {
 
     await page.goto('/en/login');
     await page.waitForURL(/\/dashboard/);
+  });
+
+  test('each wrong password makes the next try wait a little longer', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    const submit = page.locator('form button[type="submit"]');
+    for (const seconds of [1, 2]) {
+      await page.locator('#login-email').fill(PEOPLE.leaver.email);
+      await page.locator('#login-password').fill('wrong-password');
+      await page.waitForTimeout(1_700);
+      await submit.click();
+      await expect(page.getByText('Invalid email or password.')).toBeVisible();
+      await expect(submit).toBeDisabled();
+      await expect(submit).toHaveText(`Try again in ${seconds}s`);
+      await expect(submit).toBeEnabled({ timeout: seconds * 1000 + 2000 });
+    }
+  });
+
+  test('an unconfirmed email address gets the link, and nothing else until it is opened', async ({ page, request, browser }) => {
+    // The emailed link's code, which the Auth emulator keeps.
+    const emailedLink = async () => {
+      const codes = await (await request.get(`http://127.0.0.1:9099/emulator/v1/projects/${PROJECT}/oobCodes`)).json();
+      return (codes.oobCodes as { email: string; requestType: string; oobLink: string }[])
+        .filter(c => c.email === PEOPLE.unconfirmed.email && c.requestType === 'VERIFY_EMAIL').at(-1)?.oobLink;
+    };
+    // Test runs have no Resend key, so the hub's own email can't go out and
+    // the page asks Firebase for its email instead.
+    const asked = page.waitForResponse(r => r.url().includes('/api/members/confirm-email'));
+    await signInOnly(page, PEOPLE.unconfirmed);
+    expect((await asked).status()).toBe(503);
+    await expect.poll(emailedLink).toBeTruthy();
+    const heading = page.getByRole('heading', { name: 'Confirm your email address' });
+    const done = page.getByRole('button', { name: /confirmed it, continue/ });
+    await expect(heading).toBeVisible();
+    await expect(page.getByText(PEOPLE.unconfirmed.email)).toBeVisible();
+    // The dashboard sends them back here.
+    await page.goto('/en/dashboard');
+    await page.waitForURL(/\/login/);
+    await expect(heading).toBeVisible();
+    await done.click();
+    await expect(page.getByText('Not confirmed yet.', { exact: false })).toBeVisible();
+
+    // The link opens this site's sign-in page with the one-time code; signed
+    // in here, it goes straight on to the dashboard.
+    const link = await emailedLink();
+    const confirmUrl = `/en/login?mode=verifyEmail&oobCode=${new URL(link!).searchParams.get('oobCode')}`;
+    await page.goto(confirmUrl);
+    await page.waitForURL(/\/dashboard/);
+
+    // The code works once: opened again elsewhere, the page says so.
+    const elsewhere = await browser.newPage();
+    await elsewhere.goto(confirmUrl);
+    await expect(elsewhere.getByText('This link has expired or has already been used', { exact: false })).toBeVisible();
+    await expect(elsewhere).not.toHaveURL(/oobCode/);
+    await elsewhere.close();
+  });
+
+  test('the confirmation email route only serves a signed-in, unconfirmed account', async ({ request }) => {
+    expect((await request.post('/api/members/confirm-email', { data: { locale: 'en' } })).status()).toBe(401);
+    const bogus = await request.post('/api/members/confirm-email', { headers: { Authorization: 'Bearer not-a-token' }, data: {} });
+    expect(bogus.status()).toBe(401);
+  });
+
+  test('a shared-computer session ends after 30 minutes without activity', async ({ page }) => {
+    await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+    await page.goto('/en/login');
+    await page.getByRole('checkbox', { name: /Keep me signed in/ }).uncheck();
+    await signInOnly(page, PEOPLE.signer, false);
+    await page.waitForURL(/\/dashboard/);
+    await page.evaluate(() => localStorage.setItem('jh-last-active', String(Date.now() - 31 * 60_000)));
+    await page.reload();
+    await page.waitForURL(/\/login/);
+    await expect(page.getByText('You were signed out after 30 minutes of inactivity.', { exact: false })).toBeVisible();
+  });
+
+  test('a member signed out everywhere (new password, removal) loses access at once', async ({ page }) => {
+    await signIn(page, PEOPLE.leaver);
+    await signOutEverywhere(PEOPLE.leaver.uid);
+    await page.reload();
+    await page.waitForURL(/\/login/, { timeout: 20_000 });
+    await expect(page.getByText('Your session was ended', { exact: false })).toBeVisible();
+  });
+});
+
+const PROJECT = 'demo-jeddah-hub';
+
+/** Fills in and sends the sign-in form, without waiting for the dashboard. */
+async function signInOnly(page: Page, who: { email: string; password: string }, open = true) {
+  await page.route('**/api/verify-recaptcha', route => route.fulfill({ json: { ok: true } }));
+  if (open) await page.goto('/en/login');
+  await page.locator('#login-email').fill(who.email);
+  await page.locator('#login-password').fill(who.password);
+  await page.waitForTimeout(1_700);
+  await page.locator('form button[type="submit"]').click();
+}
+
+/** What the server does on a new password or a removal (src/lib/revokeSessions.ts). */
+async function signOutEverywhere(uid: string) {
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+  const { getApps, initializeApp } = await import('firebase-admin/app');
+  const { getAuth } = await import('firebase-admin/auth');
+  const { getFirestore } = await import('firebase-admin/firestore');
+  const app = getApps()[0] ?? initializeApp({ projectId: PROJECT });
+  await new Promise(r => setTimeout(r, 1100)); // a later second than the sign-in
+  await getFirestore(app).doc(`session_revocations/${uid}`).set({ at: Math.floor(Date.now() / 1000) });
+  await getAuth(app).revokeRefreshTokens(uid);
+}
+
+test.describe('the Overview', () => {
+  const waiting = (page: Page) => page.getByRole('heading', { name: 'Waiting for you' });
+
+  test('everyone starts on the Overview; a curator sees what is waiting for them', async ({ page }) => {
+    await signIn(page, PEOPLE.curator);
+    await expect(page).toHaveURL(/\/en\/dashboard$/);
+    await expect(page.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    await expect(waiting(page)).toBeVisible();
+    // Every queue was checked (the curator may read all of them).
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByText("Couldn't check", { exact: false })).toHaveCount(0);
+  });
+
+  test('an impact officer checks the initiative queues too, and handles them on the Initiatives page', async ({ page }) => {
+    await signIn(page, PEOPLE.impact);
+    await expect(waiting(page)).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    // The security rules let impact officers read every queue they're shown.
+    await expect(page.getByText("Couldn't check", { exact: false })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Dashboard navigation' }).getByRole('link', { name: 'Initiatives', exact: true }))
+      .toHaveAttribute('href', '/en/dashboard/curator/initiatives');
+    // The old address of their Projects page still leads there.
+    await page.goto('/en/dashboard/impact/projects');
+    await page.waitForURL('**/dashboard/curator/initiatives');
+  });
+
+  test("a lead sees their teams' requests; a member who leads none gets no list", async ({ browser }) => {
+    const lead = await browser.newPage();
+    await signIn(lead, PEOPLE.lead);
+    await expect(waiting(lead)).toBeVisible();
+    await lead.close();
+
+    const member = await browser.newPage();
+    await signIn(member, PEOPLE.shaper);
+    await expect(member.getByRole('heading', { level: 1 })).toBeVisible();
+    // Once the counts have loaded, there is still nothing to list.
+    await expect(member.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(waiting(member)).toHaveCount(0);
+    await member.close();
   });
 });
 
@@ -68,6 +229,30 @@ test.describe('changing a password', () => {
     await page.getByRole('button', { name: 'Update password' }).click();
     await expect(page.getByText('Password updated.')).toBeVisible();
     await expect(banner).toHaveCount(0);
+  });
+});
+
+test.describe('profile photo', () => {
+  test('only a photo address is shown, and an uploaded photo is saved as its own photo', async ({ page }) => {
+    await signIn(page, PEOPLE.signer);
+    await page.goto('/en/dashboard/shaper/profile');
+    const pasted = page.getByLabel('…or paste an image URL');
+
+    // Anything that isn't a photo address is never loaded as one.
+    await pasted.fill('javascript:alert(1)');
+    await expect(page.locator('img[src^="javascript:"]')).toHaveCount(0);
+    await expect(page.getByText('That image link could not be loaded.')).toBeVisible();
+    await pasted.fill('');
+
+    await page.locator('input[type="file"]').setInputFiles(UPLOAD_FILE);
+    await expect(page.locator('img[src^="/api/media/"]:visible').first()).toBeVisible();
+    // An uploaded photo's own address isn't offered for editing.
+    await expect(pasted).toBeDisabled();
+    await page.getByRole('button', { name: 'Save Profile' }).click();
+    await expect(page.getByText('Profile updated!')).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('img[src^="/api/media/"]:visible').first()).toBeVisible();
   });
 });
 
@@ -391,7 +576,7 @@ test.describe('every dashboard page on a phone and a desktop', () => {
   const ROLE_PAGES = {
     curator: ['', '/shaper/profile', '/shaper/my-projects', '/curator/members', '/curator/initiatives', '/curator/roster',
       '/curator/blogs', '/curator/messages', '/curator/activities', '/curator/exports', '/shaper/charter'],
-    impact: ['', '/impact/projects', '/impact/blogs', '/curator/activities', '/shaper/charter'],
+    impact: ['', '/curator/initiatives', '/impact/blogs', '/curator/activities', '/shaper/charter'],
     shaper: ['', '/shaper/profile', '/shaper/my-projects', '/shaper/activities', '/shaper/initiatives', '/shaper/blogs', '/shaper/charter'],
   } as const;
 

@@ -4,6 +4,8 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { compressToDataUrl, isDataUri, AVATAR_OPTIONS } from '@/lib/imageCompress';
+import { isMediaUrl, uploadMedia } from '@/lib/media';
+import { safeImageSrc } from '@/lib/sanitize';
 import styles from './AvatarUploader.module.css';
 
 interface Props {
@@ -13,8 +15,11 @@ interface Props {
 
 /** Profile photo picker, shared by every role (shaper, lead, curator,
  *  vice curator, impact officer, alumni), which all use the same profile page.
- *  Images are centre-cropped square and compressed to a data URI so they need
- *  no external hosting. */
+ *  Images are centre-cropped square, compressed, and stored as their own
+ *  photo (/api/media/<id>) so the profile stays small: every visit to Who We
+ *  Are reads all profiles at once. If that upload is refused (the day's
+ *  limit, a dropped connection) the photo is kept inside the profile, as
+ *  older profiles have it. */
 export default function AvatarUploader({ value, onChange }: Props) {
   const t = useTranslations('Dashboard');
 
@@ -24,12 +29,17 @@ export default function AvatarUploader({ value, onChange }: Props) {
   const [broken, setBroken] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const stopDrag = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+  // A pasted address is only shown if it can be a photo; anything else
+  // counts as a broken link.
+  const photo = safeImageSrc(value);
+  const showBroken = !!value && (broken || !photo);
 
   const handleFile = async (files: FileList | null) => {
     if (!files?.length) return;
     setBusy(true); setError('');
     try {
-      onChange(await compressToDataUrl(files[0], { ...AVATAR_OPTIONS, square: true }));
+      const photo = await compressToDataUrl(files[0], { ...AVATAR_OPTIONS, square: true });
+      onChange(await uploadMedia(photo).catch(() => photo));
       setBroken(false);
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
@@ -53,8 +63,8 @@ export default function AvatarUploader({ value, onChange }: Props) {
         onDrop={e => { stopDrag(e); setDragOver(false); void handleFile(e.dataTransfer.files); }}
       >
         <div className={styles.avatar}>
-          {value && !broken ? (
-            <img src={value} alt="" className={styles.avatarImg} onError={() => setBroken(true)} loading="lazy" />
+          {photo && !broken ? (
+            <img src={photo} alt="" className={styles.avatarImg} onError={() => setBroken(true)} loading="lazy" />
           ) : (
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <circle cx="12" cy="8" r="4"/>
@@ -99,15 +109,15 @@ export default function AvatarUploader({ value, onChange }: Props) {
       {/* Existing profiles may hold a remote URL, keep that editable. */}
       <input
         className={styles.urlInput}
-        value={isDataUri(value) ? '' : value}
+        value={isDataUri(value) || isMediaUrl(value) ? '' : value}
         onChange={e => { onChange(e.target.value); setBroken(false); }}
         placeholder={t('orPasteUrl')}
         aria-label={t('orPasteUrl')}
-        disabled={isDataUri(value)}
+        disabled={isDataUri(value) || isMediaUrl(value)}
         type="url"
       />
 
-      {broken && !!value && <p className={styles.error}>{t('avatarBrokenUrl')}</p>}
+      {showBroken && <p className={styles.error}>{t('avatarBrokenUrl')}</p>}
       {error && <p className={styles.error}>{error}</p>}
     </div>
   );

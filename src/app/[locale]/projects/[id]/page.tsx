@@ -1,6 +1,13 @@
+import { setRequestLocale } from 'next-intl/server';
 import ProjectClient, { type Initiative, type InitiativeData, type UserRecord } from './ProjectClient';
 import { getInitiatives, getPublicProfiles } from '@/lib/publicData';
 import { slugify } from '@/lib/slug';
+
+/* Built on first visit (no list ahead of time), then served from the CDN
+ * and rebuilt at most every 60 seconds, or straight away after a dashboard
+ * edit refreshes the public data. */
+export const revalidate = 60;
+export function generateStaticParams() { return []; }
 
 const decode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
 
@@ -8,8 +15,10 @@ const decode = (s: string) => { try { return decodeURIComponent(s); } catch { re
  * loaded on the server so they arrive inside the page. URLs resolve the same
  * way the browser fallback does: `slug` field, then a slug of the title,
  * then old "name--docId" or bare-id links. Hub Activities are excluded. */
-export default async function InitiativePage({ params }: { params: Promise<{ id: string }> }) {
-  const rawId = decode((await params).id);
+export default async function InitiativePage({ params }: { params: Promise<{ locale: string; id: string }> }) {
+  const { locale, id } = await params;
+  setRequestLocale(locale);
+  const rawId = decode(id);
   const [all, profiles] = await Promise.all([getInitiatives(), getPublicProfiles()]);
   if (!all) return <ProjectClient />;
 

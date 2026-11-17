@@ -19,9 +19,9 @@
 }
 .title { font-size: clamp(2rem,4vw,3rem); font-weight: 800; color: #fff; margin-bottom: .75rem; letter-spacing: -.02em; }
 .subtitle { font-size: 1.15rem; font-weight: 600; color: rgba(255,255,255,.85); margin-bottom: .75rem; }
-.description { font-size: 1rem; line-height: 1.75; color: rgba(255,255,255,.75); max-width: 600px; margin-inline: auto 1.25rem; }
+.description { font-size: 1rem; line-height: 1.75; color: rgba(255,255,255,.75); max-width: 600px; margin: 0 auto 1.25rem; overflow-wrap: anywhere; }
 .meta {
-  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .6rem;
   font-size: .92rem; color: rgba(255,255,255,.8); margin-top: 1rem;
 }
 .metaDot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.5); }
@@ -42,6 +42,7 @@
 .highlightCard {
   background: var(--card-bg-solid); border: 1px solid var(--border-color);
   border-radius: 14px; padding: 1.25rem; text-align: center;
+  overflow-wrap: anywhere;
 }
 .highlightName { font-weight: 700; color: var(--text-main); margin-bottom: .3rem; }
 .highlightTag { font-size: .82rem; color: var(--text-muted); }
@@ -182,7 +183,7 @@
 .shareBtn:focus-visible { outline: 2px solid var(--activity-accent); outline-offset: 2px; }
 
 .registerSection { scroll-margin-top: 80px; }
-.formIntro { margin: 0 0 .5rem; color: var(--text-muted); line-height: 1.65; white-space: pre-line; }
+.formIntro { margin: 0 0 .5rem; color: var(--text-muted); line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
 .closedBox { text-align: center; padding: 2rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
 .closedBox h2 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin: 0; }
 .closedBox p { margin: 0; color: var(--text-muted); }

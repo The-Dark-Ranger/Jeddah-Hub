@@ -1,8 +1,11 @@
+/* The sitemap search engines read: every public page in both languages,
+ * plus each initiative, Hub Activity and published post. */
 import type { MetadataRoute } from 'next';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { newsPath, slugify } from '@/lib/slug';
 import { SITE_URL, LOCALES } from '@/lib/seo';
+import { errorCode } from '@/lib/types';
 
 /** Public, indexable static routes. Dashboard and login are intentionally
  *  excluded, see robots.ts for the matching disallow rules. */
@@ -55,10 +58,12 @@ async function dynamicRoutes(): Promise<MetadataRoute.Sitemap> {
       .flatMap(d => toEntries(newsPath({ id: d.id, ...(d.data() as { title?: string; slug?: string }) }), lastModified, 'monthly', 0.5));
 
     return [...initiatives, ...activities, ...posts];
-  } catch {
+  } catch (err) {
     // Firestore unreachable at build time (e.g. no live credentials in this
     // environment), fall back to just the static routes below rather than
-    // failing the whole sitemap/build.
+    // failing the whole sitemap/build. Logged, since search engines then
+    // lose every initiative, activity and post until it is next generated.
+    console.error('Sitemap: dynamic pages left out, Firestore read failed:', errorCode(err) || err);
     return [];
   }
 }

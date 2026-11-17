@@ -47,7 +47,8 @@ export function initiativeFormToDoc(f: InitiativeFormShape) {
     problem:     f.problem,
     objective:   f.objective,
     impact:      f.impact,
-    impactAreas: f.impactAreas ? f.impactAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
+    // Within what firestore.rules accepts: 30 areas of up to 100 characters.
+    impactAreas: f.impactAreas ? f.impactAreas.split(/[,،]/).map(s => s.trim().slice(0, 100)).filter(Boolean).slice(0, 30) : [],
     color:       f.color || null,
   };
 }
@@ -105,14 +106,14 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
       <div className={styles.editRow}>
         <div className={styles.formField}>
           <label htmlFor={`${formId}-title`} className={styles.label}>{t('fieldTitle')} *</label>
-          <input id={`${formId}-title`} className={styles.input} value={form.title} onChange={mk('title')} placeholder={t('phInitiativeName')} required />
+          <input id={`${formId}-title`} className={styles.input} value={form.title} onChange={mk('title')} maxLength={300} placeholder={t('phInitiativeName')} required />
         </div>
         <div className={styles.formField}>
           <label htmlFor={`${formId}-titleAr`} className={styles.label}>
             {t('fieldTitleAr')}
             <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
           </label>
-          <input id={`${formId}-titleAr`} className={styles.input} dir="rtl" value={form.titleAr} onChange={mk('titleAr')} placeholder={t('phInitiativeNameAr')} />
+          <input id={`${formId}-titleAr`} className={styles.input} dir="rtl" value={form.titleAr} onChange={mk('titleAr')} maxLength={300} placeholder={t('phInitiativeNameAr')} />
         </div>
       </div>
 
@@ -129,6 +130,7 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
               style={{ marginTop: '.5rem' }}
               value={form.categoryOther}
               onChange={mk('categoryOther')}
+              maxLength={200}
               placeholder={t('phCategoryOther')}
             />
           )}
@@ -145,12 +147,12 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
 
       <div className={styles.formField}>
         <label htmlFor={`${formId}-stat`} className={styles.label}>{t('fieldKeyStat')}</label>
-        <input id={`${formId}-stat`} className={styles.input} value={form.stat} onChange={mk('stat')} placeholder={t('phStat')} />
+        <input id={`${formId}-stat`} className={styles.input} value={form.stat} onChange={mk('stat')} maxLength={500} placeholder={t('phStat')} />
       </div>
 
       <div className={styles.formField}>
         <label htmlFor={`${formId}-description`} className={styles.label}>{t('fieldDescription')} *</label>
-        <textarea id={`${formId}-description`} className={styles.textarea} value={form.description} onChange={mk('description')} placeholder={t('phDescription')} required rows={2} />
+        <textarea id={`${formId}-description`} className={styles.textarea} value={form.description} onChange={mk('description')} maxLength={10000} placeholder={t('phDescription')} required rows={2} />
       </div>
 
       <div className={styles.formField}>
@@ -158,22 +160,22 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
           {t('fieldDescriptionAr')}
           <span className={styles.fieldHint}>{t('fieldArOptionalHint')}</span>
         </label>
-        <textarea id={`${formId}-descriptionAr`} className={styles.textarea} dir="rtl" value={form.descriptionAr} onChange={mk('descriptionAr')} placeholder={t('phDescriptionAr')} rows={2} />
+        <textarea id={`${formId}-descriptionAr`} className={styles.textarea} dir="rtl" value={form.descriptionAr} onChange={mk('descriptionAr')} maxLength={10000} placeholder={t('phDescriptionAr')} rows={2} />
       </div>
 
       <div className={styles.formField}>
         <label htmlFor={`${formId}-problem`} className={styles.label}>{t('fieldProblem')}</label>
-        <textarea id={`${formId}-problem`} className={styles.textarea} value={form.problem} onChange={mk('problem')} placeholder={t('phProblem')} rows={2} />
+        <textarea id={`${formId}-problem`} className={styles.textarea} value={form.problem} onChange={mk('problem')} maxLength={10000} placeholder={t('phProblem')} rows={2} />
       </div>
 
       <div className={styles.formField}>
         <label htmlFor={`${formId}-objective`} className={styles.label}>{t('fieldObjective')}</label>
-        <textarea id={`${formId}-objective`} className={styles.textarea} value={form.objective} onChange={mk('objective')} placeholder={t('phObjective')} rows={2} />
+        <textarea id={`${formId}-objective`} className={styles.textarea} value={form.objective} onChange={mk('objective')} maxLength={10000} placeholder={t('phObjective')} rows={2} />
       </div>
 
       <div className={styles.formField}>
         <label htmlFor={`${formId}-impact`} className={styles.label}>{t('fieldImpact')}</label>
-        <textarea id={`${formId}-impact`} className={styles.textarea} value={form.impact} onChange={mk('impact')} placeholder={t('phImpact')} rows={2} />
+        <textarea id={`${formId}-impact`} className={styles.textarea} value={form.impact} onChange={mk('impact')} maxLength={10000} placeholder={t('phImpact')} rows={2} />
       </div>
 
       <div className={styles.editRow}>
@@ -182,7 +184,7 @@ export default function InitiativeFormFields({ form, onChange }: Props) {
             {t('fieldImpactAreas')}
             <span className={styles.fieldHint}>{t('fieldImpactAreasHint')}</span>
           </label>
-          <input id={`${formId}-impactAreas`} className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} placeholder={t('phImpactAreas')} />
+          <input id={`${formId}-impactAreas`} className={styles.input} value={form.impactAreas} onChange={mk('impactAreas')} maxLength={3000} placeholder={t('phImpactAreas')} />
         </div>
       </div>
 

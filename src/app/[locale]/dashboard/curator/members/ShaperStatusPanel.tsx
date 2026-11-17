@@ -3,7 +3,7 @@
 /* Dashboard > Role Assignments > Members: switch Shaper/Alumni, send a new
  * password and remove members. */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 import { useLocale, useTranslations } from 'next-intl';
 import { auth, db } from '@/lib/firebase';
 import { normalizeRole } from '@/lib/role';
@@ -96,15 +96,11 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
     try {
       await updateDoc(doc(db, 'users', m.uid), { role: next });
       await setDoc(doc(db, 'public_profiles', m.uid), { role: next }, { merge: true });
-      // role_assignments has no update rule, so a pending one is rewritten.
+      // A pending assignment for them follows the change too.
       if (m.email) {
         const ref = doc(db, 'role_assignments', m.email.toLowerCase());
-        const snap = await getDoc(ref).catch(() => null);
-        if (snap?.exists() && snap.data().role !== next) {
-          const data = snap.data();
-          await deleteDoc(ref);
-          await setDoc(ref, { ...data, role: next });
-        }
+        const snap = await getDoc(ref);
+        if (snap.exists() && snap.data().role !== next) await updateDoc(ref, { role: next });
       }
       setMembers(prev => prev?.map(x => x.uid === m.uid ? { ...x, role: next } : x) ?? null);
       void refreshPublicPages();
@@ -137,7 +133,12 @@ export default function ShaperStatusPanel({ onChanged }: { onChanged?: () => voi
         body: JSON.stringify({ email: m.email, displayName: m.name, role: m.role, locale, newPassword: true }),
       });
       if (res.ok) setNotice(t('newPasswordSent', { name }));
-      else setError(t('newPasswordFailed'));
+      else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error === 'email_not_configured' ? t('emailNotConfigured')
+          : data.passwordChanged ? t('inviteNotSentPasswordChanged')
+          : t('newPasswordFailed'));
+      }
     } catch {
       setError(t('newPasswordFailed'));
     } finally {

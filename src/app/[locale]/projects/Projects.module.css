@@ -107,7 +107,9 @@
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease,
               background-color 0.3s ease;
   text-decoration: none; color: inherit;
-  animation: cardFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* `backwards`, not `both`: a held final keyframe would pin transform and
+     cancel the hover lift below. */
+  animation: cardFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   animation-delay: calc(var(--card-index, 0) * 55ms);
 }
 @keyframes cardFadeUp {
@@ -148,6 +150,7 @@
 .cardDesc {
   font-size: 0.9rem; color: var(--text-muted); line-height: 1.65; flex: 1;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .cardStat {
@@ -165,7 +168,11 @@
   transition: gap 0.2s ease;
 }
 .card:hover .cardLink { gap: 0.6rem; }
-.card:hover .cardLink svg { transform: translateX(2px); transition: transform 0.2s ease; }
+/* `translate`, not `transform`, so the nudge keeps the arrow's RTL flip
+   (.flip-rtl in globals.css); it moves toward the reading direction. */
+.cardLink svg { transition: translate 0.2s ease; }
+.card:hover .cardLink svg { translate: 2px 0; }
+[dir="rtl"] .card:hover .cardLink svg { translate: -2px 0; }
 
 .empty { text-align: center; padding: 5rem; color: var(--text-muted); }
 .empty h3 { font-size: 1.2rem; color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600; }
@@ -178,7 +185,7 @@
 }
 .skeletonGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.75rem;
   margin-top: 1rem;
 }

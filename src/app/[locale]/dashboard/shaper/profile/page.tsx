@@ -130,6 +130,9 @@ export default function MyProfile() {
   const [form, setForm]                 = useState<ProfileForm>(empty);
   const [saving, setSaving]               = useState(false);
   const [saved, setSaved]                 = useState(false);
+  // The profile saved but its public copy (Who We Are) didn't: stays shown
+  // until a later save gets through, so the member knows to try again.
+  const [publicSyncFailed, setPublicSyncFailed] = useState(false);
   const [loaded, setLoaded]               = useState(false);
 
   useEffect(() => {
@@ -186,13 +189,31 @@ export default function MyProfile() {
         instagram:     safeExternalUrl(withHttps(form.instagram)) ?? '',
       };
       await updateDoc(doc(db, 'users', user.uid), publicFields);
-      // Mirror to public_profiles (never email) so About/homepage reflect
-      // the edit immediately instead of waiting for next sign-in.
-      await setDoc(doc(db, 'public_profiles', user.uid), publicFields, { merge: true }).catch(() => {});
+      // Every saved field goes to the signed-in user straight away, so the
+      // sidebar photo and the Overview's profile checklist update without
+      // a reload. Empty fields are left unset, as when the profile loads.
       patchUser({
         displayName:   publicFields.displayName || null,
         displayNameAr: publicFields.displayNameAr || undefined,
+        photoURL:      publicFields.photoURL || undefined,
+        bio:           publicFields.bio || undefined,
+        bioAr:         publicFields.bioAr || undefined,
+        linkedin:      publicFields.linkedin || undefined,
+        twitter:       publicFields.twitter || undefined,
+        instagram:     publicFields.instagram || undefined,
       });
+      // Mirror to public_profiles (never email) so Who We Are and the
+      // homepage reflect the edit now instead of at the next sign-in. The
+      // profile itself is already saved, so a failure here is reported as
+      // "saved, but not public yet" rather than as a failed save.
+      try {
+        await setDoc(doc(db, 'public_profiles', user.uid), publicFields, { merge: true });
+        setPublicSyncFailed(false);
+      } catch (err) {
+        console.error('Public profile mirror failed:', err);
+        setPublicSyncFailed(true);
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
     } catch (err) {
@@ -326,6 +347,9 @@ export default function MyProfile() {
             </svg>
             {t('profileSaved')}
           </span>
+        )}
+        {publicSyncFailed && !saving && (
+          <span className={styles.errorMsg} role="alert">{t('publicProfileSyncFailed')}</span>
         )}
       </div>
     </form>

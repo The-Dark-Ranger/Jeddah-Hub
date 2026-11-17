@@ -18,7 +18,8 @@ recipes for the most common changes. For setup see the
    `firestore.rules` changed and `npm run test:e2e` if a page or server route
    changed.
 3. Open a pull request. Vercel builds a preview; `main` only accepts the merge
-   once that check passes.
+   once that check passes. GitHub's CodeQL also scans it: look into any alert
+   it raises before merging.
 4. Squash-merge, once the maintainer has approved it. Collaborators can't merge
    into `main` without that approval. Vercel deploys `jeddahhub.org`. If the rules changed, run
    `npm run deploy:rules`.
@@ -36,6 +37,13 @@ recipes for the most common changes. For setup see the
   `src/components/` or `src/components/dashboard/`.
 - Every file starts with a short comment saying what it is and why it exists.
   Comments explain *why*, not *what*.
+
+**Browser-only code**
+- Client components are also rendered on the server first, where there is
+  no `localStorage`, `sessionStorage` or `window` (and newer Node versions
+  log a warning when storage is touched). Read them in an effect, an event
+  handler, or with `useSyncExternalStore` and a server value (as the login
+  page does for "Keep me signed in"), never while rendering.
 
 **Styling**
 - CSS Modules next to the component (`Name.module.css`). Colours, radii and
@@ -61,6 +69,12 @@ recipes for the most common changes. For setup see the
 - Public pages read through `src/lib/publicData.ts` (server-side, cached for
   60 s, tagged `public-data`). After a dashboard change that affects public
   pages, call `refreshPublicPages()` (`lib/spotlight.ts`).
+- Public pages are built ahead and served from the CDN. Keep them that way:
+  call `setRequestLocale(locale)` at the top of every page and layout, export
+  `revalidate = 60` where the page shows data, and never read `cookies()`,
+  `headers()` or `searchParams` while rendering one (any of these makes every
+  visit render the page again). `npm run build` lists each page as ● (built
+  ahead) or ƒ (rendered per visit).
 - Dashboards use the Firebase client SDK; `firestore.rules` decides what each
   person may read or write.
 - Anything that must not depend on the browser's honesty (accounts, public
@@ -74,7 +88,8 @@ namespace, then use `t('key')`. Placeholders look like `{name}` and are passed
 as `t('key', { name })`.
 
 ### Add a public page
-1. Create `src/app/[locale]/<name>/page.tsx` (server). Export its metadata,
+1. Create `src/app/[locale]/<name>/page.tsx` (server). Call
+   `setRequestLocale(locale)` first (see Data above). Export its metadata,
    with `alternateLanguages()` from `lib/seo.ts` for the English/Arabic links.
 2. Put browser-only parts in a `*Client.tsx` beside it.
 3. Add the link to the navbar or footer and, if it should be indexed, to
@@ -83,9 +98,15 @@ as `t('key', { name })`.
 ### Add a dashboard page
 1. Create it under `src/app/[locale]/dashboard/<role>/<name>/page.tsx`.
 2. Add it to the role's menu in `src/app/[locale]/dashboard/layout.tsx`
-   (`nav`).
-3. Check the role at the top of the page for the interface, and make sure
+   (`nav`), with an icon from `components/dashboard/DashIcon.tsx`.
+3. If it handles a queue of requests, count its pending ones on the Overview
+   (`waiting` in `dashboard/page.tsx`) so they show under "Waiting for you".
+4. Check the role at the top of the page for the interface, and make sure
    `firestore.rules` allows exactly what the page writes (see below).
+5. A failed load shows `<LoadFailed onRetry=… />`, never the empty state ("No
+   messages yet" after a failed load would be wrong). Errors shown to people
+   go through `errorReason()`, never a raw Firebase code. Buttons that save
+   are disabled while saving (`useBusy`), and windows use `useDialog`.
 
 ### Add an API route
 Follow the existing routes in `src/app/api/`:
@@ -99,7 +120,8 @@ Follow the existing routes in `src/app/api/`:
 
 ### Send a new kind of email
 Add a template in `src/lib/emails/` built from the pieces in `layout.ts`.
-Those pieces take HTML, so pass every value a person typed through
+An email's `title` and `preheader` are plain text (the layout escapes them);
+every other piece takes HTML, so pass every value a person typed through
 `escapeHtml` first (as `contact.ts` does). Send it with `sendEmail` from
 `lib/email.ts`. Emails visitors can trigger also go through
 `withinEmailBudget()`.
@@ -109,6 +131,9 @@ Add it to `tests/e2e/`. `seed.ts` writes the made-up members and content,
 `helpers.ts` has signing in and the common checks, and each test should follow
 what a person does, from start to finish. Test runs use Firebase's emulators
 (`src/lib/emulators.ts`), which can never switch on in a production build.
+Tests have no reCAPTCHA key: to reach what comes after the check (the
+sign-in limits, say), send `TEST_PASS_TOKEN` from `lib/serverRecaptcha.ts`,
+which passes only while the emulators are on.
 
 ### Add an environment variable
 Read it on the server (only `NEXT_PUBLIC_*` reaches the browser), document it
@@ -130,14 +155,22 @@ hides what a person can't use. When you change it:
 | Need | Use |
 |---|---|
 | Verify a member in an API route | `requireRole` (`lib/serverAuth.ts`) |
+| Session limits, signing a member out everywhere | `MAX_SESSION_MS`, `IDLE_LIMIT_MS` (`lib/sessionPolicy.ts`); `revokeSessions` (`lib/revokeSessions.ts`) |
 | Rate limits | `isRateLimited`, `clientIp` (`lib/rateLimit.ts`); `withinLimit`, `withinEmailBudget` (`lib/persistentLimit.ts`) |
 | Bot checks | `isBotSubmission`, `isCrossSite` (`lib/formGuard.ts`); `verifyRecaptchaToken` (`lib/serverRecaptcha.ts`); `isBlockedBot` (`lib/botCheck.ts`) |
 | Safe links, styles and exports | `safeExternalUrl`, `cssUrl`, `spreadsheetSafe` (`lib/sanitize.ts`); `safeColor` (`lib/activityTypes.ts`) |
 | Team roles | `TEAM_ROLES`, `isLeadRole`, `toTeamRole`, `withTeamRole` (`lib/types.ts`) |
 | Member roles | `normalizeRole` (`lib/role.ts`), `useRoleLabel` (`lib/roleLabel.tsx`) |
-| Photos | `uploadMedia` (`lib/media.ts`), `compressToDataUrl` (`lib/imageCompress.ts`) |
+| Photos (profiles, initiatives, activities, posts) | `uploadMedia` (`lib/media.ts`), `compressToDataUrl` (`lib/imageCompress.ts`) |
 | Spreadsheet reports | `downloadReport` (`lib/initiativeReport.ts`, loads ExcelJS on demand) |
 | Dates and numbers | `formatDate`, `intlLocale` (`lib/dates.ts`) |
 | Saving a built file | `downloadBlob`, `csvBlob` (`lib/download.ts`) |
 | Hub Activity list and editor | `ActivityCard`, `ActivityEditorModal` (`components/dashboard/`) |
-| Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/` |
+| Email | `sendEmail` (`lib/email.ts`); templates in `lib/emails/`; `siteOrigin` (`lib/http.ts`) for links that must open the site (or preview) the request came to |
+| Dashboard icons | `DashIcon` (`components/dashboard/DashIcon.tsx`) |
+| A load that failed, plain-language errors | `LoadFailed` (`components/dashboard/`); `errorReason` (`lib/types.ts`, keys in `Common`); `useSaveFailed`, `orNull` (`lib/partialLoad.ts`) for parts of a page that load separately |
+| Windows (dialogs) | `useDialog` (`components/dashboard/useDialog.ts`): Escape, focus in and back out, page scroll locked |
+| One save at a time | `useBusy` (`components/dashboard/useBusy.ts`) |
+| Team membership changes | `addToTeam`, `removeFromTeam`, `approveOnce` (`lib/teamChanges.ts`): read fresh and save the request's outcome in one transaction |
+| Smaller photo copies | `sizedPhoto(src, width)` (`lib/sanitize.ts`) for avatars, thumbnails and cards; the photo routes make and cache them (`lib/photoResponse.ts`) |
+| A page behind an emailed link | `EmailLinkCard` (`components/`): asks before acting, since link scanners open every link; tokens in `lib/newsletterLinks.ts` |

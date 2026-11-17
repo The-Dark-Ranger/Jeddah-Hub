@@ -13,6 +13,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import styles from './Post.module.css';
 import { formatDate } from '@/lib/dates';
 import { SITE_URL } from '@/lib/seo';
+import { errorReason } from '@/lib/types';
+import ErrorPanel from '@/components/ErrorPanel';
 
 function postDate(iso: string, locale: string) {
   if (!iso || isNaN(Date.parse(iso))) return '';
@@ -60,7 +62,12 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
 
   const [post, setPost]               = useState<BlogPost | null>((initial?.post as BlogPost | undefined) ?? null);
   const [loading, setLoading]         = useState(!initial);
+  // A browser load that failed for a reason other than "no such post you
+  // may read": shown as an error with Try again rather than "not found".
+  const [loadError, setLoadError]     = useState<Error | null>(null);
+  const [attempt, setAttempt]         = useState(0);
   const [liking, setLiking]           = useState(false);
+  const [likeFailed, setLikeFailed]   = useState(false);
   const [visitorId, setVisitorId]     = useState<string | null>(null);
   const [authorPhoto, setAuthorPhoto] = useState<string | null>(initial?.authorPhoto ?? null);
   const [related, setRelated]         = useState<RelatedPost[]>(initial?.related ?? []);
@@ -101,8 +108,10 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
         .catch(() => {});
       return;
     }
+    let cancelled = false;
     loadFirestore().then(async ({ getDoc, doc, db }) => {
       const snap = await getDoc(doc(db, 'blogs', id));
+      if (cancelled) return;
       if (snap.exists()) {
         const data = { id: snap.id, ...snap.data() } as BlogPost;
         setPost(data);
@@ -117,7 +126,13 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
       }
       setLoading(false);
     }).catch(err => {
-      console.error(err);
+      if (cancelled) return;
+      console.error('News post failed to load:', err);
+      // Permission denied is how a missing post, or someone else's draft,
+      // answers (firestore.rules shows a draft only to its author and the
+      // reviewers): that is "not found". Anything else (offline, timeout)
+      // can be retried.
+      if (errorReason(err) !== 'errorPermission') setLoadError(err instanceof Error ? err : new Error(String(err)));
       setLoading(false);
     });
 
@@ -136,7 +151,10 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
           .map(d => ({ id: d.id, ...(d.data() as Omit<RelatedPost, 'id'>) })));
       } catch { /* optional section, leave it out */ }
     })();
-  }, [id, initial, urlId, router]);
+    return () => { cancelled = true; };
+  }, [id, initial, urlId, router, attempt]);
+
+  const retry = () => { setLoadError(null); setLoading(true); setAttempt(a => a + 1); };
 
   // Built from the post, not the address bar: the links are written on the
   // server too, where there is no address bar, and React doesn't correct them
@@ -150,39 +168,38 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
     } catch { /* clipboard blocked, nothing to do */ }
   };
 
-  /* ── Like (works for both signed-in users and visitors) ── */
+  /* ── Like (works for both signed-in users and visitors) ──
+   * The heart and count change at once; if saving fails they go back and a
+   * short note says so, instead of the like silently not counting. */
   const handleLike = async () => {
-    if (liking) return;
+    const who = user ? user.uid : visitorId;
+    if (liking || !who) return;
+    const field = user ? 'likedBy' : 'visitorLikes';
+    const wasLiked = liked;
+    const show = (on: boolean) => setPost(p => {
+      if (!p) return p;
+      const others = (p[field] ?? []).filter(v => v !== who);
+      return { ...p, [field]: on ? [...others, who] : others };
+    });
     setLiking(true);
-
+    setLikeFailed(false);
+    show(!wasLiked);
     try {
       const { doc, updateDoc, arrayUnion, arrayRemove, db } = await loadFirestore();
-      const ref = doc(db, 'blogs', id);
-      if (user) {
-        if (liked) {
-          await updateDoc(ref, { likedBy: arrayRemove(user.uid) });
-          setPost(p => p && ({ ...p, likedBy: (p.likedBy ?? []).filter(u => u !== user.uid) }));
-        } else {
-          await updateDoc(ref, { likedBy: arrayUnion(user.uid) });
-          setPost(p => p && ({ ...p, likedBy: [...(p.likedBy ?? []), user.uid] }));
-        }
-      } else if (visitorId) {
-        if (liked) {
-          await updateDoc(ref, { visitorLikes: arrayRemove(visitorId) });
-          setPost(p => p && ({ ...p, visitorLikes: (p.visitorLikes ?? []).filter(v => v !== visitorId) }));
-        } else {
-          await updateDoc(ref, { visitorLikes: arrayUnion(visitorId) });
-          setPost(p => p && ({ ...p, visitorLikes: [...(p.visitorLikes ?? []), visitorId!] }));
-        }
-      }
+      await updateDoc(doc(db, 'blogs', id), { [field]: wasLiked ? arrayRemove(who) : arrayUnion(who) });
     } catch (err) {
       console.error('Failed to update like:', err);
+      show(wasLiked);
+      setLikeFailed(true);
+      setTimeout(() => setLikeFailed(false), 4000);
     } finally {
       setLiking(false);
     }
   };
 
   if (loading) return <div className={styles.loadingScreen}><div className={styles.spinner} /></div>;
+
+  if (loadError) return <main><ErrorPanel error={loadError} reset={retry} /></main>;
 
   if (!post) return (
     <div className={styles.notFound}>
@@ -195,7 +212,7 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
     <main className={styles.page}>
       <div className={styles.container}>
         <Link href="/news" className={styles.back}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg className="flip-rtl" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           {t('backToNews')}
@@ -250,17 +267,22 @@ export default function NewsPostClient({ initial }: { initial?: NewsPostData }) 
           )}
 
           <div className={styles.articleActions}>
-            <button
-              className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
-              onClick={handleLike}
-              disabled={liking}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24"
-                fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
-            </button>
+            <div className={styles.likeWrap}>
+              <button
+                type="button"
+                className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
+                onClick={handleLike}
+                disabled={liking}
+                aria-pressed={liked}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                  fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                {likeCount > 0 ? likeCount + ' ' : ''}{likeCount === 1 ? t('like') : t('likes')}
+              </button>
+              <span className={styles.likeNote} role="status">{likeFailed ? t('likeFailed') : ''}</span>
+            </div>
 
             <div className={styles.share}>
               <span className={styles.shareLabel}>{t('share')}</span>

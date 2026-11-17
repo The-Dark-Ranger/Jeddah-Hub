@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/*/dashboard',
         '/*/login',
+        '/*/unsubscribe',
+        '/*/newsletter/',
         '/api/',
       ],
     },

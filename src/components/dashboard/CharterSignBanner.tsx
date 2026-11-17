@@ -1,5 +1,7 @@
 'use client';
 
+/* The dashboard-wide reminder to sign the Community Charter, while curators
+ * require it and this member hasn't signed. */
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useAuth } from '@/context/AuthContext';
@@ -14,10 +16,12 @@ export default function CharterSignBanner({ status }: { status: CharterStatus })
   const t = useTranslations('Dashboard');
   const { user } = useAuth();
   const pathname = usePathname();
-  const { loading, required, signature } = status;
+  const { loading, failed, required, signature } = status;
 
   // The charter page has the sign-off form itself; alumni aren't asked.
-  if (loading || !required || signature || !SIGNING_ROLES.includes(normalizeRole(user?.role))
+  // Unknown status (a failed read): no reminder, since this member may well
+  // have signed already.
+  if (loading || failed || !required || signature || !SIGNING_ROLES.includes(normalizeRole(user?.role))
       || pathname.startsWith('/dashboard/shaper/charter')) return null;
   return (
     <div className={styles.banner} role="alert">

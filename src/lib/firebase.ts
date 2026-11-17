@@ -60,9 +60,9 @@ try {
     connectFirestoreEmulator(db, '127.0.0.1', 8085);
   }
 } catch (e) {
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn('[firebase] Init failed, set NEXT_PUBLIC_FIREBASE_* env vars:', (e as Error).message);
-  }
+  // Logged in production too: these values are public, and without this
+  // line a bad setting only shows up as every sign-in failing.
+  console.error('[firebase] Init failed, check the NEXT_PUBLIC_FIREBASE_* settings:', (e as Error).message);
   // Provide stub objects so imports don't crash; actual calls will fail gracefully at the usage site
   app = undefined as unknown as FirebaseApp;
   auth = undefined as unknown as Auth;

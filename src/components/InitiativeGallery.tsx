@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from './ModalPortal';
 import styles from './InitiativeGallery.module.css';
+import { sizedPhoto } from '@/lib/sanitize';
 
 interface Props {
   photos: string[];
@@ -162,7 +163,7 @@ export default function InitiativeGallery({ photos, title, accent }: Props) {
               aria-label={`${t('galleryGoTo')} ${i + 1}`}
               aria-current={i === safeIx}
             >
-              <img src={src} alt="" className={styles.thumbImg} loading="lazy" decoding="async" />
+              <img src={sizedPhoto(src, 192)} alt="" className={styles.thumbImg} loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

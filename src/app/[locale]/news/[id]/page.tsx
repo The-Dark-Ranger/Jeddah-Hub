@@ -1,3 +1,4 @@
+import { setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import NewsPostClient, { type NewsPostData, type RelatedPost } from './NewsPostClient';
 import { getPublicProfiles, getPublishedBlogs } from '@/lib/publicData';
@@ -7,6 +8,12 @@ import { newsPath, slugify } from '@/lib/slug';
 /* A published post is loaded on the server so it arrives inside the page.
  * Anything else (e.g. an author's own draft, readable only when signed in)
  * is left to the browser to fetch. */
+/* Built on first visit (no list ahead of time), then served from the CDN
+ * and rebuilt at most every 60 seconds, or straight away after a dashboard
+ * edit refreshes the public data. */
+export const revalidate = 60;
+export function generateStaticParams() { return []; }
+
 const decode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
 
 type Blogs = Awaited<ReturnType<typeof getPublishedBlogs>>;
@@ -37,8 +44,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export default async function NewsPostPage({ params }: { params: Promise<{ id: string }> }) {
-  const rawId = decode((await params).id);
+export default async function NewsPostPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
+  const { locale, id: param } = await params;
+  setRequestLocale(locale);
+  const rawId = decode(param);
   const [blogs, profiles] = await Promise.all([getPublishedBlogs(), getPublicProfiles()]);
   const post = findPost(blogs, rawId);
   if (!post) return <NewsPostClient />;

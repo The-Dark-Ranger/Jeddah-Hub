@@ -25,7 +25,11 @@ export async function sendEmail(msg: {
   /** Inline images (content_id) or files, base64-encoded. */
   attachments?: { filename: string; content: string; content_id?: string; content_type?: string }[];
 }): Promise<SendResult> {
-  if (!RESEND_API_KEY) return { ok: false, skipped: true, error: 'No RESEND_API_KEY configured' };
+  if (!RESEND_API_KEY) {
+    // Visible in the deployment's logs, so a missing key is noticed.
+    if (process.env.NODE_ENV === 'production') console.error('[email] RESEND_API_KEY is not set; not sent:', msg.subject);
+    return { ok: false, skipped: true, error: 'No RESEND_API_KEY configured' };
+  }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',

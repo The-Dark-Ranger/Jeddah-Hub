@@ -368,7 +368,8 @@
   font-weight: 500;
   text-decoration: none;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-  word-break: break-all;
+  /* Breaks a long email/URL only where it must, not mid-word everywhere. */
+  overflow-wrap: anywhere;
 }
 
 .contactItem:hover {

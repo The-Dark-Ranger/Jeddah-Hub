@@ -15,6 +15,7 @@ import { COMMUNITY_BENEFITED_STAT, COMMUNITY_PARTNERS_STAT } from '@/lib/siteSta
 import { normalizeRole as normRole } from '@/lib/role';
 import { safeExternalUrl } from '@/lib/sanitize';
 import { roleStyle } from '@/lib/roleColors';
+import { sizedPhoto } from '@/lib/sanitize';
 
 /* ── Types ── */
 interface LiveShaper {
@@ -89,7 +90,7 @@ function LiveShaperCard({ shaper, index, roleLabel }: { shaper: LiveShaper; inde
       <div className={styles.shaperTop}>
         <div className={styles.shaperAvatarWrap}>
           {shaper.photoURL
-            ? <img src={shaper.photoURL} alt={name} className={styles.shaperAvatarImg}
+            ? <img src={sizedPhoto(shaper.photoURL, 192)} alt={name} className={styles.shaperAvatarImg}
                 loading="lazy" decoding="async"
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             : <div className={styles.shaperAvatar} style={{ background: gradient }}>
@@ -152,7 +153,7 @@ function LiveCuratorCard({ curator, index, roleLabel }: { curator: LiveCurator; 
       <div className={styles.curatorBanner} aria-hidden="true" />
       <div className={styles.curatorAvatarWrap}>
         {curator.photoURL
-          ? <img src={curator.photoURL} alt={name} className={styles.curatorAvatarImg}
+          ? <img src={sizedPhoto(curator.photoURL, 384)} alt={name} className={styles.curatorAvatarImg}
               loading="lazy" decoding="async"
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           : <div className={styles.curatorAvatar} style={{ background: gradient }}>

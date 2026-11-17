@@ -3,7 +3,7 @@
 /* Dashboard > Hub Activities (curators, impact officers): create and edit
  * activities, open and close their forms, read their responses, and review
  * what members send for approval. */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
   query, serverTimestamp, where, getCountFromServer, writeBatch,
@@ -24,10 +24,14 @@ import ActivityCard from '@/components/dashboard/ActivityCard';
 import ActivityEditorModal from '@/components/dashboard/ActivityEditorModal';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
+import { orNull } from '@/lib/partialLoad';
 import ActivityResponsesModal from './ActivityResponsesModal';
 import ActivityReview from './ActivityReview';
 import styles from './Activities.module.css';
-import type { Proposal } from '@/lib/types';
+import { errorCode, type Proposal } from '@/lib/types';
 import { intlLocale } from '@/lib/dates';
 
 const RETREAT_PREFILL: Partial<ActivityFormData> = {
@@ -61,10 +65,15 @@ export default function ActivitiesPage() {
   const { user } = useAuth();
   const t = useTranslations('Dashboard');
   const locale = useLocale();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
 
   const [activities, setActivities] = useState<HubActivity[]>([]);
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** A review queue didn't load, so the queue shown may be incomplete. */
+  const [queueFailed, setQueueFailed] = useState(false);
   const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>('active');
   const [search, setSearch] = useState('');
   /** null: closed. Otherwise the activity being edited, or none for a new one. */
@@ -84,8 +93,10 @@ export default function ActivitiesPage() {
    *  requests tied to an initiative (firestore.rules says the same). */
   const canDecide = (req: ActivityChangeRequest) => isCurator || !!req.initiativeId;
 
-  async function fetchAll() {
-    setLoading(true);
+  /** Loads the page. `quiet` (after a change, or retrying the queue) keeps
+   *  the list on screen instead of going back to the skeleton. */
+  const fetchAll = useCallback(async (quiet = false) => {
+    if (!quiet) { setLoading(true); setLoadFailed(false); }
     try {
       const snap = await getDocs(query(collection(db, 'initiatives'), where('type', '==', 'hub_activity')));
       const sorted = snap.docs
@@ -102,56 +113,58 @@ export default function ActivitiesPage() {
           .catch(() => [a.id, 0] as const)
       ));
       setResponseCounts(Object.fromEntries(counts));
+      setLoadFailed(false);
     } catch (err) {
-      console.error('Failed to load activities:', err);
-      setActivities([]);
+      console.error('Failed to load activities:', errorCode(err));
+      // After a change the list on screen is still right.
+      if (!quiet) setLoadFailed(true);
     } finally {
       setLoading(false);
     }
 
-    // A review queue that fails to load shouldn't blank the list above it.
-    try {
-      const proposalSnap = await getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')));
-      setLegacyProposals(proposalSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proposal)));
-    } catch {
-      setLegacyProposals([]);
-    }
+    // A review queue that fails to load shouldn't blank the list above it,
+    // but it says so rather than looking empty.
+    const [proposalSnap, changeSnap] = await Promise.all([
+      orNull('activity proposals', getDocs(query(collection(db, 'activity_requests'), where('status', '==', 'pending')))),
+      orNull('activity change requests', getDocs(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending')))),
+    ]);
+    setQueueFailed(!proposalSnap || !changeSnap);
+    setLegacyProposals((proposalSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as Proposal)));
+    const reqs = (changeSnap?.docs ?? [])
+      .map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }))
+      .sort((a, b) => (a.requestedAt ?? '').localeCompare(b.requestedAt ?? ''));
+    setChangeRequests(reqs);
 
-    try {
-      const changeSnap = await getDocs(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending')));
-      const reqs = changeSnap.docs
-        .map(d => ({ id: d.id, ...(d.data() as Omit<ActivityChangeRequest, 'id'>) }))
-        .sort((a, b) => (a.requestedAt ?? '').localeCompare(b.requestedAt ?? ''));
-      setChangeRequests(reqs);
+    const uniqueIds = Array.from(new Set(reqs.map(r => r.initiativeId).filter(Boolean)));
+    const titleEntries = await Promise.all(uniqueIds.map(async id => {
+      try {
+        const s = await getDoc(doc(db, 'initiatives', id));
+        return [id, (s.data()?.title as string) || id] as const;
+      } catch {
+        return [id, id] as const;
+      }
+    }));
+    setInitiativeTitles(Object.fromEntries(titleEntries));
+  }, []);
 
-      const uniqueIds = Array.from(new Set(reqs.map(r => r.initiativeId).filter(Boolean)));
-      const titleEntries = await Promise.all(uniqueIds.map(async id => {
-        try {
-          const s = await getDoc(doc(db, 'initiatives', id));
-          return [id, (s.data()?.title as string) || id] as const;
-        } catch {
-          return [id, id] as const;
-        }
-      }));
-      setInitiativeTitles(Object.fromEntries(titleEntries));
-    } catch {
-      setChangeRequests([]);
-    }
-  }
+  // Load once the member is known, and only for those who may use this page
+  // (anyone else is shown "restricted" and has nothing to load).
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once the role is known
+  useEffect(() => { if (canEdit) fetchAll(); }, [fetchAll, canEdit]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once on mount
-  useEffect(() => { fetchAll(); }, []);
-
-  /** Runs a change to a live activity; on failure says so and leaves the list as it is. */
-  async function applyChange(what: string, change: () => Promise<unknown>) {
-    try {
-      await change();
-      void refreshPublicPages();
-      fetchAll();
-    } catch (err) {
-      console.error(`Failed to ${what}:`, err);
-      alert(t('saveFailed'));
-    }
+  /** Runs a change to a live activity, one at a time per activity; on
+   *  failure says so and leaves the list as it is. */
+  function applyChange(a: HubActivity, what: string, change: () => Promise<unknown>) {
+    return run(a.id, async () => {
+      try {
+        await change();
+        void refreshPublicPages();
+        void fetchAll(true);
+      } catch (err) {
+        console.error(`Failed to ${what}:`, errorCode(err));
+        alert(saveFailed(err));
+      }
+    });
   }
 
   async function handleSave(form: ActivityFormData) {
@@ -165,7 +178,7 @@ export default function ActivitiesPage() {
     }
     setEditor(null);
     void refreshPublicPages();
-    fetchAll();
+    void fetchAll(true);
   }
 
   // Archived is a separate axis from active/hidden: a past retreat can be both
@@ -179,7 +192,7 @@ export default function ActivitiesPage() {
 
   const handleDelete = (a: HubActivity) => {
     if (!confirm(t('deleteActivityConfirm'))) return;
-    void applyChange('delete activity', () => deleteDoc(doc(db, 'initiatives', a.id)));
+    void applyChange(a, 'delete activity', () => deleteDoc(doc(db, 'initiatives', a.id)));
   };
 
   /** The review's outcome on the request: who decided, and their note. */
@@ -191,7 +204,7 @@ export default function ActivitiesPage() {
   const finishReview = () => {
     setReviewing(null);
     void refreshPublicPages();
-    fetchAll();
+    void fetchAll(true);
   };
 
   // Applied through an explicit field allowlist (pickActivityFields), so a
@@ -319,6 +332,10 @@ export default function ActivitiesPage() {
         </button>
       </div>
 
+      {queueFailed && !loadFailed && (
+        <LoadFailed onRetry={() => void fetchAll(true)} message={t('requestsLoadFailed')} />
+      )}
+
       {waiting > 0 && (
         <section className={styles.proposalsSection} aria-labelledby="activity-queue-title">
           <h2 className={styles.proposalsTitle} id="activity-queue-title">
@@ -391,6 +408,8 @@ export default function ActivitiesPage() {
 
       {loading ? (
         <DashSkeleton rows={3} header={false} label={t('loading')} />
+      ) : loadFailed ? (
+        <LoadFailed onRetry={() => void fetchAll()} />
       ) : activities.length === 0 ? (
         <div className={styles.emptyState}>
           <p className={styles.emptyTitle}>{t('noActivities')}</p>
@@ -406,14 +425,17 @@ export default function ActivitiesPage() {
         <p className={styles.empty}>{search ? t('noMatches') : t('noArchivedActivities')}</p>
       ) : (
         <div className={styles.list}>
-          {visible.map(a => (
+          {visible.map(a => {
+            const busy = isBusy(a.id);
+            return (
             <ActivityCard key={a.id} activity={a}>
               <button type="button" className={styles.editBtn} onClick={() => setEditor({ editing: a, initial: activityToForm(a) })}>{t('editActivity')}</button>
               {a.customForm?.enabled && (
                 <button
                   type="button"
                   className={styles.toggleBtn + ' ' + (a.customForm.closed ? styles.toggleOn : styles.toggleOff)}
-                  onClick={() => applyChange('open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'customForm.closed': !a.customForm?.closed }))}
+                  disabled={busy}
+                  onClick={() => applyChange(a, 'open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'customForm.closed': !a.customForm?.closed }))}
                 >
                   {a.customForm.closed ? t('regOpenAction') : t('regCloseAction')}
                 </button>
@@ -422,7 +444,8 @@ export default function ActivitiesPage() {
                 <button
                   type="button"
                   className={styles.toggleBtn + ' ' + (a.feedbackForm.closed ? styles.toggleOn : styles.toggleOff)}
-                  onClick={() => applyChange('open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'feedbackForm.closed': !a.feedbackForm?.closed }))}
+                  disabled={busy}
+                  onClick={() => applyChange(a, 'open or close the form', () => updateDoc(doc(db, 'initiatives', a.id), { 'feedbackForm.closed': !a.feedbackForm?.closed }))}
                 >
                   {a.feedbackForm.closed ? t('fbOpenAction') : t('fbCloseAction')}
                 </button>
@@ -439,16 +462,18 @@ export default function ActivitiesPage() {
               <button
                 type="button"
                 className={styles.toggleBtn + ' ' + (a.active ? styles.toggleOff : styles.toggleOn)}
-                onClick={() => applyChange('show or hide the activity', () => updateDoc(doc(db, 'initiatives', a.id), { active: !a.active }))}
+                disabled={busy}
+                onClick={() => applyChange(a, 'show or hide the activity', () => updateDoc(doc(db, 'initiatives', a.id), { active: !a.active }))}
               >
                 {a.active ? t('setHidden') : t('setActive')}
               </button>
-              <button type="button" className={styles.toggleBtn + ' ' + styles.toggleOff} onClick={() => applyChange('archive the activity', () => toggleArchive(a))}>
+              <button type="button" className={styles.toggleBtn + ' ' + styles.toggleOff} disabled={busy} onClick={() => applyChange(a, 'archive the activity', () => toggleArchive(a))}>
                 {a.archived ? t('unarchiveActivity') : t('archiveActivity')}
               </button>
-              {isCurator && <button type="button" className={styles.deleteBtn} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>}
+              {isCurator && <button type="button" className={styles.deleteBtn} disabled={busy} onClick={() => handleDelete(a)}>{t('deleteActivity')}</button>}
             </ActivityCard>
-          ))}
+            );
+          })}
         </div>
       )}
 

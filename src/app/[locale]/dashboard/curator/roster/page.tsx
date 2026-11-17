@@ -4,9 +4,12 @@
  * roles and handling pending join and role-change requests. Initiative leads
  * see only the teams they lead; a role change they make goes to the Curator
  * or Vice Curator as a request instead of applying straight away. */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import DashSearch, { matchesQuery } from '@/components/dashboard/DashSearch';
 import DashSkeleton from '@/components/dashboard/DashSkeleton';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import { useBusy } from '@/components/dashboard/useBusy';
+import { useSaveFailed } from '@/components/dashboard/useSaveFailed';
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, doc, arrayUnion, arrayRemove, deleteDoc, query, where, documentId,
 } from 'firebase/firestore';
@@ -14,10 +17,12 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import { normalizeRole } from '@/lib/role';
+import { orNull } from '@/lib/partialLoad';
+import { addToTeam, removeFromTeam } from '@/lib/teamChanges';
 import SearchSelect, { type SearchOption } from '@/components/dashboard/SearchSelect';
 import styles from './Roster.module.css';
 import {
-  isLeadRole, memberId, toTeamRole, withTeamRole,
+  errorCode, isLeadRole, memberId, toTeamRole, withTeamRole,
   type InitiativeMember, type MemberEntry, type MembershipRequest, type RoleChangeRequest, type TeamRole, type UserDoc,
 } from '@/lib/types';
 import TeamRoleSelect, { teamRoleLabel } from '@/components/dashboard/TeamRoleSelect';
@@ -42,6 +47,10 @@ const MOBILE_ROSTER_ROWS = 5;
 const teamOf = (init: RosterInitiative): InitiativeMember[] =>
   (init.members || []).map(m => typeof m === 'string' ? { userId: m, role: 'Member' } : m);
 
+/** `leads` with one person put in or taken out. */
+const withLead = (leads: string[] | undefined, userId: string, lead: boolean) =>
+  lead ? Array.from(new Set([...(leads || []), userId])) : (leads || []).filter(id => id !== userId);
+
 /** Sets one person's team role on an initiative, read fresh so a change made
  *  meanwhile isn't overwritten, and keeps `leads` (what firestore.rules
  *  checks for lead rights) in step. False when they're no longer on it. */
@@ -56,10 +65,32 @@ async function applyTeamRole(initiativeId: string, userId: string, role: TeamRol
   return true;
 }
 
+/** One request waiting for a decision, with its two buttons (disabled while it's being saved). */
+function RequestRow({ name, meta, approveLabel, onApprove, onReject, busy }: {
+  name: ReactNode; meta: ReactNode; approveLabel: string; busy: boolean;
+  onApprove: () => void; onReject: () => void;
+}) {
+  const t = useTranslations('Dashboard');
+  return (
+    <div className={styles.requestRow} aria-busy={busy}>
+      <div className={styles.requestInfo}>
+        <span className={styles.requestName}>{name}</span>
+        <span className={styles.requestMeta}>{meta}</span>
+      </div>
+      <div className={styles.requestActions}>
+        <button className={styles.acceptBtn} onClick={onApprove} disabled={busy}>{approveLabel}</button>
+        <button className={styles.rejectBtn} onClick={onReject} disabled={busy}>{t('rejectRequest')}</button>
+      </div>
+    </div>
+  );
+}
+
 export default function ManageRoster() {
   const t = useTranslations('Dashboard');
   const tRole = useTranslations('Role');
   const { user } = useAuth();
+  const { run, isBusy } = useBusy();
+  const saveFailed = useSaveFailed();
   const normRole  = normalizeRole(user?.role);
   const isCurator = normRole === 'curator' || normRole === 'vice_curator';
   const [initiatives, setInitiatives] = useState<RosterInitiative[]>([]);
@@ -71,24 +102,25 @@ export default function ManageRoster() {
   const [selectedUser, setSelectedUser] = useState('');
   const [tempRole, setTempRole]         = useState<TeamRole>('Member');
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** A request list didn't load, so what's shown may be incomplete. */
+  const [requestsFailed, setRequestsFailed] = useState(false);
   const [search, setSearch]   = useState('');
-  const [saving, setSaving]   = useState(false);
-  // The member row whose role is being saved, as "initiativeId:userId".
-  const [busyRow, setBusyRow] = useState('');
   // Initiatives whose full team is shown on phones (otherwise the first 5).
   const [expandedInits, setExpandedInits] = useState<Set<string>>(() => new Set());
 
   const uid = user?.uid;
-  const fetchData = useCallback(async () => {
+  /** `quiet` (retrying the request lists) keeps the roster on screen. */
+  const fetchData = useCallback(async (quiet = false) => {
     if (!uid) return;
-    setLoading(true);
+    if (!quiet) { setLoading(true); setLoadFailed(false); }
     try {
       if (isCurator) {
         const [initSnap, usersSnap, reqSnap, roleSnap] = await Promise.all([
           getDocs(collection(db, 'initiatives')),
           getDocs(collection(db, 'users')),
-          getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending'))),
-          getDocs(query(collection(db, 'role_change_requests'), where('status', '==', 'pending'))).catch(() => null),
+          orNull('join requests', getDocs(query(collection(db, 'join_requests'), where('status', '==', 'pending')))),
+          orNull('role change requests', getDocs(query(collection(db, 'role_change_requests'), where('status', '==', 'pending')))),
         ]);
         // Hub Activities (dashboard/curator/activities) are stored as
         // initiatives docs tagged type:'hub_activity', exclude them so they
@@ -96,12 +128,14 @@ export default function ManageRoster() {
         const inits = initSnap.docs.filter(d => !d.data().type).map(d => ({ id: d.id, ...d.data() } as RosterInitiative));
         setInitiatives(inits);
         setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserDoc)));
-        setJoinRequests(reqSnap.docs.map(d => {
+        setJoinRequests((reqSnap?.docs ?? []).map(d => {
           const data = d.data();
           const init = inits.find(i => i.id === data.initiativeId);
           return { id: d.id, ...data, initiativeTitle: init?.title || data.initiativeId } as RosterJoinRequest;
         }));
-        setRoleRequests(roleSnap ? roleSnap.docs.map(d => ({ id: d.id, ...d.data() } as RoleChangeRequest)) : []);
+        setRoleRequests((roleSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as RoleChangeRequest)));
+        setRequestsFailed(!reqSnap || !roleSnap);
+        setLoadFailed(false);
         return;
       }
 
@@ -109,8 +143,8 @@ export default function ManageRoster() {
       // public_profiles, since only curators can read the users collection.
       const [initSnap, roleSnap] = await Promise.all([
         getDocs(query(collection(db, 'initiatives'), where('leads', 'array-contains', uid))),
-        getDocs(query(collection(db, 'role_change_requests'),
-          where('requestedByUserId', '==', uid), where('status', '==', 'pending'))).catch(() => null),
+        orNull('role change requests', getDocs(query(collection(db, 'role_change_requests'),
+          where('requestedByUserId', '==', uid), where('status', '==', 'pending')))),
       ]);
       const inits = initSnap.docs
         .filter(d => !d.data().type && d.data().status !== 'archived')
@@ -119,12 +153,15 @@ export default function ManageRoster() {
       const chunks: string[][] = [];
       for (let i = 0; i < ids.length; i += 30) chunks.push(ids.slice(i, i + 30));
       const profileSnaps = await Promise.all(chunks.map(c =>
-        getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', c))).catch(() => null)));
+        getDocs(query(collection(db, 'public_profiles'), where(documentId(), 'in', c)))));
       setInitiatives(inits);
-      setUsers(profileSnaps.flatMap(s => s ? s.docs.map(d => ({ id: d.id, ...d.data() } as UserDoc)) : []));
-      setRoleRequests(roleSnap ? roleSnap.docs.map(d => ({ id: d.id, ...d.data() } as RoleChangeRequest)) : []);
+      setUsers(profileSnaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as UserDoc))));
+      setRoleRequests((roleSnap?.docs ?? []).map(d => ({ id: d.id, ...d.data() } as RoleChangeRequest)));
+      setRequestsFailed(!roleSnap);
+      setLoadFailed(false);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load the roster:', errorCode(err));
+      if (!quiet) setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -133,95 +170,84 @@ export default function ManageRoster() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- load data once signed in
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleAddMember = async () => {
-    if (!selectedInit || !selectedUser) return;
-    setSaving(true);
+  /** Changes one initiative on screen, once the same change is saved
+   *  (instead of reloading the whole roster). */
+  const patch = (id: string, change: (i: RosterInitiative) => Partial<RosterInitiative>) =>
+    setInitiatives(prev => prev.map(i => (i.id === id ? { ...i, ...change(i) } : i)));
+
+  /** Runs one change; on failure says so and leaves the roster as it is. */
+  const attempt = (key: string, what: string, action: () => Promise<unknown>) => run(key, async () => {
     try {
-      const role = tempRole;
+      await action();
+    } catch (err) {
+      console.error(`Failed to ${what}:`, errorCode(err));
+      alert(saveFailed(err));
+    }
+  });
+  const rowKey = (initiativeId: string, userId: string) => `row:${initiativeId}:${userId}`;
+
+  const handleAddMember = () => {
+    const initiativeId = selectedInit, userId = selectedUser, role = tempRole;
+    if (!initiativeId || !userId) return;
+    void attempt('add', 'add the member', async () => {
+      const lead = isLeadRole(role);
       // The `leads` array (not this display role text) is what
       // firestore.rules actually checks to grant a member edit rights on
       // their own initiative, writing role text alone without also
       // updating `leads` here is exactly what leaves a "Lead"-badged
       // member unable to save their own edits (permission-denied).
-      const payload: Record<string, unknown> = {
-        members: arrayUnion({ userId: selectedUser, role }),
-      };
-      if (isLeadRole(role)) {
-        payload.leads = arrayUnion(selectedUser);
-      }
-      await updateDoc(doc(db, 'initiatives', selectedInit), payload);
+      await updateDoc(doc(db, 'initiatives', initiativeId), {
+        members: arrayUnion({ userId, role }),
+        ...(lead ? { leads: arrayUnion(userId) } : {}),
+      });
+      patch(initiativeId, i => ({
+        members: [...(i.members || []), { userId, role }],
+        leads: lead ? withLead(i.leads, userId, true) : i.leads,
+      }));
       setTempRole('Member');
       setSelectedUser('');
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    } finally {
-      setSaving(false);
-    }
+    });
   };
 
-  const handleAcceptJoinRequest = async (req: RosterJoinRequest) => {
-    try {
-      await updateDoc(doc(db, 'initiatives', req.initiativeId), {
-        members: arrayUnion({ userId: req.userId, role: 'Member' }),
-      });
-      await deleteDoc(doc(db, 'join_requests', req.id));
-      setJoinRequests(prev => prev.filter(r => r.id !== req.id));
-      setInitiatives(prev => prev.map(i =>
-        i.id === req.initiativeId
-          ? { ...i, members: [...(i.members || []), { userId: req.userId, role: 'Member' }] }
-          : i
-      ));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleAcceptJoinRequest = (req: RosterJoinRequest) => attempt(`join:${req.id}`, 'accept the join request', async () => {
+    const added = await addToTeam(req.initiativeId, req.userId, tx => tx.delete(doc(db, 'join_requests', req.id)));
+    setJoinRequests(prev => prev.filter(r => r.id !== req.id));
+    if (added) patch(req.initiativeId, i => ({ members: [...(i.members || []), { userId: req.userId, role: 'Member' }] }));
+  });
 
-  const handleRejectJoinRequest = async (reqId: string) => {
-    try {
-      await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
-      setJoinRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleRejectJoinRequest = (reqId: string) => attempt(`join:${reqId}`, 'decline the join request', async () => {
+    await updateDoc(doc(db, 'join_requests', reqId), { status: 'rejected' });
+    setJoinRequests(prev => prev.filter(r => r.id !== reqId));
+  });
 
-  const handleRemoveMember = async (initiativeId: string, userId: string) => {
+  const handleRemoveMember = (initiativeId: string, userId: string) => {
     if (!confirm(t('confirmRemoveMember'))) return;
-    const init = initiatives.find(i => i.id === initiativeId);
-    if (!init) return;
-    try {
-      const removed = teamOf(init).find(m => m.userId === userId);
-      const updated = (init.members || []).filter(m => memberId(m) !== userId);
-      const payload: Record<string, unknown> = { members: updated };
-      // Keep `leads` in sync in the other direction too, a removed lead
-      // should lose write access, not keep a stale entry in the array
-      // firestore.rules actually checks.
-      if (isLeadRole(removed?.role)) {
-        payload.leads = arrayRemove(userId);
-      }
-      await updateDoc(doc(db, 'initiatives', initiativeId), payload);
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+    // Also out of `leads`: a removed lead must lose write access.
+    void attempt(rowKey(initiativeId, userId), 'remove the member', async () => {
+      await removeFromTeam(initiativeId, userId);
+      patch(initiativeId, i => ({
+        members: (i.members || []).filter(m => memberId(m) !== userId),
+        leads: withLead(i.leads, userId, false),
+      }));
+    });
   };
+
+  /** The role change on screen, once it's saved. */
+  const showRole = (initiativeId: string, userId: string, role: TeamRole) => patch(initiativeId, i => ({
+    members: withTeamRole(i.members || [], userId, role),
+    leads: withLead(i.leads, userId, isLeadRole(role)),
+  }));
 
   /** A role picked in the team table: a curator's change applies at once; a
    *  lead's becomes a request for the Curator or Vice Curator to approve. */
-  const handleRoleChange = async (init: RosterInitiative, m: InitiativeMember, role: TeamRole) => {
+  const handleRoleChange = (init: RosterInitiative, m: InitiativeMember, role: TeamRole) => {
     if (!user || role === toTeamRole(m.role)) return;
     const vars = { member: getUserLabel(m.userId), initiative: init.title, role: teamRoleLabel(t, role) };
     if (!confirm(t(isCurator ? 'confirmRoleChange' : 'confirmRequestRoleChange', vars))) return;
-    setBusyRow(`${init.id}:${m.userId}`);
-    try {
+    void attempt(rowKey(init.id, m.userId), 'change the team role', async () => {
       if (isCurator) {
-        await applyTeamRole(init.id, m.userId, role);
-        await fetchData();
+        if (await applyTeamRole(init.id, m.userId, role)) showRole(init.id, m.userId, role);
+        else await fetchData(true); // They left the team meanwhile.
         return;
       }
       const req = {
@@ -238,29 +264,19 @@ export default function ManageRoster() {
       };
       const ref = await addDoc(collection(db, 'role_change_requests'), req);
       setRoleRequests(prev => [...prev, { id: ref.id, ...req }]);
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    } finally {
-      setBusyRow('');
-    }
+    });
   };
 
-  const handleCancelRoleRequest = async (reqId: string) => {
-    try {
-      await deleteDoc(doc(db, 'role_change_requests', reqId));
-      setRoleRequests(prev => prev.filter(r => r.id !== reqId));
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+  const handleCancelRoleRequest = (reqId: string) => attempt(`role:${reqId}`, 'cancel the role change request', async () => {
+    await deleteDoc(doc(db, 'role_change_requests', reqId));
+    setRoleRequests(prev => prev.filter(r => r.id !== reqId));
+  });
 
   /** Curator review of a lead's request. An approval applies the role; if
    *  the person has left the team since, the request is declined instead. */
-  const handleReviewRoleRequest = async (req: RoleChangeRequest, approve: boolean) => {
+  const handleReviewRoleRequest = (req: RoleChangeRequest, approve: boolean) => {
     if (!user) return;
-    try {
+    void attempt(`role:${req.id}`, 'review the role change request', async () => {
       const applied = approve && await applyTeamRole(req.initiativeId, req.targetUserId, req.toRole);
       if (approve && !applied) alert(t('roleChangeMemberGone'));
       await updateDoc(doc(db, 'role_change_requests', req.id), {
@@ -269,11 +285,8 @@ export default function ManageRoster() {
         reviewedAt: new Date().toISOString(),
       });
       setRoleRequests(prev => prev.filter(r => r.id !== req.id));
-      if (applied) await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
+      if (applied) showRole(req.initiativeId, req.targetUserId, req.toRole);
+    });
   };
 
   /** True when a member's role text implies "lead" but their uid was never
@@ -283,15 +296,11 @@ export default function ManageRoster() {
   const isDriftedLead = (init: RosterInitiative, m: InitiativeMember) =>
     isLeadRole(m.role) && !(init.leads || []).includes(m.userId);
 
-  const handleFixLeadAccess = async (initiativeId: string, userId: string) => {
-    try {
+  const handleFixLeadAccess = (initiativeId: string, userId: string) =>
+    attempt(rowKey(initiativeId, userId), 'restore lead access', async () => {
       await updateDoc(doc(db, 'initiatives', initiativeId), { leads: arrayUnion(userId) });
-      await fetchData();
-    } catch (err) {
-      console.error(err);
-      alert(t('saveFailed'));
-    }
-  };
+      patch(initiativeId, i => ({ leads: withLead(i.leads, userId, true) }));
+    });
 
   const getUserLabel = (userId: string) => {
     const u = users.find(u => u.id === userId);
@@ -332,8 +341,9 @@ export default function ManageRoster() {
     })
     .filter(({ init, members }) => !search.trim() || members.length > 0 || matchesQuery(search, init.title));
 
-  // Someone who is neither a curator nor leads an active initiative.
-  if (!isCurator && !loading && initiatives.length === 0) {
+  // Someone who is neither a curator nor leads an active initiative (a
+  // failed load says so instead, rather than claiming they have no access).
+  if (!isCurator && !loading && !loadFailed && initiatives.length === 0) {
     return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>{t('rosterRestricted')}</div>;
   }
 
@@ -344,6 +354,10 @@ export default function ManageRoster() {
         {!isCurator && <p className={styles.leadNote}>{t('rosterLeadNote')}</p>}
       </div>
 
+      {requestsFailed && !loadFailed && (
+        <LoadFailed onRetry={() => void fetchData(true)} message={t('requestsLoadFailed')} />
+      )}
+
       {/* Role changes asked for by initiative leads, for the Curator or Vice Curator */}
       {isCurator && roleRequests.length > 0 && (
         <div className={`${styles.card} ${styles.requestCard}`}>
@@ -353,26 +367,21 @@ export default function ManageRoster() {
           </h3>
           <div className={styles.requestList}>
             {roleRequests.map(req => (
-              <div key={req.id} className={styles.requestRow}>
-                <div className={styles.requestInfo}>
-                  <span className={styles.requestName}>{req.targetUserName || req.targetUserId}</span>
-                  <span className={styles.requestMeta}>
-                    {t('roleChangeMeta', {
-                      from: teamRoleLabel(t, req.fromRole), to: teamRoleLabel(t, req.toRole),
-                      initiative: req.initiativeTitle || req.initiativeId,
-                    })}
-                    {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
-                  </span>
-                </div>
-                <div className={styles.requestActions}>
-                  <button className={styles.acceptBtn} onClick={() => handleReviewRoleRequest(req, true)}>
-                    {t('approveRoleChange')}
-                  </button>
-                  <button className={styles.rejectBtn} onClick={() => handleReviewRoleRequest(req, false)}>
-                    {t('rejectRequest')}
-                  </button>
-                </div>
-              </div>
+              <RequestRow
+                key={req.id}
+                name={req.targetUserName || req.targetUserId}
+                meta={<>
+                  {t('roleChangeMeta', {
+                    from: teamRoleLabel(t, req.fromRole), to: teamRoleLabel(t, req.toRole),
+                    initiative: req.initiativeTitle || req.initiativeId,
+                  })}
+                  {req.requestedByName && <> · {t('by')} {req.requestedByName}</>}
+                </>}
+                approveLabel={t('approveRoleChange')}
+                busy={isBusy(`role:${req.id}`)}
+                onApprove={() => handleReviewRoleRequest(req, true)}
+                onReject={() => handleReviewRoleRequest(req, false)}
+              />
             ))}
           </div>
         </div>
@@ -387,22 +396,15 @@ export default function ManageRoster() {
           </h3>
           <div className={styles.requestList}>
             {joinRequests.map(req => (
-              <div key={req.id} className={styles.requestRow}>
-                <div className={styles.requestInfo}>
-                  <span className={styles.requestName}>{req.userName || req.userEmail}</span>
-                  <span className={styles.requestMeta}>
-                    {t('wantsToJoin')} <strong>{req.initiativeTitle}</strong>
-                  </span>
-                </div>
-                <div className={styles.requestActions}>
-                  <button className={styles.acceptBtn} onClick={() => handleAcceptJoinRequest(req)}>
-                    {t('acceptRequest')}
-                  </button>
-                  <button className={styles.rejectBtn} onClick={() => handleRejectJoinRequest(req.id)}>
-                    {t('rejectRequest')}
-                  </button>
-                </div>
-              </div>
+              <RequestRow
+                key={req.id}
+                name={req.userName || req.userEmail}
+                meta={<>{t('wantsToJoin')} <strong>{req.initiativeTitle}</strong></>}
+                approveLabel={t('acceptRequest')}
+                busy={isBusy(`join:${req.id}`)}
+                onApprove={() => void handleAcceptJoinRequest(req)}
+                onReject={() => void handleRejectJoinRequest(req.id)}
+              />
             ))}
           </div>
         </div>
@@ -434,9 +436,9 @@ export default function ManageRoster() {
         <button
           onClick={handleAddMember}
           className={styles.assignBtn}
-          disabled={!selectedInit || !selectedUser || saving}
+          disabled={!selectedInit || !selectedUser || isBusy('add')}
         >
-          {saving ? '…' : t('assignMemberBtn')}
+          {isBusy('add') ? '…' : t('assignMemberBtn')}
         </button>
       </div>
       )}
@@ -454,6 +456,8 @@ export default function ManageRoster() {
         </div>
         {loading ? (
           <DashSkeleton rows={4} header={false} label={t('loading')} />
+        ) : loadFailed ? (
+          <LoadFailed onRetry={() => void fetchData()} />
         ) : initiatives.length === 0 ? (
           <div className={styles.empty}>{t('noMembers')}</div>
         ) : visibleInitiatives.length === 0 ? (
@@ -491,9 +495,11 @@ export default function ManageRoster() {
                           const pending = !isCurator
                             ? roleRequests.find(r => r.initiativeId === init.id && r.targetUserId === m.userId)
                             : undefined;
-                          // A lead can't ask to change their own role.
-                          const locked = !!pending || (!isCurator && m.userId === user?.uid)
-                            || busyRow === `${init.id}:${m.userId}`;
+                          const busy = isBusy(rowKey(init.id, m.userId));
+                          // A lead can't ask to change their own role, nor ask
+                          // again while their earlier requests couldn't load.
+                          const locked = !!pending || busy
+                            || (!isCurator && (m.userId === user?.uid || requestsFailed));
                           return (
                           <tr key={m.userId + idx} className={idx >= MOBILE_ROSTER_ROWS && !expandedInits.has(init.id) ? styles.rowExtra : undefined}>
                             <td className={styles.memberEmail}>{getUserLabel(m.userId)}</td>
@@ -512,7 +518,8 @@ export default function ManageRoster() {
                                 <span className={styles.pendingPill}>
                                   {t('roleChangePending', { role: teamRoleLabel(t, pending.toRole) })}
                                 </span>
-                                <button className={styles.rejectBtn} onClick={() => handleCancelRoleRequest(pending.id)}>
+                                <button className={styles.rejectBtn} onClick={() => void handleCancelRoleRequest(pending.id)}
+                                  disabled={isBusy(`role:${pending.id}`)}>
                                   {t('cancelRemoval')}
                                 </button>
                               </>)}
@@ -520,7 +527,8 @@ export default function ManageRoster() {
                                 <button
                                   className={styles.assignBtn}
                                   title={t('fixLeadAccessHint')}
-                                  onClick={() => handleFixLeadAccess(init.id, m.userId)}
+                                  onClick={() => void handleFixLeadAccess(init.id, m.userId)}
+                                  disabled={busy}
                                 >
                                   {t('fixLeadAccess')}
                                 </button>
@@ -529,6 +537,7 @@ export default function ManageRoster() {
                                 <button
                                   className={styles.removeBtn}
                                   onClick={() => handleRemoveMember(init.id, m.userId)}
+                                  disabled={busy}
                                 >
                                   {t('removeMember')}
                                 </button>

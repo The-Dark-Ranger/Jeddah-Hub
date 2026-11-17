@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/auth';
 import { normalizeRole } from '@/lib/role';
+import LoadFailed from '@/components/dashboard/LoadFailed';
 import { RoleLabel } from '@/lib/roleLabel';
 import { readDraft, clearDraft, useDraftAutosave } from '@/lib/drafts';
 import { safePhotoUrl } from '@/lib/sanitize';
@@ -61,7 +62,9 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   // Firestore rule exactly, which has no way to verify initiative-lead
   // status server-side, so offering that shortcut here would just fail.
   const canPublishDirectly = isCurator || isImpact;
-  const canSeeAll  = isCurator;
+  // Curators and impact officers review everyone's posts (the rules let
+  // both read, publish and remove any post); everyone else sees their own.
+  const canReview  = isCurator || isImpact;
 
   const [posts, setPosts]       = useState<BlogPost[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -78,6 +81,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   const [saving, setSaving]     = useState(false);
   const [filter, setFilter]     = useState('all');
   const [restored, setRestored] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // A new post's text is kept on this device until it is saved.
   const draftKey = `blog:${user.uid}`;
@@ -102,16 +106,18 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
   const fetchPosts = async () => {
     setLoading(true);
+    setLoadFailed(false);
     try {
-      const q = canSeeAll
+      const q = canReview
         ? query(collection(db, 'blogs'), orderBy('createdAt', 'desc'))
         : query(collection(db, 'blogs'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
       setPosts(data);
       return data;
-    } catch {
-      setPosts([]);
+    } catch (err) {
+      console.error('[blogs] load failed', err);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -141,7 +147,9 @@ export default function BlogManager({ user }: { user: UserProfile }) {
     if (!title.trim() || !content.trim()) return;
     setSaving(true);
     try {
-      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+      // The Arabic comma (،) counts too: Arabic keyboards type it.
+      // Within what firestore.rules accepts: 20 tags of up to 60 characters.
+      const tags = tagsInput.split(/[,،]/).map(t => t.trim().slice(0, 60)).filter(Boolean).slice(0, 20);
       const autoExcerpt = excerpt.trim() || content.slice(0, 160).trim() + (content.length > 160 ? '...' : '');
       const content_ = {
         title: title.trim(), content: content.trim(), excerpt: autoExcerpt,
@@ -150,8 +158,12 @@ export default function BlogManager({ user }: { user: UserProfile }) {
       };
       if (view === 'edit' && editId) {
         // Editing keeps the original author: a curator fixing someone's post
-        // used to overwrite its author with themselves.
-        await updateDoc(doc(db, 'blogs', editId), content_);
+        // used to overwrite its author with themselves. Publishing it from
+        // here dates it today, as the Publish button does.
+        const wasPublished = posts.find(p => p.id === editId)?.status === 'published';
+        await updateDoc(doc(db, 'blogs', editId), status === 'published' && !wasPublished
+          ? { ...content_, createdAt: content_.updatedAt }
+          : content_);
       } else {
         await addDoc(collection(db, 'blogs'), {
           ...content_,
@@ -187,9 +199,14 @@ export default function BlogManager({ user }: { user: UserProfile }) {
   };
 
   const handleStatusChange = async (id: string, newStatus: BlogPost['status']) => {
+    // A post's date is the day it goes public, not the day its draft was
+    // started; this also replaces any date its author's browser sent.
+    const change: Partial<BlogPost> = newStatus === 'published'
+      ? { status: newStatus, createdAt: new Date().toISOString() }
+      : { status: newStatus };
     try {
-      await updateDoc(doc(db, 'blogs', id), { status: newStatus });
-      setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      await updateDoc(doc(db, 'blogs', id), change);
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, ...change } : p));
       void refreshPublicPages();
     } catch (err) {
       console.error(err);
@@ -219,11 +236,11 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           )}
           <div className={styles.formGroup}>
             <label htmlFor={`${formId}-title`} className={styles.label}>{t('titleLabel')}</label>
-            <input id={`${formId}-title`} className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
+            <input id={`${formId}-title`} className={styles.input} value={title} maxLength={300} onChange={e => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} required />
           </div>
           <div className={styles.formGroup}>
             <label htmlFor={`${formId}-content`} className={styles.label}>{t('contentLabel')}</label>
-            <textarea id={`${formId}-content`} className={styles.textarea} value={content} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
+            <textarea id={`${formId}-content`} className={styles.textarea} value={content} maxLength={100000} onChange={e => setContent(e.target.value)} placeholder={t('contentPlaceholder')} rows={14} required />
           </div>
           <div className={styles.formGroup}>
             <ImageUploader
@@ -237,11 +254,11 @@ export default function BlogManager({ user }: { user: UserProfile }) {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label htmlFor={`${formId}-excerpt`} className={styles.label}>{t('excerptLabel')} <span className={styles.labelHint}>{t('excerptHint')}</span></label>
-              <textarea id={`${formId}-excerpt`} className={styles.textarea} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder={t('excerptPlaceholder')} rows={3} />
+              <textarea id={`${formId}-excerpt`} className={styles.textarea} value={excerpt} maxLength={1000} onChange={e => setExcerpt(e.target.value)} placeholder={t('excerptPlaceholder')} rows={3} />
             </div>
             <div className={styles.formGroup}>
               <label htmlFor={`${formId}-tagsInput`} className={styles.label}>{t('tagsLabel')} <span className={styles.labelHint}>{t('tagsHint')}</span></label>
-              <input id={`${formId}-tagsInput`} className={styles.input} value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder={t('tagsPlaceholder')} />
+              <input id={`${formId}-tagsInput`} className={styles.input} value={tagsInput} maxLength={2000} onChange={e => setTagsInput(e.target.value)} placeholder={t('tagsPlaceholder')} />
               <label htmlFor={`${formId}-status`} className={styles.label} style={{ marginTop: '1.25rem' }}>{t('statusLabel')}</label>
               <select id={`${formId}-status`} className={styles.select} value={status} onChange={e => setStatus(e.target.value as BlogPost['status'])}>
                 {canPublishDirectly && <option value="published">{t('statusPublished')}</option>}
@@ -276,7 +293,7 @@ export default function BlogManager({ user }: { user: UserProfile }) {
         <div>
           <h2 className={styles.pageTitle}>{t('pageTitle')}</h2>
           <p className={styles.pageSubtitle}>
-            {canSeeAll ? t('subtitleAll') : t('subtitleOwn')}
+            {canReview ? t('subtitleAll') : t('subtitleOwn')}
           </p>
         </div>
         <button className={styles.newBtn} onClick={startWriting}>
@@ -298,6 +315,8 @@ export default function BlogManager({ user }: { user: UserProfile }) {
 
       {loading ? (
         <div className={styles.loading}><div className={styles.spinner} /></div>
+      ) : loadFailed ? (
+        <LoadFailed onRetry={fetchPosts} />
       ) : filtered.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>✍️</div>
@@ -316,8 +335,8 @@ export default function BlogManager({ user }: { user: UserProfile }) {
             // further author-side edits (the update rule requires
             // resource.data.status in ['draft','pending_review']), so
             // offering Edit here would just lead to a failed-save alert.
-            const canEdit = canSeeAll || (isOwn && post.status !== 'published');
-            const canDelete = canSeeAll || isOwn;
+            const canEdit = canReview || (isOwn && post.status !== 'published');
+            const canDelete = canReview || isOwn;
             return (
               <div key={post.id} className={styles.postItem}>
                 {post.imageUrl && <img src={post.imageUrl} alt="" className={styles.postThumb} loading="lazy" />}
@@ -333,18 +352,18 @@ export default function BlogManager({ user }: { user: UserProfile }) {
                       {post.tags.slice(0, 3).map(tag => <span key={tag} className={styles.postTag}>{tag}</span>)}
                     </div>
                   )}
-                  {canSeeAll && (
+                  {canReview && (
                     <div className={styles.postAuthorLine}>{t('byAuthor')} <strong>{post.authorName}</strong> · <RoleLabel role={post.authorRole} /></div>
                   )}
                 </div>
                 <div className={styles.postActions}>
-                  {canSeeAll && post.status === 'pending_review' && (
+                  {canReview && post.status === 'pending_review' && (
                     <>
                       <button className={styles.approveBtn} onClick={() => handleStatusChange(post.id, 'published')}>{t('publishBtn')}</button>
                       <button className={styles.rejectBtn} onClick={() => handleStatusChange(post.id, 'draft')}>{t('rejectBtn')}</button>
                     </>
                   )}
-                  {canSeeAll && post.status === 'published' && (
+                  {canReview && post.status === 'published' && (
                     <button className={styles.draftBtn} onClick={() => handleStatusChange(post.id, 'draft')}>{t('unpublishBtn')}</button>
                   )}
                   {canEdit && <button className={styles.editBtn} onClick={() => openEdit(post)}>{t('editBtn')}</button>}

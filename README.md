@@ -95,7 +95,7 @@ boundary and have their own [tests](#testing).
 | **Hub Activities** | A page per event, with an optional registration form and an after-event feedback form (star ratings) built by the organisers; answers export to Excel. |
 | **News** | Articles by Shapers and curators with a cover photo and a gallery, likes, sharing and related stories. |
 | **Become a Shaper** | Recruitment page with a live member count, linking to the World Economic Forum's application platform. |
-| **Contact** | Message form checked for bots and spam on the server; the hub gets a copy by email and the visitor a receipt in their language. Newsletter signup with a welcome email. |
+| **Contact** | Message form checked for bots and spam on the server; the hub gets a copy by email and the visitor a receipt in their language. Newsletter signup confirmed from the subscriber's inbox (double opt-in), then a welcome email with one-click unsubscribe. |
 | **Privacy Policy, Terms of Use** | What is collected and why. |
 
 Also: full right-to-left layout in Arabic, light and dark themes, readable
@@ -104,11 +104,14 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 ### Member dashboard
 
+Every member starts on an **Overview** that lists what is waiting for them,
+queue by queue, with a link to each.
+
 | Role | What they can do |
 |---|---|
 | **Shaper / Alumni** | Manage their profile and password, browse and join initiatives, propose initiatives, propose Hub Activities and workshops with the full form (a Curator or Vice Curator approves them), write news posts with photos, sign the Community Charter. |
 | **Initiative lead (Lead / Co-Lead)** | Everything a Shaper can, plus run their initiative: edit its content and photos, review join and leave requests, ask for members to be added or removed or to change role (the Curator or Vice Curator approves), export a member report. |
-| **Impact Officer** | Manage initiatives and Hub Activities, pick the spotlight and publish posts. |
+| **Impact Officer** | Manage initiatives and Hub Activities, decide initiative proposals and team requests, pick the spotlight, and review and publish posts. |
 | **Curator / Vice Curator** | Everything: add and remove members (logins are created automatically with a one-time password, and a lost password is replaced by email), approve proposals and requests, manage every initiative and activity, feature initiatives, Charter sign-off and downloading who signed, moderate posts, read contact messages, export the newsletter list. |
 
 ## Tech stack
@@ -127,9 +130,10 @@ branded loading screen, and layouts tested at phone, tablet and desktop sizes.
 
 ## Getting started
 
-**You need:** Node.js 20 or newer, and a Firebase project with
+**You need:** Node.js 24 LTS, the version production runs (set in
+`package.json` under `engines`), and a Firebase project with
 **Authentication** (Email/Password) and **Firestore** enabled. Java 17 or newer
-is only needed to run the security-rules tests.
+is only needed for the tests, which run Firebase's emulators.
 
 ```bash
 npm install
@@ -180,7 +184,7 @@ src/
 │   │   ├── …                    #   with an interactive *Client.tsx
 │   │   └── dashboard/
 │   │       ├── curator/         # Curator / Vice Curator tools (initiatives, roster, members, …)
-│   │       ├── impact/          # Impact Officer tools
+│   │       ├── impact/          # Impact Officer posts (Initiatives and Activities are shared with curators)
 │   │       └── shaper/          # Pages every member has (profile, projects, charter, …)
 │   └── api/                     # Server routes: accounts, invites, forms, photos, checks
 ├── components/                  # Shared UI (navbar, footer, home sections, form builders)
@@ -214,9 +218,11 @@ goes and the conventions the code follows.
   functions from start to finish: changing a password, signing the Charter,
   news posts with photos, proposing and approving a Hub Activity.
   It also opens every page in both languages on phone and desktop sizes,
-  checking for errors and sideways scrolling.
+  checking for errors and sideways scrolling, and tests the safety helpers
+  directly (what emails do with a typed name, which photo addresses load).
 - **Code:** `npm run check` (TypeScript and ESLint) must pass; every pull
-  request also gets a Vercel preview build.
+  request also gets a Vercel preview build, and GitHub's CodeQL scans it for
+  security problems.
 
 ## Deployment
 
@@ -239,15 +245,25 @@ flowchart LR
   grant roles, people can only act in their own name, and every request type
   has its own reviewer.
 - **Accounts** start with a random one-time password that must be replaced at
-  first sign-in. A lost password is replaced by a curator: the new one-time
-  password is emailed only to the member and signs them out everywhere.
+  first sign-in, and only a confirmed email address gets in: the database and
+  the server refuse an unconfirmed one too. A lost password is replaced by a
+  curator: the new one-time password is emailed only to the member.
+- **Sessions** end 14 days after signing in, and on a shared computer after
+  30 minutes without activity. A new password or a removal signs the member
+  out everywhere at once: the rules refuse every older sign-in straight away.
+- **Sign-in** slows down after each wrong password and then locks; the server
+  limits attempts per account and per network across every instance.
+- **Changes from other websites** (forged cross-site requests) are refused
+  before any route runs. Admin actions and uploads have daily limits.
 - **Public forms** go through server routes only: rate limits, bot traps,
-  BotID, reCAPTCHA, input checks, a check that the post comes from this site,
-  and duplicate protection. Uploads are checked and limited per member.
+  BotID, reCAPTCHA, input checks and duplicate protection.
 - **Pages** send a content security policy and the other standard security
   headers; styles built from user data are sanitized, links are limited to
-  `http(s)`, and spreadsheet exports neutralize formulas.
+  `http(s)`, emails escape every value a person typed, and spreadsheet
+  exports neutralize formulas.
 - **Secrets** live only in Vercel's environment settings, never in the code.
+  GitHub blocks pushes that contain a known kind of key, alerts on vulnerable
+  dependencies, and runs CodeQL on every change.
 
 To report a vulnerability, see [SECURITY.md](.github/SECURITY.md).
 

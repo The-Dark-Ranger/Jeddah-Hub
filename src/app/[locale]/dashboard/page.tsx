@@ -1,6 +1,8 @@
 'use client';
 
-/* Dashboard home: a greeting, role-specific stats and quick links. */
+/* Dashboard Overview, where every member starts: a greeting, what is
+ * waiting for them (each queue their role works on), role-specific stats,
+ * quick links, and what the public sees right now. */
 import { useAuth } from '@/context/AuthContext';
 import { Link } from '@/i18n/routing';
 import { useEffect, useState } from 'react';
@@ -19,14 +21,30 @@ import styles from './DashboardHome.module.css';
 import RoleHero, { HeroBadge, HeroLine } from '@/components/dashboard/RoleHero';
 import { memberId, type MemberEntry } from '@/lib/types';
 import { intlLocale } from '@/lib/dates';
+import LoadFailed from '@/components/dashboard/LoadFailed';
+import DashIcon, { type DashIconName } from '@/components/dashboard/DashIcon';
 
 interface Stats {
-  initiatives: number; activeInitiatives: number;
+  initiatives: number; activeInitiatives: number; members: number;
   blogs: number; subscribers: number;
   myProjects: number; unreadMessages: number;
   activityResponses: number; pendingActivityRequests: number;
-  pendingRoleChanges: number;
+  pendingRoleChanges: number; pendingPosts: number; pendingProposals: number;
+  pendingJoin: number; pendingLeave: number; pendingAdd: number; pendingRemoval: number;
+  /** Initiatives this member leads, and their teams' open join and leave requests. */
+  ledTeams: number; teamRequests: number;
 }
+
+const NO_STATS: Stats = {
+  initiatives: 0, activeInitiatives: 0, members: 0, blogs: 0, subscribers: 0, myProjects: 0,
+  unreadMessages: 0, activityResponses: 0, pendingActivityRequests: 0, pendingRoleChanges: 0,
+  pendingPosts: 0, pendingProposals: 0, pendingJoin: 0, pendingLeave: 0, pendingAdd: 0, pendingRemoval: 0,
+  ledTeams: 0, teamRequests: 0,
+};
+
+/** How many documents in `name` are still pending (one cheap count read). */
+const countPending = async (name: string, ...filters: ReturnType<typeof where>[]) =>
+  (await getCountFromServer(query(collection(db, name), where('status', '==', 'pending'), ...filters))).data().count;
 
 interface LiveActivity {
   id: string; title: string; slug?: string; date?: string; location?: string;
@@ -60,35 +78,36 @@ export default function DashboardHome() {
   const [latestPosts, setLatestPosts] = useState<LatestPost[]>([]);
   const [initiatives, setInitiatives] = useState<InitiativeLite[]>([]);
   const [recentMessages, setRecentMessages] = useState<MessageLite[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    initiatives: 0, activeInitiatives: 0, blogs: 0,
-    subscribers: 0, myProjects: 0, unreadMessages: 0, activityResponses: 0,
-    pendingActivityRequests: 0, pendingRoleChanges: 0,
-  });
+  const [stats, setStats] = useState<Stats>(NO_STATS);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Counts that couldn't be read (shown as "couldn't check", never as 0).
+  const [failedStats, setFailedStats] = useState<Set<keyof Stats>>(new Set());
 
   const fetchStats = async () => {
     const role      = normalizeRole(user?.role);
     const isCurator = role === 'curator' || role === 'vice_curator';
     const isImpact  = role === 'impact_officer';
 
-    const next: Stats = {
-      initiatives: 0, activeInitiatives: 0, blogs: 0,
-      subscribers: 0, myProjects: 0, unreadMessages: 0, activityResponses: 0,
-      pendingActivityRequests: 0, pendingRoleChanges: 0,
-    };
+    const next: Stats = { ...NO_STATS };
+    const failed = new Set<keyof Stats>();
 
-    /* Each stat is isolated: a collection the current role may not read must
-     * leave its own card at zero rather than blanking every other card. */
-    const safe = async (fn: () => Promise<void>) => {
-      try { await fn(); } catch { /* leave this stat at 0 */ }
+    /* Each stat is isolated, so one failed read leaves the others standing.
+     * A failure is remembered under `keys`, so "Waiting for you" can say it
+     * couldn't check rather than "nothing is waiting". */
+    const safe = async (keys: (keyof Stats)[], fn: () => Promise<void>) => {
+      try {
+        await fn();
+      } catch (err) {
+        console.error('[overview] could not load', keys.join(', ') || 'a panel', err);
+        keys.forEach(k => failed.add(k));
+      }
     };
 
     await Promise.all([
       // One read of the collection feeds every initiative count and list on
       // this page. Hub Activities are stored here too, as docs tagged
       // type:'hub_activity', and are kept apart from real initiatives.
-      safe(async () => {
+      safe(['initiatives', 'activeInitiatives', 'myProjects', 'ledTeams', 'teamRequests'], async () => {
         const docs = (await getDocs(collection(db, 'initiatives'))).docs;
         const real = docs.filter(d => !d.data().type);
         const active = real.filter(d => d.data().status === 'active');
@@ -104,9 +123,19 @@ export default function DashboardHome() {
           .filter(a => a.active === true)
           .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
           .slice(0, 3));
+        // A lead's teams: their open join and leave requests ('in' takes up to 30).
+        const led = real.filter(d => (d.data().leads as string[] | undefined)?.includes(user?.uid ?? '')).map(d => d.id);
+        next.ledTeams = led.length;
+        if (led.length && !isCurator && !isImpact) {
+          await safe(['teamRequests'], async () => {
+            const teams = where('initiativeId', 'in', led.slice(0, 30));
+            const [join, leave] = await Promise.all([countPending('join_requests', teams), countPending('leave_requests', teams)]);
+            next.teamRequests = join + leave;
+          });
+        }
       }),
 
-      safe(async () => {
+      safe(['blogs'], async () => {
         // Non-curators may only read published posts, so the query has to say
         // so for the security rules to permit it at all.
         const target = isCurator
@@ -115,7 +144,7 @@ export default function DashboardHome() {
         next.blogs = (await getCountFromServer(target)).data().count;
       }),
 
-      safe(async () => {
+      safe([], async () => {
         let docs;
         try {
           docs = (await getDocs(query(collection(db, 'blogs'), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(3)))).docs;
@@ -131,29 +160,26 @@ export default function DashboardHome() {
       // Curator-only collections, never queried by other roles, so they no
       // longer fail the whole dashboard with a permission error.
       ...(isCurator ? [
-        safe(async () => {
+        safe(['subscribers'], async () => {
           next.subscribers = (await getCountFromServer(collection(db, 'newsletter_subscribers'))).data().count;
         }),
-        safe(async () => {
+        safe(['unreadMessages'], async () => {
           next.unreadMessages = (await getCountFromServer(
             query(collection(db, 'contact_messages'), where('read', '==', false)),
           )).data().count;
         }),
-        safe(async () => {
-          next.pendingRoleChanges = (await getCountFromServer(
-            query(collection(db, 'role_change_requests'), where('status', '==', 'pending')),
-          )).data().count;
-        }),
-        safe(async () => {
+        safe(['pendingRoleChanges'], async () => { next.pendingRoleChanges = await countPending('role_change_requests'); }),
+        safe(['pendingJoin'], async () => { next.pendingJoin = await countPending('join_requests'); }),
+        safe(['activityResponses'], async () => {
           next.activityResponses = (await getCountFromServer(
             query(collection(db, 'activity_responses'), where('read', '==', false)),
           )).data().count;
         }),
-        safe(async () => {
+        safe([], async () => {
           const snap = await getDocs(query(collection(db, 'contact_messages'), orderBy('submittedAt', 'desc'), limit(3)));
           setRecentMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<MessageLite, 'id'>) })));
         }),
-        safe(async () => {
+        safe([], async () => {
           // The panel renders at most 10, so only fetch 10.
           const notifSnap = await getDocs(
             query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(10)),
@@ -168,27 +194,41 @@ export default function DashboardHome() {
       // activity_requests, so anything sent before that form was retired
       // still surfaces here.
       ...(isCurator || isImpact ? [
-        safe(async () => {
-          const [changeCount, legacyCount] = await Promise.all([
-            getCountFromServer(query(collection(db, 'activity_change_requests'), where('status', '==', 'pending'))),
-            getCountFromServer(query(collection(db, 'activity_requests'), where('status', '==', 'pending'))),
-          ]);
-          next.pendingActivityRequests = changeCount.data().count + legacyCount.data().count;
+        safe(['pendingActivityRequests'], async () => {
+          const [changes, legacy] = await Promise.all([countPending('activity_change_requests'), countPending('activity_requests')]);
+          next.pendingActivityRequests = changes + legacy;
         }),
+        safe(['pendingPosts'], async () => {
+          next.pendingPosts = (await getCountFromServer(
+            query(collection(db, 'blogs'), where('status', '==', 'pending_review')),
+          )).data().count;
+        }),
+        safe(['members'], async () => { next.members = (await getCountFromServer(collection(db, 'users'))).data().count; }),
+        // Initiative proposals and team changes: curators and impact
+        // officers both decide them (on the Initiatives page).
+        safe(['pendingProposals'], async () => { next.pendingProposals = await countPending('initiative_requests'); }),
+        safe(['pendingLeave'], async () => { next.pendingLeave = await countPending('leave_requests'); }),
+        safe(['pendingAdd'], async () => { next.pendingAdd = await countPending('member_add_requests'); }),
+        safe(['pendingRemoval'], async () => { next.pendingRemoval = await countPending('removal_requests'); }),
       ] : []),
     ]);
 
     setStats(next);
+    setFailedStats(failed);
     setStatsLoading(false);
   };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load stats once the user is known
     if (!loading && user?.role) fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when the signed-in user changes
-  }, [loading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when who is signed in, or their role, changes (not on every profile edit)
+  }, [loading, user?.uid, user?.role]);
 
   if (loading) return null;
+
+  if (user?.profileError) {
+    return <LoadFailed message={t('profileLoadFailed')} onRetry={() => window.location.reload()} />;
+  }
 
   if (!user?.role) {
     return (
@@ -258,6 +298,74 @@ export default function DashboardHome() {
   };
 
   const unreadNotifs = notifications.filter(n => !n.read);
+  // In the reader's language when the notification says what happened (the
+  // stored message is in its sender's); otherwise the stored message.
+  const notifText = (n: Notification) =>
+    (n.type === 'archive_request' || n.type === 'restore_request') && n.initiativeTitle && n.fromUserName
+      ? t(n.type === 'archive_request' ? 'notifyInitiativeArchived' : 'notifyInitiativeRestored', { name: n.fromUserName, title: n.initiativeTitle })
+      : n.message;
+
+  // Each queue this role works on, linking to where it's handled; only
+  // those with something in them are listed.
+  type WaitItem = { label: string; stat: keyof Stats; href: string; icon: DashIconName };
+  const teamQueues: WaitItem[] = [
+    { label: t('waitProposals'), stat: 'pendingProposals', href: '/dashboard/curator/initiatives', icon: 'folder' },
+    { label: t('waitLeave'), stat: 'pendingLeave', href: '/dashboard/curator/initiatives', icon: 'people' },
+    { label: t('waitAdd'), stat: 'pendingAdd', href: '/dashboard/curator/initiatives', icon: 'person' },
+    { label: t('waitRemoval'), stat: 'pendingRemoval', href: '/dashboard/curator/initiatives', icon: 'person' },
+  ];
+  const waiting: WaitItem[] = isCurator ? [
+    { label: t('waitMessages'), stat: 'unreadMessages', href: '/dashboard/curator/messages', icon: 'message' },
+    { label: t('waitPosts'), stat: 'pendingPosts', href: '/dashboard/curator/blogs', icon: 'pen' },
+    { label: t('waitJoin'), stat: 'pendingJoin', href: '/dashboard/curator/roster', icon: 'people' },
+    ...teamQueues,
+    { label: t('waitRoleChanges'), stat: 'pendingRoleChanges', href: '/dashboard/curator/roster', icon: 'people' },
+    { label: t('waitActivities'), stat: 'pendingActivityRequests', href: '/dashboard/curator/activities', icon: 'bell' },
+    { label: t('waitResponses'), stat: 'activityResponses', href: '/dashboard/curator/activities', icon: 'check' },
+  ] : isImpact ? [
+    { label: t('waitPosts'), stat: 'pendingPosts', href: '/dashboard/impact/blogs', icon: 'pen' },
+    ...teamQueues,
+    { label: t('waitActivities'), stat: 'pendingActivityRequests', href: '/dashboard/curator/activities', icon: 'bell' },
+  ] : stats.ledTeams > 0 || failedStats.has('ledTeams') ? [
+    { label: t('waitTeamRequests'), stat: 'teamRequests', href: '/dashboard/shaper/my-projects', icon: 'people' },
+  ] : [];
+  const waitingNow = waiting.filter(w => stats[w.stat] > 0);
+  const waitingUnchecked = waiting.filter(w => failedStats.has(w.stat));
+
+  const statCards: { label: string; value: number; colorVar: string; icon: DashIconName }[] = isCurator ? [
+    { label: t('statActiveInitiatives'), value: stats.activeInitiatives, colorVar: 'blue', icon: 'folder' },
+    { label: t('statMembers'), value: stats.members, colorVar: 'green', icon: 'people' },
+    { label: t('statBlogPosts'), value: stats.blogs, colorVar: 'purple', icon: 'pen' },
+    { label: t('statSubscribers'), value: stats.subscribers, colorVar: 'blue', icon: 'mail' },
+  ] : isImpact ? [
+    { label: t('statTotalInitiatives'), value: stats.initiatives, colorVar: 'blue', icon: 'folder' },
+    { label: t('statMembers'), value: stats.members, colorVar: 'green', icon: 'people' },
+    { label: t('statBlogPosts'), value: stats.blogs, colorVar: 'purple', icon: 'pen' },
+  ] : isShaper ? [
+    { label: t('statMyProjects'), value: stats.myProjects, colorVar: 'blue', icon: 'star' },
+    { label: t('statTotalInitiatives'), value: stats.initiatives, colorVar: 'purple', icon: 'folder' },
+    { label: t('statBlogPosts'), value: stats.blogs, colorVar: 'green', icon: 'pen' },
+  ] : [];
+
+  const actions: { title: string; desc: string; href: string; icon: DashIconName }[] = isCurator ? [
+    { title: t('dashInitiativesCardTitle'), desc: t('dashInitiativesCardDesc'), href: '/dashboard/curator/initiatives', icon: 'folder' },
+    { title: t('roster'), desc: t('dashRosterCardDesc'), href: '/dashboard/curator/roster', icon: 'people' },
+    { title: t('dashMessagesCardTitle'), desc: t('dashMessagesCardDesc'), href: '/dashboard/curator/messages', icon: 'message' },
+    { title: t('actionWriteBlog'), desc: t('actionWriteBlogDesc'), href: '/dashboard/curator/blogs', icon: 'pen' },
+    { title: t('roleAssignments'), desc: t('dashRoleAssignmentsCardDesc'), href: '/dashboard/curator/members', icon: 'person' },
+    { title: t('exportEmails'), desc: t('actionExportEmailsDesc'), href: '/dashboard/curator/exports', icon: 'download' },
+    { title: t('dashActivitiesCardTitle'), desc: t('dashActivitiesCardDesc'), href: '/dashboard/curator/activities', icon: 'check' },
+  ] : isImpact ? [
+    { title: t('dashInitiativesCardTitle'), desc: t('dashInitiativesCardDesc'), href: '/dashboard/curator/initiatives', icon: 'folder' },
+    { title: t('actionWriteBlog'), desc: t('dashImpactWriteBlogDesc'), href: '/dashboard/impact/blogs', icon: 'pen' },
+    { title: t('dashActivitiesCardTitle'), desc: t('dashActivitiesCardDesc'), href: '/dashboard/curator/activities', icon: 'check' },
+  ] : isShaper ? [
+    { title: t('myProjects'), desc: t('dashMyProjectsCardDesc'), href: '/dashboard/shaper/my-projects', icon: 'star' },
+    { title: t('myActivitiesTitle'), desc: t('dashMyActivitiesCardDesc'), href: '/dashboard/shaper/activities', icon: 'calendar' },
+    { title: t('actionBrowseInitiatives'), desc: t('actionBrowseInitiativesDesc'), href: '/dashboard/shaper/initiatives', icon: 'search' },
+    { title: t('actionPostBlog'), desc: t('actionPostBlogDesc'), href: '/dashboard/shaper/blogs', icon: 'pen' },
+    { title: t('communityCharter'), desc: t('dashCharterCardDesc'), href: '/dashboard/shaper/charter', icon: 'file' },
+  ] : [];
 
   return (
     <div className={styles.page}>
@@ -273,164 +381,50 @@ export default function DashboardHome() {
 
       <ProfileCompleteness user={user} t={t} />
 
+      {/* What is waiting for this member, queue by queue */}
+      {waiting.length > 0 && (
+        <section className={styles.panel + ' ' + styles.waitPanel} aria-busy={statsLoading}>
+          <div className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>{t('waitingTitle')}</h2>
+            {!statsLoading && waitingNow.length > 0 && (
+              <span className={styles.countBadge}>{waitingNow.reduce((n, w) => n + stats[w.stat], 0)}</span>
+            )}
+          </div>
+          {!statsLoading && waitingUnchecked.length > 0 && (
+            <p className={styles.panelEmpty} role="status">
+              {t('waitingUnchecked', { list: waitingUnchecked.map(w => w.label).join(locale === 'ar' ? '، ' : ', ') })}
+            </p>
+          )}
+          {statsLoading ? (
+            <div className={styles.panelSkeleton}><span /><span /></div>
+          ) : waitingNow.length === 0 ? (
+            waitingUnchecked.length === 0 && <p className={styles.panelEmpty}>{t('waitingNone')}</p>
+          ) : (
+            <ul className={styles.waitList}>
+              {waitingNow.map(w => (
+                <li key={w.label}>
+                  <Link href={w.href} className={styles.waitItem}>
+                    <span className={styles.waitIcon}><DashIcon name={w.icon} /></span>
+                    <span className={styles.waitLabel}>{w.label}</span>
+                    <span className={styles.waitCount}>{stats[w.stat]}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       {/* Stats */}
       <div className={styles.statsGrid} aria-busy={statsLoading}>
-        {isCurator && (<>
-          <StatCard loading={statsLoading} label={t('statActiveInitiatives')} value={stats.activeInitiatives} colorVar="blue"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statSubscribers')} value={stats.subscribers} colorVar="green"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statUnreadMessages')} value={stats.unreadMessages} colorVar={stats.unreadMessages > 0 ? 'warning' : 'muted'}
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statActivityResponses')} value={stats.activityResponses} colorVar={stats.activityResponses > 0 ? 'warning' : 'muted'}
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>} />
-        </>)}
-        {isImpact && (<>
-          <StatCard loading={statsLoading} label={t('statBlogPosts')} value={stats.blogs} colorVar="purple"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statTotalInitiatives')} value={stats.initiatives} colorVar="green"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>} />
-        </>)}
-        {isShaper && (<>
-          <StatCard loading={statsLoading} label={t('statMyProjects')} value={stats.myProjects} colorVar="blue"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statTotalInitiatives')} value={stats.initiatives} colorVar="purple"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>} />
-          <StatCard loading={statsLoading} label={t('statBlogPosts')} value={stats.blogs} colorVar="green"
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>} />
-        </>)}
+        {statCards.map(c => <StatCard key={c.label} loading={statsLoading} {...c} />)}
       </div>
 
       {/* Quick Actions */}
       <div className={styles.quickActions}>
         <h3 className={styles.sectionTitle}>{t('quickActions')}</h3>
         <div className={styles.actionGrid}>
-          {isCurator && (<>
-            <ActionCard title={t('dashInitiativesCardTitle')} desc={t('dashInitiativesCardDesc')} href="/dashboard/curator/initiatives"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>} />
-            <ActionCard title={`${t('roster')}${stats.pendingRoleChanges > 0 ? ` (${stats.pendingRoleChanges})` : ''}`}
-              desc={t('dashRosterCardDesc')} href="/dashboard/curator/roster" accent={stats.pendingRoleChanges > 0}
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>} />
-            <ActionCard title={`${t('dashMessagesCardTitle')}${stats.unreadMessages > 0 ? ` (${stats.unreadMessages})` : ''}`}
-              desc={t('dashMessagesCardDesc')} href="/dashboard/curator/messages"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>}
-              accent={stats.unreadMessages > 0} />
-            <ActionCard title={t('actionWriteBlog')} desc={t('actionWriteBlogDesc')} href="/dashboard/curator/blogs"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>} />
-            <ActionCard title={t('roleAssignments')} desc={t('dashRoleAssignmentsCardDesc')} href="/dashboard/curator/members"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="8" r="4"/><path d="M4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1"/>
-              </svg>} />
-            <ActionCard title={t('exportEmails')} desc={t('actionExportEmailsDesc')} href="/dashboard/curator/exports"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>} />
-            <ActionCard title={`${t('dashActivitiesCardTitle')}${stats.activityResponses > 0 ? ` (${stats.activityResponses})` : ''}`}
-              desc={t('dashActivitiesCardDesc')} href="/dashboard/curator/activities"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>}
-              accent={stats.activityResponses > 0} />
-            {stats.pendingActivityRequests > 0 && (
-              <ActionCard title={`${t('dashActivityRequestsCardTitle')} (${stats.pendingActivityRequests})`}
-                desc={t('dashActivityRequestsCardDesc')} href="/dashboard/curator/activities"
-                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>}
-                accent />
-            )}
-          </>)}
-          {isImpact && (<>
-            <ActionCard title={t('dashProjectsCardTitle')} desc={t('dashProjectsCardDesc')} href="/dashboard/impact/projects"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>} />
-            <ActionCard title={t('actionWriteBlog')} desc={t('dashImpactWriteBlogDesc')} href="/dashboard/impact/blogs"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>} />
-            <ActionCard title={t('dashActivitiesCardTitle')}
-              desc={t('dashActivitiesCardDesc')} href="/dashboard/curator/activities"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>} />
-            {stats.pendingActivityRequests > 0 && (
-              <ActionCard title={`${t('dashActivityRequestsCardTitle')} (${stats.pendingActivityRequests})`}
-                desc={t('dashActivityRequestsCardDesc')} href="/dashboard/curator/activities"
-                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>}
-                accent />
-            )}
-          </>)}
-          {isShaper && (<>
-            <ActionCard title={t('myProjects')} desc={t('dashMyProjectsCardDesc')} href="/dashboard/shaper/my-projects"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>} />
-            <ActionCard title={t('myActivitiesTitle')} desc={t('dashMyActivitiesCardDesc')} href="/dashboard/shaper/activities"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>} />
-            <ActionCard title={t('actionBrowseInitiatives')} desc={t('actionBrowseInitiativesDesc')} href="/dashboard/shaper/initiatives"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>} />
-            <ActionCard title={t('actionPostBlog')} desc={t('actionPostBlogDesc')} href="/dashboard/shaper/blogs"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>} />
-            <ActionCard title={t('communityCharter')} desc={t('dashCharterCardDesc')} href="/dashboard/shaper/charter"
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              </svg>} />
-          </>)}
+          {actions.map(a => <ActionCard key={a.href + a.title} {...a} />)}
         </div>
       </div>
 
@@ -605,14 +599,9 @@ export default function DashboardHome() {
           <div className={styles.notifList}>
             {notifications.slice(0, 10).map(n => (
               <div key={n.id} className={styles.notifCard + (!n.read ? ' ' + styles.unread : '')}>
-                <div className={styles.notifIcon}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 .49-3.68"/>
-                  </svg>
-                </div>
+                <div className={styles.notifIcon}><DashIcon name="refresh" /></div>
                 <div className={styles.notifBody}>
-                  <p className={styles.notifMsg}>{n.message}</p>
+                  <p className={styles.notifMsg}>{notifText(n)}</p>
                   <p className={styles.notifTime}>
                     {new Date(n.createdAt).toLocaleString(dateLocale)}
                   </p>
@@ -633,10 +622,10 @@ export default function DashboardHome() {
   );
 }
 
-function StatCard({ label, value, icon, colorVar, loading }: { label: string; value: number; icon: React.ReactNode; colorVar?: string; loading?: boolean }) {
+function StatCard({ label, value, icon, colorVar, loading }: { label: string; value: number; icon: DashIconName; colorVar?: string; loading?: boolean }) {
   return (
     <div className={styles.statCard} data-accent={colorVar}>
-      <div className={styles.statIcon}>{icon}</div>
+      <div className={styles.statIcon}><DashIcon name={icon} size={20} /></div>
       <div className={styles.statValue}>
         {loading ? <span className={styles.statSkeleton} aria-hidden="true" /> : value.toLocaleString()}
       </div>
@@ -712,22 +701,15 @@ function ProfileCompleteness({ user, t }: { user: UserProfile; t: ReturnType<typ
   );
 }
 
-function ActionCard({ title, desc, href, icon, accent }: {
-  title: string; desc: string; href: string; icon: React.ReactNode; accent?: boolean;
-}) {
+function ActionCard({ title, desc, href, icon }: { title: string; desc: string; href: string; icon: DashIconName }) {
   return (
-    <Link
-      href={href}
-      className={styles.actionCard + (accent ? ' ' + styles.actionCardAccent : '')}
-    >
-      <div className={styles.actionIcon}>{icon}</div>
+    <Link href={href} className={styles.actionCard}>
+      <div className={styles.actionIcon}><DashIcon name={icon} size={18} /></div>
       <div className={styles.actionText}>
         <div className={styles.actionTitle}>{title}</div>
         <div className={styles.actionDesc}>{desc}</div>
       </div>
-      <svg className={styles.actionArrow} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
+      <DashIcon name="chevron" className={styles.actionArrow} />
     </Link>
   );
 }

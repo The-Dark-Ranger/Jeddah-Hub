@@ -14,6 +14,8 @@ export const PEOPLE = {
   shaper: person('shaper', 'Sami Shaper', 'shaper', { nameAr: 'سامي شيبر' }),
   signer: person('signer', 'Sara Signer', 'shaper'),
   newcomer: person('newcomer', 'Nour Newcomer', 'shaper', { password: 'Tmp-ABCD-EFGH-JKMN' }),
+  unconfirmed: person('unconfirmed', 'Una Unconfirmed', 'shaper'),
+  leaver: person('leaver', 'Leo Leaver', 'shaper'),
 };
 
 export const PHOTO_ID = 'AbCdEfGhIjKlMnOpQrSt';

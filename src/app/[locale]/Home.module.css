@@ -92,7 +92,7 @@
 .retreatEyebrow { font-size:max(12px, .75rem);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:0; }
 .retreatTitle   { font-size:clamp(1.9rem,3.5vw,3rem);font-weight:800;line-height:1.1;color:#fff;margin-bottom:.3rem; }
 .retreatSubtitle{ font-size:1.05rem;color:rgba(255,255,255,.6);font-style:italic;margin-bottom:1.4rem; }
-.retreatDesc    { font-size:.97rem;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:1.75rem; }
+.retreatDesc    { font-size:.97rem;line-height:1.75;color:rgba(255,255,255,.72);margin-bottom:1.75rem;overflow-wrap:anywhere; }
 .retreatMeta    { display:flex;align-items:center;flex-wrap:wrap;gap:.65rem;margin-bottom:1.75rem; }
 .retreatMetaItem{ font-size:.85rem;color:rgba(255,255,255,.7);font-weight:500; }
 .retreatMetaDot { width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35); }
@@ -121,22 +121,28 @@
   padding-bottom:3rem;
 }
 .retreatSliderArrow {
-  flex-shrink:0; width:38px; height:38px; min-width:38px; min-height:38px; border-radius:50%;
+  flex-shrink:0; width:44px; height:44px; min-width:44px; min-height:44px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
   background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.25);
   color:#fff; cursor:pointer; transition:background .18s ease, border-color .18s ease;
 }
 .retreatSliderArrow:hover { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.45); }
-.retreatSliderDots { display:flex; align-items:center; gap:.5rem; }
-/* Small circular dot buttons must resist globals.css's touch-target rule
-   (button min-height:44px on `hover:none` devices), or they render as
-   tall skinny pills on phones instead of round dots. */
+.retreatSliderDots { display:flex; align-items:center; gap:0; }
+/* Each dot is a 40px tap area (transparent button) with the small 8px dot
+   drawn by ::before, so it stays a round dot even where globals.css's
+   touch-target rule makes buttons 44px tall. */
 .retreatSliderDot {
-  width:8px; height:8px; min-width:8px; min-height:8px; border-radius:50%; padding:0; border:none;
-  background:rgba(255,255,255,.25); cursor:pointer; transition:background .18s ease, transform .18s ease;
+  width:40px; height:40px; min-width:40px; min-height:40px; padding:0; border:none;
+  display:grid; place-items:center; background:none; cursor:pointer;
 }
-.retreatSliderDot:hover { background:rgba(255,255,255,.5); }
-.retreatSliderDotActive { background:#fff; transform:scale(1.3); }
+.retreatSliderDot::before {
+  content:''; width:8px; height:8px; border-radius:50%;
+  background:rgba(255,255,255,.25); transition:background .18s ease, transform .18s ease;
+}
+.retreatSliderDot:hover::before { background:rgba(255,255,255,.5); }
+.retreatSliderDotActive::before { background:#fff; transform:scale(1.3); }
+.retreatSliderDot:focus-visible { outline:none; }
+.retreatSliderDot:focus-visible::before { outline:2px solid #fff; outline-offset:3px; }
 
 /* ── Stay Tuned state ── */
 .stayTunedInner { max-width:600px;margin-inline:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 1.5rem;gap:1.25rem; }
@@ -174,12 +180,21 @@
   border-radius: 12px;
 }
 
-/* ── Animations ── */
-.fadeInUp { animation:fadeInUp .9s ease-out forwards;opacity:0;transform:translateY(20px); }
+/* ── Animations ──
+   Fill mode `backwards`: hidden only until each element's turn, then back
+   to the plain base style (no pinned transform). The title and subtitle are
+   the page's largest paint (LCP), so they are visible from the first frame
+   and only rise into place, with no delay. */
+.fadeInUp { animation:fadeInUp .9s ease-out backwards; }
 .delay1 { animation-delay:.15s; }
 .delay2 { animation-delay:.3s; }
 .delay3 { animation-delay:.45s; }
-@keyframes fadeInUp { to { opacity:1;transform:translateY(0); } }
+@keyframes fadeInUp { from { opacity:0;transform:translateY(20px); } }
+.title.fadeInUp, .subtitle.fadeInUp { animation-name:riseIn; animation-delay:0s; }
+@keyframes riseIn { from { transform:translateY(20px); } }
+@media (prefers-reduced-motion: reduce) {
+  .fadeInUp, .title.fadeInUp, .subtitle.fadeInUp { animation:none; }
+}
 
 /* ── Responsive ── */
 @media (max-width:900px) {
@@ -326,7 +341,7 @@
   text-decoration-thickness: .12em; text-underline-offset: .18em;
 }
 .retreatSectionAccent .retreatMetaDot { background: var(--activity-accent); }
-.retreatSectionAccent .retreatSliderDotActive { background: var(--activity-accent); }
+.retreatSectionAccent .retreatSliderDotActive::before { background: var(--activity-accent); }
 
 /* ── Several activities: side arrows + counter over the card ── */
 .retreatStage { position: relative; }

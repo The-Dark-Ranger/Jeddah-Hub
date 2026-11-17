@@ -14,7 +14,8 @@ export default async function seed() {
   const db = getFirestore(app);
 
   for (const p of Object.values(PEOPLE)) {
-    await auth.createUser({ uid: p.uid, email: p.email, password: p.password, displayName: p.name });
+    // Every test member has confirmed their email, except the one who hasn't.
+    await auth.createUser({ uid: p.uid, email: p.email, password: p.password, displayName: p.name, emailVerified: p !== PEOPLE.unconfirmed });
     await db.doc(`users/${p.uid}`).set({
       uid: p.uid, email: p.email, role: p.role, displayName: p.name,
       ...(p.nameAr ? { displayNameAr: p.nameAr } : {}), createdAt: '2026-01-01T00:00:00.000Z',

@@ -62,5 +62,5 @@
 
 /* Touch screens: a little bigger to tap, and never stretched out of round. */
 @media (hover: none) {
-  .swatch { width: 36px; height: 36px; min-height: 0; flex-shrink: 0; aspect-ratio: 1; }
+  .swatch { width: 40px; height: 40px; min-height: 0; flex-shrink: 0; aspect-ratio: 1; }
 }

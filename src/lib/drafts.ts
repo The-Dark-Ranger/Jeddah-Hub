@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 const PREFIX = 'jh-draft:';
 
 export function readDraft<T>(key: string): T | null {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(PREFIX + key);
     return raw ? (JSON.parse(raw) as T) : null;

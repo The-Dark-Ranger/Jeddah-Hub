@@ -70,9 +70,10 @@
 .cardExcerpt  {
   font-size: .92rem; color: var(--text-muted); line-height: 1.65; flex: 1;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
-.cardMeta { display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: auto; }
+.cardMeta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: auto; }
 .cardAuthor { display: flex; align-items: center; gap: .6rem; }
 .cardAvatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-fill); color: #fff; font-size: max(12px, .75rem); font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cardAvatarImg { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }

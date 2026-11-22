@@ -60,7 +60,7 @@ const minutes = (t?: string) => {
   return h * 60 + m;
 };
 
-const KIND_ORDER = { deadline: 0, external: 1, activity: 2, hub: 3, initiative: 4 } as const;
+const KIND_ORDER = { deadline: 0, external: 1, hub: 2, initiative: 3 } as const;
 
 export function expandOccurrences(events: CalendarEvent[], from: string, to: string): Occurrence[] {
   const out: Occurrence[] = [];

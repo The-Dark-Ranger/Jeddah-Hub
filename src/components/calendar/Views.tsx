@@ -11,8 +11,14 @@ import { Icon } from './Icon';
 import styles from './Calendar.module.css';
 
 export const kindClass: Record<CalendarKind, string> = {
-  initiative: styles.kInitiative, hub: styles.kHub, activity: styles.kActivity, external: styles.kExternal, deadline: styles.kDeadline,
+  initiative: styles.kInitiative, hub: styles.kHub, external: styles.kExternal, deadline: styles.kDeadline,
 };
+
+/** The small "Public" tag on Hub events that have a public Hub Activity page. */
+export function PublicTag() {
+  const t = useTranslations('Calendar');
+  return <span className={styles.publicTag}>{t('publicTag')}</span>;
+}
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -45,6 +51,7 @@ export function EventRow({ occ, day, clash, onOpen }: { occ: Occurrence; day: st
       <span className={styles.rowMain}>
         <span className={styles.rowTitle}>{f.title(e)}</span>
         <span className={styles.rowSub}>
+          {e.source === 'activity' && <PublicTag />}
           {e.source === 'invite' && <span className={styles.inviteMark} aria-hidden="true"><Icon name="mail" size={11} /></span>}
           <span>{subLine(occ, f, t(`kinds.${e.kind}`))}</span>
         </span>
@@ -156,6 +163,7 @@ export function WeekColumns({ start, today, occs, clashKeys, onOpen }: {
                   {timeLabel(o, d)}
                   {clashKeys.has(o.key) && <span className={styles.flag}><Icon name="alert" size={14} /></span>}
                   {o.event.source === 'invite' && <span className={styles.inviteMark} aria-hidden="true"><Icon name="mail" size={11} /></span>}
+                  {o.event.source === 'activity' && <PublicTag />}
                 </span>
                 <span className={styles.cardTitle}>{f.title(o.event)}</span>
                 {(f.location(o.event) || o.event.initiativeId) && <span className={styles.cardPlace}>{f.location(o.event) || f.initiative(o.event.initiativeId)}</span>}

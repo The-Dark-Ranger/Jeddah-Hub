@@ -1326,7 +1326,6 @@
     "kinds": {
       "initiative": "Initiative",
       "hub": "Hub",
-      "activity": "Hub Activity",
       "external": "External",
       "deadline": "Deadline"
     },
@@ -1397,7 +1396,7 @@
     "noPeopleYet": "No one yet. Search above to add people.",
     "noMatches": "No one matches “{query}”.",
     "busyAt": "Busy: {event}",
-    "invitesNote": "Saving will email a calendar invite to everyone you picked. Their replies show up here.",
+    "invitesNote": "Everyone you invite gets a calendar invite by email, and their replies show up here.",
     "fieldOutsideGuests": "Guests from outside the hub (rough count)",
     "save": "Save",
     "create": "Add event",
@@ -1407,7 +1406,7 @@
     "errInitiative": "Choose the initiative.",
     "errTime": "The end time is before the start time.",
     "savedPreview": "Saved in the preview only. No invites were sent.",
-    "leadHint": "As an initiative lead, you can add events for your initiatives and hub-wide events.",
+    "leadHint": "As an initiative lead, you can also edit every event of your initiatives and add deadlines.",
     "close": "Close",
     "previewBanner": "Preview with example events. Nothing here is saved and no invites are sent.",
     "previewAs": "Preview as",
@@ -1416,7 +1415,11 @@
       "lead": "Initiative lead",
       "member": "Member"
     },
-    "memberNote": "Members can see the calendar. Initiative leads and curators add events.",
-    "whatsappFooter": "Jeddah Hub"
+    "memberNote": "As a member you can add events for initiatives you're on, hub events and external events, and edit your own.",
+    "whatsappFooter": "Jeddah Hub",
+    "publicTag": "Public",
+    "inviteCount": "{count, plural, one {Saving will email a calendar invite to # person.} other {Saving will email a calendar invite to # people.}}",
+    "noInvites": "No one is invited yet, so no emails will be sent.",
+    "inviteLimit": "Members can invite up to {count} people to an event. For a bigger event, ask an initiative lead or a curator."
   }
 }

@@ -69,7 +69,7 @@ export function previewEvents(): CalendarEvent[] {
     },
     { id: 'p5', kind: 'deadline', title: 'Annual impact report due', titleAr: 'موعد تسليم تقرير الأثر السنوي', startDate: d(5), endDate: d(5), source: 'site', createdBy: 'curator', people: [] },
     {
-      id: 'p6', kind: 'activity', title: 'Youth Climate Workshop', titleAr: 'ورشة المناخ للشباب', startDate: d(6), endDate: d(6), startTime: '17:00', endTime: '19:30',
+      id: 'p6', kind: 'hub', title: 'Youth Climate Workshop', titleAr: 'ورشة المناخ للشباب', startDate: d(6), endDate: d(6), startTime: '17:00', endTime: '19:30',
       location: 'Jeddah Science Park', locationAr: 'حديقة جدة للعلوم', outsideGuests: 60, source: 'activity',
       people: [{ userId: 'khalid', role: 'team', reply: 'yes' }, { userId: 'maha', role: 'team', reply: 'yes' }, { userId: 'me', role: 'guest', reply: 'yes' }],
     },

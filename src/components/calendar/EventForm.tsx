@@ -1,15 +1,16 @@
 'use client';
 
 /* Calendar: adding or editing an event. Type and initiative are limited to
- * what the person may manage; picking people warns about anyone already
- * booked at that time. In the preview, saving keeps the event in memory only
- * and sends nothing. */
+ * what the person may manage, members can invite up to a set number of people,
+ * and the button says how many invites saving will send. Picking people warns
+ * about anyone already booked at that time. In the preview, saving keeps the
+ * event in memory only and sends nothing. */
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCalendarAccess } from '@/lib/calendar/access';
 import { useCalendarFormat } from '@/lib/calendar/format';
 import { addDays, dayDiff, expandOccurrences } from '@/lib/calendar/occurrences';
-import { PREVIEW_INITIATIVES, PREVIEW_PEOPLE, PREVIEW_TEAMS } from '@/lib/calendar/preview';
+import { PREVIEW_PEOPLE, PREVIEW_TEAMS } from '@/lib/calendar/preview';
 import { calendarActions, useCalendarStore } from '@/lib/calendar/store';
 import type { CalendarEvent, CalendarKind, CalendarPerson } from '@/lib/calendar/types';
 import { Icon } from './Icon';
@@ -30,7 +31,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const f = useCalendarFormat();
   const access = useCalendarAccess();
   const { events } = useCalendarStore();
-  const initiativeIds = access.initiatives ?? Object.keys(PREVIEW_INITIATIVES);
+  const initiativeIds = access.initiatives;
 
   const [title, setTitle] = useState(editing ? f.title(editing) : '');
   const [kind, setKind] = useState<CalendarKind>(editing?.kind ?? (initiativeIds.length ? 'initiative' : 'hub'));
@@ -101,20 +102,24 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const picked = allIds.filter(id => people[id]);
   const list = q ? allIds.filter(id => PREVIEW_PEOPLE[id].en.toLowerCase().includes(q) || PREVIEW_PEOPLE[id].ar.includes(q)) : picked;
 
+  // Everyone picked except the person adding the event gets an invite.
+  const inviteCount = (p: Record<string, Role>) => Object.keys(p).filter(id => id !== 'me').length;
+  const overLimit = (p: Record<string, Role>) => access.inviteLimit !== null && inviteCount(p) > access.inviteLimit;
+
   function toggle(id: string, role: Role) {
-    setPeople(prev => {
-      const next = { ...prev };
-      if (next[id] === role) delete next[id]; else next[id] = role;
-      return next;
-    });
+    const next = { ...people };
+    if (next[id] === role) delete next[id]; else next[id] = role;
+    if (overLimit(next)) return setError(t('inviteLimit', { count: access.inviteLimit ?? 0 }));
+    setError('');
+    setPeople(next);
   }
 
   function addTeam() {
-    setPeople(prev => {
-      const next = { ...prev };
-      for (const id of PREVIEW_TEAMS[initiativeId] ?? []) next[id] ??= 'team';
-      return next;
-    });
+    const next = { ...people };
+    for (const id of PREVIEW_TEAMS[initiativeId] ?? []) next[id] ??= 'team';
+    if (overLimit(next)) return setError(t('inviteLimit', { count: access.inviteLimit ?? 0 }));
+    setError('');
+    setPeople(next);
   }
 
   function save() {
@@ -125,8 +130,12 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
     onSaved(t('savedPreview'));
   }
 
+  const invites = kind === 'deadline' ? 0 : inviteCount(people);
   const footer = (
     <>
+      {kind !== 'deadline' && (
+        <p className={styles.footNote}>{invites ? t('inviteCount', { count: invites }) : t('noInvites')}</p>
+      )}
       {editing && (
         <button type="button" className={`${styles.btn} ${styles.danger} ${styles.slim}`}
           onClick={() => { if (!confirmDelete) return setConfirmDelete(true); calendarActions.remove(editing.id); onClose(); }}>

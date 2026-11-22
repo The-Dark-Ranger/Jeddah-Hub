@@ -3,9 +3,12 @@
  * YYYY-MM-DD strings in Jeddah time, so an event on the 5th stays on the 5th
  * on every device. */
 
-export type CalendarKind = 'initiative' | 'hub' | 'activity' | 'external' | 'deadline';
+/** Initiative: belongs to one initiative. Hub: the hub organises it (official,
+ *  casual, or a public Hub Activity). External: someone outside the hub
+ *  organises it. Deadline: a due date. */
+export type CalendarKind = 'initiative' | 'hub' | 'external' | 'deadline';
 
-export const CALENDAR_KINDS: CalendarKind[] = ['initiative', 'hub', 'activity', 'external', 'deadline'];
+export const CALENDAR_KINDS: CalendarKind[] = ['initiative', 'hub', 'external', 'deadline'];
 
 /** How someone answered the calendar invite. */
 export type InviteReply = 'yes' | 'no' | 'maybe' | 'none';
@@ -18,7 +21,8 @@ export interface CalendarPerson {
 }
 
 /** Where the event came from: made on the site, an invite sent to the hub's
- *  calendar address from someone's own calendar app, or a public Hub Activity. */
+ *  calendar address from someone's own calendar app, or a public Hub Activity
+ *  (shown as a Hub event with a Public tag, edited on its own page). */
 export type CalendarSource = 'site' | 'invite' | 'activity';
 
 export interface CalendarEvent {

@@ -14,7 +14,7 @@ import { calendarActions } from '@/lib/calendar/store';
 import type { CalendarPerson, Clash, Occurrence } from '@/lib/calendar/types';
 import { Icon } from './Icon';
 import Sheet from './Sheet';
-import { kindClass } from './Views';
+import { PublicTag, kindClass } from './Views';
 import styles from './Calendar.module.css';
 
 interface Props {
@@ -76,7 +76,7 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
   return (
     <Sheet onClose={onClose}>
       <div className={kindClass[e.kind]}>
-        <div className={styles.kicker}><i aria-hidden="true" />{f.initiative(e.initiativeId) || t(`kinds.${e.kind}`)}</div>
+        <div className={styles.kicker}><i aria-hidden="true" />{f.initiative(e.initiativeId) || t(`kinds.${e.kind}`)}{e.source === 'activity' && <PublicTag />}</div>
         <h2 className={styles.detailTitle}>{f.title(e)}</h2>
         <ul className={styles.facts}>
           <li><Icon name="clock" /><span>{when}</span></li>

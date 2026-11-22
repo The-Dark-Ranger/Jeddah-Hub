@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 17 November
+- Phones: the dashboard's post list (Blog Posts) no longer makes the page wider than the screen when a post has a long title, which made the browser zoom the whole dashboard out. Long titles now wrap.
+
 ### 14 November
 - Faster everywhere: public pages are built ahead and served from Vercel's CDN instead of being rendered on every visit (a cookie read in the page frame made every page render per request), and refresh within a minute of a dashboard edit as before. About half of the site's text (the dashboard's and the legal pages') no longer travels with every public page. Avatars, gallery thumbnails and cards load photo copies sized for them instead of the full photo. The site icon is 16 KB instead of 295 KB. The loading screen shows only on the first page of a visit, and briefly.
 - Newsletter: signing up now sends a link to confirm the address, and only then is it on the list (double opt-in), so nobody can sign up someone else. Every signup gets the same "check your inbox" answer, so the form can't reveal who is subscribed.

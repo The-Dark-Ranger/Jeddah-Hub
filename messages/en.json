@@ -1341,8 +1341,6 @@
     "nothingMatches": "Nothing matches these filters.",
     "showWholeWeek": "Show the whole week",
     "showWholeMonth": "Show the whole month",
-    "inviteTipTitle": "Made it in your own calendar app?",
-    "inviteTipBody": "Invite the hub's calendar address and it shows up here too:",
     "fromInvite": "From {name}'s calendar invite",
     "fromSite": "Added by {name}",
     "fromActivity": "Hub Activity",
@@ -1359,7 +1357,7 @@
     "inviteRepliesNote": "Replies to this invite go to the organiser's calendar, so they don't show here.",
     "alsoAt": "Also at {event} ({when}): {names}",
     "you": "you",
-    "addToMyCalendar": "My calendar",
+    "addToMyCalendar": "Add to my calendar",
     "copyForWhatsApp": "WhatsApp",
     "copied": "Copied",
     "copyHere": "Copy this message",
@@ -1429,6 +1427,11 @@
     "severalDays": "Runs over several days",
     "errStartTime": "Add a start time, or turn on All day.",
     "organising": "Organising",
-    "attending": "Attending"
+    "attending": "Attending",
+    "typesAll": "All types",
+    "typesSome": "{shown} selected",
+    "typesTitle": "Show these types",
+    "done": "Done",
+    "showAllPeople": "Show all {shown}"
   }
 }

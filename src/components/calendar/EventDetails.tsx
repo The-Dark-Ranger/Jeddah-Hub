@@ -31,6 +31,7 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
   const access = useCalendarAccess();
   const [copyFallback, setCopyFallback] = useState('');
   const [confirmSkip, setConfirmSkip] = useState(false);
+  const [allAttending, setAllAttending] = useState(false);
   const e = occ.event;
   const multi = occ.date !== occ.endDate;
   const invite = e.source === 'invite';
@@ -42,6 +43,9 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
 
   const team = e.people.filter(p => p.role === 'team');
   const guests = e.people.filter(p => p.role === 'guest');
+  // Long lists show the first few, so the actions stay in reach.
+  const SHORT_LIST = 5;
+  const shownGuests = allAttending ? guests : guests.slice(0, SHORT_LIST);
   const count = (r: CalendarPerson['reply']) => f.number(e.people.filter(p => p.reply === r).length);
 
   // One line per other event, naming everyone who is at both.
@@ -114,7 +118,10 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
           <div className={styles.section}><h3 className={styles.sectionTitle}>{t('organising')} · {f.number(team.length)}</h3><ul className={styles.people}>{team.map(person)}</ul></div>
         )}
         {guests.length > 0 && (
-          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('attending')} · {f.number(guests.length)}</h3><ul className={styles.people}>{guests.map(person)}</ul></div>
+          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('attending')} · {f.number(guests.length)}</h3><ul className={styles.people}>{shownGuests.map(person)}</ul>
+            {guests.length > shownGuests.length && (
+              <button type="button" className={styles.link} onClick={() => setAllAttending(true)}>{t('showAllPeople', { shown: f.number(guests.length) })}</button>
+            )}</div>
         )}
 
         <div className={styles.actions} style={{ gridTemplateColumns: `repeat(${third ? 3 : 2}, minmax(0, 1fr))` }}>

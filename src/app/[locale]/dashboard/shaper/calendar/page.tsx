@@ -8,7 +8,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
-import InviteAddress from '@/components/calendar/InviteAddress';
 import EventDetails from '@/components/calendar/EventDetails';
 import EventForm from '@/components/calendar/EventForm';
 import { Icon } from '@/components/calendar/Icon';
@@ -25,7 +24,7 @@ import { calendarActions, useCalendarStore, type PreviewRole } from '@/lib/calen
 import { CALENDAR_KINDS, type CalendarEvent, type CalendarKind, type Occurrence } from '@/lib/calendar/types';
 
 type View = 'week' | 'month';
-type Open = { type: 'event'; occ: Occurrence } | { type: 'form'; editing: CalendarEvent | null } | { type: 'day'; day: string } | { type: 'clashes' } | null;
+type Open = { type: 'event'; occ: Occurrence } | { type: 'form'; editing: CalendarEvent | null } | { type: 'day'; day: string } | { type: 'clashes' | 'types' } | null;
 
 export default function CalendarPage() {
   const t = useTranslations('Calendar');
@@ -58,6 +57,7 @@ export default function CalendarPage() {
 
   const occs = all.filter(o => (!kinds.length || kinds.includes(o.event.kind)) && (!mine || o.event.people.some(p => p.userId === 'me')));
 
+  const toggleKind = (k: CalendarKind) => setKinds(list => (list.includes(k) ? list.filter(x => x !== k) : [...list, k]));
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2400); };
   function shift(n: number) {
     setAnchor(a => (view === 'month' ? toKey(new Date(fromKey(a).getFullYear(), fromKey(a).getMonth() + n, 1, 12)) : addDays(a, 7 * n)));
@@ -75,7 +75,8 @@ export default function CalendarPage() {
   if (selected) agendaDays.push(selected);
   else for (let d = inPeriod ? today : period.from; d <= period.to; d = addDays(d, 1)) if (occs.some(o => occursOn(o, d))) agendaDays.push(d);
 
-  const title = view === 'month' ? f.date(anchor, { month: 'long', year: 'numeric' }) : f.range(wStart, addDays(wStart, 6));
+  // Phones get the short month name so the toolbar stays on one row.
+  const title = view === 'month' ? f.date(anchor, { month: wide ? 'long' : 'short', year: 'numeric' }) : f.range(wStart, addDays(wStart, 6));
   const clashedPeople = new Set(periodClashes.map(c => c.userId)).size;
 
   return (
@@ -121,12 +122,17 @@ export default function CalendarPage() {
           <button type="button" aria-pressed={!mine} onClick={() => setMine(false)}>{t('filterEveryone')}</button>
           <button type="button" aria-pressed={mine} onClick={() => setMine(true)}>{t('filterMine')}</button>
         </span>
-        {CALENDAR_KINDS.map(k => (
-          <button key={k} type="button" className={`${styles.chip} ${kindClass[k]}`} aria-pressed={kinds.includes(k)}
-            onClick={() => setKinds(list => (list.includes(k) ? list.filter(x => x !== k) : [...list, k]))}>
+        {/* Laptops have room for the kinds inline; phones get one Types button. */}
+        {wide ? CALENDAR_KINDS.map(k => (
+          <button key={k} type="button" className={`${styles.chip} ${kindClass[k]}`} aria-pressed={kinds.includes(k)} onClick={() => toggleKind(k)}>
             <i aria-hidden="true" />{t(`kinds.${k}`)}
           </button>
-        ))}
+        )) : (
+          <button type="button" className={styles.typesBtn} aria-pressed={kinds.length > 0} onClick={() => setOpen({ type: 'types' })}>
+            <span className={styles.typeDots} aria-hidden="true">{(kinds.length ? kinds : CALENDAR_KINDS).map(k => <i key={k} className={kindClass[k]} />)}</span>
+            {kinds.length ? t('typesSome', { shown: f.number(kinds.length) }) : t('typesAll')}
+          </button>
+        )}
       </div>
 
       {periodClashes.length > 0 && (
@@ -149,8 +155,6 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <InviteAddress />
-
       {access.canAdd && <button type="button" className={styles.fab} onClick={newEvent} aria-label={t('addEvent')}><Icon name="plus" size={26} /></button>}
 
       {open?.type === 'event' && (
@@ -165,6 +169,23 @@ export default function CalendarPage() {
         <Sheet title={f.dayLong(open.day)} onClose={() => setOpen(null)}>
           <div className={styles.agenda}>
             <DayGroup day={open.day} today={today} rows={occs.filter(o => occursOn(o, open.day))} clashKeys={clashKeys} onOpen={openEvent} showLabel={false} />
+          </div>
+        </Sheet>
+      )}
+      {open?.type === 'types' && (
+        <Sheet title={t('typesTitle')} onClose={() => setOpen(null)}
+          footer={<>
+            <button type="button" className={`${styles.btn} ${styles.slim}`} onClick={() => setKinds([])}>{t('typesAll')}</button>
+            <button type="button" className={`${styles.btn} ${styles.primary}`} onClick={() => setOpen(null)}>{t('done')}</button>
+          </>}>
+          <div className={styles.typeList}>
+            {CALENDAR_KINDS.map(k => (
+              <button key={k} type="button" className={`${styles.typeRow} ${kindClass[k]}`} aria-pressed={kinds.includes(k)} onClick={() => toggleKind(k)}>
+                <i aria-hidden="true" />
+                <span><b>{t(`kinds.${k}`)}</b><small>{t(`kindHints.${k}`)}</small></span>
+                <span className={styles.tick} aria-hidden="true">{kinds.includes(k) && <Icon name="check" size={18} />}</span>
+              </button>
+            ))}
           </div>
         </Sheet>
       )}

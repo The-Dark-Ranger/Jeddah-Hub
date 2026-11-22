@@ -43,6 +43,24 @@
 }
 .filterRow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .filterRow .seg { margin-inline-end: 0.25rem; }
+.typesBtn {
+  display: inline-flex; align-items: center; gap: 0.45rem; min-height: 38px; padding: 0 0.8rem; margin-inline-start: auto;
+  border-radius: 10px; border: 1px solid var(--border-color); background: var(--card-bg-solid);
+  font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--text-main); cursor: pointer;
+}
+.typesBtn[aria-pressed="true"] { border-color: var(--primary-blue); color: var(--primary-blue); }
+.typeDots { display: inline-flex; gap: 3px; }
+.typeDots i { width: 7px; height: 7px; border-radius: 50%; background: var(--k); }
+.typeList { display: flex; flex-direction: column; gap: 0.5rem; }
+.typeRow {
+  display: flex; align-items: center; gap: 0.7rem; min-height: 56px; padding: 0.5rem 0.75rem; border-radius: 12px;
+  border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font: inherit; text-align: start; cursor: pointer;
+}
+.typeRow > i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--k); }
+.typeRow > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; }
+.typeRow small { font-size: max(12px, 0.75rem); color: var(--text-muted); }
+.typeRow[aria-pressed="true"] { border-color: var(--k); background: color-mix(in srgb, var(--k) 9%, var(--input-bg)); }
+.tick { flex: none; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--k); }
 .phoneOnly { display: none; }
 .wideOnly { display: inline; }
 .navArrows { display: inline-flex; gap: 0.25rem; }
@@ -93,7 +111,7 @@
 .sday { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 12px; }
 .sday .dow { font-size: max(12px, 0.7rem); font-weight: 600; color: var(--text-muted); }
 .num { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--text-main); }
-.isToday .num { color: var(--primary-blue); font-weight: 700; }
+.isToday .num { color: var(--primary-blue); font-weight: 700; box-shadow: inset 0 0 0 2px var(--primary-blue); }
 .isSel .num { background: var(--text-main); color: var(--background); font-weight: 600; }
 .isToday.isSel .num { background: var(--primary-fill); color: #fff; }
 .dots { display: flex; gap: 3px; height: 5px; justify-content: center; }
@@ -130,6 +148,7 @@
 .rowSub { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--text-muted); overflow: hidden; white-space: nowrap; }
 .rowSub span { overflow: hidden; text-overflow: ellipsis; }
 .flag { color: var(--warning); display: inline-flex; padding-inline-end: 0.25rem; }
+.repeat { flex: none; display: inline-flex; color: var(--text-muted); }
 .inviteMark {
   flex: none; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 4px;
   border: 1px solid var(--border-color); background: var(--background-alt); color: var(--text-muted); font-size: 12px; line-height: 1;
@@ -141,16 +160,6 @@
 }
 .empty { color: var(--text-muted); font-size: 0.9rem; padding: 0.75rem 0; }
 
-.tip {
-  display: flex; gap: 0.6rem; align-items: flex-start; margin-top: 0.75rem; padding: 0.75rem 0.9rem;
-  border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--background-alt);
-  font-size: 0.85rem; color: var(--text-muted);
-}
-.tip strong { color: var(--text-main); }
-.tip code {
-  direction: ltr; unicode-bidi: isolate; font-size: max(12px, 0.8rem); padding: 1px 6px; border-radius: 6px;
-  background: var(--card-bg-solid); border: 1px solid var(--border-color); color: var(--text-main); overflow-wrap: anywhere;
-}
 
 .fab {
   position: fixed; z-index: 900; inset-inline-end: 1rem; bottom: calc(1.25rem + env(safe-area-inset-bottom));
@@ -313,20 +322,20 @@
   .more { background: none; border: 0; padding: 0 6px; font: inherit; font-size: 12px; color: var(--text-muted); text-align: start; cursor: pointer; position: relative; }
 
   /* Week: seven columns of cards. */
-  .cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.6rem; }
+  .cols { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.4rem; }
   .col { min-width: 0; }
   .colHead { display: flex; align-items: baseline; gap: 0.35rem; margin-bottom: 0.5rem; padding-bottom: 0.35rem; border-bottom: 2px solid var(--border-color); font-size: max(12px, 0.78rem); font-weight: 600; color: var(--text-muted); }
   .colHead b { font-size: 1.25rem; color: var(--text-main); }
   .colToday .colHead, .colToday .colHead b { color: var(--primary-blue); border-color: var(--primary-blue); }
   .card {
-    display: flex; flex-direction: column; gap: 2px; width: 100%; margin-bottom: 0.5rem; padding: 0.55rem 0.6rem;
+    display: flex; flex-direction: column; gap: 2px; width: 100%; margin-bottom: 0.4rem; padding: 0.45rem 0.5rem;
     border: 0; border-inline-start: 4px solid var(--k); border-radius: 10px; text-align: start; cursor: pointer;
     background: color-mix(in srgb, var(--k) 10%, var(--card-bg-solid)); color: var(--text-main); font: inherit;
   }
   .card:hover { background: color-mix(in srgb, var(--k) 18%, var(--card-bg-solid)); }
   .cardTime { display: flex; align-items: center; gap: 0.3rem; font-size: max(12px, 0.75rem); font-weight: 600; color: var(--text-muted); }
   .cardTime .flag { padding: 0; }
-  .cardTitle { font-size: 0.88rem; font-weight: 600; line-height: 1.3; }
+  .cardTitle { font-size: 0.85rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; }
   .cardPlace { font-size: max(12px, 0.75rem); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .colEmpty { color: var(--text-muted); font-size: 0.85rem; }
   .strip { display: none; }

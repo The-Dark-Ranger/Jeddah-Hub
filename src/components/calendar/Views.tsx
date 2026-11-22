@@ -51,6 +51,7 @@ export function EventRow({ occ, day, clash, onOpen }: { occ: Occurrence; day: st
       <span className={styles.rowMain}>
         <span className={styles.rowTitle}>{f.title(e)}</span>
         <span className={styles.rowSub}>
+          {e.weekly && <span className={styles.repeat} title={t('everyWeek')}><Icon name="repeat" size={13} /></span>}
           {e.source === 'activity' && <PublicTag />}
           {e.source === 'invite' && <span className={styles.inviteMark} aria-hidden="true"><Icon name="mail" size={11} /></span>}
           <span>{subLine(occ, f, t(`kinds.${e.kind}`))}</span>
@@ -163,6 +164,7 @@ export function WeekColumns({ start, today, occs, clashKeys, onOpen }: {
                   {timeLabel(o, d)}
                   {clashKeys.has(o.key) && <span className={styles.flag}><Icon name="alert" size={14} /></span>}
                   {o.event.source === 'invite' && <span className={styles.inviteMark} aria-hidden="true"><Icon name="mail" size={11} /></span>}
+                  {o.event.weekly && <span className={styles.repeat}><Icon name="repeat" size={12} /></span>}
                   {o.event.source === 'activity' && <PublicTag />}
                 </span>
                 <span className={styles.cardTitle}>{f.title(o.event)}</span>

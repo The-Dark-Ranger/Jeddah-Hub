@@ -1341,8 +1341,6 @@
     "nothingMatches": "لا توجد فعاليات تطابق هذا التصفية.",
     "showWholeWeek": "عرض الأسبوع كاملاً",
     "showWholeMonth": "عرض الشهر كاملاً",
-    "inviteTipTitle": "أنشأتها في تطبيق التقويم الخاص بك؟",
-    "inviteTipBody": "ادعُ عنوان تقويم المركز لتظهر هنا أيضاً:",
     "fromInvite": "من دعوة تقويم أرسلها {name}",
     "fromSite": "أضافها {name}",
     "fromActivity": "نشاط المركز",
@@ -1359,7 +1357,7 @@
     "inviteRepliesNote": "الردود على هذه الدعوة تصل إلى تقويم المنظِّم، لذلك لا تظهر هنا.",
     "alsoAt": "لديهم أيضاً {event} ({when}): {names}",
     "you": "أنت",
-    "addToMyCalendar": "تقويمي",
+    "addToMyCalendar": "أضف إلى تقويمي",
     "copyForWhatsApp": "واتساب",
     "copied": "تم النسخ",
     "copyHere": "انسخ هذه الرسالة",
@@ -1429,6 +1427,11 @@
     "severalDays": "تمتد لعدة أيام",
     "errStartTime": "أضف وقت البدء، أو فعّل «طوال اليوم».",
     "organising": "المنظِّمون",
-    "attending": "الحضور"
+    "attending": "الحضور",
+    "typesAll": "كل الأنواع",
+    "typesSome": "المحدد: {shown}",
+    "typesTitle": "عرض هذه الأنواع",
+    "done": "تم",
+    "showAllPeople": "عرض الكل ({shown})"
   }
 }

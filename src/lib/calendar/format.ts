@@ -24,6 +24,13 @@ export function useCalendarFormat() {
       return new Date(2000, 0, 1, h, m).toLocaleTimeString(intlLocale(locale), { hour: 'numeric', minute: m ? '2-digit' : undefined });
     },
     number: (n: number) => new Intl.NumberFormat(intlLocale(locale)).format(n),
+    /** A short date range, e.g. "Nov 22 – 28" (the month once when it's the same). */
+    range(a: string, b: string) {
+      const fmt = new Intl.DateTimeFormat(intlLocale(locale), { day: 'numeric', month: 'short', timeZone: 'Asia/Riyadh' });
+      return fmt.formatRange(fromKey(a), fromKey(b));
+    },
+    /** "Sara, Omar and you" in the reader's language. */
+    list: (items: string[]) => new Intl.ListFormat(intlLocale(locale), { type: 'conjunction' }).format(items),
     title: (e: CalendarEvent) => (ar && e.titleAr) || e.title,
     location: (e: CalendarEvent) => (ar && e.locationAr) || e.location || '',
     notes: (e: CalendarEvent) => (ar && e.notesAr) || e.notes || '',

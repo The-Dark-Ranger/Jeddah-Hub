@@ -75,7 +75,8 @@ export default function CalendarPage() {
   if (selected) agendaDays.push(selected);
   else for (let d = inPeriod ? today : period.from; d <= period.to; d = addDays(d, 1)) if (occs.some(o => occursOn(o, d))) agendaDays.push(d);
 
-  const title = view === 'month' ? f.date(anchor, { month: 'long', year: 'numeric' }) : `${f.dayShort(wStart)} – ${f.dayShort(addDays(wStart, 6))}`;
+  const title = view === 'month' ? f.date(anchor, { month: 'long', year: 'numeric' }) : f.range(wStart, addDays(wStart, 6));
+  const clashedPeople = new Set(periodClashes.map(c => c.userId)).size;
 
   return (
     <div className={styles.page}>
@@ -88,7 +89,7 @@ export default function CalendarPage() {
       </div>
 
       <div className={styles.preview}>
-        <span><strong>{t('previewBanner')}</strong></span>
+        <span><strong className={styles.wideOnly}>{t('previewBanner')}</strong><strong className={styles.phoneOnly}>{t('previewShort')}</strong></span>
         <span className={styles.previewAs}>
           {t('previewAs')}
           <span className={styles.seg} role="group" aria-label={t('previewAs')}>
@@ -97,25 +98,29 @@ export default function CalendarPage() {
             ))}
           </span>
         </span>
-        {access.role === 'member' && <span>{t('memberNote')}</span>}
+        {access.role === 'member' && <span className={styles.wideOnly}>{t('memberNote')}</span>}
       </div>
 
+      {/* One row: previous, the period, next, then Today and Week / Month. */}
       <div className={styles.toolbar}>
-        <span className={styles.period}>{title}</span>
+        <span className={styles.periodNav}>
+          <button type="button" className={styles.iconBtn} onClick={() => shift(-1)} aria-label={t('previous')}><span className={styles.flip}><Icon name="left" size={20} /></span></button>
+          <span className={styles.period}>{title}</span>
+          <button type="button" className={styles.iconBtn} onClick={() => shift(1)} aria-label={t('next')}><span className={styles.flip}><Icon name="right" size={20} /></span></button>
+        </span>
+        {!inPeriod && <button type="button" className={styles.todayBtn} onClick={() => { setAnchor(today); setSelected(null); }}>{t('today')}</button>}
         <span className={styles.seg} role="group" aria-label={t('views')}>
           <button type="button" aria-pressed={view === 'week'} onClick={() => { setView('week'); setSelected(null); }}>{t('week')}</button>
           <button type="button" aria-pressed={view === 'month'} onClick={() => { setView('month'); setSelected(null); }}>{t('month')}</button>
         </span>
-        <span className={styles.navArrows}>
-          <button type="button" className={styles.iconBtn} onClick={() => shift(-1)} aria-label={t('previous')}><span className={styles.flip}><Icon name="left" size={20} /></span></button>
-          <button type="button" className={styles.iconBtn} onClick={() => shift(1)} aria-label={t('next')}><span className={styles.flip}><Icon name="right" size={20} /></span></button>
-        </span>
-        {!inPeriod && <button type="button" className={styles.btn} onClick={() => { setAnchor(today); setSelected(null); }}>{t('today')}</button>}
       </div>
 
-      <div className={styles.chips} role="group" aria-label={t('filters')}>
-        <button type="button" className={styles.chip} aria-pressed={!kinds.length && !mine} onClick={() => { setKinds([]); setMine(false); }}>{t('filterAll')}</button>
-        <button type="button" className={styles.chip} aria-pressed={mine} onClick={() => setMine(m => !m)}>{t('filterMine')}</button>
+      {/* Whose events, then which kinds (none picked means all). */}
+      <div className={styles.filterRow} role="group" aria-label={t('filters')}>
+        <span className={styles.seg} role="group">
+          <button type="button" aria-pressed={!mine} onClick={() => setMine(false)}>{t('filterEveryone')}</button>
+          <button type="button" aria-pressed={mine} onClick={() => setMine(true)}>{t('filterMine')}</button>
+        </span>
         {CALENDAR_KINDS.map(k => (
           <button key={k} type="button" className={`${styles.chip} ${kindClass[k]}`} aria-pressed={kinds.includes(k)}
             onClick={() => setKinds(list => (list.includes(k) ? list.filter(x => x !== k) : [...list, k]))}>
@@ -125,7 +130,7 @@ export default function CalendarPage() {
       </div>
 
       {periodClashes.length > 0 && (
-        <div><button type="button" className={styles.warn} onClick={() => setOpen({ type: 'clashes' })}><Icon name="alert" size={16} />{t('clashes', { count: periodClashes.length })}</button></div>
+        <div><button type="button" className={styles.warn} onClick={() => setOpen({ type: 'clashes' })}><Icon name="alert" size={16} />{t('clashes', { count: clashedPeople, shown: f.number(clashedPeople) })}</button></div>
       )}
 
       {view === 'month'

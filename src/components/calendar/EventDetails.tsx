@@ -36,7 +36,7 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
   const invite = e.source === 'invite';
 
   const when = multi
-    ? `${f.dayShort(occ.date)} – ${f.dayShort(occ.endDate)} · ${t('days', { count: dayDiff(occ.endDate, occ.date) + 1 })}`
+    ? `${f.range(occ.date, occ.endDate)} · ${t('days', { count: dayDiff(occ.endDate, occ.date) + 1, shown: f.number(dayDiff(occ.endDate, occ.date) + 1) })}`
     : [f.dayLong(occ.date), e.startTime ? `${f.time(e.startTime)}${e.endTime ? ` – ${f.time(e.endTime)}` : ''}` : e.kind === 'deadline' ? '' : t('allDay')]
       .filter(Boolean).join(' · ');
 
@@ -44,11 +44,20 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
   const guests = e.people.filter(p => p.role === 'guest');
   const count = (r: CalendarPerson['reply']) => f.number(e.people.filter(p => p.reply === r).length);
 
-  const clashLines = [...new Map(clashes.map(c => {
+  // One line per other event, naming everyone who is at both.
+  const byOther = new Map<string, { other: Occurrence; people: Set<string> }>();
+  for (const c of clashes) {
     const other = c.a.key === occ.key ? c.b : c.a;
+    const entry = byOther.get(other.key) ?? { other, people: new Set<string>() };
+    entry.people.add(c.userId);
+    byOther.set(other.key, entry);
+  }
+  const clashLines = [...byOther.values()].map(({ other, people }) => {
     const whenOther = other.event.startTime && other.date === other.endDate ? f.time(other.event.startTime) : f.dayLong(other.date);
-    return [`${c.userId}|${other.key}`, t('alsoAt', { name: f.person(c.userId), event: f.title(other.event), when: whenOther })];
-  })).values()];
+    const ids = [...people].sort((x, y) => Number(x === 'me') - Number(y === 'me'));
+    const names = f.list(ids.map(id => (id === 'me' ? t('you') : f.person(id))));
+    return t('alsoAt', { event: f.title(other.event), when: whenOther, names });
+  });
 
   async function share() {
     const text = whatsappText({ title: f.title(e), when, location: f.location(e), notes: f.notes(e), footer: t('whatsappFooter') });
@@ -102,10 +111,10 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
           </p>
         )}
         {team.length > 0 && (
-          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('team')} · {f.number(team.length)}</h3><ul className={styles.people}>{team.map(person)}</ul></div>
+          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('organising')} · {f.number(team.length)}</h3><ul className={styles.people}>{team.map(person)}</ul></div>
         )}
         {guests.length > 0 && (
-          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('invited')} · {f.number(guests.length)}</h3><ul className={styles.people}>{guests.map(person)}</ul></div>
+          <div className={styles.section}><h3 className={styles.sectionTitle}>{t('attending')} · {f.number(guests.length)}</h3><ul className={styles.people}>{guests.map(person)}</ul></div>
         )}
 
         <div className={styles.actions} style={{ gridTemplateColumns: `repeat(${third ? 3 : 2}, minmax(0, 1fr))` }}>

@@ -15,6 +15,7 @@ import { calendarActions, useCalendarStore } from '@/lib/calendar/store';
 import type { CalendarEvent, CalendarKind, CalendarPerson } from '@/lib/calendar/types';
 import { Icon } from './Icon';
 import Sheet from './Sheet';
+import { kindClass } from './Views';
 import styles from './Calendar.module.css';
 
 interface Props {
@@ -41,6 +42,8 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const [startTime, setStartTime] = useState(editing?.startTime ?? '');
   const [endTime, setEndTime] = useState(editing?.endTime ?? '');
   const [weekly, setWeekly] = useState(!!editing?.weekly);
+  const [severalDays, setSeveralDays] = useState(editing ? editing.endDate > editing.startDate : false);
+  const [allDay, setAllDay] = useState(editing ? !editing.startTime : false);
   const [location, setLocation] = useState(editing ? f.location(editing) : '');
   const [notes, setNotes] = useState(editing ? f.notes(editing) : '');
   const [people, setPeople] = useState<Record<string, Role>>(() => Object.fromEntries((editing?.people ?? []).map(p => [p.userId, p.role])));
@@ -51,8 +54,10 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   // Fixed once per form, so the draft keeps the same id while it's edited.
   const [newId] = useState(() => `new-${crypto.randomUUID()}`);
 
-  const multiDay = endDate > startDate;
-  const timed = !multiDay && kind !== 'deadline';
+  const multiDay = severalDays && kind !== 'deadline';
+  const lastDay = multiDay ? (endDate > startDate ? endDate : addDays(startDate, 1)) : startDate;
+  // A single-day event either has a start time or is all day; trips and deadlines have no times.
+  const timed = !multiDay && kind !== 'deadline' && !allDay;
 
   const draft: CalendarEvent = {
     id: editing?.id ?? newId,
@@ -60,10 +65,10 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
     kind,
     initiativeId: kind === 'initiative' ? initiativeId || undefined : undefined,
     startDate,
-    endDate: endDate < startDate ? startDate : endDate,
+    endDate: lastDay,
     startTime: timed ? startTime || undefined : undefined,
     endTime: timed && startTime ? endTime || undefined : undefined,
-    weekly: timed && weekly,
+    weekly: !multiDay && kind !== 'deadline' && weekly,
     skipDates: editing?.skipDates,
     location: location.trim() || undefined,
     notes: notes.trim() || undefined,
@@ -95,7 +100,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- draft is rebuilt every render; these are its inputs
-  }, [events, startDate, endDate, startTime, endTime, weekly, kind]);
+  }, [events, startDate, endDate, startTime, endTime, weekly, kind, severalDays, allDay]);
 
   const q = search.trim().toLowerCase();
   const allIds = Object.keys(PREVIEW_PEOPLE);
@@ -109,7 +114,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   function toggle(id: string, role: Role) {
     const next = { ...people };
     if (next[id] === role) delete next[id]; else next[id] = role;
-    if (overLimit(next)) return setError(t('inviteLimit', { count: access.inviteLimit ?? 0 }));
+    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(access.inviteLimit ?? 0) }));
     setError('');
     setPeople(next);
   }
@@ -117,7 +122,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   function addTeam() {
     const next = { ...people };
     for (const id of PREVIEW_TEAMS[initiativeId] ?? []) next[id] ??= 'team';
-    if (overLimit(next)) return setError(t('inviteLimit', { count: access.inviteLimit ?? 0 }));
+    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(access.inviteLimit ?? 0) }));
     setError('');
     setPeople(next);
   }
@@ -125,6 +130,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   function save() {
     if (!draft.title) return setError(t('errTitle'));
     if (kind === 'initiative' && !initiativeId) return setError(t('errInitiative'));
+    if (timed && !startTime) return setError(t('errStartTime'));
     if (draft.startTime && draft.endTime && draft.endTime <= draft.startTime) return setError(t('errTime'));
     calendarActions.save({ ...draft, titleAr: undefined, locationAr: undefined, notesAr: undefined });
     onSaved(t('savedPreview'));
@@ -134,7 +140,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const footer = (
     <>
       {kind !== 'deadline' && (
-        <p className={styles.footNote}>{invites ? t('inviteCount', { count: invites }) : t('noInvites')}</p>
+        <p className={styles.footNote}>{invites ? t('inviteCount', { count: invites, shown: f.number(invites) }) : t('noInvites')}</p>
       )}
       {editing && (
         <button type="button" className={`${styles.btn} ${styles.danger} ${styles.slim}`}
@@ -156,12 +162,16 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
           <input id="cal-title" value={title} onChange={e => setTitle(e.target.value)} />
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="cal-kind">{t('fieldType')}</label>
-          <select id="cal-kind" value={kind} onChange={e => setKind(e.target.value as CalendarKind)}>
-            {access.kinds.filter(k => k !== 'initiative' || initiativeIds.length).map(k => <option key={k} value={k}>{t(`kinds.${k}`)}</option>)}
-          </select>
-        </div>
+        {/* Four kinds as buttons, each with a one-line hint, so people pick the right one. */}
+        <fieldset className={styles.kindPick}>
+          <legend className={styles.label}>{t('fieldType')}</legend>
+          {access.kinds.filter(k => k !== 'initiative' || initiativeIds.length).map(k => (
+            <button key={k} type="button" className={`${styles.kindOption} ${kindClass[k]}`} aria-pressed={kind === k} onClick={() => setKind(k)}>
+              <span className={styles.kindName}><i aria-hidden="true" />{t(`kinds.${k}`)}</span>
+              <span className={styles.kindHint}>{t(`kindHints.${k}`)}</span>
+            </button>
+          ))}
+        </fieldset>
 
         {kind === 'initiative' && (
           <div className={styles.field}>
@@ -173,7 +183,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
           </div>
         )}
 
-        <div className={styles.pair}>
+        <div className={multiDay ? styles.pair : undefined}>
           <div className={styles.field}>
             <label htmlFor="cal-start">{multiDay ? t('fieldFrom') : t('fieldDate')}</label>
             <input id="cal-start" type="date" value={startDate} onChange={e => {
@@ -183,29 +193,49 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
               setEndDate(v && span ? addDays(v, span) : v);
             }} />
           </div>
-          <div className={styles.field}>
-            <label htmlFor="cal-end">{t('fieldUntil')}</label>
-            <input id="cal-end" type="date" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value || startDate)} />
-          </div>
+          {multiDay && (
+            <div className={styles.field}>
+              <label htmlFor="cal-end">{t('fieldUntil')}</label>
+              <input id="cal-end" type="date" value={lastDay} min={addDays(startDate, 1)} onChange={e => setEndDate(e.target.value || startDate)} />
+            </div>
+          )}
         </div>
 
-        {timed && (
-          <>
-            <div className={styles.pair}>
-              <div className={styles.field}>
-                <label htmlFor="cal-from">{t('fieldStarts')}</label>
-                <input id="cal-from" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="cal-to">{t('fieldEnds')}</label>
-                <input id="cal-to" type="time" value={endTime} disabled={!startTime} onChange={e => setEndTime(e.target.value)} />
-              </div>
-            </div>
+        {kind !== 'deadline' && (
+          <div className={styles.switches}>
             <label className={styles.toggle}>
-              {t('repeatsWeekly')}
-              <input type="checkbox" checked={weekly} onChange={e => setWeekly(e.target.checked)} />
+              {t('severalDays')}
+              <input type="checkbox" checked={severalDays} onChange={e => {
+                setSeveralDays(e.target.checked);
+                if (e.target.checked && endDate <= startDate) setEndDate(addDays(startDate, 1));
+              }} />
             </label>
-          </>
+            {!multiDay && (
+              <label className={styles.toggle}>
+                {t('allDay')}
+                <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} />
+              </label>
+            )}
+            {!multiDay && (
+              <label className={styles.toggle}>
+                {t('repeatsWeekly')}
+                <input type="checkbox" checked={weekly} onChange={e => setWeekly(e.target.checked)} />
+              </label>
+            )}
+          </div>
+        )}
+
+        {timed && (
+          <div className={styles.pair}>
+            <div className={styles.field}>
+              <label htmlFor="cal-from">{t('fieldStarts')}</label>
+              <input id="cal-from" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="cal-to">{t('fieldEnds')}</label>
+              <input id="cal-to" type="time" value={endTime} disabled={!startTime} onChange={e => setEndTime(e.target.value)} />
+            </div>
+          </div>
         )}
         {multiDay && <p className={styles.small}>{t('multiDayHint')}</p>}
 

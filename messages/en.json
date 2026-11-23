@@ -1429,9 +1429,13 @@
     "organising": "Organising",
     "attending": "Attending",
     "typesAll": "All types",
-    "typesSome": "{shown} selected",
+    "typesSome": "{shown} of {total} types",
     "typesTitle": "Show these types",
     "done": "Done",
-    "showAllPeople": "Show all {shown}"
+    "showAllPeople": "Show all {shown}",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "typesNone": "No types",
+    "noTypesSelected": "No event types selected. Select a type to see its events."
   }
 }

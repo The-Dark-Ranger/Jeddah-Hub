@@ -38,7 +38,9 @@ export default function CalendarPage() {
   const view: View = viewChoice ?? (wide ? 'month' : 'week');
   const [anchor, setAnchor] = useState(today);
   const [selected, setSelected] = useState<string | null>(null);
-  const [kinds, setKinds] = useState<CalendarKind[]>([]);
+  // The kinds shown on the calendar: all ticked by default, untick to hide.
+  const [kinds, setKinds] = useState<CalendarKind[]>(CALENDAR_KINDS);
+  const allKinds = kinds.length === CALENDAR_KINDS.length;
   const [mine, setMine] = useState(false);
   const [open, setOpen] = useState<Open>(null);
   const [toast, setToast] = useState('');
@@ -55,9 +57,11 @@ export default function CalendarPage() {
   const clashKeys = useMemo(() => new Set(clashMap.keys()), [clashMap]);
   const periodClashes = uniqueClashes(clashes.filter(c => c.a.date <= period.to && c.a.endDate >= period.from));
 
-  const occs = all.filter(o => (!kinds.length || kinds.includes(o.event.kind)) && (!mine || o.event.people.some(p => p.userId === 'me')));
+  const occs = all.filter(o => kinds.includes(o.event.kind) && (!mine || o.event.people.some(p => p.userId === 'me')));
 
-  const toggleKind = (k: CalendarKind) => setKinds(list => (list.includes(k) ? list.filter(x => x !== k) : [...list, k]));
+  // Keeps the kinds in their usual order however they're ticked.
+  const toggleKind = (k: CalendarKind) => setKinds(list => CALENDAR_KINDS.filter(x => (x === k ? !list.includes(k) : list.includes(x))));
+  const toggleAllKinds = () => setKinds(allKinds ? [] : CALENDAR_KINDS);
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2400); };
   function shift(n: number) {
     setAnchor(a => (view === 'month' ? toKey(new Date(fromKey(a).getFullYear(), fromKey(a).getMonth() + n, 1, 12)) : addDays(a, 7 * n)));
@@ -116,7 +120,7 @@ export default function CalendarPage() {
         </span>
       </div>
 
-      {/* Whose events, then which kinds (none picked means all). */}
+      {/* Whose events, then which kinds are shown. */}
       <div className={styles.filterRow} role="group" aria-label={t('filters')}>
         <span className={styles.seg} role="group">
           <button type="button" aria-pressed={!mine} onClick={() => setMine(false)}>{t('filterEveryone')}</button>
@@ -127,15 +131,19 @@ export default function CalendarPage() {
           <button key={k} type="button" className={`${styles.chip} ${kindClass[k]}`} aria-pressed={kinds.includes(k)} onClick={() => toggleKind(k)}>
             <i aria-hidden="true" />{t(`kinds.${k}`)}
           </button>
-        )) : (
-          <button type="button" className={styles.typesBtn} aria-pressed={kinds.length > 0} onClick={() => setOpen({ type: 'types' })}>
-            <span className={styles.typeDots} aria-hidden="true">{(kinds.length ? kinds : CALENDAR_KINDS).map(k => <i key={k} className={kindClass[k]} />)}</span>
-            {kinds.length ? t('typesSome', { shown: f.number(kinds.length) }) : t('typesAll')}
+        )).concat(
+          <button key="all" type="button" className={styles.link} onClick={toggleAllKinds}>{allKinds ? t('deselectAll') : t('selectAll')}</button>,
+        ) : (
+          <button type="button" className={styles.typesBtn} aria-pressed={!allKinds} onClick={() => setOpen({ type: 'types' })}>
+            {kinds.length > 0 && <span className={styles.typeDots} aria-hidden="true">{kinds.map(k => <i key={k} className={kindClass[k]} />)}</span>}
+            {allKinds ? t('typesAll') : kinds.length ? t('typesSome', { shown: f.number(kinds.length), total: f.number(CALENDAR_KINDS.length) }) : t('typesNone')}
           </button>
         )}
       </div>
 
-      {periodClashes.length > 0 && (
+      {!kinds.length && <p className={styles.empty}>{t('noTypesSelected')}</p>}
+
+      {periodClashes.length > 0 && kinds.length > 0 && (
         <div><button type="button" className={styles.warn} onClick={() => setOpen({ type: 'clashes' })}><Icon name="alert" size={16} />{t('clashes', { count: clashedPeople, shown: f.number(clashedPeople) })}</button></div>
       )}
 
@@ -148,8 +156,8 @@ export default function CalendarPage() {
       {!wide && (
         <div className={styles.agenda}>
           {agendaDays.map(d => <DayGroup key={d} day={d} today={today} rows={occs.filter(o => occursOn(o, d))} clashKeys={clashKeys} onOpen={openEvent} />)}
-          {!selected && !agendaDays.length && (
-            <p className={styles.empty}>{kinds.length || mine ? t('nothingMatches') : inPeriod ? (view === 'week' ? t('nothingElseWeek') : t('nothingElseMonth')) : t('nothingPlanned')}</p>
+          {!selected && !agendaDays.length && kinds.length > 0 && (
+            <p className={styles.empty}>{!allKinds || mine ? t('nothingMatches') : inPeriod ? (view === 'week' ? t('nothingElseWeek') : t('nothingElseMonth')) : t('nothingPlanned')}</p>
           )}
           {selected && <p><button type="button" className={styles.link} onClick={() => setSelected(null)}>{view === 'week' ? t('showWholeWeek') : t('showWholeMonth')}</button></p>}
         </div>
@@ -175,7 +183,7 @@ export default function CalendarPage() {
       {open?.type === 'types' && (
         <Sheet title={t('typesTitle')} onClose={() => setOpen(null)}
           footer={<>
-            <button type="button" className={`${styles.btn} ${styles.slim}`} onClick={() => setKinds([])}>{t('typesAll')}</button>
+            <button type="button" className={`${styles.btn} ${styles.slim}`} onClick={toggleAllKinds}>{allKinds ? t('deselectAll') : t('selectAll')}</button>
             <button type="button" className={`${styles.btn} ${styles.primary}`} onClick={() => setOpen(null)}>{t('done')}</button>
           </>}>
           <div className={styles.typeList}>

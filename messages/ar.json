@@ -1429,9 +1429,13 @@
     "organising": "المنظِّمون",
     "attending": "الحضور",
     "typesAll": "كل الأنواع",
-    "typesSome": "المحدد: {shown}",
+    "typesSome": "{shown} من {total} أنواع",
     "typesTitle": "عرض هذه الأنواع",
     "done": "تم",
-    "showAllPeople": "عرض الكل ({shown})"
+    "showAllPeople": "عرض الكل ({shown})",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء تحديد الكل",
+    "typesNone": "لا أنواع",
+    "noTypesSelected": "لم تحدد أي نوع من الفعاليات. حدّد نوعاً لعرض فعالياته."
   }
 }

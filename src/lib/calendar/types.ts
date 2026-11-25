@@ -44,6 +44,8 @@ export interface CalendarEvent {
   notes?: string;
   notesAr?: string;
   people: CalendarPerson[];
+  /** Whether any reply has come back yet (replies are filled in by the server). */
+  hasReplies?: boolean;
   /** Rough count of guests from outside the hub. */
   outsideGuests?: number;
   source: CalendarSource;

@@ -932,5 +932,99 @@ service cloud.firestore {
                     && request.resource.data.reviewedBy == request.auth.uid;
       allow delete: if isOwner(resource.data.requestedByUserId) || isCurator();
     }
+    // ── calendar_events ──────────────────────────────────────────
+    // The hub calendar (Dashboard > Calendar). Every member sees every event.
+    // Who may write what:
+    //   - curators, vice curators and impact officers: any event;
+    //   - any member: hub and external events, and events of an initiative
+    //     they are on (as Lead, Co-Lead or Member);
+    //   - initiative leads: also deadlines of their initiatives, and editing
+    //     any event of their initiatives.
+    // Authors edit and delete their own events. createdBy is always the
+    // author's own uid and never changes. Members invite at most 15 other
+    // people per event. `replies` (Yes / No / Maybe from the calendar
+    // invites) is written only by the server, never from the browser.
+    function calendarOnTeam(initiativeId) {
+      let d = get(/databases/$(database)/documents/initiatives/$(initiativeId)).data;
+      let uid = request.auth.uid;
+      let team = d.get('members', []);
+      return uid in d.get('leads', []) || uid in team
+             || {'userId': uid, 'role': 'Member'} in team
+             || {'userId': uid, 'role': 'Lead'} in team
+             || {'userId': uid, 'role': 'Co-Lead'} in team
+             || {'userId': uid} in team;
+    }
+    function calendarDate(d, key) {
+      return d[key] is string && d[key].matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+    function calendarTime(d, key) {
+      return !(key in d) || d[key] == null || (d[key] is string && d[key].matches('^[0-2][0-9]:[0-5][0-9]$'));
+    }
+    function calendarEventOk(d) {
+      return d.keys().hasOnly(['title', 'kind', 'initiativeId', 'startDate', 'endDate', 'startTime', 'endTime',
+                               'weekly', 'repeatUntil', 'skipDates', 'location', 'notes', 'people',
+                               'outsideGuests', 'createdBy', 'createdAt', 'updatedAt', 'replies'])
+             && d.title is string && d.title.size() > 0 && d.title.size() <= 140
+             && d.kind in ['initiative', 'hub', 'external', 'deadline']
+             && (d.kind != 'initiative' || (d.get('initiativeId', '') is string && d.get('initiativeId', '') != ''))
+             && (d.kind in ['initiative', 'deadline'] || d.get('initiativeId', '') == '')
+             && calendarDate(d, 'startDate') && calendarDate(d, 'endDate') && d.endDate >= d.startDate
+             && calendarTime(d, 'startTime') && calendarTime(d, 'endTime')
+             && (!('weekly' in d) || d.weekly is bool)
+             && (!('repeatUntil' in d) || d.repeatUntil == null || calendarDate(d, 'repeatUntil'))
+             && (!('skipDates' in d) || (d.skipDates is list && d.skipDates.size() <= 200))
+             && optStr(d, 'location', 200) && optStr(d, 'notes', 2000)
+             && d.get('people', []) is list && d.get('people', []).size() <= 200
+             && (!('outsideGuests' in d) || d.outsideGuests == null
+                 || (d.outsideGuests is int && d.outsideGuests >= 0 && d.outsideGuests <= 100000))
+             && d.createdBy is string;
+    }
+    // The checks below take `manager` (curator, vice curator or impact
+    // officer) and `member` (any role) worked out once per request: each is
+    // a lookup of the caller's role, and Firestore caps how much one request
+    // may evaluate.
+    // May the caller write an event with these values?
+    function calendarMayWrite(d, manager, member) {
+      let init = d.get('initiativeId', '');
+      return manager
+             || (d.kind in ['hub', 'external'] && member)
+             || (d.kind == 'initiative' && calendarOnTeam(init))
+             || (d.kind == 'deadline' && init != '' && isLeadOf(init));
+    }
+    // May the caller edit or delete this stored event?
+    function calendarMayEdit(d, manager, member) {
+      let init = d.get('initiativeId', '');
+      return manager || (member && d.createdBy == request.auth.uid)
+             || (init != '' && isLeadOf(init));
+    }
+    // Members invite at most 15 other people; leads and managers have no cap.
+    function calendarPeopleOk(d, manager) {
+      let init = d.get('initiativeId', '');
+      return manager || d.get('people', []).size() <= 16 || (init != '' && isLeadOf(init));
+    }
+    function calendarCreateOk(d) {
+      let manager = isCuratorOrImpact();
+      let member = isAnyMember();
+      return member && calendarEventOk(d)
+             && d.createdBy == request.auth.uid && !('replies' in d)
+             && calendarMayWrite(d, manager, member) && calendarPeopleOk(d, manager);
+    }
+    function calendarUpdateOk(before, after) {
+      let manager = isCuratorOrImpact();
+      let member = isAnyMember();
+      return calendarMayEdit(before, manager, member) && calendarEventOk(after)
+             && after.createdBy == before.createdBy
+             && after.get('replies', null) == before.get('replies', null)
+             && calendarMayWrite(after, manager, member) && calendarPeopleOk(after, manager);
+    }
+    function calendarDeleteOk(d) {
+      return calendarMayEdit(d, isCuratorOrImpact(), isAnyMember());
+    }
+    match /calendar_events/{eventId} {
+      allow read: if isAnyMember();
+      allow create: if calendarCreateOk(request.resource.data);
+      allow update: if calendarUpdateOk(resource.data, request.resource.data);
+      allow delete: if calendarDeleteOk(resource.data);
+    }
   }
 }

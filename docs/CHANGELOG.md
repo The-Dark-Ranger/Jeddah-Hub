@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 25 November (branch feature/calendar-ui, not yet live)
+- Calendar saves for real: events are stored in the database (calendar_events) and show up for everyone straight away, without reloading. It uses the real members, initiatives and roles; the example events and "Preview as" are gone. The database rules enforce who may add, edit and delete what (the same limits as the screens), and only the server will be able to record invite replies. Leads choose which of their initiatives a deadline is for. Until the hub's Google Calendar is linked, no invites are sent: people are listed on the event, and the form and event say so. After merging, publish the rules with `npm run deploy:rules`.
+
 ### 22 November (branch feature/calendar-ui, not yet live)
 - Calendar, first look (example events only: nothing is saved and no emails are sent): a Calendar page in the dashboard for every member, with a week view on phones and a large month view and a seven-column week on laptops, and a calendar icon in the navbar on every page for signed-in members, showing this week's events. Four kinds of event: Initiative, Hub (organised by the hub, including public Hub Activities, which carry a Public tag), External (organised by others) and Deadline. Every member can add events for initiatives they're on, hub events and external events, and edit their own; initiative leads also edit their initiatives' events and add deadlines; curators, vice curators and impact officers manage everything. Members can invite up to 15 people per event, and the form says how many invites saving will send. Event details show who is organising and attending with their replies, and who is double-booked. On phones the type filters sit behind one Types button. "Preview as" switches between the curator, initiative lead and member views without changing anyone's real role.
 

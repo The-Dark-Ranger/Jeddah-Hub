@@ -638,3 +638,92 @@ describe('sessions: confirmed email, 14-day limit, signed out everywhere', () =>
     await assertFails(setDoc(doc(as('cur'), 'session_revocations', 'mate'), { at: 0 }));
   });
 });
+
+describe('calendar events', () => {
+  // init1's team (see seed): lead and colead are leads, mate is a Member;
+  // author is a shaper on no team.
+  const ev = (createdBy, extra = {}) => ({
+    title: 'Weekly sync', kind: 'hub', startDate: '2026-12-01', endDate: '2026-12-01', startTime: '19:00',
+    weekly: false, skipDates: [], people: [], createdBy, ...extra,
+  });
+  const people = n => many(n, i => ({ userId: `p${i}`, role: 'guest' }));
+  const put = (db, id, d) => setDoc(doc(db, 'calendar_events', id), d);
+  const stored = (id, d) => env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'calendar_events', id), d));
+
+  it('every member can read events; visitors and people without a role cannot', async () => {
+    await stored('e1', ev('author'));
+    await assertSucceeds(getDoc(doc(as('mate'), 'calendar_events', 'e1')));
+    await assertSucceeds(getDoc(doc(as('cur'), 'calendar_events', 'e1')));
+    await assertFails(getDoc(doc(anon(), 'calendar_events', 'e1')));
+    await assertFails(getDoc(doc(as('norole'), 'calendar_events', 'e1')));
+  });
+
+  it('any member adds hub and external events, in their own name only', async () => {
+    await assertSucceeds(put(as('author'), 'a', ev('author')));
+    await assertSucceeds(put(as('author'), 'b', ev('author', { kind: 'external', startDate: '2026-12-02', endDate: '2026-12-04', startTime: null })));
+    await assertFails(put(as('author'), 'c', ev('mate')));
+    await assertFails(put(as('norole'), 'd', ev('norole')));
+  });
+
+  it('initiative events: only people on that initiative (or managers)', async () => {
+    const initEv = by => ev(by, { kind: 'initiative', initiativeId: 'init1' });
+    await assertSucceeds(put(as('mate'), 'a', initEv('mate')));
+    await assertSucceeds(put(as('lead'), 'b', initEv('lead')));
+    await assertSucceeds(put(as('impact'), 'c', initEv('impact')));
+    await assertFails(put(as('author'), 'd', initEv('author')));
+    await assertFails(put(as('mate'), 'e', ev('mate', { kind: 'initiative' })));
+  });
+
+  it('deadlines: leads of that initiative and managers, not members', async () => {
+    const due = by => ev(by, { kind: 'deadline', initiativeId: 'init1', startTime: null });
+    await assertSucceeds(put(as('lead'), 'a', due('lead')));
+    await assertSucceeds(put(as('cur'), 'b', ev('cur', { kind: 'deadline', startTime: null })));
+    await assertFails(put(as('mate'), 'c', due('mate')));
+    await assertFails(put(as('author'), 'd', ev('author', { kind: 'deadline', startTime: null })));
+  });
+
+  it('members invite at most 15 others; leads and managers have no cap', async () => {
+    await assertSucceeds(put(as('author'), 'a', ev('author', { people: people(16) })));
+    await assertFails(put(as('author'), 'b', ev('author', { people: people(17) })));
+    await assertSucceeds(put(as('lead'), 'c', ev('lead', { kind: 'initiative', initiativeId: 'init1', people: people(40) })));
+    await assertSucceeds(put(as('vice'), 'd', ev('vice', { people: people(40) })));
+  });
+
+  it('the browser never writes the invite replies', async () => {
+    await assertFails(put(as('author'), 'a', ev('author', { replies: { mate: 'yes' } })));
+    await stored('e1', ev('author', { replies: { mate: 'yes' } }));
+    await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'e1'), { replies: { mate: 'no' } }));
+    await assertSucceeds(updateDoc(doc(as('author'), 'calendar_events', 'e1'), { title: 'Renamed' }));
+  });
+
+  it('who can edit and delete', async () => {
+    await stored('own', ev('author'));
+    await stored('team', ev('mate', { kind: 'initiative', initiativeId: 'init1' }));
+    const rename = (db, id) => updateDoc(doc(db, 'calendar_events', id), { title: 'New title' });
+    await assertSucceeds(rename(as('author'), 'own'));
+    await assertFails(rename(as('mate'), 'own'));
+    await assertSucceeds(rename(as('lead'), 'team'));
+    await assertSucceeds(rename(as('cur'), 'own'));
+    await assertFails(rename(as('author'), 'team'));
+    await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'own'), { createdBy: 'mate' }));
+    await assertFails(deleteDoc(doc(as('mate'), 'calendar_events', 'own')));
+    await assertSucceeds(deleteDoc(doc(as('colead'), 'calendar_events', 'team')));
+    await assertSucceeds(deleteDoc(doc(as('author'), 'calendar_events', 'own')));
+  });
+
+  it('an author cannot move their event to an initiative they are not on', async () => {
+    await env.withSecurityRulesDisabled(c => setDoc(doc(c.firestore(), 'initiatives', 'other'), { title: 'Other', leads: ['cur'], members: [] }));
+    await stored('mine', ev('mate', { kind: 'initiative', initiativeId: 'init1' }));
+    await assertFails(updateDoc(doc(as('mate'), 'calendar_events', 'mine'), { initiativeId: 'other' }));
+  });
+
+  it('checks the shape of what is saved', async () => {
+    await assertFails(put(as('author'), 'a', ev('author', { startDate: '1 Dec' })));
+    await assertFails(put(as('author'), 'b', ev('author', { endDate: '2026-11-30' })));
+    await assertFails(put(as('author'), 'c', ev('author', { startTime: '7pm' })));
+    await assertFails(put(as('author'), 'd', ev('author', { title: 'x'.repeat(141) })));
+    await assertFails(put(as('author'), 'e', ev('author', { kind: 'party' })));
+    await assertFails(put(as('author'), 'f', ev('author', { secret: true })));
+    await assertFails(put(as('author'), 'g', ev('author', { initiativeId: 'init1' })));
+  });
+});

@@ -3,14 +3,13 @@
 /* Calendar: adding or editing an event. Type and initiative are limited to
  * what the person may manage, members can invite up to a set number of people,
  * and the button says how many invites saving will send. Picking people warns
- * about anyone already booked at that time. In the preview, saving keeps the
- * event in memory only and sends nothing. */
+ * about anyone already booked at that time. Saving writes to Firestore; until
+ * the hub's Google Calendar is linked (INVITES_LIVE), no invites are sent. */
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useCalendarAccess } from '@/lib/calendar/access';
+import { INVITES_LIVE, useCalendarAccess } from '@/lib/calendar/access';
 import { useCalendarFormat } from '@/lib/calendar/format';
 import { addDays, dayDiff, expandOccurrences } from '@/lib/calendar/occurrences';
-import { PREVIEW_PEOPLE, PREVIEW_TEAMS } from '@/lib/calendar/preview';
 import { calendarActions, useCalendarStore } from '@/lib/calendar/store';
 import type { CalendarEvent, CalendarKind, CalendarPerson } from '@/lib/calendar/types';
 import { Icon } from './Icon';
@@ -31,8 +30,12 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const t = useTranslations('Calendar');
   const f = useCalendarFormat();
   const access = useCalendarAccess();
-  const { events } = useCalendarStore();
-  const initiativeIds = access.initiatives;
+  const { events, people: directory, initiatives } = useCalendarStore();
+  const me = access.uid;
+  // An event being edited keeps its initiative in the list even if it's archived.
+  const withEditing = (ids: string[]) => (editing?.initiativeId && !ids.includes(editing.initiativeId) ? [...ids, editing.initiativeId] : ids);
+  const initiativeIds = withEditing(access.initiatives);
+  const deadlineIds = withEditing(access.deadlineInitiatives);
 
   const [title, setTitle] = useState(editing ? f.title(editing) : '');
   const [kind, setKind] = useState<CalendarKind>(editing?.kind ?? (initiativeIds.length ? 'initiative' : 'hub'));
@@ -51,8 +54,9 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busySaving, setBusySaving] = useState(false);
   // Fixed once per form, so the draft keeps the same id while it's edited.
-  const [newId] = useState(() => `new-${crypto.randomUUID()}`);
+  const [newId] = useState(() => calendarActions.newId());
 
   const multiDay = severalDays && kind !== 'deadline';
   const lastDay = multiDay ? (endDate > startDate ? endDate : addDays(startDate, 1)) : startDate;
@@ -63,7 +67,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
     id: editing?.id ?? newId,
     title: title.trim(),
     kind,
-    initiativeId: kind === 'initiative' ? initiativeId || undefined : undefined,
+    initiativeId: kind === 'initiative' || kind === 'deadline' ? initiativeId || undefined : undefined,
     startDate,
     endDate: lastDay,
     startTime: timed ? startTime || undefined : undefined,
@@ -73,11 +77,11 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
     location: location.trim() || undefined,
     notes: notes.trim() || undefined,
     people: kind === 'deadline' ? [] : Object.entries(people).map(([userId, role]) => ({
-      userId, role, reply: editing?.people.find(p => p.userId === userId)?.reply ?? (userId === 'me' ? 'yes' : 'none'),
+      userId, role, reply: editing?.people.find(p => p.userId === userId)?.reply ?? 'none',
     })),
     outsideGuests: guests ? Math.max(0, parseInt(guests, 10) || 0) : undefined,
     source: 'site',
-    createdBy: editing?.createdBy ?? 'me',
+    createdBy: editing?.createdBy ?? me,
   };
 
   // Who is already booked then (the next eight weeks, for a weekly event).
@@ -103,52 +107,80 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   }, [events, startDate, endDate, startTime, endTime, weekly, kind, severalDays, allDay]);
 
   const q = search.trim().toLowerCase();
-  const allIds = Object.keys(PREVIEW_PEOPLE);
-  const picked = allIds.filter(id => people[id]);
-  const list = q ? allIds.filter(id => PREVIEW_PEOPLE[id].en.toLowerCase().includes(q) || PREVIEW_PEOPLE[id].ar.includes(q)) : picked;
+  // Members with a name, A to Z; hidden profiles can't be picked but stay on events they're already on.
+  const allIds = Object.keys(directory).filter(id => directory[id].name && !directory[id].hidden)
+    .sort((a, b) => f.person(a).localeCompare(f.person(b), f.locale));
+  const picked = Object.keys(people);
+  const list = q ? allIds.filter(id => directory[id].name.toLowerCase().includes(q) || !!directory[id].nameAr?.includes(q)) : picked;
 
   // Everyone picked except the person adding the event gets an invite.
-  const inviteCount = (p: Record<string, Role>) => Object.keys(p).filter(id => id !== 'me').length;
-  const overLimit = (p: Record<string, Role>) => access.inviteLimit !== null && inviteCount(p) > access.inviteLimit;
+  const inviteLimit = access.inviteLimit(draft.initiativeId);
+  const inviteCount = (p: Record<string, Role>) => Object.keys(p).filter(id => id !== me).length;
+  const overLimit = (p: Record<string, Role>) => inviteLimit !== null && inviteCount(p) > inviteLimit;
 
   function toggle(id: string, role: Role) {
     const next = { ...people };
     if (next[id] === role) delete next[id]; else next[id] = role;
-    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(access.inviteLimit ?? 0) }));
+    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(inviteLimit ?? 0) }));
     setError('');
     setPeople(next);
   }
 
   function addTeam() {
     const next = { ...people };
-    for (const id of PREVIEW_TEAMS[initiativeId] ?? []) next[id] ??= 'team';
-    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(access.inviteLimit ?? 0) }));
+    const init = initiatives[initiativeId];
+    for (const id of [...(init?.leads ?? []), ...(init?.team ?? [])]) next[id] ??= 'team';
+    if (overLimit(next)) return setError(t('inviteLimit', { shown: f.number(inviteLimit ?? 0) }));
     setError('');
     setPeople(next);
   }
 
-  function save() {
+  async function save() {
+    if (busySaving) return;
     if (!draft.title) return setError(t('errTitle'));
     if (kind === 'initiative' && !initiativeId) return setError(t('errInitiative'));
+    // Leads add deadlines for an initiative they lead; managers can leave it hub-wide.
+    if (kind === 'deadline' && access.role !== 'curator' && !initiativeId) return setError(t('errInitiative'));
+    if (kind === 'initiative' && !initiativeIds.includes(initiativeId)) return setError(t('errInitiative'));
+    if (kind === 'deadline' && initiativeId && !deadlineIds.includes(initiativeId)) return setError(t('errInitiative'));
     if (timed && !startTime) return setError(t('errStartTime'));
     if (draft.startTime && draft.endTime && draft.endTime <= draft.startTime) return setError(t('errTime'));
-    calendarActions.save({ ...draft, titleAr: undefined, locationAr: undefined, notesAr: undefined });
-    onSaved(t('savedPreview'));
+    if (overLimit(people) && kind !== 'deadline') return setError(t('inviteLimit', { shown: f.number(inviteLimit ?? 0) }));
+    setBusySaving(true);
+    setError('');
+    try {
+      await calendarActions.save(draft, me, !editing);
+      onSaved(t('saved'));
+    } catch {
+      setError(t('errSave'));
+      setBusySaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!editing) return;
+    if (!confirmDelete) return setConfirmDelete(true);
+    try {
+      await calendarActions.remove(editing.id);
+      onClose();
+    } catch {
+      setError(t('errSave'));
+    }
   }
 
   const invites = kind === 'deadline' ? 0 : inviteCount(people);
   const footer = (
     <>
       {kind !== 'deadline' && (
-        <p className={styles.footNote}>{invites ? t('inviteCount', { count: invites, shown: f.number(invites) }) : t('noInvites')}</p>
+        <p className={styles.footNote}>{!INVITES_LIVE ? t('invitesSoon') : invites ? t('inviteCount', { count: invites, shown: f.number(invites) }) : t('noInvites')}</p>
       )}
       {editing && (
         <button type="button" className={`${styles.btn} ${styles.danger} ${styles.slim}`}
-          onClick={() => { if (!confirmDelete) return setConfirmDelete(true); calendarActions.remove(editing.id); onClose(); }}>
+          onClick={remove}>
           {confirmDelete ? t('confirmDelete') : t('delete')}
         </button>
       )}
-      <button type="button" className={`${styles.btn} ${styles.primary}`} onClick={save}>{editing ? t('save') : t('create')}</button>
+      <button type="button" className={`${styles.btn} ${styles.primary}`} onClick={save} disabled={busySaving}>{editing ? t('save') : t('create')}</button>
     </>
   );
 
@@ -173,12 +205,12 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
           ))}
         </fieldset>
 
-        {kind === 'initiative' && (
+        {(kind === 'initiative' || kind === 'deadline') && (
           <div className={styles.field}>
             <label htmlFor="cal-initiative">{t('fieldInitiative')}</label>
             <select id="cal-initiative" value={initiativeId} onChange={e => setInitiativeId(e.target.value)}>
-              <option value="">{t('chooseInitiative')}</option>
-              {initiativeIds.map(id => <option key={id} value={id}>{f.initiative(id)}</option>)}
+              <option value="">{kind === 'deadline' && access.role === 'curator' ? t('wholeHub') : t('chooseInitiative')}</option>
+              {(kind === 'deadline' ? deadlineIds : initiativeIds).map(id => <option key={id} value={id}>{f.initiative(id)}</option>)}
             </select>
           </div>
         )}
@@ -278,7 +310,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
               <label htmlFor="cal-guests">{t('fieldOutsideGuests')}</label>
               <input id="cal-guests" type="number" inputMode="numeric" min={0} value={guests} onChange={e => setGuests(e.target.value)} />
             </div>
-            <p className={styles.info} style={{ marginTop: '0.75rem' }}><Icon name="mail" />{t('invitesNote')}</p>
+            <p className={styles.info} style={{ marginTop: '0.75rem' }}><Icon name="mail" />{INVITES_LIVE ? t('invitesNote') : t('invitesSoonLong')}</p>
           </div>
         )}
         {error && <p className={styles.error} role="alert">{error}</p>}

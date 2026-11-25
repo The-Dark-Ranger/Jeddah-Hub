@@ -1400,23 +1400,13 @@
     "errTitle": "Add a title.",
     "errInitiative": "Choose the initiative.",
     "errTime": "The end time is before the start time.",
-    "savedPreview": "Saved in the preview only. No invites were sent.",
     "leadHint": "As an initiative lead, you can also edit every event of your initiatives and add deadlines.",
     "close": "Close",
-    "previewBanner": "Preview with example events. Nothing here is saved and no invites are sent.",
-    "previewAs": "Preview as",
-    "previewRoles": {
-      "curator": "Curator",
-      "lead": "Initiative lead",
-      "member": "Member"
-    },
-    "memberNote": "As a member you can add events for initiatives you're on, hub events and external events, and edit your own.",
     "whatsappFooter": "Jeddah Hub",
     "publicTag": "Public",
     "inviteCount": "{count, plural, one {Saving will email a calendar invite to {shown} person.} other {Saving will email a calendar invite to {shown} people.}}",
     "noInvites": "No one is invited yet, so no emails will be sent.",
     "inviteLimit": "Members can invite up to {shown} people to an event. For a bigger event, ask an initiative lead or a curator.",
-    "previewShort": "Preview: example events, nothing is saved.",
     "filterEveryone": "Everyone",
     "kindHints": {
       "initiative": "Belongs to one initiative",
@@ -1436,6 +1426,14 @@
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "typesNone": "No types",
-    "noTypesSelected": "No event types selected. Select a type to see its events."
+    "noTypesSelected": "No event types selected. Select a type to see its events.",
+    "someMember": "A member",
+    "loading": "Loading events…",
+    "loadError": "Couldn't load the calendar. Check your connection and refresh the page.",
+    "saved": "Saved",
+    "errSave": "Couldn't save. Check your connection and try again.",
+    "wholeHub": "Whole hub",
+    "invitesSoon": "No invites are sent yet. People are only listed on the event for now.",
+    "invitesSoonLong": "Invites by email are coming soon. For now, the people you add are listed on the event and see it under Mine."
   }
 }

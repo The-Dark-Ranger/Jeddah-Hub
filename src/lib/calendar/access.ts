@@ -1,65 +1,54 @@
 'use client';
 
 /* Calendar: who can add and edit events. Every member can add events: for
- * initiatives they are on, hub events and external events. Initiative leads
- * also edit all their initiatives' events and add deadlines; curators, vice
- * curators and impact officers manage everything. Members can invite up to
- * MEMBER_INVITE_LIMIT people per event, so one event can't use up the day's
- * emails. This only decides what the screens offer; when events are stored,
- * firestore.rules will enforce the same thing. */
-import { useEffect, useState } from 'react';
-import { collection, getDocs, limit, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+ * initiatives they are on, hub events and external events, and edit their own.
+ * Initiative leads also edit all their initiatives' events and add deadlines
+ * for them; curators, vice curators and impact officers manage everything.
+ * Members can invite up to MEMBER_INVITE_LIMIT people per event, so one event
+ * can't use up the day's emails. This only decides what the screens offer:
+ * firestore.rules (calendar_events) enforces the same thing on every save. */
 import { useAuth } from '@/context/AuthContext';
 import { normalizeRole } from '@/lib/role';
-import { PREVIEW_INITIATIVES, PREVIEW_TEAMS } from './preview';
-import { useCalendarStore, type PreviewRole } from './store';
+import { useCalendarStore } from './store';
 import type { CalendarEvent, CalendarKind } from './types';
 
 const MANAGERS = ['curator', 'vice_curator', 'impact_officer'];
 export const MEMBER_INVITE_LIMIT = 15;
 
-/** The member's real calendar role, before any preview override. */
-function useRealRole(): PreviewRole {
-  const { user } = useAuth();
-  const role = normalizeRole(user?.role);
-  const manager = MANAGERS.includes(role);
-  const [leads, setLeads] = useState(false);
-  const uid = user?.uid;
-  useEffect(() => {
-    if (!uid || manager) return;
-    let live = true;
-    getDocs(query(collection(db, 'initiatives'), where('leads', 'array-contains', uid), limit(1)))
-      .then(s => { if (live) setLeads(!s.empty); })
-      .catch(() => {});
-    return () => { live = false; };
-  }, [uid, manager]);
-  return manager ? 'curator' : leads ? 'lead' : 'member';
-}
+/** Off until the hub's Google Calendar is linked: people are listed on an
+ *  event, but no invites go out and no replies come back yet. */
+export const INVITES_LIVE = false;
+
+export type CalendarRole = 'curator' | 'lead' | 'member';
 
 export function useCalendarAccess() {
-  const real = useRealRole();
-  const { previewRole } = useCalendarStore();
-  const role = previewRole ?? real;
-  const manager = role === 'curator';
-  // In the preview, "me" is on the example teams that list "me", and a lead
-  // leads the first one.
-  const memberOf = Object.keys(PREVIEW_INITIATIVES).filter(id => PREVIEW_TEAMS[id]?.includes('me'));
-  const leads = role === 'lead' ? ['preview-tech'] : [];
+  const { user } = useAuth();
+  const { initiatives } = useCalendarStore();
+  const uid = user?.uid ?? '';
+  const manager = MANAGERS.includes(normalizeRole(user?.role));
+  const active = Object.keys(initiatives).filter(id => !initiatives[id].archived);
+  const leads = Object.keys(initiatives).filter(id => initiatives[id].leads.includes(uid));
+  const memberOf = active.filter(id => initiatives[id].leads.includes(uid) || initiatives[id].team.includes(uid));
+  const role: CalendarRole = manager ? 'curator' : leads.length ? 'lead' : 'member';
   return {
+    uid,
     role,
-    realRole: real,
-    canAdd: true,
+    canAdd: !!uid,
     /** Kinds this person can create. Deadlines are for leads and managers. */
     kinds: (role === 'member' ? ['initiative', 'hub', 'external'] : ['initiative', 'hub', 'external', 'deadline']) as CalendarKind[],
     /** Initiatives this person can put events on: all for managers, otherwise the ones they're on. */
-    initiatives: manager ? Object.keys(PREVIEW_INITIATIVES) : memberOf,
-    /** Most hub members one person can invite to an event; null means no limit. */
-    inviteLimit: role === 'member' ? MEMBER_INVITE_LIMIT : null,
+    initiatives: manager ? active : memberOf,
+    /** Initiatives this person can add deadlines for (managers can also add hub-wide ones). */
+    deadlineInitiatives: manager ? active : leads.filter(id => active.includes(id)),
+    /** Most hub members one person can invite to an event; null means no limit.
+     *  Leads have no limit on their own initiatives' events. */
+    inviteLimit(initiativeId?: string): number | null {
+      return manager || (initiativeId && leads.includes(initiativeId)) ? null : MEMBER_INVITE_LIMIT;
+    },
     canEdit(e: CalendarEvent): boolean {
       // Invites are edited in the organiser's own calendar, Hub Activities on their page.
-      if (e.source !== 'site') return false;
-      if (manager || e.createdBy === 'me') return true;
+      if (e.source !== 'site' || !uid) return false;
+      if (manager || e.createdBy === uid) return true;
       return !!e.initiativeId && leads.includes(e.initiativeId);
     },
     /** Curators can hide an imported invite that isn't relevant to the hub. */

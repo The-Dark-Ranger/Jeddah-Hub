@@ -3,8 +3,8 @@
 /* Dashboard > Calendar: everything happening across the hub. Phones open on
  * the week (a strip of days and that week's events); laptops open on a large
  * month grid, made to be shown in meetings, with a seven-column week too.
- * For now it shows example events (see lib/calendar/preview.ts) and saves
- * nothing; "Preview as" switches what the calendar offers each role. */
+ * Events are stored in Firestore (calendar_events) and update live; see
+ * lib/calendar/store.ts. */
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
@@ -20,7 +20,7 @@ import { useCalendarFormat } from '@/lib/calendar/format';
 import {
   addDays, clashesByOccurrence, expandOccurrences, findClashes, fromKey, hubToday, monthGrid, occursOn, toKey, uniqueClashes, weekStart,
 } from '@/lib/calendar/occurrences';
-import { calendarActions, useCalendarStore, type PreviewRole } from '@/lib/calendar/store';
+import { useCalendarStore } from '@/lib/calendar/store';
 import { CALENDAR_KINDS, type CalendarEvent, type CalendarKind, type Occurrence } from '@/lib/calendar/types';
 
 type View = 'week' | 'month';
@@ -31,7 +31,7 @@ export default function CalendarPage() {
   const f = useCalendarFormat();
   const wide = useWide();
   const access = useCalendarAccess();
-  const { events } = useCalendarStore();
+  const { events, status } = useCalendarStore();
   const today = hubToday();
 
   const [viewChoice, setView] = useState<View | null>(null);
@@ -57,7 +57,7 @@ export default function CalendarPage() {
   const clashKeys = useMemo(() => new Set(clashMap.keys()), [clashMap]);
   const periodClashes = uniqueClashes(clashes.filter(c => c.a.date <= period.to && c.a.endDate >= period.from));
 
-  const occs = all.filter(o => kinds.includes(o.event.kind) && (!mine || o.event.people.some(p => p.userId === 'me')));
+  const occs = all.filter(o => kinds.includes(o.event.kind) && (!mine || o.event.createdBy === access.uid || o.event.people.some(p => p.userId === access.uid)));
 
   // Keeps the kinds in their usual order however they're ticked.
   const toggleKind = (k: CalendarKind) => setKinds(list => CALENDAR_KINDS.filter(x => (x === k ? !list.includes(k) : list.includes(x))));
@@ -93,18 +93,8 @@ export default function CalendarPage() {
         {access.canAdd && <button type="button" className={`${styles.btn} ${styles.primary} ${styles.addWide}`} onClick={newEvent}><Icon name="plus" />{t('addEvent')}</button>}
       </div>
 
-      <div className={styles.preview}>
-        <span><strong className={styles.wideOnly}>{t('previewBanner')}</strong><strong className={styles.phoneOnly}>{t('previewShort')}</strong></span>
-        <span className={styles.previewAs}>
-          {t('previewAs')}
-          <span className={styles.seg} role="group" aria-label={t('previewAs')}>
-            {(['curator', 'lead', 'member'] as PreviewRole[]).map(r => (
-              <button key={r} type="button" aria-pressed={access.role === r} onClick={() => calendarActions.setPreviewRole(r)}>{t(`previewRoles.${r}`)}</button>
-            ))}
-          </span>
-        </span>
-        {access.role === 'member' && <span className={styles.wideOnly}>{t('memberNote')}</span>}
-      </div>
+      {status === 'error' && <p className={`${styles.banner} ${styles.bannerError}`} role="alert"><Icon name="alert" size={16} />{t('loadError')}</p>}
+      {status === 'loading' && <p className={styles.banner} role="status">{t('loading')}</p>}
 
       {/* One row: previous, the period, next, then Today and Week / Month. */}
       <div className={styles.toolbar}>
@@ -156,7 +146,7 @@ export default function CalendarPage() {
       {!wide && (
         <div className={styles.agenda}>
           {agendaDays.map(d => <DayGroup key={d} day={d} today={today} rows={occs.filter(o => occursOn(o, d))} clashKeys={clashKeys} onOpen={openEvent} />)}
-          {!selected && !agendaDays.length && kinds.length > 0 && (
+          {!selected && !agendaDays.length && kinds.length > 0 && status === 'ready' && (
             <p className={styles.empty}>{!allKinds || mine ? t('nothingMatches') : inPeriod ? (view === 'week' ? t('nothingElseWeek') : t('nothingElseMonth')) : t('nothingPlanned')}</p>
           )}
           {selected && <p><button type="button" className={styles.link} onClick={() => setSelected(null)}>{view === 'week' ? t('showWholeWeek') : t('showWholeMonth')}</button></p>}

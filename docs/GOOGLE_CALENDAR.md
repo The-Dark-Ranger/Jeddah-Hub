@@ -7,7 +7,9 @@ invites, members reply Yes / No / Maybe from their own calendar app, and the
 replies show on the site. Until this is set up, events still save, but no
 invites go out.
 
-This is a one-time setup of about 15 minutes, and it is free. The site gets
+This is a one-time setup of about 15 minutes, and it is free: no billing
+account or card is needed. If Google Cloud offers a free trial or asks to
+enable billing, skip it. The site gets
 one permission only, "see and edit events" on the hub's calendar. It can't
 read the hub's email, contacts or files, or anyone's personal calendar.
 

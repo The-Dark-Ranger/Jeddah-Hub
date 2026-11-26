@@ -5,6 +5,9 @@ which has the full description and how it was tested.
 
 ## November 2026
 
+### 26 November (branch feature/calendar-ui, not yet live)
+- Calendar invites through the hub's Google account: a curator links jeddahglobalshapers@gmail.com once (Dashboard > Calendar > Link Google Calendar; setup in docs/GOOGLE_CALENDAR.md), allowing calendar events only. From then on, every event is copied into the hub's Google Calendar with the invited members as guests, so Google emails the invites and its updates and cancellations, and members reply from their own calendar app. Replies show on each event within about 10 minutes. Deleting an event cancels its invites first. Events saved before linking, or while Google was unreachable, catch up on the next check. Only the hub's account can be linked; its key is kept where no browser can read it. Needs GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in Vercel.
+
 ### 25 November (branch feature/calendar-ui, not yet live)
 - Calendar saves for real: events are stored in the database (calendar_events) and show up for everyone straight away, without reloading. It uses the real members, initiatives and roles; the example events and "Preview as" are gone. The database rules enforce who may add, edit and delete what (the same limits as the screens), and only the server will be able to record invite replies. Leads choose which of their initiatives a deadline is for. Until the hub's Google Calendar is linked, no invites are sent: people are listed on the event, and the form and event say so. After merging, publish the rules with `npm run deploy:rules`.
 

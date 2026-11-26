@@ -15,17 +15,14 @@ import type { CalendarEvent, CalendarKind } from './types';
 const MANAGERS = ['curator', 'vice_curator', 'impact_officer'];
 export const MEMBER_INVITE_LIMIT = 15;
 
-/** Off until the hub's Google Calendar is linked: people are listed on an
- *  event, but no invites go out and no replies come back yet. */
-export const INVITES_LIVE = false;
-
 export type CalendarRole = 'curator' | 'lead' | 'member';
 
 export function useCalendarAccess() {
   const { user } = useAuth();
-  const { initiatives } = useCalendarStore();
+  const { initiatives, google } = useCalendarStore();
   const uid = user?.uid ?? '';
-  const manager = MANAGERS.includes(normalizeRole(user?.role));
+  const realRole = normalizeRole(user?.role);
+  const manager = MANAGERS.includes(realRole);
   const active = Object.keys(initiatives).filter(id => !initiatives[id].archived);
   const leads = Object.keys(initiatives).filter(id => initiatives[id].leads.includes(uid));
   const memberOf = active.filter(id => initiatives[id].leads.includes(uid) || initiatives[id].team.includes(uid));
@@ -34,6 +31,10 @@ export function useCalendarAccess() {
     uid,
     role,
     canAdd: !!uid,
+    /** Invites go out (and replies come back) once the hub's Google Calendar is linked. */
+    invitesLive: google.connected,
+    /** Curators and vice curators link the hub's Google account. */
+    canLinkGoogle: realRole === 'curator' || realRole === 'vice_curator',
     /** Kinds this person can create. Deadlines are for leads and managers. */
     kinds: (role === 'member' ? ['initiative', 'hub', 'external'] : ['initiative', 'hub', 'external', 'deadline']) as CalendarKind[],
     /** Initiatives this person can put events on: all for managers, otherwise the ones they're on. */

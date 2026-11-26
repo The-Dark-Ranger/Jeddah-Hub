@@ -1434,6 +1434,18 @@
     "errSave": "Couldn't save. Check your connection and try again.",
     "wholeHub": "Whole hub",
     "invitesSoon": "No invites are sent yet. People are only listed on the event for now.",
-    "invitesSoonLong": "Invites by email are coming soon. For now, the people you add are listed on the event and see it under Mine."
+    "invitesSoonLong": "Invites by email are coming soon. For now, the people you add are listed on the event and see it under Mine.",
+    "invitesSending": "Sending the invites…",
+    "invitesFailed": "Google didn't accept this event, so its invites weren't sent. Try editing and saving it again.",
+    "googleOff": "Invites are off until Google Calendar is linked.",
+    "googleRelink": "Invites stopped: the hub's Google Calendar needs linking again.",
+    "googleLink": "Link Google Calendar",
+    "googleResult": {
+      "linked": "Linked. Invites now go out from the hub's Google Calendar.",
+      "wrong_account": "That was another Google account. Sign in as the hub account (jeddahglobalshapers@gmail.com) and try again.",
+      "no_access": "Calendar access wasn't allowed. Try again and tick the calendar box.",
+      "cancelled": "Linking cancelled.",
+      "failed": "Couldn't link Google Calendar. Try again in a moment."
+    }
   }
 }

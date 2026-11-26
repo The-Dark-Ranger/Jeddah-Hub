@@ -689,10 +689,13 @@ describe('calendar events', () => {
     await assertSucceeds(put(as('vice'), 'd', ev('vice', { people: people(40) })));
   });
 
-  it('the browser never writes the invite replies', async () => {
+  it('the browser never writes the invite replies or the Google link', async () => {
     await assertFails(put(as('author'), 'a', ev('author', { replies: { mate: 'yes' } })));
-    await stored('e1', ev('author', { replies: { mate: 'yes' } }));
+    await assertFails(put(as('author'), 'b', ev('author', { google: { hash: 'x' } })));
+    await assertFails(put(as('author'), 'c', ev('author', { deleted: true })));
+    await stored('e1', ev('author', { replies: { mate: 'yes' }, google: { hash: 'abc' } }));
     await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'e1'), { replies: { mate: 'no' } }));
+    await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'e1'), { google: { hash: 'def' } }));
     await assertSucceeds(updateDoc(doc(as('author'), 'calendar_events', 'e1'), { title: 'Renamed' }));
   });
 
@@ -706,9 +709,33 @@ describe('calendar events', () => {
     await assertSucceeds(rename(as('cur'), 'own'));
     await assertFails(rename(as('author'), 'team'));
     await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'own'), { createdBy: 'mate' }));
-    await assertFails(deleteDoc(doc(as('mate'), 'calendar_events', 'own')));
-    await assertSucceeds(deleteDoc(doc(as('colead'), 'calendar_events', 'team')));
-    await assertSucceeds(deleteDoc(doc(as('author'), 'calendar_events', 'own')));
+  });
+
+  it('deleting: editors mark it deleted, only the server removes it', async () => {
+    await stored('own', ev('author'));
+    await stored('team', ev('mate', { kind: 'initiative', initiativeId: 'init1' }));
+    const mark = (db, id, extra = {}) => updateDoc(doc(db, 'calendar_events', id), { deleted: true, updatedAt: serverTimestamp(), ...extra });
+    await assertFails(mark(as('mate'), 'own'));
+    await assertFails(mark(as('author'), 'own', { title: 'Sneaky' }));
+    await assertSucceeds(mark(as('colead'), 'team'));
+    await assertSucceeds(mark(as('author'), 'own'));
+    // Once marked, it can't be edited or brought back from the browser.
+    await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'own'), { title: 'Back' }));
+    await assertFails(updateDoc(doc(as('author'), 'calendar_events', 'own'), { deleted: false }));
+    await assertFails(deleteDoc(doc(as('author'), 'calendar_events', 'own')));
+    await assertFails(deleteDoc(doc(as('cur'), 'calendar_events', 'team')));
+  });
+
+  it('calendar settings: members read, nobody writes; the Google key is closed to everyone', async () => {
+    await env.withSecurityRulesDisabled(async c => {
+      await setDoc(doc(c.firestore(), 'calendar_settings', 'google'), { connected: true });
+      await setDoc(doc(c.firestore(), 'server_secrets', 'google_calendar'), { refreshToken: 'x' });
+    });
+    await assertSucceeds(getDoc(doc(as('mate'), 'calendar_settings', 'google')));
+    await assertFails(getDoc(doc(anon(), 'calendar_settings', 'google')));
+    await assertFails(setDoc(doc(as('cur'), 'calendar_settings', 'google'), { connected: false }));
+    await assertFails(getDoc(doc(as('cur'), 'server_secrets', 'google_calendar')));
+    await assertFails(setDoc(doc(as('cur'), 'server_secrets', 'google_calendar'), { refreshToken: 'y' }));
   });
 
   it('an author cannot move their event to an initiative they are not on', async () => {

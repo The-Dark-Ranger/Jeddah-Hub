@@ -943,7 +943,11 @@ service cloud.firestore {
     // Authors edit and delete their own events. createdBy is always the
     // author's own uid and never changes. Members invite at most 15 other
     // people per event. `replies` (Yes / No / Maybe from the calendar
-    // invites) is written only by the server, never from the browser.
+    // invites) and `google` (how the event stands in the hub's Google
+    // Calendar) are written only by the server, never from the browser.
+    // Deleting is two steps: whoever may edit an event marks it
+    // `deleted: true`, then the server cancels its Google invite and removes
+    // it (POST /api/calendar/sync), so no invite is left behind.
     function calendarOnTeam(initiativeId) {
       let d = get(/databases/$(database)/documents/initiatives/$(initiativeId)).data;
       let uid = request.auth.uid;
@@ -963,7 +967,8 @@ service cloud.firestore {
     function calendarEventOk(d) {
       return d.keys().hasOnly(['title', 'kind', 'initiativeId', 'startDate', 'endDate', 'startTime', 'endTime',
                                'weekly', 'repeatUntil', 'skipDates', 'location', 'notes', 'people',
-                               'outsideGuests', 'createdBy', 'createdAt', 'updatedAt', 'replies'])
+                               'outsideGuests', 'createdBy', 'createdAt', 'updatedAt', 'replies',
+                               'google', 'deleted'])
              && d.title is string && d.title.size() > 0 && d.title.size() <= 140
              && d.kind in ['initiative', 'hub', 'external', 'deadline']
              && (d.kind != 'initiative' || (d.get('initiativeId', '') is string && d.get('initiativeId', '') != ''))
@@ -1006,25 +1011,42 @@ service cloud.firestore {
       let manager = isCuratorOrImpact();
       let member = isAnyMember();
       return member && calendarEventOk(d)
-             && d.createdBy == request.auth.uid && !('replies' in d)
+             && d.createdBy == request.auth.uid
+             && !('replies' in d) && !('google' in d) && !('deleted' in d)
              && calendarMayWrite(d, manager, member) && calendarPeopleOk(d, manager);
+    }
+    // An edit: everything a new event must pass, and the server's fields untouched.
+    function calendarEditOk(before, after, manager, member) {
+      return calendarEventOk(after) && !('deleted' in after)
+             && after.createdBy == before.createdBy
+             && after.get('replies', null) == before.get('replies', null)
+             && after.get('google', null) == before.get('google', null)
+             && calendarMayWrite(after, manager, member) && calendarPeopleOk(after, manager);
+    }
+    // Marking it deleted, and changing nothing else.
+    function calendarRemoving(before, after) {
+      return after.diff(before).affectedKeys().hasOnly(['deleted', 'updatedAt'])
+             && after.get('deleted', false) == true;
     }
     function calendarUpdateOk(before, after) {
       let manager = isCuratorOrImpact();
       let member = isAnyMember();
-      return calendarMayEdit(before, manager, member) && calendarEventOk(after)
-             && after.createdBy == before.createdBy
-             && after.get('replies', null) == before.get('replies', null)
-             && calendarMayWrite(after, manager, member) && calendarPeopleOk(after, manager);
-    }
-    function calendarDeleteOk(d) {
-      return calendarMayEdit(d, isCuratorOrImpact(), isAnyMember());
+      return before.get('deleted', false) != true && calendarMayEdit(before, manager, member)
+             && (calendarRemoving(before, after) || calendarEditOk(before, after, manager, member));
     }
     match /calendar_events/{eventId} {
       allow read: if isAnyMember();
       allow create: if calendarCreateOk(request.resource.data);
       allow update: if calendarUpdateOk(resource.data, request.resource.data);
-      allow delete: if calendarDeleteOk(resource.data);
+      // Only the server removes events (see above).
+      allow delete: if false;
+    }
+    // Whether the hub's Google Calendar is linked, for the screens. Written
+    // only by the server. The link's key itself is in server_secrets, which
+    // no rule opens to anyone.
+    match /calendar_settings/{docId} {
+      allow read: if isAnyMember();
+      allow write: if false;
     }
   }
 }

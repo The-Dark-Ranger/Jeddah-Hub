@@ -6,13 +6,14 @@
  * first time a signed-in member needs it and then stays live: an event
  * someone else adds appears without reloading. Who may write what is decided
  * by firestore.rules (calendar_events); the screens only offer what the rules
- * allow (see access.ts). */
+ * allow (see access.ts). After each change the server is asked to copy it to
+ * the hub's Google Calendar, which sends the invites (lib/calendarGoogle.ts). */
 import { useEffect, useSyncExternalStore } from 'react';
 import {
-  arrayUnion, collection, deleteDoc, doc, getDocs, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where,
+  arrayUnion, collection, doc, getDocs, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where,
   type DocumentData, type Unsubscribe,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { memberId, type MemberEntry } from '@/lib/types';
 import { addDays, hubToday } from './occurrences';
@@ -21,8 +22,12 @@ import type { CalendarEvent, CalendarKind, InviteReply } from './types';
 export interface DirectoryPerson { name: string; nameAr?: string; hidden?: boolean }
 export interface DirectoryInitiative { title: string; titleAr?: string; team: string[]; leads: string[]; archived: boolean }
 
+/** Whether the hub's Google Calendar is linked (calendar_settings/google). */
+export interface GoogleLink { connected: boolean; email?: string; error?: string }
+
 interface State {
   status: 'idle' | 'loading' | 'ready' | 'error';
+  google: GoogleLink;
   events: CalendarEvent[];
   people: Record<string, DirectoryPerson>;
   initiatives: Record<string, DirectoryInitiative>;
@@ -31,9 +36,10 @@ interface State {
 /** How far back the calendar reads: past events older than this aren't shown. */
 const HISTORY_DAYS = 180;
 
-const EMPTY: State = { status: 'idle', events: [], people: {}, initiatives: {} };
+const EMPTY: State = { status: 'idle', google: { connected: false }, events: [], people: {}, initiatives: {} };
 let state: State = EMPTY;
 let stopEvents: Unsubscribe | null = null;
+let stopGoogle: Unsubscribe | null = null;
 const listeners = new Set<() => void>();
 
 function set(next: Partial<State>) {
@@ -65,6 +71,8 @@ function toEvent(id: string, d: DocumentData): CalendarEvent {
       reply: REPLIES.includes(replies[p.userId] as InviteReply) ? (replies[p.userId] as InviteReply) : 'none',
     })),
     hasReplies: Object.keys(replies).length > 0,
+    synced: !!d.google?.hash,
+    syncFailed: d.google?.failed === true,
     outsideGuests: typeof d.outsideGuests === 'number' ? d.outsideGuests : undefined,
     source: 'site',
     createdBy: d.createdBy,
@@ -98,9 +106,16 @@ async function start() {
     const from = addDays(hubToday(), -HISTORY_DAYS);
     stopEvents = onSnapshot(
       query(collection(db, 'calendar_events'), where('endDate', '>=', from)),
-      snap => set({ status: 'ready', events: snap.docs.map(e => toEvent(e.id, e.data())) }),
+      // Events marked deleted wait for the server to cancel their invites; they're already gone here.
+      snap => set({ status: 'ready', events: snap.docs.filter(e => e.get('deleted') !== true).map(e => toEvent(e.id, e.data())) }),
       () => set({ status: 'error' }),
     );
+    stopGoogle = onSnapshot(doc(db, 'calendar_settings', 'google'), snap => {
+      const d = snap.data();
+      set({ google: { connected: d?.connected === true, email: d?.email, error: d?.error ?? undefined } });
+    }, () => {});
+    // Catch up anything that didn't reach Google, and read new replies (the server does this at most every few minutes).
+    sync();
   } catch {
     set({ status: 'error' });
   }
@@ -109,7 +124,8 @@ async function start() {
 /** Signing out: forget everything, so the next member starts clean. */
 function stop() {
   stopEvents?.();
-  stopEvents = null;
+  stopGoogle?.();
+  stopEvents = stopGoogle = null;
   set(EMPTY);
 }
 
@@ -145,6 +161,20 @@ function clean(e: CalendarEvent, uid: string): DocumentData {
   return out;
 }
 
+/** Asks the server to copy a change to the hub's Google Calendar. Never fails
+ *  the save: if it doesn't get through, the server's next check catches up. */
+async function sync(id?: string) {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return;
+    await fetch('/api/calendar/sync', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(id ? { id } : {}),
+    });
+  } catch { /* the next check catches up */ }
+}
+
 export const calendarActions = {
   /** A fresh id for a new event. */
   newId: () => doc(collection(db, 'calendar_events')).id,
@@ -153,7 +183,26 @@ export const calendarActions = {
     const data = clean(e, uid);
     if (isNew) await setDoc(doc(db, 'calendar_events', e.id), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     else await updateDoc(doc(db, 'calendar_events', e.id), { ...data, updatedAt: serverTimestamp() });
+    void sync(e.id);
   },
-  remove: (id: string) => deleteDoc(doc(db, 'calendar_events', id)),
-  skipWeek: (id: string, date: string) => updateDoc(doc(db, 'calendar_events', id), { skipDates: arrayUnion(date), updatedAt: serverTimestamp() }),
+  /** Marks it deleted; the server cancels its invites and removes it. */
+  async remove(id: string) {
+    await updateDoc(doc(db, 'calendar_events', id), { deleted: true, updatedAt: serverTimestamp() });
+    void sync(id);
+  },
+  async skipWeek(id: string, date: string) {
+    await updateDoc(doc(db, 'calendar_events', id), { skipDates: arrayUnion(date), updatedAt: serverTimestamp() });
+    void sync(id);
+  },
+  /** Curators: Google's sign-in page for linking the hub's account. */
+  async linkGoogle(locale: string): Promise<string | null> {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return null;
+    const res = await fetch('/api/calendar/google/link', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale }),
+    });
+    return res.ok ? ((await res.json()).url as string) : null;
+  },
 };

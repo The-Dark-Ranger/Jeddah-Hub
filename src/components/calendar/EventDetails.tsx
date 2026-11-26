@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { INVITES_LIVE, useCalendarAccess } from '@/lib/calendar/access';
+import { useCalendarAccess } from '@/lib/calendar/access';
 import { useCalendarFormat } from '@/lib/calendar/format';
 import { dayDiff } from '@/lib/calendar/occurrences';
 import { googleCalendarUrl, whatsappText } from '@/lib/calendar/share';
@@ -41,6 +41,8 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
     : [f.dayLong(occ.date), e.startTime ? `${f.time(e.startTime)}${e.endTime ? ` – ${f.time(e.endTime)}` : ''}` : e.kind === 'deadline' ? '' : t('allDay')]
       .filter(Boolean).join(' · ');
 
+  // Replies show once the event's invites have gone out from the hub's Google Calendar.
+  const showReplies = access.invitesLive && e.synced && !invite;
   const team = e.people.filter(p => p.role === 'team');
   const guests = e.people.filter(p => p.role === 'guest');
   // Long lists show the first few, so the actions stay in reach.
@@ -78,7 +80,7 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
       <span className={styles.avatar} aria-hidden="true">{f.person(p.userId).charAt(0)}</span>
       <span className={styles.personName}>{f.person(p.userId)}</span>
       {/* Replies to someone else's invite aren't visible to the hub. */}
-      {INVITES_LIVE && !invite && <span className={`${styles.reply} ${styles[p.reply]}`}>{t(`reply.${p.reply}`)}</span>}
+      {showReplies && <span className={`${styles.reply} ${styles[p.reply]}`}>{t(`reply.${p.reply}`)}</span>}
     </li>
   );
 
@@ -111,7 +113,8 @@ export default function EventDetails({ occ, clashes, onClose, onEdit, onToast }:
 
         {e.people.length > 0 && (
           <p className={styles.summary}>
-            {invite ? t('inviteRepliesNote') : !INVITES_LIVE ? t('invitesSoon') : t('repliesSummary', { yes: count('yes'), maybe: count('maybe'), no: count('no'), none: count('none') })}
+            {invite ? t('inviteRepliesNote') : !access.invitesLive ? t('invitesSoon') : e.syncFailed ? t('invitesFailed')
+              : !e.synced ? t('invitesSending') : t('repliesSummary', { yes: count('yes'), maybe: count('maybe'), no: count('no'), none: count('none') })}
           </p>
         )}
         {team.length > 0 && (

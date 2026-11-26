@@ -4,10 +4,10 @@
  * what the person may manage, members can invite up to a set number of people,
  * and the button says how many invites saving will send. Picking people warns
  * about anyone already booked at that time. Saving writes to Firestore; until
- * the hub's Google Calendar is linked (INVITES_LIVE), no invites are sent. */
+ * the hub's Google Calendar is linked, no invites are sent. */
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { INVITES_LIVE, useCalendarAccess } from '@/lib/calendar/access';
+import { useCalendarAccess } from '@/lib/calendar/access';
 import { useCalendarFormat } from '@/lib/calendar/format';
 import { addDays, dayDiff, expandOccurrences } from '@/lib/calendar/occurrences';
 import { calendarActions, useCalendarStore } from '@/lib/calendar/store';
@@ -172,7 +172,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
   const footer = (
     <>
       {kind !== 'deadline' && (
-        <p className={styles.footNote}>{!INVITES_LIVE ? t('invitesSoon') : invites ? t('inviteCount', { count: invites, shown: f.number(invites) }) : t('noInvites')}</p>
+        <p className={styles.footNote}>{!access.invitesLive ? t('invitesSoon') : invites ? t('inviteCount', { count: invites, shown: f.number(invites) }) : t('noInvites')}</p>
       )}
       {editing && (
         <button type="button" className={`${styles.btn} ${styles.danger} ${styles.slim}`}
@@ -310,7 +310,7 @@ export default function EventForm({ editing, defaultDate, onClose, onSaved }: Pr
               <label htmlFor="cal-guests">{t('fieldOutsideGuests')}</label>
               <input id="cal-guests" type="number" inputMode="numeric" min={0} value={guests} onChange={e => setGuests(e.target.value)} />
             </div>
-            <p className={styles.info} style={{ marginTop: '0.75rem' }}><Icon name="mail" />{INVITES_LIVE ? t('invitesNote') : t('invitesSoonLong')}</p>
+            <p className={styles.info} style={{ marginTop: '0.75rem' }}><Icon name="mail" />{access.invitesLive ? t('invitesNote') : t('invitesSoonLong')}</p>
           </div>
         )}
         {error && <p className={styles.error} role="alert">{error}</p>}

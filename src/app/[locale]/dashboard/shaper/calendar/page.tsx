@@ -5,7 +5,7 @@
  * month grid, made to be shown in meetings, with a seven-column week too.
  * Events are stored in Firestore (calendar_events) and update live; see
  * lib/calendar/store.ts. */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalPortal from '@/components/ModalPortal';
 import EventDetails from '@/components/calendar/EventDetails';
@@ -20,7 +20,7 @@ import { useCalendarFormat } from '@/lib/calendar/format';
 import {
   addDays, clashesByOccurrence, expandOccurrences, findClashes, fromKey, hubToday, monthGrid, occursOn, toKey, uniqueClashes, weekStart,
 } from '@/lib/calendar/occurrences';
-import { useCalendarStore } from '@/lib/calendar/store';
+import { calendarActions, useCalendarStore } from '@/lib/calendar/store';
 import { CALENDAR_KINDS, type CalendarEvent, type CalendarKind, type Occurrence } from '@/lib/calendar/types';
 
 type View = 'week' | 'month';
@@ -31,7 +31,7 @@ export default function CalendarPage() {
   const f = useCalendarFormat();
   const wide = useWide();
   const access = useCalendarAccess();
-  const { events, status } = useCalendarStore();
+  const { events, status, google } = useCalendarStore();
   const today = hubToday();
 
   const [viewChoice, setView] = useState<View | null>(null);
@@ -63,6 +63,30 @@ export default function CalendarPage() {
   const toggleKind = (k: CalendarKind) => setKinds(list => CALENDAR_KINDS.filter(x => (x === k ? !list.includes(k) : list.includes(x))));
   const toggleAllKinds = () => setKinds(allKinds ? [] : CALENDAR_KINDS);
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2400); };
+  const [linking, setLinking] = useState(false);
+
+  // Back from Google's sign-in (Link Google Calendar): say how it went, once.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const result = url.searchParams.get('google');
+    if (!result) return;
+    const key = ['linked', 'wrong_account', 'no_access', 'cancelled'].includes(result) ? result : 'failed';
+    let hide: ReturnType<typeof setTimeout> | undefined;
+    const show = setTimeout(() => {
+      url.searchParams.delete('google');
+      window.history.replaceState(null, '', url);
+      setToast(t(`googleResult.${key}`));
+      hide = setTimeout(() => setToast(''), 6000);
+    }, 0);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, [t]);
+
+  async function linkGoogle() {
+    setLinking(true);
+    const url = await calendarActions.linkGoogle(f.locale).catch(() => null);
+    if (url) window.location.assign(url);
+    else { setLinking(false); showToast(t('googleResult.failed')); }
+  }
   function shift(n: number) {
     setAnchor(a => (view === 'month' ? toKey(new Date(fromKey(a).getFullYear(), fromKey(a).getMonth() + n, 1, 12)) : addDays(a, 7 * n)));
     setSelected(null);
@@ -95,6 +119,13 @@ export default function CalendarPage() {
 
       {status === 'error' && <p className={`${styles.banner} ${styles.bannerError}`} role="alert"><Icon name="alert" size={16} />{t('loadError')}</p>}
       {status === 'loading' && <p className={styles.banner} role="status">{t('loading')}</p>}
+      {status === 'ready' && access.canLinkGoogle && !google.connected && (
+        <div className={styles.banner}>
+          <Icon name="mail" size={16} />
+          <span className={styles.bannerText}>{google.error === 'relink' ? t('googleRelink') : t('googleOff')}</span>
+          <button type="button" className={`${styles.btn} ${styles.slim}`} onClick={linkGoogle} disabled={linking}>{t('googleLink')}</button>
+        </div>
+      )}
 
       {/* One row: previous, the period, next, then Today and Week / Month. */}
       <div className={styles.toolbar}>

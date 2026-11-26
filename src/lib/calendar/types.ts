@@ -46,6 +46,10 @@ export interface CalendarEvent {
   people: CalendarPerson[];
   /** Whether any reply has come back yet (replies are filled in by the server). */
   hasReplies?: boolean;
+  /** In the hub's Google Calendar, so its invites have gone out. */
+  synced?: boolean;
+  /** Google refused it (e.g. a guest's address); the invites didn't go out. */
+  syncFailed?: boolean;
   /** Rough count of guests from outside the hub. */
   outsideGuests?: number;
   source: CalendarSource;
